@@ -213,6 +213,11 @@ Delta from `scope.md` only.
 
 ## Ripple rules
 
+- **`ios-deal-with-att` is linked from `flow-permissions#tracking`** (sdk-flows-display, added
+  2026-11-26): after a flow's ATT request, the reference sends the reader here to pass the status to
+  Adapty. Renaming or removing `ios-deal-with-att` breaks that link; the other SDKs reach their
+  `deal-with-att` page through the platform switcher.
+
 ## Boundaries
 
 - **sdk-flows-manual** — is the ticket about the ongoing state of a user's access (sdk-users-access), or about the purchase/restore call that changes that state (sdk-flows-manual)? Making the purchase is sdk-flows-manual; checking or reacting to its resulting access level afterward is sdk-users-access.

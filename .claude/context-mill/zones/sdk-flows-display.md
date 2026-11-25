@@ -229,12 +229,24 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
   maintained legacy text that a v4 edit usually leaves untouched, so decide explicitly rather than
   deleting it; and a version block cannot wrap a single section, so "document this for v4 only" means
   restructuring the article, not adding a third wrapper.
+- **Per-kind permission facts live only in `flow-permissions`** (added 2026-11-26). What each of the 21
+  permission kinds shows users, its `Info.plist` keys, capabilities, manifest permissions and API
+  levels, and the native result → answer → section → `outcome` table are written once, in the shared
+  tutorial article `flow-permissions` (title **System permissions**, sidebar Flow & Paywall Builder →
+  Navigation and interaction, after `onboarding-actions`). The seven `*-handle-permissions` guides carry
+  the handler code, SDK minimums, the declaration table, the wrapper's plugin table and status mapping,
+  testing, and one pointer sentence in `## Declare the permissions`. The reference holds no Adapty SDK
+  identifiers (no `AdaptyPermission`, `onShowRequestPermission`, `handlePermission`) and no minimum
+  Adapty SDK versions: those differ per SDK. Third-party plugin mappings (permission_handler,
+  react-native-permissions, Capacitor plugins, Unity APIs, moko-permissions) live only in the matching
+  guide's `## Request each permission` section (KMP: `### Use moko-permissions`).
 
 ## Articles
 <!-- mill:auto:roster -->
 | family | ios | android | react-native | flutter | unity | kmp | capacitor |
 |---|---|---|---|---|---|---|---|
 | flow-input | ios-flow-input | android-flow-input | react-native-flow-input | flutter-flow-input | unity-flow-input | kmp-flow-input | capacitor-flow-input |
+| flow-permissions |  |  |  |  |  |  |  |
 | flow-screen-views | ios-flow-screen-views | android-flow-screen-views | react-native-flow-screen-views | flutter-flow-screen-views | unity-flow-screen-views | kmp-flow-screen-views | capacitor-flow-screen-views |
 | get-pb-paywalls | get-pb-paywalls | android-get-pb-paywalls | react-native-get-pb-paywalls | flutter-get-pb-paywalls | unity-get-pb-paywalls | kmp-get-pb-paywalls | capacitor-get-pb-paywalls |
 | handle-paywall-actions | handle-paywall-actions | android-handle-paywall-actions | react-native-handle-paywall-actions | flutter-handle-paywall-actions | unity-handle-paywall-actions | kmp-handle-paywall-actions | capacitor-handle-paywall-actions |
@@ -272,7 +284,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | capacitor-flow-screen-views | — | dev | 4 | capacitor |
 | capacitor-get-pb-paywalls | — | dev | 9 | capacitor |
 | capacitor-handle-paywall-actions | — | dev | 8 | capacitor |
-| capacitor-handle-permissions | — | dev | 6 | capacitor |
+| capacitor-handle-permissions | — | dev | 7 | capacitor |
 | capacitor-handling-events | — | dev | 4 | capacitor |
 | capacitor-localizations-and-locale-codes | — | dev | 11 | capacitor |
 | capacitor-paywalls | entry | dev | 4 | capacitor |
@@ -280,11 +292,12 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | capacitor-present-paywalls | — | dev | 8 | capacitor |
 | capacitor-use-fallback-paywalls | — | dev | 4 | capacitor |
 | capacitor-web-paywall | — | dev | 3 | capacitor |
+| flow-permissions | reference | dev, marketer | 30 | tutorial |
 | flutter-flow-input | — | dev | 10 | flutter |
 | flutter-flow-screen-views | — | dev | 4 | flutter |
 | flutter-get-pb-paywalls | — | dev | 11 | flutter |
 | flutter-handle-paywall-actions | — | dev | 9 | flutter |
-| flutter-handle-permissions | — | dev | 6 | flutter |
+| flutter-handle-permissions | — | dev | 7 | flutter |
 | flutter-handling-events | — | dev | 7 | flutter |
 | flutter-localizations-and-locale-codes | — | dev | 11 | flutter |
 | flutter-paywalls | entry | dev | 4 | flutter |
@@ -310,7 +323,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | kmp-flow-screen-views | — | dev | 4 | kmp |
 | kmp-get-pb-paywalls | — | dev | 9 | kmp |
 | kmp-handle-paywall-actions | — | dev | 12 | kmp |
-| kmp-handle-permissions | — | dev | 7 | kmp |
+| kmp-handle-permissions | — | dev | 8 | kmp |
 | kmp-handling-events | — | dev | 16 | kmp |
 | kmp-localizations-and-locale-codes | — | dev | 11 | kmp |
 | kmp-paywalls | entry | dev | 4 | kmp |
@@ -324,7 +337,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | react-native-flow-screen-views | — | dev | 4 | react-native |
 | react-native-get-pb-paywalls | — | dev | 9 | react-native |
 | react-native-handle-paywall-actions | — | dev | 8 | react-native |
-| react-native-handle-permissions | — | dev | 6 | react-native |
+| react-native-handle-permissions | — | dev | 7 | react-native |
 | react-native-handling-events-1 | — | dev | 4 | react-native |
 | react-native-localizations-and-locale-codes | — | dev | 11 | react-native |
 | react-native-paywalls | entry | dev | 4 | react-native |
@@ -339,7 +352,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | unity-flow-screen-views | — | dev | 4 | unity |
 | unity-get-pb-paywalls | — | dev | 11 | unity |
 | unity-handle-paywall-actions | — | dev | 11 | unity |
-| unity-handle-permissions | — | dev | 6 | unity |
+| unity-handle-permissions | — | dev | 7 | unity |
 | unity-handling-events | — | dev | 8 | unity |
 | unity-localizations-and-locale-codes | — | dev | 12 | unity |
 | unity-paywalls | entry | dev | 4 | unity |
@@ -378,20 +391,36 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
   Flutter, KMP and Unity v4 migration bullets each carry one sentence on it. A change to what happens
   without a handler, to a minimum version, or to the handler names moves all of these.
 - **Three reusables carry the platform-independent half of the `handle-permissions` family** (added
-  2026-11-24, when the action gained every permission kind and three outcome sections).
+  2026-11-24; rewritten 2026-11-26, when the per-kind reference `flow-permissions` was added).
   `FlowPermissionAnswers` (which answer runs which section, and the statuses), `FlowPermissionEvents`
-  (the three analytics events and the `outcome` values, rendered at the end of
-  `## Test the permission request`; since 2026-11-25 `outcome` is the answer category, not the section) and
-  `FlowPermissionDeclarations` (the `Info.plist` key and Android manifest permission of every kind) in
-  `src/components/reusable/`. The five cross-platform articles render `FlowPermissionDeclarations`; the
-  iOS and Android articles carry a one-platform copy of the same table inline, with the native value
-  (`AdaptyPermission` case, wire string). A new permission kind, a renamed builder label, or a changed
-  declaration moves the reusable **and** both inline tables, plus the builder's warning callout, which
-  prints the same keys (dashboard code, 2026-11-24). The routing and statuses also live in
-  `onboarding-actions#request-permission` (flow-logic). `FlowInputParams` names the permission events in
-  its row for the event name, because the flow-input articles filter the same analytics callback. Each
-  `*-handle-permissions` article introduces the reusable with "To see how users answer permission
-  requests", so a change to what the events report moves that sentence in all seven.
+  (the three analytics events, the `outcome` values and the exact status strings) and
+  `FlowPermissionDeclarations` (the summary table: builder label, value, `Info.plist` keys and
+  capabilities, Android permissions with their Android versions folded into the cells) in
+  `src/components/reusable/`. The five cross-platform guides render `FlowPermissionDeclarations`; the iOS
+  and Android guides carry a one-platform copy inline, with the native value and first-column links to
+  `flow-permissions#<value>`. `flow-permissions` renders all three reusables, so **no reusable may link
+  to `flow-permissions`**: the link would point at the page it renders on. Its 21 H3s carry explicit ids
+  equal to the wire value (`### Camera \{#camera\}`, `\{#location_when_use\}`); a later builder deep
+  link may depend on them, so never rename an id. What moves together:
+  - **New permission kind or renamed builder label:** a new H3 in its group in `flow-permissions` (id =
+    wire value), a `FlowPermissionDeclarations` row, the iOS inline row (and its `AdaptyPermission`
+    case), the Android inline row if Android has a permission, a row in each wrapper's plugin table, the
+    builder labels and callout (dashboard code), and `onboarding-actions` only if it names the kind.
+  - **Changed declaration (key, manifest permission, API level, capability):** the kind's section in
+    `flow-permissions`, `FlowPermissionDeclarations`, the iOS or Android inline table, the builder
+    callout.
+  - **Changed routing or a new status string:** `FlowPermissionAnswers`, the Section column of the 21
+    per-kind tables, `onboarding-actions#request-permission`, the status-mapping tables of the five
+    wrapper guides, and the handler samples if a status they send changes.
+  - **Changed `outcome` mapping or events:** `FlowPermissionEvents`, the `outcome` column of the 21
+    per-kind tables, the `FlowInputParams` event-name row.
+  - **Changed no-handler behavior, SDK minimums or handler names:** the seven guides and the
+    `onboarding-actions` warning only. Not the reference.
+  The Section and `outcome` columns are derived from `FlowPermissionAnswers` and the `FlowPermissionEvents`
+  table, never chosen per kind. `FlowInputParams` names the permission events in its row for the event
+  name, because the flow-input articles filter the same analytics callback. Each `*-handle-permissions`
+  article introduces `FlowPermissionEvents` with "To see how users answer permission requests", so a
+  change to what the events report moves that sentence in all seven.
 
 ## Boundaries
 
@@ -428,6 +457,14 @@ and are deliberately not repeated here.
 | "where do I start with paywalls" | The `paywalls` family — the per-platform entry pages, whose job is routing to builder vs manual. |
 | "get the email the user typed in the flow", "read quiz answers in the app", "save onboarding answers as custom attributes" | `flow-input`. Values ride the analytics callback as `flow_user_input`; text fields report on focus loss, selectables per tap, pickers on close. A default or pre-selected value never fires an event — the shared `FlowInputTiming` snippet is where that lives. |
 | "the input event never arrives", "no flow_user_input on my device" | `flow-input`, the `## Before you start` snippet: the flow must have been published after 2026-09-07; the SDK floor is only "first v4". The Adapty preview app never shows these events — its `AdaptyUIFlowView` call registers no analytics callback (preview app code, closed-source) — so the test has to run in the developer's own build. |
+| "app crashes when the flow asks for X", "Info.plist key for X", "which capability does Health need" | `flow-permissions#<kind>`. iOS terminates the app for most kinds when the purpose string is missing; Siri crashes on any `INPreferences` call without the Siri capability. The guide's handler must answer the status "unsupported" for kinds the app doesn't declare. |
+| "location always never asked", "background location", "Allow all the time missing" | `flow-permissions#location_always`. Two steps on both OSes: iOS gives provisional Always and asks later; Android 11+ sends the user to a settings page, after foreground location. |
+| "flow stuck on the location screen", "permission screen never moves on" | `flow-permissions#location_when_use` first: `requestWhenInUseAuthorization()` never calls back when the status is decided or the key is missing. Then the guide's no-handler warning for the SDK. |
+| "ATT from the onboarding", "tracking dialog doesn't show at launch" | `flow-permissions#tracking`. The alert needs an active app; **On Screen Appear** on the first screen can fire too early. Sending the status to Adapty is `ios-deal-with-att`. |
+| "no notification dialog on Android 12" | `flow-permissions#push`. No runtime permission below Android 13; the app answers from `areNotificationsEnabled()`. |
+| "photos limited access", "selected photos reported as granted on Android 14" | `flow-permissions#photos`. Declare `READ_MEDIA_VISUAL_USER_SELECTED`, or Android reports a selection as a full grant. |
+| "which permissions work on Android", "unsupported on Android" | `flow-permissions#permissions-by-platform`: a dash in the Android column means answer the status "unsupported". |
+| "permission_handler returns granted on Android for reminders" | `flutter-handle-permissions#request-each-permission`. permission_handler answers iOS-only kinds without a dialog on Android. |
 | "date picker value is 6.45E11", "picker gives a Double on Android" | `flow-input`, the Android / Flutter / KMP code comments. Not a doc bug: the Android listener receives JSON numbers as `Double` before SDK 4.3.0, and whole numbers as `Long` from 4.3.0. The Android article states both. |
 
 ## Gaps and misses
@@ -542,9 +579,13 @@ and transformer code, 2026-11-24):
   `provisional`, or `unsupported`: the flow script reads `detailResult`, so the docs give the strings.
 - **Every default handler answers without a status**, so it runs **After response**: Android
   `callback.invoke(false, null)`; React Native and Capacitor `{ status: 'denied' }`, also for a throwing
-  handler. The iOS bridge answers `.denied("cancelled")` when a view is torn down with a pending request
-  (`Sources.AdaptyPlugin/HostRequest/PluginSystemRequestsHandler.swift`); `cancelled` isn't a denial
-  status, so that also maps to **After response**, if it reaches the script at all.
+  handler. Corrected 2026-11-26 (AdaptySDK-iOS 4.4.1 and 4.0.0, 4.1.3, 4.2.2, 4.3.2
+  `Sources.AdaptyPlugin/Events/EventHandler.swift`, `HostRequest/HostRequestRegistry.swift`): the iOS
+  bridge resolves pending requests as `.denied("cancelled")` only in `HostRequestRegistry.flushCancelled()`,
+  which runs only inside `AdaptyPlugin.register(eventHandler:)`, not when a view is torn down. Each
+  wrapper registers once, so an unanswered request stays pending for the life of the process. The
+  KMP KDoc and migration guide and the Unity code comment that say "resolved as denied when the flow
+  tears down" are wrong per the native source; the docs don't repeat them.
 - **Snippets checked 2026-11-24:** the iOS handler type-checks under Swift 6 against stubs copied from the
   SDK; the React Native and Capacitor handlers type-check against `@adapty/core` 4.3.4 with
   react-native-permissions 5 and `@capacitor/camera` / `@capacitor/push-notifications` 7; the Flutter
@@ -561,10 +602,76 @@ and transformer code, 2026-11-24):
     reminders keys (`NSCalendarsUsageDescription`, `NSRemindersUsageDescription`; the SDK supports iOS 15),
     the HealthKit / HomeKit / Siri capabilities, the Android API levels of `ACTIVITY_RECOGNITION` (10),
     `BLUETOOTH_CONNECT` (12) and `READ_MEDIA_*` (13), and that Android 12+ ignores a fine-location request
-    without coarse. Platform knowledge, not Adapty code: not re-verified against vendor docs in this pass.
+    without coarse. Corrected 2026-11-26 against developer.android.com (training/permissions/requesting,
+    develop/sensors-and-location/location/permissions/runtime, reference/android/Manifest.permission):
+    the API levels hold; "ignores fine alone" holds only for *some* Android 12 releases; Bluetooth needs
+    `BLUETOOTH_SCAN` as well as `BLUETOOTH_CONNECT` on 12+, and `ACCESS_FINE_LOCATION` up to 11; photos
+    needs `READ_MEDIA_VIDEO` and `READ_MEDIA_VISUAL_USER_SELECTED` (14) too. The iOS keys hold against
+    developer.apple.com, plus `NSLocationWhenInUseUsageDescription` for Precise location and the
+    Communication Notifications capability for Focus status.
   - The flow runs nothing when the selected section and **After response** are both empty (transformer
     code, 2026-11-24), so the guides and `onboarding-actions` tell authors to keep a navigation action in
     **After response**.
   - Still open: the Android modal-activity question above (Flutter, Unity) — no Android device check yet.
   - The Unity guide requires 4.3.0 on Android, but the newest Unity tag read on 2026-11-24 was
     `4.3.0-beta.1`. Since 4.3.0 requires Unity 6, the Unity sample no longer has a pre-Unity-6 branch.
+
+### Per-kind permission reference — 2026-11-26
+
+Written while adding `flow-permissions`. Vendor facts from developer.apple.com and
+developer.android.com (fetched 2026-11-26), SDK facts from the public repos at the tags named,
+builder labels and groups from dashboard code, 2026-11-26.
+
+- **Builder labels and groups** (dashboard code, 2026-11-26): five groups in the select, in order
+  Notifications and tracking / Location / Camera and media / Personal data / Device and home; the 21
+  labels are the H3s of `flow-permissions`, in the same order. The builder callout prints one key per
+  platform and says Android has none for `music` and `health`; the reference gives Health Connect for
+  `health` on Android and `READ_MEDIA_AUDIO` as an option for `music`.
+- **No analytics floor above the handler minimum.** AdaptySDK-iOS sends `isBackendEvent` flow events,
+  `flow_permission_*` included, from 4.0.0 (`Sources.UIBuilder/UIState/AdaptyUIActionHandler.swift`,
+  `Sources/Events/AdaptyUI+Events.swift`); `session_id` and `flow_layout_id` join the payload in 4.1.0.
+  AdaptySDK-Android forwards every flow-script backend event in Live mode from 4.0.0
+  (`adapty-ui/.../store/FlowReducer.kt`, `AnalyticsEffectHandler.kt`). The docs state no floor.
+- **Wrappers pass the detail string through unchanged** (Flutter 4.4.0 `lib/src/adapty.dart`, React
+  Native v4.4.1 `src/ui/flow-view-emitter.ts`, Capacitor v4.3.0 `src/ui-builder/flow-view-emitter.ts`,
+  Unity 4.1.2 `Runtime/Adapty.cs`, KMP 4.1.0 `internal/AdaptyUIImpl.kt`). Unity and KMP answer nothing
+  without a handler on either OS: under a wrapper, the `crossplatform` module replaces the native
+  Android default listener, so `false, null` applies to native Android only.
+- **Plugin traps the guides now document:** permission_handler_android 14.1.1 returns granted for
+  `mediaLibrary` and `reminders` and denied for `appTrackingTransparency` and `assistant` without a
+  dialog; permission_handler on iOS returns `permanentlyDenied` for every refusal;
+  react-native-permissions 5.7.0 reports iOS restricted as `unavailable`; Capacitor's
+  `prompt-with-rationale` is Android's first refusal and `denied` is Android's permanent refusal
+  (`capacitor/android/.../Bridge.java`), so the earlier sample that sent `prompt-with-rationale` to
+  **After response** was wrong and is corrected; moko-permissions 0.20.1 throws `IllegalStateException`
+  on iOS `restricted` / `limited` for camera, microphone and gallery, and `MOTION` doesn't wait for the
+  answer on iOS.
+- **Flutter iOS setup:** Adapty Flutter 4.x is SPM-only (`CHANGELOG.md` 4.0.0). permission_handler_apple
+  9.4.8+ turns on permissions from `Info.plist` keys under SPM; the `Podfile` macros apply to earlier
+  versions only. The guide's CocoaPods prerequisite was replaced.
+- **KMP repo examples misroute** (KMP 4.1.0 `MIGRATION_GUIDE_4.0.0.md`, `AdaptyUIPermissionResult.kt`
+  KDoc): `denied("user declined")` and `denied("unsupported: …")` give `outcome` `other` and run
+  **After response**. The guide uses the canonical strings.
+- **Could not confirm (2026-11-26), kept out of the docs:**
+  - iOS: whether an explicit push request after provisional authorization shows the alert; whether
+    `CNContactStore.requestAccess` throws on a refusal; which status ATT reports when **Allow Apps to
+    Request to Track** is off; whether a full-access calendar request after write-only access prompts;
+    whether `CMMotionActivityManager` query handlers run after a refusal and which call shows the alert;
+    whether `homeManager(_:didUpdate:)` fires for a status decided before the manager existed; what
+    happens without the local network, Siri or contacts purpose string; HomeKit behavior on a device
+    without the entitlement; whether `music` and `media_library` share one privacy record (one Simulator
+    probe said yes, the wrapper research could not confirm); whether the MusicKit App Service is needed
+    for the authorization; Bluetooth cases on iOS 18 where creating a manager shows no alert (forum
+    reports).
+  - Android: whether a dismissed dialog or OEM builds break the `shouldShowRequestPermissionRationale`
+    heuristic; whether a one-time grant can be told apart; the `<uses-feature android:required="false">`
+    advice for `CAMERA`; how the auto-added `READ_MEDIA_VISUAL_USER_SELECTED` interacts with
+    compatibility mode; whether calendar read and write can be granted separately; whether the
+    background-location result reaches the app on return from Settings (looked for in the docs, not
+    found).
+  - Wrappers: Unity's player loop on iOS under a presented flow; Unity `PermissionCallbacks` and moko
+    results while the wrapper's `AdaptyUiActivity` covers the app activity; the `Info.plist` key that
+    Unity's Location Usage Description field writes; Kotlin/Native bindings for AppTrackingTransparency,
+    EventKit, Speech, MediaPlayer, Intents, HomeKit and HealthKit; Capacitor's Android state after a
+    dismissed dialog and for approximate location; community Capacitor plugins; cleanup of pending
+    permission callbacks in the closed-source Android `crossplatform` module.

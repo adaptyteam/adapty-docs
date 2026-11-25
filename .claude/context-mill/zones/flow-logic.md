@@ -452,11 +452,16 @@ or developer can see and click.
   `sdk-flows-display` brief's 2026-11-20 findings. The Action order bullet restates the builder's warning
   for navigation placed after the request (dashboard code, 2026-11-20). The trigger table above it still
   says **On screen appear** / **On tap** while the builder labels are **On Screen Appear** / **On Tap**.
-- **Request permission's declaration table has a second copy (2026-11-24).** The builder's warning
-  callout names the `Info.plist` key and Android manifest permission of the selected kind (dashboard code,
-  2026-11-24). The same table is the `FlowPermissionDeclarations` reusable and the inline tables of the
-  iOS and Android guides in `sdk-flows-display`, so a new permission kind or a changed declaration moves
-  them together, along with the routing list in `onboarding-actions#request-permission`.
+- **Request permission's per-kind facts live in `flow-permissions` (2026-11-24, updated 2026-11-26).** The
+  builder's warning callout names the main `Info.plist` key and Android manifest permission of the
+  selected kind (dashboard code, 2026-11-24). Since 2026-11-26 the owner of every per-kind fact (dialog,
+  all keys and capabilities, API levels, native result → answer → section → `outcome`) is the shared
+  article `flow-permissions` in `sdk-flows-display`, whose summary table is the `FlowPermissionDeclarations`
+  reusable; the iOS and Android guides carry inline copies. `onboarding-actions#request-permission` links
+  `flow-permissions` once, after the sentence that lists example permissions. A new permission kind or a
+  changed declaration moves those together, along with the routing list in
+  `onboarding-actions#request-permission`; the builder callout lists only the main keys, the reference
+  lists all of them.
 
 ## Boundaries
 
@@ -481,6 +486,11 @@ topics whenever an element's *behaviour* (not its look) comes up.
 with the SDK side — see "Reader jobs" for exactly which `sdk-flows-display`/`sdk-flows-manual`/
 `sdk-migrations` article each one hands off to. That hand-off is the boundary, not a gap: this zone owns
 "what you configure in the dashboard," the SDK zones own "what code reads it."
+
+Per-kind permission facts (what each permission shows users, its `Info.plist` keys, Android permissions
+and OS versions, the answer to pass) route to `flow-permissions` in `sdk-flows-display`; the **Request
+permission** action itself (triggers, outcome sections, one request at a time) stays here in
+`onboarding-actions#request-permission` (2026-11-26).
 
 ## Ticket language
 
@@ -681,6 +691,12 @@ needed in place.
   only way off is a permission request (no other action leaves the screen outside that request's
   outcomes); `onboarding-actions#request-permission` restates it and recommends a **Skip** button. The
   event list itself lives in the `FlowPermissionEvents` reusable (`sdk-flows-display`).
+- **Open question (2026-11-26): pre-permission screen guidance vs the Skip button.** Apple's Human
+  Interface Guidelines (developer.apple.com/design/human-interface-guidelines/privacy, "Pre-alert
+  screens") recommend one button that opens the system alert and no way to leave the screen without
+  seeing it. `onboarding-actions#request-permission` recommends a **Skip** button so that users of app
+  versions that never answer can leave. `flow-permissions` quotes only the one-button recommendation and
+  doesn't repeat the Skip advice; which one the docs should lead with is a product decision.
 - **The "Request a system permission other than push notifications" custom-action use case was
   replaced (2026-11-24)** by "Open the system settings", since the action now covers every permission.
 - **The `request-permission-action.webp` screenshot still shows the push-only editor (2026-11-24)**:
