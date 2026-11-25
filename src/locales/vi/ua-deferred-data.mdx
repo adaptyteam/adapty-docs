@@ -13,9 +13,13 @@ Kể từ Adapty SDK phiên bản 4.1, Adapty Attribution bị tắt theo mặc 
 
 Cách thức hoạt động:
 
-1. Khi người dùng nhấp vào quảng cáo của bạn, Adapty lưu dữ liệu nhấp chuột.
-2. Khi Adapty ghi nhận sự kiện cài đặt, nó lấy dữ liệu deferred từ lần nhấp đó.
-3. Sau khi người dùng cài đặt ứng dụng và khởi chạy lần đầu tiên, Adapty truy xuất dữ liệu đã lưu và ứng dụng của bạn nhận được các tham số tùy chỉnh, cho phép bạn xử lý các giá trị khác nhau trong code ứng dụng.
+1. Khi người dùng nhấp vào quảng cáo của bạn, Adapty lưu dữ liệu nhấp chuột đó.
+2. Khi Adapty ghi nhận sự kiện cài đặt, nó sẽ lấy dữ liệu hoãn từ lần nhấp đó.
+3. Sau khi người dùng cài đặt ứng dụng và khởi chạy lần đầu, Adapty truy xuất dữ liệu đã lưu và ứng dụng của bạn nhận được các tham số tùy chỉnh, cho phép bạn phản ứng với các giá trị khác nhau trong mã ứng dụng.
+
+Ứng dụng của bạn chỉ nhận dữ liệu hoãn khi Adapty khớp lần cài đặt với lần nhấp. Nếu người dùng đã có ứng dụng của bạn nhấp vào quảng cáo, ứng dụng sẽ không nhận được dữ liệu hoãn mới nào.
+
+Trên iOS, Adapty chỉ khớp lượt cài đặt với lượt nhấp nếu cả hai đến từ cùng một dải địa chỉ IP. Ví dụ: Adapty không khớp lượt nhấp qua Wi-Fi với lần khởi chạy đầu tiên qua mạng di động, do đó ứng dụng của bạn sẽ không nhận được dữ liệu deferred.
 
 Adapty hỗ trợ các tham số deferred data sau:
 
@@ -23,7 +27,7 @@ Adapty hỗ trợ các tham số deferred data sau:
 - `android_deferred_data`
 - `deferred_data_sub[1-10]`
 
-Để thêm tham số deferred data, hãy nối chúng vào link trong cài đặt chiến dịch của bạn:
+Để thêm tham số deferred data, hãy nối chúng vào link của bạn trong cài đặt chiến dịch:
 
 1. Nếu chiến dịch của bạn chạy trên Meta Ads hoặc TikTok, hãy tìm đường link theo dõi trong **Integrations** > **Meta Ads** hoặc **TikTok Ads**. Nếu chiến dịch của bạn nhắm đến nền tảng khác, hãy mở **Integrations** > **Custom**. Sau đó sao chép đường link bạn muốn sử dụng.
 
@@ -35,9 +39,12 @@ Adapty hỗ trợ các tham số deferred data sau:
 https://api-ua.adapty.io/api/v1/attribution/c/YOUR_CODE?campaign_id=__CAMPAIGN_ID__&adset_id=__AID__&ad_id=__CID__&campaign_name=__CAMPAIGN_NAME__&adset_name=__AID_NAME__&ad_name=__CID_NAME__&redirect_url=__APP_LINK__&ios_deferred_data=welcome
 ```
 
-3. Xử lý các tham số trong code của ứng dụng. Lưu ý rằng các tham số deferred data nằm trong tham số `payload`, và `payload` là một JSON đã được escape, vì vậy bạn cần parse nó trong code ứng dụng.
+3. Xử lý các tham số trong code ứng dụng của bạn. SDK truyền chúng qua thuộc tính `payload` của thông tin cài đặt:
+   - **iOS**: Đọc từ `payload.dictionary`.
+   - **Android**: Đọc từ `payload.dataMap`.
+   - **React Native và Flutter**: `payload` là một chuỗi JSON, vì vậy hãy parse nó trước.
 
-Ví dụ, đây là cách bạn có thể xử lý các lượt cài đặt có `ios_deferred_data` là `welcome`:
+Ví dụ, đây là cách bạn có thể xử lý các lần cài đặt trong đó `ios_deferred_data` là `welcome`:
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
@@ -47,10 +54,7 @@ Adapty.delegate = self
 
 nonisolated func onInstallationDetailsSuccess(_ details: AdaptyInstallationDetails) {
     guard
-        let payloadStr = details.payload,
-        let data = payloadStr.data(using: .utf8),
-        let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-        let deeplink = payload["ios_deferred_data"] as? String,
+        let deeplink = details.payload?.dictionary?["ios_deferred_data"] as? String,
         deeplink == "welcome"
     else { return }
 
@@ -68,15 +72,14 @@ nonisolated func onInstallationDetailsSuccess(_ details: AdaptyInstallationDetai
 ```kotlin showLineNumbers
 Adapty.setOnInstallationDetailsListener(object : OnInstallationDetailsListener {
     override fun onInstallationDetailsSuccess(details: AdaptyInstallationDetails) {
-        details.payload?.let {
-            runCatching {
-                val json = JSONObject(it)
-                if (json.optString("android_deferred_data") == "welcome") {
-                    println("Navigate to welcome screen")
-                    // navigate here
-                }
-            }.onFailure(Throwable::printStackTrace)
+        if (details.payload?.dataMap?.get("android_deferred_data") == "welcome") {
+            println("Navigate to welcome screen")
+            // navigate here
         }
+    }
+
+    override fun onInstallationDetailsFailure(error: AdaptyError) {
+        // handle the error
     }
 })
 
