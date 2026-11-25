@@ -41,15 +41,22 @@ Three rules decide which localization users see:
 - Case and separators don't matter: `pt_BR`, `pt-BR`, and `pt-br` match the same locale. Pass the values as iOS returns them.
 - With an empty list, or a list that matches none of the flow's locales, the SDK uses the default locale.
 
-Pass one of three lists. A list only sets the order in which the SDK tries languages: the flow appears only in languages that you added to it.
+Pass one of three lists. The list sets the order in which the SDK tries languages, but it can't add a language that the flow lacks.
 
-| Value | The flow follows |
-|---|---|
-| `Locale.preferredLanguages` (recommended) | The user's preferred languages, as set up on the device |
-| `Bundle.main.preferredLocalizations` | The current language of your app's UI |
-| `[selectedLanguage] + Locale.preferredLanguages` | The language picker in your app, then the language settings of the device |
+| Value | The flow appears in | Trade-off |
+|---|---|---|
+| `Locale.preferredLanguages` | The first device language that the flow has, even one your app isn't translated into | The flow can appear in another language than your app's UI |
+| `Bundle.main.preferredLocalizations` | The language of your app's UI | The list has one language. When the flow lacks it, users see the default locale. In an app with `Base.lproj` and no English localization, the list can contain `Base`. |
+| `[selectedLanguage] + Locale.preferredLanguages` | The language from the language picker in your app, then the device languages | — |
 
-Don't pass `Locale.current.identifier`. It describes the region settings and contains one language, so the SDK has no other language to try.
+The two system lists give different results in two cases:
+
+- Your app has only English, and the flow has French and English. A French speaker sees French with `Locale.preferredLanguages`, and English with `Bundle.main.preferredLocalizations`.
+- Your app has Korean, and the flow doesn't. A user with Korean, then Spanish, sees Spanish with `Locale.preferredLanguages`, and the default locale with `Bundle.main.preferredLocalizations`.
+
+:::tip
+Don't pass `Locale.current.identifier`. It contains one language, so the SDK has no other language to try. Its code has no script: `zh_TW`, not `zh-Hant-TW`. With this identifier, paywalls from the old Paywall Builder miss their `zh-hant` localization.
+:::
 
 Most apps don't pass `localizationStrategy`. [Its default](#select-a-localization-strategy), `.auto`, fits flows from the Flow & Paywall Builder and paywalls from the old Paywall Builder.
 
@@ -115,7 +122,7 @@ To cover the most users with the fewest locales, follow three rules when you [ad
 
 - Add a language without a region. For example, `de` covers German speakers in Germany, Austria, and Switzerland.
 - Only add a regional locale for a second translation of a language, such as `fr-ca` in addition to `fr`.
-- Add every language that your users read. The SDK doesn't match one language to another, such as Ukrainian to Russian. Ukrainian speakers see their next preferred language that the flow has, or the default locale.
+- Add every language that your users read. The SDK doesn't match one language to another, such as Catalan to Spanish. Catalan speakers see their next preferred language that the flow has, or the default locale.
 
 :::important
 These rules need iOS SDK 4.5 or later. Apps on iOS SDK 4.0–4.4 and apps on <InlineTooltip tooltip="other Adapty SDKs">[Android](android-localizations-and-locale-codes), [React Native](react-native-localizations-and-locale-codes), [Flutter](flutter-localizations-and-locale-codes), [Unity](unity-localizations-and-locale-codes), [Kotlin Multiplatform](kmp-localizations-and-locale-codes), [Capacitor](capacitor-localizations-and-locale-codes)</InlineTooltip> pass one locale code. Their users can see a different localization of the same flow than users on iOS SDK 4.5. Keep every code that those apps pass, such as an existing `zh` or `pt-br`.
@@ -132,6 +139,8 @@ The **Select languages** field has more than one code for Chinese, Spanish, and 
 | Spanish | `es` and `es-419`, not a new `es-mx` | `es` in Spain, and `es-419` in Latin America and the United States. |
 | Portuguese | `pt-br`, and `pt` translated into European Portuguese | `pt-br` in Brazil, and `pt` in Portugal. |
 
+If your flow is localized into multiple regional variants of the same language, serve a less region-specific locale as well — to catch language varieties that fall outside of those that you explicitly support. Without such a fallback, users from other regions are served a random locale in the language group — and you can't set which one. For example, a user with `es-MX` can see `es-ar`, `es-co`, or `es-es`. To target such users, add the regionless `es` locale, or the pan-American `es-419` locale.
+
 ### Start from a recommended set of locales
 
 To plan translations in stages, start from one of three sets. Each set contains the previous one.
@@ -146,7 +155,7 @@ In these sets, users see the following locales:
 
 - In the minimal set, `es` covers Spanish speakers in every country, and `pt-br` covers Portuguese speakers in Portugal too.
 - In the extended set, `es-419` and `pt` are second translations. With them, `es` serves Spain, and `pt` serves Portugal. Translate `pt` into European Portuguese.
-- Ukrainian, Catalan, and Malay speakers see their language only from its own locale: `uk`, `ca`, or `ms`. The SDK doesn't show them Russian, Spanish, or Indonesian instead.
+- Catalan and Malay speakers only see their language in its own locale: `ca` or `ms`. The SDK doesn't show them Spanish or Indonesian instead.
 
 ### Select the default locale
 
@@ -172,14 +181,16 @@ To change how the SDK picks a localization, pass one of the following values in 
 
 ### Pick a flow's localization in your own code
 
-iOS language matching doesn't cover every script. For example, when a device lists Serbian in Latin script (`sr-Latn`) but not in Cyrillic, a flow with `sr` appears in its default locale. To show `sr` instead, or to pick the localization by other rules of your own, create a type that conforms to `AdaptyCustomLocalizationResolver`. Then pass it in the `.custom(resolver:)` value of the `localizationStrategy` parameter. Add `import AdaptyUIBuilder` to the file with the resolver.
+iOS language matching doesn't cover every script. For example, when a device lists Azerbaijani in Cyrillic script (`az-Cyrl`) but not in Latin, a flow with `az` appears in its default locale. To show `az` instead, or to pick the localization by other rules of your own, create a type that conforms to `AdaptyUICustomLocalizationResolver`. Then pass it in the `.custom(resolver:)` value of the `localizationStrategy` parameter. Add `import AdaptyUIBuilder` to the file with the resolver.
+
+Other Adapty SDKs match languages by other rules, so the same user can see different localizations of a flow on iOS and Android. To show the same localization on every platform, write a resolver that returns the same locale code as your app on the other platforms.
 
 The following rules apply to the resolver:
 
-- The SDK calls `resolve(for:from:)` with the list that your app passed and an `AdaptyLocalizationSource` with the flow's `locales` and `defaultLocale`. The `locales` come in no fixed order.
-- To show a localization, return its code, spelled exactly as in `locales`. The SDK compares the code case-sensitively.
-- If the resolver returns a code that the flow doesn't have, the flow shows its default locale.
-- If the resolver returns `nil`, the SDK uses the strategy in `fallbackResolver`. Its default is `.auto`.
+- The SDK doesn't call the resolver for a flow with one localization. The flow appears in that localization.
+- The SDK calls `resolve(for:from:)` with the list that your app passed and an `AdaptyUILocalizationSource` with the flow's `locales` and `defaultLocale`. The `locales` come in no fixed order.
+- To show a localization, return a code from `locales` or `defaultLocale`, spelled exactly the same, case included: `ar`, not `AR`.
+- If the resolver returns any other code or `nil`, the SDK uses the strategy in `fallbackResolver`. Its default is `.auto`.
 - The SDK can call the resolver off the main thread.
 - Return the code right away, without network requests or other slow work. The SDK waits for the resolver without a time limit, and the flow only appears after the resolver returns.
 
