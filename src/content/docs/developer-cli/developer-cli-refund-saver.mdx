@@ -1,0 +1,175 @@
+---
+title: "Refund Saver commands"
+description: "Adapty CLI commands that turn Refund Saver on and off, set the refund preference of each store and of one profile, verify store readiness, and read the refund requests and savings."
+metadataTitle: "Refund Saver CLI Commands | Adapty Docs"
+---
+
+Manage [Refund Saver](refund-saver) of one app from the terminal: turn it on or off, set the refund preference of each store, override it for one profile, verify that the stores are ready, and read what Refund Saver handled and saved. These commands need CLI version 0.31.0 or later.
+
+Refund Saver is a paid add-on. The account owner manages the add-on in **Billing** in the Adapty Dashboard, not with the CLI.
+
+Every command takes `--app`, the app ID (UUID) from `adapty apps list`, and prints the API answer with `--json`.
+
+## adapty refund-saver get
+
+Show whether Refund Saver is on for an app, and the refund preference of each store.
+
+```bash
+adapty refund-saver get --app <app-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+With `--json`, `enabled` is `true` when Refund Saver is on in either store. `stores` contains the App Store preference with `refund_saver_needs_consent`, and the Play Store preference.
+
+## adapty refund-saver on
+
+Turn Refund Saver on for an app, in both stores.
+
+```bash
+adapty refund-saver on --app <app-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+The command prints the state of the app and a note from Adapty, `billing_note` in `--json`. An app that is already on answers with its state and the note.
+
+The API can refuse `on` with exit code 4. A refusal changes nothing. To see the reason, read `error.code` in `--json`:
+
+| `error.code` | What to do |
+|---|---|
+| `refund_saver_addon_inactive` | The Refund Saver add-on isn't active for this account. Ask the account owner to turn it on in **Billing**, then run the command again. |
+| `refund_saver_apple_credentials_invalid` | The Apple credentials of this account don't work. Fix them in **App settings**, then run the command again. |
+| `refund_saver_addon_unavailable` | Refund Saver can't be turned on for this account. Don't retry; contact Adapty support. |
+
+## adapty refund-saver off
+
+Turn Refund Saver off for an app, in both stores.
+
+```bash
+adapty refund-saver off --app <app-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+Turning Refund Saver off doesn't cancel the Refund Saver add-on. The account owner manages the add-on in **Billing** in the Adapty Dashboard.
+
+## adapty refund-saver update
+
+Change the [refund preference of each store](refund-saver#set-a-default-refund-preference) and the [default consent policy](refund-saver#set-the-default-consent-policy). A flag you don't pass keeps its value. Pass at least one flag besides `--app`. The command doesn't turn Refund Saver on or off; use `adapty refund-saver on` and `adapty refund-saver off` for that.
+
+```bash
+adapty refund-saver update --app <app-id> --app-store-preference decline_first_grant_next --needs-consent
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--app-store-preference` | No | The refund preference for App Store refund requests: `no_preference`, `always_decline`, `always_refund`, `decline_first_grant_next`, or `always_prorated` |
+| `--play-store-preference` | No | The refund preference for Google Play refund requests: `no_preference`, `always_decline`, `always_refund`, or `decline_first_grant_next`. Google Play has no `always_prorated`. |
+| `--needs-consent` / `--no-needs-consent` | No | Whether Refund Saver sends the data of an App Store user only after the user consents. `--needs-consent` is the **Opt-in** consent policy, `--no-needs-consent` is **Opt-out**. |
+
+The command prints the preferences of both stores.
+
+## adapty refund-saver readiness
+
+Show whether each store has the credentials that Refund Saver needs.
+
+```bash
+adapty refund-saver readiness --app <app-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+The App Store needs the bundle ID and the App Store Connect API key ID, issuer ID, and private key. Google Play needs the bundle ID and the service account key. With `--json`, `app_store` and `play_store` are `true` when the store is ready. Without `--json`, the command names the missing setup of each store that isn't ready.
+
+## adapty refund-saver profile get
+
+Show the Refund Saver settings of one profile: its custom preference and its consent.
+
+```bash
+adapty refund-saver profile get --app <app-id> <profile-id>
+```
+
+| Argument or flag | Required | Description |
+|---|---|---|
+| `<profile-id>` | Yes | Adapty profile ID (UUID), not the customer user ID |
+| `--app` | Yes | App ID (UUID) |
+
+With `--json`, `custom_preference` and `consent` are `null` when they aren't set. A profile that isn't in the app returns `profile_not_found`.
+
+## adapty refund-saver profile update
+
+Change the Refund Saver settings of one profile. A flag you don't pass keeps its value. Pass at least one flag besides `--app`.
+
+```bash
+adapty refund-saver profile update --app <app-id> <profile-id> --custom-preference decline
+```
+
+| Argument or flag | Required | Description |
+|---|---|---|
+| `<profile-id>` | Yes | Adapty profile ID (UUID), not the customer user ID |
+| `--app` | Yes | App ID (UUID) |
+| `--custom-preference` | No | The refund preference for this profile, over the preference of the store: `grant`, `no_preference`, `decline`, or `grant_prorated` |
+| `--consent` / `--no-consent` | No | Whether the user consents that Refund Saver sends their data to the store |
+
+The per-profile preference is the same setting as the [refund preference for a specific user](refund-saver#set-refund-behavior-for-a-specific-user-in-the-dashboard) in the Adapty Dashboard.
+
+## adapty refund-saver requests
+
+List the refund requests that Refund Saver handled in a period, newest first.
+
+```bash
+adapty refund-saver requests --app <app-id> --date-from 2026-10-01 --date-to 2026-10-31 --store app_store
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--date-from` | Yes | First day of the period, inclusive (`YYYY-MM-DD`, UTC) |
+| `--date-to` | Yes | Last day of the period, inclusive (`YYYY-MM-DD`, UTC) |
+| `--store` | No | Only the requests of this store: `app_store` or `play_store` |
+| `--page` | No | Page number |
+| `--page-size` | No | Items per page |
+
+The days count by the date the store request was handled. A reversed range returns an empty list, not an error. A page after the last one is empty.
+
+With `--json`, each request has `status`, `store_transaction_id`, `store_product_id`, `profile_id`, `customer_user_id`, `country_name`, `amount_usd`, `refund_reason`, `received_at`, and `updated_at`.
+
+## adapty refund-saver metrics
+
+Show what Refund Saver saved in a period.
+
+```bash
+adapty refund-saver metrics --app <app-id> --date-from 2026-10-01 --date-to 2026-10-31 --store play_store
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--date-from` | Yes | First day of the period, inclusive (`YYYY-MM-DD`, UTC) |
+| `--date-to` | Yes | Last day of the period, inclusive (`YYYY-MM-DD`, UTC) |
+| `--store` | No | Only the requests of this store: `app_store` or `play_store` |
+
+With `--json`, the output has `saved_amount_usd`, `saved_count`, `requested_amount_usd`, `requested_count`, and `win_rate`. The amounts are in whole US dollars. `win_rate` is a percent as text, with one decimal.
+
+## Edit rights
+
+`on`, `off`, `update`, and `profile update` need edit rights in the company that owns the app. An account that can view the app but not change it gets `edit_rights_required` with exit code 3, and nothing changes. Ask a company owner or admin to grant edit rights before you retry. An app of another company returns `permission_denied`, also with exit code 3.
+
+## Exit codes
+
+| Exit code | Meaning |
+|---|---|
+| `0` | Success |
+| `2` | Invalid input, sent before any request: an app or profile ID that isn't a UUID, a date that isn't `YYYY-MM-DD`, an unknown preference or store, or `update` or `profile update` with no setting |
+| `3` | No token, an app the token can't access, or no edit rights |
+| `4` | The API refused the request. `error.code` in `--json` names the reason. |
