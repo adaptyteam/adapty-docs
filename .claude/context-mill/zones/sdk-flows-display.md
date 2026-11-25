@@ -380,7 +380,8 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 - **Three reusables carry the platform-independent half of the `handle-permissions` family** (added
   2026-11-24, when the action gained every permission kind and three outcome sections).
   `FlowPermissionAnswers` (which answer runs which section, and the statuses), `FlowPermissionEvents`
-  (the two analytics events, rendered at the end of `## Test the permission request`) and
+  (the three analytics events and the `outcome` values, rendered at the end of
+  `## Test the permission request`; since 2026-11-25 `outcome` is the answer category, not the section) and
   `FlowPermissionDeclarations` (the `Info.plist` key and Android manifest permission of every kind) in
   `src/components/reusable/`. The five cross-platform articles render `FlowPermissionDeclarations`; the
   iOS and Android articles carry a one-platform copy of the same table inline, with the native value
@@ -388,7 +389,9 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
   declaration moves the reusable **and** both inline tables, plus the builder's warning callout, which
   prints the same keys (dashboard code, 2026-11-24). The routing and statuses also live in
   `onboarding-actions#request-permission` (flow-logic). `FlowInputParams` names the permission events in
-  its row for the event name, because the flow-input articles filter the same analytics callback.
+  its row for the event name, because the flow-input articles filter the same analytics callback. Each
+  `*-handle-permissions` article introduces the reusable with "To see how users answer permission
+  requests", so a change to what the events report moves that sentence in all seven.
 
 ## Boundaries
 

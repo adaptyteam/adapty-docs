@@ -7,7 +7,7 @@ unattended: false
 
 ## What changes
 
-The Flow & Paywall Builder's **Request permission** action asks for any permission the Adapty SDK knows (21 kinds: push, tracking, location, camera, microphone, photos, contacts, health and others), not only push notifications. It has three outcome sections, **When allowed**, **When denied** and **After response**; the app's answer and the status it passes as the detail string pick one. The flow sends one request at a time and reports `flow_permission_requested` / `flow_permission_answered` to the app's flow analytics callback. No SDK API changed: the handlers already received a permission value and returned an optional detail string, so every platform that had the v1 guide gets the new contract at once.
+The Flow & Paywall Builder's **Request permission** action asks for any permission the Adapty SDK knows (21 kinds: push, tracking, location, camera, microphone, photos, contacts, health and others), not only push notifications. It has three outcome sections, **When allowed**, **When denied** and **After response**; the app's answer and the status it passes as the detail string pick one. The flow sends one request at a time and reports `flow_permission_requested` / `flow_permission_answered` / `flow_permission_unanswered` to the app's flow analytics callback; `outcome` of the answered event is the user's answer category (`granted`, `limited`, `provisional`, `denied`, `restricted`, `permanently_denied`, `unsupported`, `other`, `no_status`), not the section that ran (decision of 2026-11-25). No SDK API changed: the handlers already received a permission value and returned an optional detail string, so every platform that had the v1 guide gets the new contract at once.
 
 ## Canon — decisions made on the first platform
 
@@ -15,6 +15,7 @@ The Flow & Paywall Builder's **Request permission** action asks for any permissi
 - Handler samples use an allow-list: two permissions (push and camera) plus a default branch that answers `unsupported` without a dialog. Every answer carries a status string.
 - The `Info.plist` crash is a `:::warning` at the top of `## Implement the handler` on the six guides that run on iOS. Android gets the same rule as prose, without the crash.
 - Platform-independent text lives in three reusables: `FlowPermissionAnswers` (routing and statuses), `FlowPermissionDeclarations` (the per-kind declaration table, cross-platform guides only) and `FlowPermissionEvents` (the analytics events, in the test section). iOS and Android carry one-platform tables inline.
+- The analytics events are documented once, in `FlowPermissionEvents`; the seven guides only point to it. The builder's warning about a screen whose only way off is the request lives in `onboarding-actions#request-permission`, not in the guides.
 - The guides keep their v1 outline and gain one H2, `## Declare the permissions`, before the registration section.
 
 ## Platform state

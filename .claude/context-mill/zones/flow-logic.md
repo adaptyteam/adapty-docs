@@ -665,10 +665,22 @@ needed in place.
   request: the screen-appear guard against re-asking after **Navigate back** applies only to requests with
   outcomes, which is why the article keeps "sends the request every time the screen appears" for that
   case. One request at a time, for bare requests too. Each request reports `flow_permission_requested`
-  and each answer `flow_permission_answered` (`outcome`: `granted` / `denied` / `response` / `none`) as
-  customer analytics events. The builder's warning callout now names the `Info.plist` key and Android
-  manifest permission for the selected kind; that table is mirrored in the `sdk-flows-display`
-  reusable `FlowPermissionDeclarations`, so the two must change together.
+  and each answer `flow_permission_answered` as customer analytics events. The builder's warning callout
+  now names the `Info.plist` key and Android manifest permission for the selected kind; that table is
+  mirrored in the `sdk-flows-display` reusable `FlowPermissionDeclarations`, so the two must change
+  together.
+- **Permission analytics report the answer, not the section (product contract, 2026-11-25; not yet
+  checked against released code).** `flow_permission_answered.outcome` is the answer category, computed
+  from `result` and `detail_result` whatever sections the author filled: `granted`, `limited`,
+  `provisional` for a granted answer; `denied`, `restricted`, `permanently_denied`, `unsupported`,
+  `other` (any other status), `no_status` for a refusal. Bare requests get the same values (the earlier
+  `granted` / `denied` / `response` / `none` set is gone). A new `flow_permission_unanswered` event fires
+  once, 60 s after a request the app hasn't answered (`permission`, `with_outcome`, `outcome`:
+  `on_screen` / `left_screen`); a closed flow sends nothing, and a late answer still sends
+  `flow_permission_answered`. Section routing is unchanged. The builder also warns about a screen whose
+  only way off is a permission request (no other action leaves the screen outside that request's
+  outcomes); `onboarding-actions#request-permission` restates it and recommends a **Skip** button. The
+  event list itself lives in the `FlowPermissionEvents` reusable (`sdk-flows-display`).
 - **The "Request a system permission other than push notifications" custom-action use case was
   replaced (2026-11-24)** by "Open the system settings", since the action now covers every permission.
 - **The `request-permission-action.webp` screenshot still shows the push-only editor (2026-11-24)**:
