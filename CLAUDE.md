@@ -174,7 +174,7 @@ These apply to every doc edit, however small. They are the rules no linter can c
 | `src/styles/global.css` | **Primary stylesheet.** Tailwind import, theme variables (`@theme`), light/dark CSS custom properties, all design block styles (code blocks, details, callouts, tables, zoom images, heading anchors, task lists, highlight lines) |
 | `src/css/custom.css` | Legacy Docusaurus-era variables (`--purplePrimary`, `--ifm-*`). Still loaded via `src/css/custom.scss` but superseded by `global.css` for new work |
 | `src/components/api-reference/TryItPanel.css` | Styles for the Try-it panel of the API reference; the other API reference components carry scoped `<style>` blocks |
-| `src/css/fonts/fonts.css` | `@font-face` declarations for Inter, Roboto, Fira Code. Fira Code is self-hosted, so every visitor gets its programming ligatures unless a rule turns them off (see the `font-variant-ligatures: none` rule in `global.css`) |
+| `src/css/fonts/fonts.css` | `@font-face` declarations for Manrope and JetBrains Mono, the only self-hosted fonts (`DocsLayout.astro` preloads Manrope). Missing glyphs fall through to system fonts. JetBrains Mono ships programming ligatures; the `font-variant-ligatures: none` rule in `global.css` turns them off |
 
 ### Theme system
 
@@ -182,7 +182,7 @@ These apply to every doc edit, however small. They are the rules no linter can c
 - All design tokens are CSS custom properties defined in `:root` (light) and `.dark` (dark) blocks in `global.css`
 - Key tokens: `--bg-primary`, `--bg-secondary`, `--text-primary`, `--text-secondary`, `--accent-primary` (`#5c13ff` light / `#a78bfa` dark), `--border-primary`, `--shadow-sm/md/lg`
 - Brand color: `--color-primary-500: #6720ff`
-- Fonts: Inter (body), Fira Code (code blocks)
+- Fonts: Manrope (body), JetBrains Mono (code blocks)
 - Tailwind 4 configured in `global.css` via `@theme` block (custom font sizes, line heights, brand colors)
 
 ### Design blocks in `global.css`
