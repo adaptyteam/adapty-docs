@@ -1639,16 +1639,33 @@ paths:
                     balance: 12450
                     held: 0
                     available: 12450
+                    expiry:
+                      non_expiring: 12450
+                      expiring: []
+                      expiring_later: 0
+                      expired: 0
                   - code: "GEMS"
                     name: "Gems"
                     balance: 3280
                     held: 0
                     available: 3280
+                    expiry:
+                      non_expiring: 280
+                      expiring:
+                        - amount: 3000
+                          expires_at: "2026-12-24T10:00:00.000000+0000"
+                      expiring_later: 0
+                      expired: 0
                   - code: "ENERGY"
                     name: "Energy"
                     balance: 840
                     held: 0
                     available: 840
+                    expiry:
+                      non_expiring: 840
+                      expiring: []
+                      expiring_later: 0
+                      expired: 0
         '400':
           description: Bad request. Neither `adapty-profile-id` nor `adapty-customer-user-id` is sent (`error_code` is `validation_error`).
           content:
@@ -3301,7 +3318,7 @@ components:
 
     VirtualCurrencyBalanceListResponse:
       type: object
-      description: Current balances for all virtual currencies of a profile.
+      description: Current balances of a profile for every virtual currency in the app, including currencies with a balance of 0.
       properties:
         response_created_at:
           type: integer
@@ -3338,13 +3355,62 @@ components:
           type: integer
           format: int32
           minimum: 0
-          description: Balance available to spend, computed as `balance` minus `held` minus expired credits that Adapty hasn't removed yet.
+          description: Balance available to spend, computed as `balance` minus `held` minus `expiry.expired`.
+        expiry:
+          $ref: '#/components/schemas/VirtualCurrencyBalanceExpiry'
       required:
         - code
         - name
         - balance
         - held
         - available
+        - expiry
+
+    VirtualCurrencyBalanceExpiry:
+      type: object
+      description: The balance, split by expiry time at the moment of the response. `non_expiring`, the sum of `expiring[].amount`, `expiring_later`, and `expired` add up to `balance`.
+      properties:
+        non_expiring:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Credits that never expire.
+        expiring:
+          type: array
+          description: Credits that expire, grouped by expiry time, soonest first. Lists up to 10 expiry times. Credits with later expiry times are summed in `expiring_later`.
+          items:
+            $ref: '#/components/schemas/VirtualCurrencyExpiringAmount'
+        expiring_later:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Expiring credits beyond the 10 expiry times in `expiring`. 0 unless `expiring` has 10 entries.
+        expired:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Credits past their expiry time that are still counted in `balance`. Users can't spend them, and Adapty removes them from `balance` within a few minutes, so the value is usually 0.
+      required:
+        - non_expiring
+        - expiring
+        - expiring_later
+        - expired
+
+    VirtualCurrencyExpiringAmount:
+      type: object
+      properties:
+        amount:
+          type: integer
+          format: int32
+          minimum: 1
+          description: The number of credits that expire at `expires_at` unless the user spends them first.
+        expires_at:
+          type: string
+          description: The latest time these credits expire, in UTC. A subscription renewal before the end of the period, or a refund, can remove them earlier.
+          example: "2026-12-24T10:00:00.000000+0000"
+      required:
+        - amount
+        - expires_at
 
     VirtualCurrencyTransactionsHistoryResponse:
       type: object
