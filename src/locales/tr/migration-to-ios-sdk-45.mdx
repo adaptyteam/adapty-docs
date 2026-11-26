@@ -1,0 +1,83 @@
+---
+title: "Adapty iOS SDK'yı v4.5'e Geçirin"
+description: "Adapty iOS SDK v4.5'e geçiş: getFlowConfiguration'a tek locale yerine kullanıcının dillerini iletin ve kullanıcıların ne gördüğünü farklı biçimde kontrol edin."
+metadataTitle: "Adapty iOS SDK v4.5'e Geçiş | Adapty Dokümanları"
+---
+
+Uygulamanızı Adapty iOS SDK 4.4'ten 4.5'e güncellemek için bu kılavuzdaki her değişikliği uygulayın. 4.3 veya önceki bir sürümde olan uygulama için önce [v4.4 değişikliklerine](migration-to-ios-sdk-44) bakmanız gerekir.
+
+4.5 sürümünde, `getFlowConfiguration` fonksiyonu isteğe bağlı bir `locale` kod parametresi yerine `preferredLocales` içinde bir dil listesi gerektirmektedir. SDK [bu listeden flow için bir yerelleştirme seçer](localizations-and-locale-codes).
+
+:::warning
+Her `getFlowConfiguration` çağrısına [`preferredLocales`](#replace-locale-with-the-users-languages) parametresi geçirilmeden derleme başarısız olur. Derlemeyi düzelttikten sonra SDK 4.5, kullanıcılara SDK 4.4'ün gösterdiğinden [aynı flow'un farklı bir yerelleştirmesini](#what-users-see-after-the-update) gösterebilir.
+:::
+
+## Hızlı başvuru \{#quick-reference\}
+
+| Önce | Sonra |
+|---|---|
+| `getFlowConfiguration(forFlow: flow, locale: "fr")` | `getFlowConfiguration(forFlow: flow, preferredLocales: Locale.preferredLanguages)` |
+| `locale`: isteğe bağlı | `preferredLocales`: zorunlu |
+| `locale` yok: kullanıcılar flow'un varsayılan dili başka bir dil olsa bile `en` görür. Flow'da `en` yoksa, kullanıcılar varsayılan dili görür | `preferredLocales: []`: cihaz dillerinden bağımsız olarak tüm kullanıcılar flow'u varsayılan dilinde görür |
+| Strateji parametresi yok | `localizationStrategy:`, isteğe bağlı. Varsayılan olan `.auto`, çoğu uygulama için uygundur. |
+
+## `locale`'yi kullanıcının dilleriyle değiştirin \{#replace-locale-with-the-users-languages\}
+
+4.5 sürümünde, hem async hem de completion-handler `getFlowConfiguration` metodları `locale` yerine `preferredLocales` listesi alır. `preferredLocales` parametresi zorunludur. `locale` ile ya da her iki parametre de olmadan yapılan bir çağrıda Xcode şu hatayı verir:
+
+```text
+'getFlowConfiguration(forFlow:locale:…)' is unavailable: Pass preferredLocales: Locale.preferredLanguages to show the flow in the device's language, or [] to use the flow's default localization.
+```
+
+`getOnboarding`'in `locale` parametresi değişmez.
+
+```diff showLineNumbers
+  let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+      forFlow: flow,
+-     locale: "fr"
++     preferredLocales: Locale.preferredLanguages
+  )
+```
+
+4.4'te uygulamanızın ne geçirdiği, 4.5'te ne geçireceğinizi belirler:
+
+- Uygulamanız `Locale.current.identifier` gibi bir cihaz değeri geçtiyse, bunun yerine `Locale.preferredLanguages` geçirin. Değeri dönüştüren kodları silin: 4.5'te büyük/küçük harf ve ayırıcılar önemli değildir.
+- Uygulamanız kullanıcının uygulama içinde seçtiği bir dili geçtiyse, onu başa koyun: `[selectedLanguage] + Locale.preferredLanguages`. Flow & Paywall Builder'daki bir flow o dili desteklemiyorsa SDK, cihazın dillerini dener.
+- Uygulamanız `getFlowConfiguration`'ı `locale` olmadan çağırdıysa, `preferredLocales: Locale.preferredLanguages` ekleyin.
+
+Uygulamanızın kullanıcı arayüzü dilinde flow göstermek için cihaz dilleri yerine `Bundle.main.preferredLocalizations` değerini geçin. İki listeyi karşılaştırmak için [Kullanıcının dillerini SDK'ya geçirme](localizations-and-locale-codes#pass-the-users-languages-to-the-sdk) bölümünü okuyun.
+
+Her kullanıcıya flow'u varsayılan dilinde göstermek için boş bir liste geçin: `preferredLocales: []`.
+
+`localizationStrategy` parametresini geçmenize gerek yok. Varsayılan değer olan `.auto`, Flow & Paywall Builder'dan gelen flow'lar ve eski Paywall Builder'dan gelen paywalllar için uygundur. [Diğer stratejiler](localizations-and-locale-codes#select-a-localization-strategy), SDK'nın dilleri nasıl eşleştirdiğini değiştirir.
+
+## Güncelleme sonrasında kullanıcılar ne görür \{#what-users-see-after-the-update\}
+
+Varsayılan `localizationStrategy` ile SDK 4.5, kullanıcılara aynı flow'un SDK 4.4'ten farklı bir yerelleştirmesini gösterebilir:
+
+| Uygulama şunu iletir | Flow'un sahip olduğu | 4.4 | 4.5 |
+|---|---|---|---|
+| Dil yok: 4.4'te `locale` yok, 4.5'te `[]` | Herhangi bir locale | Flow'da varsa `en`; aksi hâlde varsayılan locale | Varsayılan locale |
+| Farklı büyük/küçük harf veya ayırıcı içeren bir kod, örneğin `pt_BR` | `pt-BR` | Varsayılan locale | `pt-BR` |
+| `pt-BR` gibi bölgesel bir kod | `pt` gibi yalnızca dil | Varsayılan locale | `pt` |
+| `zh-TW` gibi bir yazı sistemi içeren bölgesel kod | `zh-hant` gibi yazı sistemi | Varsayılan locale | `zh-hant`; eski Paywall Builder'dan gelen paywalllardan, varsayılan locale |
+| `fr`, ardından `de` gibi birden fazla dil | `de` gibi ilk değil sonraki bir dil | Varsayılan locale | Sonraki dil; eski Paywall Builder'dan gelen paywalllardan, varsayılan locale |
+
+SDK 4.0–4.4 kullanan uygulama sürümleri, kullanıcılar uygulamayı güncelleyene kadar flow'larınıza karşı tam eşleşmeyi korur. `.legacy` stratejisi, 4.4'teki tam eşleşmeyi geri getirmez.
+
+Bir cihazda hangi yerelleştirmenin göründüğünü görmek için `flowConfiguration.locale` değerini okuyun: SDK bunu kaydetmez. Test prosedürü için [Kullanıcının hangi yerelleştirmeyi gördüğünü test etme](localizations-and-locale-codes#test-which-localization-a-user-sees) bölümünü okuyun.
+
+## Flow'larınızın dillerini gözden geçirin \{#review-the-locales-of-your-flows\}
+
+SDK 4.5, yayımlanmış flow'larınızı mevcut dilleriyle gösterir. Kullanıcılara her flow'u kendi dillerinde göstermek için üç kurala uyun:
+
+- Varsayılan locale'i tamamen çevirin. Flow'ların hiçbiri kullanıcının diline sahip değilse bu görünür. Varsayılanı görüntülemek veya değiştirmek için [Varsayılan locale'i ayarlama](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) bölümünü okuyun.
+- SDK 4.0–4.4 kullanan uygulama sürümleri ve diğer Adapty SDK'larını kullanan uygulamalar için, iletilen her locale kodunu koruyun. Bu uygulamalar 4.5 eşleştirmesini kullanmaz.
+- Daha fazla kullanıcıyı kapsamak için `zh`'ye ek olarak `zh-hans` ve `zh-hant` gibi [4.5'in daha iyi eşleştirdiği locale'leri](localizations-and-locale-codes#select-which-locales-to-add-to-a-flow) ekleyin.
+
+## AdaptyUIBuilder modülünü ekleyin \{#add-the-adaptyuibuilder-module\}
+
+4.5 sürümünde, AdaptyUI'ya ait bazı tipler [özel yerelleştirme çözücüsü](localizations-and-locale-codes#pick-a-flows-localization-in-your-own-code) protokolü gibi AdaptyUIBuilder modülünden gelmektedir. Bu tipleri kodunuzda kullanmak için uygulamanıza AdaptyUIBuilder'ı ekleyin:
+
+1. Xcode'da, uygulama hedefinizin **General** sekmesinde, **Frameworks, Libraries, and Embedded Content** bölümünün altında, AdaptySDK-iOS paketinden **AdaptyUIBuilder**'ı ekleyin.
+2. Bu tipleri kullanan her dosyaya `import AdaptyUIBuilder` satırını ekleyin.

@@ -1,58 +1,205 @@
 ---
-title: "Sử dụng localizations và locale codes trong iOS SDK"
-description: "Quản lý localizations và locale codes để tiếp cận người dùng toàn cầu trong ứng dụng iOS của bạn."
-metadataTitle: "Quản lý Localizations & Locale Codes | Tài liệu Adapty"
+title: "Sử dụng localization và mã locale trong iOS SDK"
+description: "Quản lý localization và mã locale của ứng dụng để tiếp cận người dùng toàn cầu trong ứng dụng iOS của bạn."
+metadataTitle: "Quản lý Localization & Mã Locale | Tài liệu Adapty"
 ---
 
 <SDKv4>
 
-## Tại sao điều này quan trọng \{#why-this-is-important\}
+Để hiển thị flow cho mỗi người dùng bằng ngôn ngữ họ đọc, hãy truyền danh sách ngôn ngữ của họ vào Adapty iOS SDK 4.5 trở lên. Người dùng sẽ thấy flow theo ngôn ngữ ưu tiên nhất của họ mà flow đó hỗ trợ. Flow không có bất kỳ ngôn ngữ nào trong danh sách đó sẽ hiển thị theo ngôn ngữ mặc định của nó.
 
-Mã ngôn ngữ (locale code) được sử dụng khi Adapty chọn bản dịch cho một flow hoặc onboarding, và khi bạn đọc Remote Config cho một paywall tùy chỉnh.
+Trên SDK 4.0–4.4, ứng dụng của bạn truyền một mã locale vào `getFlowConfiguration`, và SDK [khớp chính xác với nó](#pass-the-users-languages-to-the-sdk). Để cập nhật code của bạn, hãy đọc [Migrate Adapty iOS SDK to v4.5](migration-to-ios-sdk-45).
 
-Mã ngôn ngữ khá phức tạp và có thể khác nhau giữa các nền tảng, vì vậy Adapty dựa vào một tiêu chuẩn nội bộ thống nhất cho mọi nền tảng mà nó hỗ trợ. Hiểu được tiêu chuẩn đó giúp bạn dự đoán bản dịch nào người dùng sẽ nhận được.
+Trên SDK 4.5 trở lên, ba trường hợp sau tuân theo các quy tắc khác:
 
-## Tiêu chuẩn locale code tại Adapty \{#locale-code-standard-at-adapty\}
+- Các ứng dụng tự chọn bản địa hóa của flow trong code của mình [sử dụng custom resolver](#pick-a-flows-localization-in-your-own-code).
+- Các paywall từ Paywall Builder cũ [chỉ khớp với ngôn ngữ đầu tiên của người dùng](#select-a-localization-strategy).
+- Các paywall và onboarding tùy chỉnh [hoạt động như trong SDK 4.4](#localize-custom-paywalls-and-onboardings).
 
-Adapty sử dụng phiên bản được điều chỉnh nhẹ của [chuẩn BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag): mỗi code gồm các subtag viết thường, phân cách bằng dấu gạch ngang. Ví dụ: `en` (tiếng Anh), `pt-br` (tiếng Bồ Đào Nha (Brazil)), `zh` (tiếng Trung giản thể), `zh-hant` (tiếng Trung phồn thể).
+## Truyền ngôn ngữ của người dùng vào SDK \{#pass-the-users-languages-to-the-sdk\}
 
-## Khớp mã ngôn ngữ \{#locale-code-matching\}
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
 
-Trong SDK v4, flow và onboarding khớp mã ngôn ngữ theo cách khác nhau: flow được bản địa hóa bởi SDK trên thiết bị, còn onboarding được bản địa hóa bởi server Adapty.
+[`AdaptyUI.getFlowConfiguration`](get-pb-paywalls#fetch-the-view-configuration) yêu cầu tham số `preferredLocales`. Truyền ngôn ngữ của người dùng vào đó, ưu tiên ngôn ngữ được ưa thích nhất trước. SDK không tự đọc ngôn ngữ của thiết bị.
 
-### Flow và paywall
+```swift showLineNumbers
+let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+    forFlow: flow,
+    preferredLocales: Locale.preferredLanguages
+)
+```
 
-Paywall mà Adapty hiển thị được phân phối dưới dạng flow trong SDK v4, vì vậy quy tắc dưới đây áp dụng cho cả hai.
+Ba quy tắc quyết định bản ngôn ngữ nào người dùng sẽ thấy:
 
-Khớp là tuyệt đối chính xác. SDK so sánh mã bạn truyền vào với mã bản địa hóa của flow theo từng ký tự: không thay đổi chữ hoa/thường, không thay thế dấu gạch dưới (`_`) bằng dấu gạch ngang (`-`), và không tự động lùi về language subtag. Với một flow có bản địa hóa `pt-br`, chỉ `pt-br` mới khớp: `pt-BR`, `pt_BR`, và `pt-PT` đều không khớp.
+- SDK thử lần lượt các ngôn ngữ của người dùng và chọn ngôn ngữ đầu tiên mà flow có. Đây là cách khớp ngôn ngữ của iOS: các quy tắc mà iOS dùng để chọn ngôn ngữ cho app. SDK khớp các biến thể gần giống của một ngôn ngữ: `de-AT` khớp với `de`, và `zh-TW` khớp với `zh-hant`. Paywall từ Paywall Builder cũ chỉ dùng ngôn ngữ đầu tiên của người dùng.
+- Chữ hoa/thường và ký tự phân cách không quan trọng: `pt_BR`, `pt-BR`, và `pt-br` đều khớp với cùng một locale. Truyền giá trị đúng như iOS trả về.
+- Nếu danh sách rỗng, hoặc không khớp với bất kỳ locale nào của flow, SDK sẽ dùng locale mặc định.
 
-Khi mã không khớp với bất kỳ bản địa hóa nào, flow sẽ hiển thị theo [ngôn ngữ mặc định](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) — SDK không trả về lỗi và không ghi log cảnh báo.
+Truyền một trong ba danh sách. Danh sách này xác định thứ tự ưu tiên ngôn ngữ mà SDK thử, nhưng không thể thêm ngôn ngữ mà flow không có.
 
-Khi mã khớp, Adapty sẽ hợp nhất bản địa hóa đó với bản địa hóa mặc định: các chuỗi và tài nguyên mà bản địa hóa được khớp không định nghĩa sẽ được lấy từ bản địa hóa mặc định.
+| Value | The flow appears in | Trade-off |
+|---|---|---|
+| `Locale.preferredLanguages` | Ngôn ngữ đầu tiên trên thiết bị mà flow hỗ trợ, kể cả ngôn ngữ mà app của bạn chưa được dịch sang | Flow có thể hiển thị bằng ngôn ngữ khác với giao diện app |
+| `Bundle.main.preferredLocalizations` | Ngôn ngữ giao diện app của bạn | Danh sách chỉ có một ngôn ngữ. Nếu flow không có ngôn ngữ đó, người dùng sẽ thấy ngôn ngữ mặc định. Trong app có `Base.lproj` mà không có bản dịch tiếng Anh, danh sách có thể chứa `Base`. |
+| `[selectedLanguage] + Locale.preferredLanguages` | Ngôn ngữ từ bộ chọn ngôn ngữ trong app, sau đó là các ngôn ngữ trên thiết bị | — |
 
-Việc bỏ qua mã ngôn ngữ không đồng nghĩa với việc yêu cầu bản địa hóa mặc định của flow: SDK sẽ thay thế bằng `en` cố định. Một flow có ngôn ngữ mặc định là `de` vẫn hiển thị bằng `en` nếu nó có bản địa hóa `en`, và chỉ dự phòng về `de` khi không có.
+Hai danh sách hệ thống cho kết quả khác nhau trong hai trường hợp:
 
-:::warning
-Truyền mã locale chính xác như đã cấu hình trong dashboard — các subtag viết thường, phân cách bằng dấu gạch ngang. Đừng truyền trực tiếp identifier locale của hệ thống: `Locale.current.identifier` trả về `pt_BR` và `Locale.current.identifier(.bcp47)` trả về `pt-BR`, cả hai đều sẽ rơi về localization mặc định. Hãy chuyển đổi giá trị trong ứng dụng của bạn trước khi truyền vào.
+- Ứng dụng của bạn chỉ có tiếng Anh, còn flow có tiếng Pháp và tiếng Anh. Người dùng nói tiếng Pháp sẽ thấy tiếng Pháp với `Locale.preferredLanguages`, và tiếng Anh với `Bundle.main.preferredLocalizations`.
+- Ứng dụng của bạn có tiếng Hàn, nhưng flow thì không. Người dùng đặt ngôn ngữ ưu tiên là tiếng Hàn, rồi tiếng Tây Ban Nha, sẽ thấy tiếng Tây Ban Nha với `Locale.preferredLanguages`, và ngôn ngữ mặc định với `Bundle.main.preferredLocalizations`.
+
+:::tip
+Đừng truyền `Locale.current.identifier`. Nó chỉ chứa một ngôn ngữ, nên SDK không có ngôn ngữ nào khác để thử. Mã của nó không có script: `zh_TW`, không phải `zh-Hant-TW`. Với identifier này, các paywall từ Paywall Builder cũ sẽ bỏ sót bản dịch `zh-hant`.
 :::
 
-### Onboardings
+Hầu hết các ứng dụng không truyền `localizationStrategy`. [Giá trị mặc định của nó](#select-a-localization-strategy), `.auto`, phù hợp với các flow từ Flow & Paywall Builder và các paywall từ Paywall Builder cũ.
 
-Onboarding được bản địa hóa trên server, và các quy tắc của server chấp nhận nhiều định dạng khác nhau. Khi bạn truyền `locale` vào [`getOnboarding`](get-onboardings):
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
-1. Chuỗi locale được chuyển thành chữ thường và tất cả dấu gạch dưới (`_`) được thay thế bằng dấu gạch ngang (`-`)
-2. Adapty tìm bản địa hóa có mã locale khớp hoàn toàn
-3. Nếu không tìm thấy, Adapty lấy chuỗi con trước dấu gạch ngang đầu tiên (`pt` trong `pt-br`) và tìm bản địa hóa khớp với chuỗi đó
-4. Nếu vẫn không tìm thấy, Adapty trả về nội dung theo locale mặc định của onboarding
+Truyền một mã ngôn ngữ vào tham số `locale` của [`AdaptyUI.getFlowConfiguration`](get-pb-paywalls#fetch-the-view-configuration). SDK không tự đọc ngôn ngữ của thiết bị, vì vậy bạn cần chỉ định mã ngôn ngữ trong ứng dụng của mình.
 
-Bằng cách này, `pt_BR`, `pt-BR`, và `pt-br` đều phân giải về cùng một bản địa hóa onboarding.
+```swift showLineNumbers
+let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+    forFlow: flow,
+    locale: "pt-BR"
+)
+```
 
-## Triển khai các bản địa hóa \{#implementing-localizations\}
+Kết quả khớp là chính xác tuyệt đối. SDK so sánh mã bạn truyền vào với mã ngôn ngữ của flow theo từng ký tự: không tự động thay đổi chữ hoa/thường, không thay thế dấu gạch dưới (`_`) bằng dấu gạch ngang (`-`), và không tự động chuyển về language subtag. Với một flow có ngôn ngữ `pt-BR`, chỉ `pt-BR` mới khớp: `pt-br`, `pt_BR`, và `pt-PT` đều không khớp.
 
-Trong SDK v4, bạn không cần truyền mã ngôn ngữ khi lấy một flow — `getFlow` trả về flow cùng với tất cả các bản địa hóa của nó.
+Khi mã không khớp với bất kỳ ngôn ngữ nào, flow sẽ tự động hiển thị theo [ngôn ngữ mặc định](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) của nó — SDK không trả về lỗi và không ghi log cảnh báo.
 
-- **Flow được xây dựng trong builder**: SDK không đọc ngôn ngữ thiết bị, vì vậy hãy tự xác định trong app của bạn và truyền vào `AdaptyUI.getFlowConfiguration(forFlow:locale:)`. Tham số này là tùy chọn — bỏ qua nó và flow sẽ hiển thị bằng `en`, hoặc theo [ngôn ngữ mặc định](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) nếu flow không có bản địa hóa `en`.
-- **Paywall tùy chỉnh (remote config)**: `getFlow` trả về tất cả các bản địa hóa đã cấu hình trong `flow.remoteConfigs`. Mỗi mục có một mã `locale` và nội dung config (`jsonString`, hoặc `dictionary` đã được phân tích). Hãy chọn mục phù hợp với người dùng, với logic dự phòng do bạn tự định nghĩa:
+Bỏ qua mã ngôn ngữ không có nghĩa là yêu cầu bản địa hóa mặc định của flow: SDK sẽ thay thế bằng `en` cố định. Một flow có ngôn ngữ mặc định là `de` vẫn hiển thị bằng `en` nếu nó có bản địa hóa `en`, và chỉ dự phòng về `de` khi không có.
+
+:::warning
+Truyền mã ngôn ngữ chính xác như flow đã được xuất bản: `pt-BR`, không phải `pt-br` từ trường **Select languages**. Đối với paywall từ Paywall Builder cũ, hãy truyền mã chữ thường, chẳng hạn như `pt-br`.
+
+Đừng truyền định danh locale hệ thống nguyên vẹn. Trên thiết bị cài đặt ngôn ngữ Portuguese (Brazil), `Locale.current.identifier` trả về `pt_BR`, không khớp với bất kỳ bản địa hóa nào. Trên thiết bị cài đặt ngôn ngữ English (United States), `Locale.current.identifier(.bcp47)` trả về `en-US`, bỏ lỡ flow chỉ có `en`. Trước khi truyền định danh locale hệ thống, hãy chuyển đổi nó thành mã mà flow hỗ trợ.
+:::
+
+</TabItem>
+</Tabs>
+
+## Kiểm tra bản địa hóa mà người dùng thấy \{#test-which-localization-a-user-sees\}
+
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+Khi flow không có ngôn ngữ nào khớp với ngôn ngữ của người dùng, SDK sẽ dùng ngôn ngữ mặc định mà không báo lỗi hay ghi log. Để kiểm tra bản địa hóa mà người dùng thấy, hãy thử flow trên thiết bị:
+
+1. Trong cài đặt thiết bị, di chuyển ngôn ngữ cần kiểm tra lên đầu danh sách ngôn ngữ.
+2. Mở flow trong ứng dụng của bạn.
+3. Đọc `flowConfiguration.locale`. Giá trị này chứa mã của bản địa hóa đang hiển thị. Dashboard hiển thị mã này ở dạng chữ thường: `pt-br` tương ứng với `pt-BR`.
+
+Để kiểm tra một ngôn ngữ mà không cần thay đổi cài đặt thiết bị, hãy truyền danh sách `preferredLocales` cố định, chẳng hạn `["pt-PT"]`, trong bản build debug.
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
+
+Khi mã bạn truyền vào không khớp với bất kỳ bản dịch nào của flow, SDK sẽ sử dụng ngôn ngữ mặc định mà không báo lỗi hay ghi log. Để biết người dùng đang xem bản dịch nào, hãy kiểm thử flow trên thiết bị:
+
+1. Trong cài đặt thiết bị, chọn ngôn ngữ và vùng thử nghiệm.
+2. Mở flow trong ứng dụng của bạn.
+3. Đọc `flowConfiguration.locale`. Nó chứa mã của bản địa hóa đang được hiển thị. Khi mã này khác với mã bạn đã truyền vào, flow không có bản địa hóa nào khớp chính xác với mã đó.
+
+Để kiểm tra một mã mà không cần thay đổi cài đặt thiết bị, hãy truyền một `locale` cố định, chẳng hạn như `"pt-BR"`, trong bản build debug.
+
+</TabItem>
+</Tabs>
+
+Khi một số văn bản hoặc hình ảnh vẫn hiển thị ở ngôn ngữ mặc định, bản địa hóa đang hiển thị bị thiếu chúng. Để bổ sung phần còn thiếu, hãy [dịch các hàng còn thiếu](add-paywall-locale-in-adapty-paywall-builder#manage-localizations-and-translations) trong Flow & Paywall Builder.
+
+## Chọn ngôn ngữ nào để thêm vào flow \{#select-which-locales-to-add-to-a-flow\}
+
+Để phủ sóng nhiều người dùng nhất với ít ngôn ngữ nhất, hãy tuân theo ba quy tắc sau khi bạn [thêm ngôn ngữ](add-paywall-locale-in-adapty-paywall-builder#add-and-set-up-a-locale) trong trường **Select languages**:
+
+- Thêm ngôn ngữ không kèm vùng miền. Ví dụ, `de` bao gồm người dùng nói tiếng Đức ở Đức, Áo và Thụy Sĩ.
+- Chỉ thêm locale theo vùng miền cho bản dịch thứ hai của một ngôn ngữ, chẳng hạn như `fr-ca` bên cạnh `fr`.
+- Thêm tất cả ngôn ngữ mà người dùng của bạn sử dụng. SDK không tự động ánh xạ từ ngôn ngữ này sang ngôn ngữ khác, chẳng hạn như tiếng Catalan sang tiếng Tây Ban Nha. Người dùng nói tiếng Catalan sẽ thấy ngôn ngữ ưu tiên tiếp theo của họ có trong flow, hoặc ngôn ngữ mặc định.
+
+:::important
+Các quy tắc này yêu cầu iOS SDK 4.5 trở lên. Các ứng dụng dùng iOS SDK 4.0–4.4 và các ứng dụng trên <InlineTooltip tooltip="các Adapty SDK khác">[Android](android-localizations-and-locale-codes), [React Native](react-native-localizations-and-locale-codes), [Flutter](flutter-localizations-and-locale-codes), [Unity](unity-localizations-and-locale-codes), [Kotlin Multiplatform](kmp-localizations-and-locale-codes), [Capacitor](capacitor-localizations-and-locale-codes)</InlineTooltip> chỉ truyền một mã ngôn ngữ. Người dùng của các ứng dụng đó có thể thấy bản địa hóa khác của cùng một flow so với người dùng trên iOS SDK 4.5. Hãy giữ nguyên mọi mã mà các ứng dụng đó truyền vào, chẳng hạn như `zh` hoặc `pt-br` hiện có.
+:::
+
+### Chọn mã cho tiếng Trung, tiếng Tây Ban Nha và tiếng Bồ Đào Nha \{#select-codes-for-chinese-spanish-and-portuguese\}
+
+Trường **Select languages** có nhiều hơn một mã cho tiếng Trung, tiếng Tây Ban Nha và tiếng Bồ Đào Nha. Thêm các mã từ bảng:
+
+| Ngôn ngữ | Thêm | Người dùng thấy |
+|---|---|---|
+| Tiếng Trung | `zh-hans` và `zh-hant`, không thêm `zh` mới. Chỉ thêm `zh-hk` nếu có bản dịch riêng cho Hồng Kông. | `zh-hans` ở Trung Quốc và Singapore, và `zh-hant` ở Đài Loan, Hồng Kông và Ma Cao. |
+| Tiếng Quảng Đông | `yue`, luôn kèm với `zh-hant` | `yue` trên thiết bị đặt ngôn ngữ Tiếng Quảng Đông, và `zh-hant` trên thiết bị đặt Tiếng Trung Phồn thể. Nếu không có `zh-hant`, người dùng có thiết bị đặt Tiếng Trung Phồn thể sẽ thấy tiếng Quảng Đông viết. |
+| Tiếng Tây Ban Nha | `es` và `es-419`, không thêm `es-mx` mới | `es` ở Tây Ban Nha, và `es-419` ở Mỹ Latinh và Hoa Kỳ. |
+| Tiếng Bồ Đào Nha | `pt-br`, và `pt` được dịch sang Tiếng Bồ Đào Nha châu Âu | `pt-br` ở Brazil, và `pt` ở Bồ Đào Nha. |
+
+Nếu flow của bạn được bản địa hóa thành nhiều biến thể khu vực của cùng một ngôn ngữ, hãy cung cấp thêm một locale ít đặc thù vùng hơn — để bắt các biến thể ngôn ngữ nằm ngoài những biến thể bạn hỗ trợ cụ thể. Nếu không có fallback như vậy, người dùng từ các khu vực khác sẽ được phục vụ một locale ngẫu nhiên trong nhóm ngôn ngữ đó — và bạn không thể kiểm soát locale nào được chọn. Ví dụ: người dùng có `es-MX` có thể thấy `es-ar`, `es-co`, hoặc `es-es`. Để nhắm mục tiêu những người dùng như vậy, hãy thêm locale không có vùng `es`, hoặc locale `es-419` dành cho toàn châu Mỹ Latinh.
+
+### Bắt đầu từ bộ ngôn ngữ được đề xuất \{#start-from-a-recommended-set-of-locales\}
+
+Để lên kế hoạch dịch thuật theo từng giai đoạn, hãy bắt đầu từ một trong ba bộ dưới đây. Mỗi bộ đều bao gồm bộ trước đó.
+
+| Bộ | Ngôn ngữ | Tổng |
+|---|---|---|
+| Tối thiểu | `en`, `es`, `pt-br`, `fr`, `de`, `it`, `ru`, `ja`, `ko`, `zh-hans`, `zh-hant` | 11 |
+| Mở rộng | Bộ tối thiểu và `tr`, `pl`, `nl`, `sv`, `da`, `no`, `fi`, `uk`, `ar`, `he`, `hi`, `id`, `th`, `vi`, `es-419`, `pt` | 27 |
+| Rộng | Bộ mở rộng và `cs`, `sk`, `hu`, `ro`, `el`, `bg`, `hr`, `sl`, `lt`, `lv`, `et`, `ca`, `kk`, `ms`, `fil`, `fa`, `ur`, `bn`, `ta`, `te`, `mr`, `fr-ca` | 49 |
+
+Trong các bộ này, người dùng sẽ thấy các ngôn ngữ như sau:
+
+- Trong bộ tối thiểu, `es` áp dụng cho người dùng nói tiếng Tây Ban Nha ở mọi quốc gia, và `pt-br` cũng áp dụng cho người dùng nói tiếng Bồ Đào Nha ở Bồ Đào Nha.
+- Trong bộ mở rộng, `es-419` và `pt` là các bản dịch bổ sung. Với chúng, `es` phục vụ người dùng ở Tây Ban Nha, còn `pt` phục vụ người dùng ở Bồ Đào Nha. Hãy dịch `pt` sang tiếng Bồ Đào Nha châu Âu.
+- Người dùng nói tiếng Catalan và tiếng Malay chỉ thấy ngôn ngữ của họ trong locale riêng: `ca` hoặc `ms`. SDK sẽ không hiển thị tiếng Tây Ban Nha hay tiếng Indonesia thay thế cho họ.
+
+### Chọn ngôn ngữ mặc định \{#select-the-default-locale\}
+
+Người dùng sẽ thấy ngôn ngữ mặc định khi flow không có ngôn ngữ của họ. Một flow mới bắt đầu với `en` là ngôn ngữ duy nhất và cũng là ngôn ngữ mặc định. Để thay đổi, hãy [đặt ngôn ngữ khác làm mặc định](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale).
+
+Tuân theo ba quy tắc sau cho ngôn ngữ mặc định:
+
+- Đối với những người dùng không có ngôn ngữ phù hợp, hãy chọn ngôn ngữ mà hầu hết họ có thể hiểu. Thường thì đó là tiếng Anh, không phải ngôn ngữ của thị trường chính của bạn.
+- Dịch đầy đủ ngôn ngữ mặc định. Người dùng không có ngôn ngữ phù hợp sẽ thấy toàn bộ nội dung đó. Những người dùng khác sẽ thấy văn bản và hình ảnh của ngôn ngữ mặc định ở những chỗ mà ngôn ngữ phù hợp của họ còn thiếu.
+- Không chọn ngôn ngữ sử dụng hai hệ chữ viết, chẳng hạn như tiếng Trung. Người dùng sử dụng hệ chữ viết còn lại có thể không đọc được ngôn ngữ mặc định.
+
+## Chọn chiến lược bản địa hóa \{#select-a-localization-strategy\}
+
+Hầu hết các ứng dụng không truyền `localizationStrategy`. Giá trị mặc định của nó, `.auto`, áp dụng khớp ngôn ngữ iOS cho các flow từ Flow & Paywall Builder, và quy tắc ngôn ngữ đầu tiên cho các paywall từ Paywall Builder cũ.
+
+Theo quy tắc ngôn ngữ đầu tiên, SDK chỉ đọc ngôn ngữ đầu tiên trong `preferredLocales`. SDK sẽ thử mã đầy đủ trước, rồi đến các mã ngắn hơn (`pt-br`, sau đó `pt`), và nếu không khớp sẽ hiển thị locale mặc định. Paywall từ Paywall Builder cũ vẫn hoạt động theo quy tắc này, kể cả sau khi bạn tái bản. Để SDK thử tất cả các ngôn ngữ trong `preferredLocales`, hãy [chuyển paywall sang Flow & Paywall Builder](convert-paywall-to-flow). Sau đó phục vụ flow mới từ một flow placement.
+
+Để thay đổi cách SDK chọn bản dịch, truyền một trong các giá trị sau vào tham số `localizationStrategy`:
+
+- `.system`: mọi flow đều dùng cơ chế khớp ngôn ngữ của iOS, kể cả paywall từ Paywall Builder cũ.
+- `.legacy`: mọi flow đều dùng quy tắc ngôn ngữ đầu tiên, không dùng khớp chính xác như SDK 4.4. Đừng truyền `.legacy` cho các flow từ Flow & Paywall Builder: nó sẽ bỏ sót các locale có region hoặc script, chẳng hạn như `pt-BR`.
+- `.custom(resolver:fallbackResolver:)`: [code của bạn tự chọn bản địa hóa](#pick-a-flows-localization-in-your-own-code).
+
+### Tự chọn localization cho flow trong code của bạn \{#pick-a-flows-localization-in-your-own-code\}
+
+Tính năng khớp ngôn ngữ của iOS không bao phủ mọi script. Ví dụ, khi thiết bị liệt kê tiếng Azerbaijan theo chữ Cyrillic (`az-Cyrl`) nhưng không có Latin, một flow với `az` sẽ hiển thị theo locale mặc định. Để hiển thị `az` thay vào đó, hoặc để chọn localization theo quy tắc riêng của bạn, hãy tạo một kiểu tuân theo `AdaptyUICustomLocalizationResolver`. Sau đó truyền nó vào giá trị `.custom(resolver:)` của tham số `localizationStrategy`. Thêm `import AdaptyUIBuilder` vào file chứa resolver.
+
+Các SDK Adapty khác dùng quy tắc khác để khớp ngôn ngữ, nên cùng một người dùng có thể thấy các bản dịch khác nhau của một flow trên iOS và Android. Để hiển thị cùng một bản dịch trên mọi nền tảng, hãy viết một resolver trả về cùng mã locale như ứng dụng của bạn trên các nền tảng khác.
+
+Các quy tắc sau áp dụng cho resolver:
+
+- SDK không gọi resolver cho flow chỉ có một ngôn ngữ. Flow hiển thị theo ngôn ngữ đó.
+- SDK gọi `resolve(for:from:)` với danh sách mà ứng dụng của bạn đã truyền vào và một `AdaptyUILocalizationSource` chứa `locales` và `defaultLocale` của flow. `locales` không theo thứ tự cố định.
+- Để hiển thị một ngôn ngữ, hãy trả về mã từ `locales` hoặc `defaultLocale`, viết chính xác giống nhau, kể cả chữ hoa chữ thường: `ar`, không phải `AR`.
+- Nếu resolver trả về mã khác hoặc `nil`, SDK sẽ sử dụng chiến lược trong `fallbackResolver`. Mặc định là `.auto`.
+- SDK có thể gọi resolver từ thread không phải main thread.
+- Trả về mã ngay lập tức, không thực hiện các yêu cầu mạng hay tác vụ chậm khác. SDK chờ resolver mà không có giới hạn thời gian, và flow chỉ hiển thị sau khi resolver trả về.
+
+## Tiêu chuẩn mã ngôn ngữ tại Adapty \{#locale-code-standard-at-adapty\}
+
+Mã ngôn ngữ của Adapty tuân theo [tiêu chuẩn BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag): một thẻ con ngôn ngữ, theo sau là thẻ con tùy chọn về chữ viết hoặc khu vực, được phân tách bằng dấu gạch ngang. Trường **Select languages** hiển thị các mã ở dạng chữ thường: `en` (tiếng Anh), `pt-br` (tiếng Bồ Đào Nha, Brazil), `zh-hans` (tiếng Trung giản thể) và `zh-hant` (tiếng Trung phồn thể).
+
+## Nội địa hóa paywall tùy chỉnh và onboarding \{#localize-custom-paywalls-and-onboardings\}
+
+SDK 4.5 chỉ thay đổi quy tắc nội địa hóa cho các flow. Paywall tùy chỉnh và onboarding hoạt động giống như trong SDK 4.4.
+
+### Chọn Remote Config của paywall tùy chỉnh theo ngôn ngữ \{#pick-a-custom-paywalls-remote-config-by-language\}
+
+`getFlow` không có tham số locale. Với paywall tùy chỉnh, hàm này trả về toàn bộ các localization đã cấu hình trong `flow.remoteConfigs`. Mỗi entry chứa mã `locale` và nội dung config (`jsonString`, hoặc đã được phân tích thành `dictionary`). Bạn tự chọn entry phù hợp với người dùng, kèm theo fallback của riêng mình:
 
 ```swift showLineNumbers
 do {
@@ -65,7 +212,20 @@ do {
 }
 ```
 
-Adapty lưu trữ các mã `locale` theo định dạng được mô tả trong [Tiêu chuẩn mã locale tại Adapty](#locale-code-standard-at-adapty). SDK không tự khớp Remote Config với một locale, vì vậy việc áp dụng mục nào là tùy thuộc vào ứng dụng của bạn.
+Adapty lưu trữ các mã `locale` đó theo định dạng được mô tả trong [Tiêu chuẩn mã locale tại Adapty](#locale-code-standard-at-adapty). SDK không tự động khớp Remote Config với một locale, vì vậy việc áp dụng mục nào là do ứng dụng của bạn quyết định.
+
+### Truyền locale vào onboarding \{#pass-a-locale-to-an-onboarding\}
+
+<OnboardingDeprecation />
+
+`getOnboarding` vẫn giữ tham số `locale` trong SDK 4.5. Khi bạn truyền `locale` vào [`getOnboarding`](get-onboardings), server sẽ chọn bản dịch phù hợp:
+
+1. Chuỗi locale được chuyển thành chữ thường và tất cả dấu gạch dưới (`_`) được thay bằng dấu gạch ngang (`-`)
+2. Adapty tìm kiếm bản địa hóa có mã locale khớp hoàn toàn
+3. Nếu không tìm thấy, Adapty lấy phần chuỗi trước dấu gạch ngang đầu tiên (`pt` trong `pt-br`) và tìm kiếm bản địa hóa phù hợp
+4. Nếu vẫn không tìm thấy, Adapty trả về nội dung theo locale mặc định của onboarding
+
+Nhờ vậy, `pt_BR`, `pt-BR`, và `pt-br` đều được ánh xạ về cùng một bản địa hóa onboarding.
 
 </SDKv4>
 
@@ -73,9 +233,9 @@ Adapty lưu trữ các mã `locale` theo định dạng được mô tả trong 
 
 ## Tại sao điều này quan trọng \{#why-this-is-important\}
 
-Có một vài tình huống mà mã ngôn ngữ (locale codes) đóng vai trò quan trọng — ví dụ, khi bạn cần lấy đúng paywall cho ngôn ngữ hiện tại của ứng dụng.
+Có một số tình huống mà mã ngôn ngữ (locale code) đóng vai trò quan trọng — ví dụ, khi bạn cần lấy đúng paywall phù hợp với ngôn ngữ hiện tại của ứng dụng.
 
-Vì mã ngôn ngữ khá phức tạp và có thể khác nhau tùy từng nền tảng, chúng tôi sử dụng một tiêu chuẩn nội bộ thống nhất cho tất cả các nền tảng được hỗ trợ. Tuy nhiên, chính vì sự phức tạp đó, bạn cần hiểu rõ mình đang gửi gì lên server để nhận đúng bản ngôn ngữ mong muốn — và điều gì sẽ xảy ra tiếp theo.
+Vì mã ngôn ngữ khá phức tạp và có thể khác nhau tùy từng nền tảng, chúng tôi sử dụng một tiêu chuẩn nội bộ chung cho tất cả các nền tảng được hỗ trợ. Tuy nhiên, chính vì sự phức tạp đó, điều quan trọng là bạn cần hiểu rõ mình đang gửi gì lên server để nhận đúng bản ngôn ngữ, và sau đó điều gì xảy ra — để bạn luôn nhận được kết quả như mong đợi.
 
 ## Tiêu chuẩn mã ngôn ngữ tại Adapty \{#locale-code-standard-at-adapty\}
 

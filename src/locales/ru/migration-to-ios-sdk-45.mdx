@@ -1,0 +1,83 @@
+---
+title: "Переход на Adapty iOS SDK v4.5"
+description: "Переход на Adapty iOS SDK v4.5: передавайте языки пользователя в getFlowConfiguration вместо одной локали и по-другому проверяйте, что видят пользователи."
+metadataTitle: "Переход на Adapty iOS SDK v4.5 | Документация Adapty"
+---
+
+Чтобы обновить приложение с Adapty iOS SDK 4.4 до 4.5, примените все изменения из этого гайда. Если вы используете версию 4.3 или более раннюю, сначала выполните [изменения для v4.4](migration-to-ios-sdk-44).
+
+В версии 4.5 функция `getFlowConfiguration` требует список языков в `preferredLocales` вместо необязательного кода языка в `locale`. SDK [выбирает локализацию флоу из этого списка](localizations-and-locale-codes).
+
+:::warning
+Сборка завершится с ошибкой, пока каждый вызов `getFlowConfiguration` не передаёт [`preferredLocales`](#replace-locale-with-the-users-languages). После исправления сборки SDK 4.5 может показывать пользователям [другую локализацию того же флоу](#what-users-see-after-the-update), чем SDK 4.4.
+:::
+
+## Краткий справочник \{#quick-reference\}
+
+| До | После |
+|---|---|
+| `getFlowConfiguration(forFlow: flow, locale: "fr")` | `getFlowConfiguration(forFlow: flow, preferredLocales: Locale.preferredLanguages)` |
+| `locale`: необязательный | `preferredLocales`: обязательный |
+| Без `locale`: пользователи видят флоу на `en`, даже если язык по умолчанию во флоу другой. Если `en` во флоу нет, пользователи видят язык по умолчанию | `preferredLocales: []`: все пользователи видят флоу на языке по умолчанию, независимо от языка устройства |
+| Параметр стратегии отсутствует | `localizationStrategy:`, необязательный. Значение по умолчанию `.auto` подходит для большинства приложений. |
+
+## Замените `locale` на языки пользователя \{#replace-locale-with-the-users-languages\}
+
+В версии 4.5 оба метода `getFlowConfiguration` — асинхронный и с completion-handler — принимают список `preferredLocales` вместо `locale`. Параметр `preferredLocales` является обязательным. При вызове с `locale` или без обоих параметров Xcode выдаёт ошибку:
+
+```text
+'getFlowConfiguration(forFlow:locale:…)' is unavailable: Pass preferredLocales: Locale.preferredLanguages to show the flow in the device's language, or [] to use the flow's default localization.
+```
+
+Параметр `locale` метода `getOnboarding` не изменился.
+
+```diff showLineNumbers
+  let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+      forFlow: flow,
+-     locale: "fr"
++     preferredLocales: Locale.preferredLanguages
+  )
+```
+
+То, что ваше приложение передавало в версии 4.4, определяет, что нужно передать в версии 4.5:
+
+- Если ваше приложение передавало значение устройства, например `Locale.current.identifier`, передайте вместо него `Locale.preferredLanguages`. Удалите весь код, который преобразовывал это значение: регистр и разделители не имеют значения в версии 4.5.
+- Если ваше приложение передавало язык, выбранный пользователем в приложении, поставьте его первым: `[selectedLanguage] + Locale.preferredLanguages`. Если в флоу из Flow & Paywall Builder нет этого языка, SDK попробует языки устройства.
+- Если ваше приложение вызывало `getFlowConfiguration` без `locale`, добавьте `preferredLocales: Locale.preferredLanguages`.
+
+Чтобы показать флоу на языке интерфейса вашего приложения (а не языка устройства), передайте `Bundle.main.preferredLocalizations`. Подробнее о разнице между этими вариантами — в разделе [Передача языков пользователя в SDK](localizations-and-locale-codes#pass-the-users-languages-to-the-sdk).
+
+Чтобы показывать флоу всем пользователям на языке по умолчанию, передайте пустой список: `preferredLocales: []`.
+
+Вам не нужно передавать `localizationStrategy`. Значение по умолчанию, `.auto`, подходит для флоу из Flow & Paywall Builder и для пейволов из старого Paywall Builder. [Другие стратегии](localizations-and-locale-codes#select-a-localization-strategy) меняют то, как SDK подбирает язык.
+
+## Что пользователи видят после обновления \{#what-users-see-after-the-update\}
+
+С настройкой `localizationStrategy` по умолчанию SDK 4.5 может показывать пользователям другую локализацию того же флоу, чем SDK 4.4:
+
+| Приложение передаёт | Флоу содержит | 4.4 | 4.5 |
+|---|---|---|---|
+| Нет языков: нет `locale` в 4.4, `[]` в 4.5 | Любые локали | `en`, если флоу содержит его; иначе локаль по умолчанию | Локаль по умолчанию |
+| Код с другим регистром или разделителем, например `pt_BR` | `pt-BR` | Локаль по умолчанию | `pt-BR` |
+| Региональный код, например `pt-BR` | Только язык, например `pt` | Локаль по умолчанию | `pt` |
+| Региональный код, подразумевающий скрипт, например `zh-TW` | Скрипт, например `zh-hant` | Локаль по умолчанию | `zh-hant`; в пейволах из старого Paywall Builder — локаль по умолчанию |
+| Несколько языков, например `fr`, затем `de` | Более поздний язык, например `de`, но не первый | Локаль по умолчанию | Более поздний язык; в пейволах из старого Paywall Builder — локаль по умолчанию |
+
+Версии приложения на SDK 4.0–4.4 сохраняют точное совпадение с вашими флоу до тех пор, пока пользователи не обновят приложение. Стратегия `.legacy` не возвращает точное совпадение версии 4.4.
+
+Чтобы узнать, какая локализация отображается на устройстве, читайте `flowConfiguration.locale`: SDK это не логирует. О процедуре тестирования читайте в разделе [Тестирование локализации, которую видит пользователь](localizations-and-locale-codes#test-which-localization-a-user-sees).
+
+## Проверьте локали ваших флоу \{#review-the-locales-of-your-flows\}
+
+SDK 4.5 отображает опубликованные флоу с их текущими локалями. Чтобы каждый пользователь видел флоу на своём языке, соблюдайте три правила:
+
+- Переведите локаль по умолчанию полностью. Пользователи увидят её, если флоу не поддерживает ни один из их языков. Чтобы посмотреть или изменить локаль по умолчанию, читайте [Установка локали по умолчанию](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale).
+- Для версий приложения на SDK 4.0–4.4 и приложений на других SDK Adapty сохраняйте все коды локалей, которые они передают. Эти приложения не используют сопоставление версии 4.5.
+- Чтобы охватить больше пользователей, добавьте [локали, которые версия 4.5 сопоставляет лучше](localizations-and-locale-codes#select-which-locales-to-add-to-a-flow), например `zh-hans` и `zh-hant` в дополнение к `zh`.
+
+## Добавьте модуль AdaptyUIBuilder \{#add-the-adaptyuibuilder-module\}
+
+В версии 4.5 некоторые типы для AdaptyUI поступают из модуля AdaptyUIBuilder — например, протокол для [кастомного резолвера локализации](localizations-and-locale-codes#pick-a-flows-localization-in-your-own-code). Чтобы использовать эти типы в своём коде, добавьте AdaptyUIBuilder в приложение:
+
+1. В Xcode, на вкладке **General** вашего app target, в разделе **Frameworks, Libraries, and Embedded Content**, добавьте **AdaptyUIBuilder** из пакета AdaptySDK-iOS.
+2. В каждый файл, где используются эти типы, добавьте `import AdaptyUIBuilder`.
