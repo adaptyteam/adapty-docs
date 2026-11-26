@@ -451,7 +451,10 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
     permission`** (for example the Android rationale order): the code block of that kind in all seven
     guides' `## Code for each permission`, and the shared helpers in their dispatchers (Android and KMP
     `RuntimePermissionRequester` / runtime helpers, Unity's Android helper, React Native's
-    `answerAndroid`). Re-run each platform's compile check after the change.
+    `answerAndroid`). Re-run each platform's compile check after the change, and run the changed code on
+    a device or emulator: compiling isn't enough. The device run of 2026-11-27 found an Android guide
+    crash that compiled cleanly: `getSharedPreferences` in an activity property initializer runs before
+    the activity has a context; `by lazy` fixed it.
   The Section and `outcome` columns are derived from `FlowPermissionAnswers` and the `FlowPermissionEvents`
   table, never chosen per kind. `FlowInputParams` names the permission events in its row for the event
   name, because the flow-input articles filter the same analytics callback. Each `*-handle-permissions`
@@ -795,7 +798,11 @@ evidence:
   push, and moko `GALLERY` reports limited as granted; Unity requests fine with coarse location.
 - **Softened or removed as unsourced (2026-11-26), kept only here:**
   - iOS reports provisional Always and full Always as the same `.authorizedAlways` (forum posts only).
-    The docs no longer say so; they answer `provisional` for any allow in the first alert.
+    Corrected 2026-11-27 (iOS 26.5 Simulator, device run of the guide code, real dialogs): from
+    `.notDetermined`, **Allow While Using App** in the first alert reports `.authorizedAlways`
+    (provisional Always) and **Allow Once** reports `.authorizedWhenInUse`. The reference states both and
+    answers `provisional` for each; a later request answers `granted` for `.authorizedAlways` and
+    `permanently_denied` after Allow Once (no alert).
   - An `INPreferences` status read crashes without the Siri capability (observed once on the Simulator;
     Apple only says the capability is needed "for authorization to succeed").
   - A crash without `NSFocusStatusUsageDescription` (observed on the Simulator; Apple only says to add the
@@ -808,7 +815,10 @@ evidence:
   Android stops showing the precise-location upgrade or the background-location settings request after
   repeated refusals; whether moko-permissions bound to the app's main activity gets results while the
   flow's `AdaptyUiActivity` covers it (the KMP guide only says to bind the controller to the activity that
-  shows the flow); whether Media library and Apple Music share one privacy setting on iOS; whether
+  shows the flow); whether Media library and Apple Music share one privacy setting on iOS (resolved
+  2026-11-27, iOS 26.5 Simulator, device run of the guide code: they share one authorization status;
+  after a refusal of `music`, a `media_library` request answered `permanently_denied` with no alert; both
+  reference sections say so); whether
   `RecognizerIntent` needs no `RECORD_AUDIO`.
 
 ### Per-kind code in the seven guides — 2026-11-27
@@ -817,8 +827,9 @@ evidence:
   run in order (a rationale before or after → `denied`; none and an earlier request →
   `permanently_denied`; none on the first request → no status); iOS location kinds and contacts have a
   "still `.notDetermined` or no answer before the app's timeout → no status" row; **Allow Once** and
-  **Allow While Using App** both answer `provisional` for `location_always` (both report
-  `.authorizedWhenInUse`); Android `location_always` applies the general rule to the foreground step and
+  **Allow While Using App** both answer `provisional` for `location_always` (corrected 2026-11-27,
+  iOS 26.5 Simulator: Allow While Using App reports `.authorizedAlways`, Allow Once
+  `.authorizedWhenInUse`; the app can tell them apart, the answer stays `provisional` for both); Android `location_always` applies the general rule to the foreground step and
   answers `denied` when no settings page appears; Health Connect counts any request without a grant as a
   cancel and answers `permanently_denied` on the request after two cancels (the second cancel answers
   `denied`); Bluetooth on Android 11 and earlier needs `ACCESS_FINE_LOCATION` (Android 9 and earlier
@@ -841,3 +852,24 @@ evidence:
   - Media library `.restricted`: Apple's definition is "may access some of the content"; the reference
     keeps `restricted` (product decision, 2026-11-27). Open question in the rollout.
 
+### Device runs of the guide code — 2026-11-27
+
+iOS 26.5 Simulator with real system dialogs, and an Android 16 (API 36) emulator, running the code from
+the seven guides' `## Code for each permission`.
+
+- **HomeKit (iOS):** a new `HMHomeManager` in a later launch already has the decided status,
+  synchronously. After a refusal, iOS calls no delegate method; after an allow, it calls
+  `homeManagerDidUpdateHomes`. The iOS guide polls `authorizationStatus` every 0.25 s for up to 50 s, and
+  the reference says to read the status right after creating the manager and while waiting. Replaces the
+  earlier open question on whether `homeManager(_:didUpdate:)` fires for a decided status.
+- **`location_always` (iOS):** see the correction in "Independent review" above.
+- **`music` and `media_library` (iOS):** one shared authorization status (see above).
+- **Contacts limited access (iOS 18+):** four steps (alert, "how to share" sheet, picker, confirmation);
+  a user can exceed 60 s, so `flow_permission_unanswered` with `on_screen` can precede a late answer that
+  still runs its section. The reference says so.
+- **Android:** `getSharedPreferences` in a property initializer crashed before the activity had a
+  context; fixed with `by lazy` in the Android guide. `adb shell pm revoke` and `pm clear-permission-flags`
+  don't clear the app's own "requested before" flags; the reference now says to clear the app data with
+  `pm clear` or reinstall. Android 16 labels differ from earlier versions (precise-location upgrade:
+  "Keep approximate location"; photos: "Allow limited access"), so the reference describes those dialogs
+  without labels.
