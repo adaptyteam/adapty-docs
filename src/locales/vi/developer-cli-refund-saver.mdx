@@ -1,0 +1,182 @@
+---
+title: "Lệnh Refund Saver"
+description: "Các lệnh Adapty CLI để bật và tắt Refund Saver, thiết lập tùy chọn hoàn tiền cho từng cửa hàng và từng hồ sơ người dùng, xác minh khóa của từng cửa hàng, và đọc các yêu cầu hoàn tiền cũng như khoản tiết kiệm."
+metadataTitle: "Lệnh CLI Refund Saver | Tài liệu Adapty"
+---
+
+Quản lý [Refund Saver](refund-saver) của một ứng dụng từ terminal: bật hoặc tắt tính năng này, thiết lập tùy chọn hoàn tiền cho từng cửa hàng, ghi đè cho một hồ sơ người dùng cụ thể, xác minh rằng mỗi cửa hàng có các khóa mà Refund Saver cần, và xem những gì Refund Saver đã xử lý và tiết kiệm được. Các lệnh này yêu cầu CLI phiên bản 0.31.0 trở lên.
+
+Nếu bạn chưa cài đặt CLI, hãy làm theo bước 1 và 2 trong [hướng dẫn quickstart](developer-cli-quickstart). Để xem phiên bản của bạn, chạy `adapty --version`.
+
+Khi tiện ích bổ sung Refund Saver chưa được kích hoạt cho tài khoản của bạn, Adapty sẽ từ chối `on`. Bạn quản lý tiện ích bổ sung này trên tab [**Subscription & Billing**](account#subscription--billing) trong cài đặt tài khoản, không phải qua CLI.
+
+Mỗi lệnh đều nhận `--app`, ID ứng dụng (UUID) lấy từ `adapty apps list`, và in ra phản hồi API với `--json`.
+
+`on`, `off`, `update`, và `profile update` thay đổi ứng dụng ngay lập tức. Các lệnh này không yêu cầu xác nhận và không nhận `--yes`.
+
+## adapty refund-saver get
+
+Hiển thị trạng thái bật/tắt của Refund Saver cho một ứng dụng, cùng với tùy chọn hoàn tiền của từng cửa hàng.
+
+```bash
+adapty refund-saver get --app <app-id>
+```
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | App ID (UUID) |
+
+Khi dùng `--json`, `enabled` là `true` nếu Refund Saver đang bật ở bất kỳ cửa hàng nào. `stores` chứa tùy chọn hoàn tiền của từng cửa hàng, cùng với `refund_saver_needs_consent` dành cho App Store: `true` tương ứng với chính sách đồng ý **Opt-in**.
+
+## adapty refund-saver on
+
+Bật Refund Saver cho một ứng dụng, trên cả hai cửa hàng.
+
+```bash
+adapty refund-saver on --app <app-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+Lệnh này in ra trạng thái của ứng dụng và ghi chú về add-on Refund Saver (`billing_note` trong `--json`). Khi Refund Saver đã được bật ở cả hai cửa hàng, lệnh này không thay đổi gì và in ra cùng trạng thái và ghi chú.
+
+Khi Adapty từ chối bật Refund Saver, lệnh thoát với code 4 và không thay đổi gì. Để xem lý do, hãy đọc `error.code` trong `--json`:
+
+| `error.code` | Cần làm gì |
+|---|---|
+| `refund_saver_addon_inactive` | Add-on Refund Saver chưa được kích hoạt cho tài khoản này. Hãy kích hoạt trong tab **Subscription & Billing**, sau đó chạy lại lệnh. |
+| `refund_saver_apple_credentials_invalid` | Thông tin xác thực Apple của tài khoản này không hoạt động. Hãy sửa trong **App settings**, sau đó chạy lại lệnh. |
+| `refund_saver_addon_unavailable` | Không thể bật Refund Saver cho tài khoản này. Đừng thử lại; hãy liên hệ bộ phận hỗ trợ Adapty. |
+
+## adapty refund-saver off
+
+Tắt Refund Saver cho một ứng dụng, trên cả hai cửa hàng.
+
+```bash
+adapty refund-saver off --app <app-id>
+```
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | App ID (UUID) |
+
+Tắt Refund Saver không đồng nghĩa với việc hủy add-on Refund Saver. Để hủy, hãy dùng tab **Subscription & Billing** trong cài đặt tài khoản của bạn.
+
+## adapty refund-saver update
+
+Thay đổi [tùy chọn hoàn tiền của từng cửa hàng](refund-saver#set-a-default-refund-preference) và [chính sách đồng ý mặc định](refund-saver#set-the-default-consent-policy). Cài đặt nào không được truyền vào sẽ giữ nguyên giá trị hiện tại. Cần truyền ít nhất một flag ngoài `--app`. Lệnh này không bật hay tắt Refund Saver; hãy dùng `adapty refund-saver on` và `adapty refund-saver off` cho mục đích đó.
+
+```bash
+adapty refund-saver update --app <app-id> --app-store-preference always_prorated
+```
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | App ID (UUID) |
+| `--app-store-preference` | Không | Tùy chọn hoàn tiền cho yêu cầu hoàn tiền App Store: `no_preference`, `always_decline`, `always_refund`, `decline_first_grant_next`, hoặc `always_prorated` |
+| `--play-store-preference` | Không | Tùy chọn hoàn tiền cho yêu cầu hoàn tiền Google Play: `no_preference`, `always_decline`, `always_refund`, hoặc `decline_first_grant_next`. Google Play không có `always_prorated`. |
+| `--needs-consent` / `--no-needs-consent` | Không | Liệu Refund Saver có gửi dữ liệu của người dùng App Store chỉ sau khi người dùng đồng ý hay không. `--needs-consent` là chính sách đồng ý **Opt-in**: Adapty không gửi dữ liệu cho Apple cho đến khi ứng dụng của bạn [gửi sự đồng ý của người dùng đó](refund-saver#update-a-users-consent). `--no-needs-consent` là **Opt-out**, mặc định. |
+
+Lệnh này in ra các tùy chọn của cả hai cửa hàng.
+
+## Kiểm tra sẵn sàng refund-saver \{#adapty-refund-saver-readiness\}
+
+Hiển thị xem mỗi cửa hàng đã có các khóa mà Refund Saver cần hay chưa.
+
+```bash
+adapty refund-saver readiness --app <app-id>
+```
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | App ID (UUID) |
+
+App Store cần **Bundle ID** và [In-App Purchase key](generate-in-app-purchase-key): Issuer ID, Key ID, và private key (file `.p8`), trong **App settings** > **iOS SDK**. Google Play cần **Package name** và **Service account key file**, trong **App settings** > **Android SDK**. Với `--json`, `app_store` và `play_store` là `true` khi các giá trị này đã được thiết lập. Lệnh này không kiểm tra xem cửa hàng có chấp nhận các giá trị đó hay không, hoặc liệu thông báo từ cửa hàng có đến được Adapty không. Không dùng `--json`, lệnh sẽ liệt kê những phần thiếu của từng cửa hàng chưa sẵn sàng.
+
+## adapty refund-saver profile get
+
+Hiển thị cài đặt Refund Saver của một hồ sơ người dùng: tùy chọn tùy chỉnh và sự đồng ý của người dùng đó.
+
+```bash
+adapty refund-saver profile get --app <app-id> <profile-id>
+```
+
+| Đối số hoặc cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `<profile-id>` | Có | ID hồ sơ người dùng Adapty (UUID), không phải customer user ID |
+| `--app` | Có | App ID (UUID) |
+
+Với `--json`, `custom_preference` và `consent` sẽ là `null` khi chưa được thiết lập. Nếu profile ID không thuộc app đó, lệnh sẽ thoát với mã 4 và `error.code` là `profile_not_found`.
+
+## adapty refund-saver profile update
+
+Thay đổi cài đặt Refund Saver của một hồ sơ người dùng. Cài đặt nào bạn không truyền vào sẽ giữ nguyên giá trị hiện tại. Truyền ít nhất một flag ngoài `--app`.
+
+```bash
+adapty refund-saver profile update --app <app-id> <profile-id> --custom-preference decline
+```
+
+| Đối số hoặc cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `<profile-id>` | Có | ID hồ sơ người dùng Adapty (UUID), không phải customer user ID |
+| `--app` | Có | App ID (UUID) |
+| `--custom-preference` | Không | Tùy chọn hoàn tiền cho hồ sơ người dùng này, áp dụng trên cả hai cửa hàng: `grant`, `decline`, `grant_prorated`, hoặc `no_preference`. `grant` và `decline` được ưu tiên hơn tùy chọn của cửa hàng. `grant_prorated` áp dụng trên App Store; Google Play không có tùy chọn này. `no_preference` đưa hồ sơ người dùng trở về tùy chọn của cửa hàng. |
+| `--consent` / `--no-consent` | Không | Người dùng có đồng ý để Refund Saver gửi dữ liệu của họ đến Apple hay không. Đây là cài đặt **Allow data sharing** trên hồ sơ người dùng. `--consent` gửi dữ liệu theo bất kỳ chính sách đồng ý nào; `--no-consent` không bao giờ gửi. Một khi đã thiết lập, trạng thái đồng ý không thể trở về chưa thiết lập. Google Play không cần đồng ý. |
+
+Tùy chọn và sự đồng ý theo từng hồ sơ người dùng có cùng giá trị với [tùy chọn hoàn tiền cho một người dùng cụ thể](refund-saver#set-refund-behavior-for-a-specific-user-in-the-dashboard) trong Adapty Dashboard và các giá trị mà ứng dụng của bạn gửi qua [Adapty SDK](refund-saver#manage-refund-saver-from-your-app-code). Lần ghi cuối cùng sẽ được ưu tiên, nghĩa là lệnh gọi sau từ ứng dụng của bạn sẽ ghi đè lên những gì bạn đã đặt ở đây.
+
+## adapty refund-saver requests
+
+Liệt kê các yêu cầu hoàn tiền mà Refund Saver đã xử lý trong một khoảng thời gian, mới nhất trước.
+
+```bash
+adapty refund-saver requests --app <app-id> --date-from 2026-10-01 --date-to 2026-10-31 --store app_store
+```
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | ID ứng dụng (UUID) |
+| `--date-from` | Có | Ngày đầu tiên của khoảng thời gian, bao gồm ngày này (`YYYY-MM-DD`, UTC) |
+| `--date-to` | Có | Ngày cuối cùng của khoảng thời gian, bao gồm ngày này (`YYYY-MM-DD`, UTC) |
+| `--store` | Không | Chỉ lấy các yêu cầu của cửa hàng này: `app_store` hoặc `play_store` |
+| `--page` | Không | Số trang. Mặc định: 1 |
+| `--page-size` | Không | Số yêu cầu mỗi trang, tối đa 100. Mặc định: 20 |
+
+Mỗi yêu cầu được tính theo ngày UTC mà Refund Saver xử lý nó. Khoảng thời gian bị đảo ngược sẽ trả về danh sách rỗng, không phải lỗi. Trang vượt quá trang cuối cùng sẽ trống.
+
+Với `--json`, mỗi yêu cầu có `status`, `store_transaction_id`, `store_product_id`, `profile_id`, `customer_user_id`, `country_name`, `amount_usd`, `refund_reason`, `received_at` và `updated_at`. `status` có thể là `consumption_request_handled` (đã xử lý, chưa được giải quyết), `refunded` hoặc `refund_declined`. `amount_usd` là `0` khi không rõ số tiền. Kết quả đầu ra cũng có `meta.pagination`, bao gồm số lượng, trang hiện tại và tổng số trang.
+
+## adapty refund-saver metrics
+
+Hiển thị những gì Refund Saver đã tiết kiệm trong một khoảng thời gian.
+
+```bash
+adapty refund-saver metrics --app <app-id> --date-from 2026-10-01 --date-to 2026-10-31 --store play_store
+```
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | App ID (UUID) |
+| `--date-from` | Có | Ngày đầu tiên của khoảng thời gian, bao gồm ngày này (`YYYY-MM-DD`, UTC) |
+| `--date-to` | Có | Ngày cuối cùng của khoảng thời gian, bao gồm ngày này (`YYYY-MM-DD`, UTC) |
+| `--store` | Không | Chỉ các yêu cầu của cửa hàng này: `app_store` hoặc `play_store` |
+
+Với `--json`, đầu ra có `saved_amount_usd` và `saved_count` (các hoàn tiền mà cửa hàng từ chối), `requested_amount_usd` và `requested_count` (mọi yêu cầu mà Refund Saver đã xử lý), và `win_rate` (tỷ lệ bị từ chối trong số các yêu cầu mà cửa hàng đã quyết định). Các số tiền tính bằng đô la Mỹ nguyên. `win_rate` là phần trăm dạng văn bản, với một chữ số thập phân. Adapty nhận kết quả từ Google Play muộn, vì vậy dữ liệu trong khoảng thời gian gần đây sẽ bị thấp hơn thực tế. Đây là các con số trong phần [Refund Saver](refund-saver#track-savings-from-refund-requests).
+
+## Quyền chỉnh sửa \{#edit-rights\}
+
+`on`, `off`, `update`, và `profile update` yêu cầu quyền chỉnh sửa trong công ty sở hữu ứng dụng. Tài khoản chỉ có quyền xem ứng dụng mà không thể thay đổi sẽ nhận lỗi `edit_rights_required` với mã thoát 3, và không có gì thay đổi. Hãy yêu cầu chủ sở hữu hoặc quản trị viên của công ty cấp quyền chỉnh sửa trước khi thử lại. Ứng dụng thuộc công ty khác sẽ trả về `permission_denied`, cũng với mã thoát 3.
+
+## Mã thoát \{#exit-codes\}
+
+| Mã thoát | Ý nghĩa |
+|---|---|
+| `0` | Thành công |
+| `2` | Đầu vào không hợp lệ, được gửi trước khi có bất kỳ yêu cầu nào: ID ứng dụng hoặc hồ sơ người dùng không phải UUID, ngày không đúng định dạng `YYYY-MM-DD`, tùy chọn hoặc cửa hàng không xác định, hoặc lệnh `update` hay `profile update` không có cài đặt nào |
+| `3` | Không có token, ứng dụng mà token không thể truy cập, hoặc không có quyền chỉnh sửa |
+| `4` | API từ chối yêu cầu. `error.code` trong `--json` cho biết lý do. |
+| `5` | CLI không thể kết nối tới Adapty. Hãy kiểm tra kết nối và thử lại. |
+
+Để sử dụng công cụ AI chạy các lệnh này thay bạn, xem [Agent skill cho Refund Saver](refund-saver-skill).

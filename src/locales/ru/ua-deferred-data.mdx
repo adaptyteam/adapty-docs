@@ -13,9 +13,13 @@ keywords: ['adapty attribution', 'adapty ua', 'привлечение польз
 
 Вот как это работает:
 
-1. Когда пользователь нажимает на ваше объявление, Adapty сохраняет данные о клике.
-2. Когда Adapty регистрирует событие установки, он получает отложенные данные из клика.
-3. После того как пользователь установит приложение и запустит его впервые, Adapty извлекает сохранённые данные, и ваше приложение получает пользовательские параметры — это позволяет по-разному реагировать на различные значения в коде приложения.
+1. Когда пользователь нажимает на вашу рекламу, Adapty сохраняет данные о клике.
+2. Когда Adapty регистрирует событие установки, он получает отложенные данные о клике.
+3. После того как пользователь устанавливает приложение и запускает его впервые, Adapty извлекает сохранённые данные, и ваше приложение получает пользовательские параметры, что позволяет реагировать на различные значения в коде приложения.
+
+Приложение получает отложенные данные только в том случае, если Adapty связывает установку с кликом. Если пользователь, у которого уже установлено ваше приложение, нажимает на рекламу, приложение не получает новых отложенных данных.
+
+На iOS Adapty сопоставляет установку с кликом только в том случае, если оба события пришли с одного диапазона IP-адресов. Например, клик по Wi-Fi и первый запуск по мобильной сети не будут сопоставлены, и ваше приложение не получит отложенные данные.
 
 Adapty поддерживает следующие параметры отложенных данных:
 
@@ -35,9 +39,12 @@ Adapty поддерживает следующие параметры отлож
 https://api-ua.adapty.io/api/v1/attribution/c/YOUR_CODE?campaign_id=__CAMPAIGN_ID__&adset_id=__AID__&ad_id=__CID__&campaign_name=__CAMPAIGN_NAME__&adset_name=__AID_NAME__&ad_name=__CID_NAME__&redirect_url=__APP_LINK__&ios_deferred_data=welcome
 ```
 
-3. Обрабатывайте параметры в коде приложения. Обратите внимание, что параметры отложенных данных передаются в параметре `payload`, который является экранированным JSON — его нужно разобрать в коде приложения.
+3. Обработайте параметры в коде приложения. SDK передаёт их в свойстве `payload` сведений об установке:
+   - **iOS**: считайте их из `payload.dictionary`.
+   - **Android**: считайте их из `payload.dataMap`.
+   - **React Native и Flutter**: `payload` — это JSON-строка, поэтому сначала распарсите её.
 
-Например, вот как можно обработать установки, где `ios_deferred_data` равен `welcome`:
+Вот как, например, можно обработать установки, у которых `ios_deferred_data` равно `welcome`:
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
@@ -47,10 +54,7 @@ Adapty.delegate = self
 
 nonisolated func onInstallationDetailsSuccess(_ details: AdaptyInstallationDetails) {
     guard
-        let payloadStr = details.payload,
-        let data = payloadStr.data(using: .utf8),
-        let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-        let deeplink = payload["ios_deferred_data"] as? String,
+        let deeplink = details.payload?.dictionary?["ios_deferred_data"] as? String,
         deeplink == "welcome"
     else { return }
 
@@ -68,15 +72,14 @@ nonisolated func onInstallationDetailsSuccess(_ details: AdaptyInstallationDetai
 ```kotlin showLineNumbers
 Adapty.setOnInstallationDetailsListener(object : OnInstallationDetailsListener {
     override fun onInstallationDetailsSuccess(details: AdaptyInstallationDetails) {
-        details.payload?.let {
-            runCatching {
-                val json = JSONObject(it)
-                if (json.optString("android_deferred_data") == "welcome") {
-                    println("Navigate to welcome screen")
-                    // navigate here
-                }
-            }.onFailure(Throwable::printStackTrace)
+        if (details.payload?.dataMap?.get("android_deferred_data") == "welcome") {
+            println("Navigate to welcome screen")
+            // navigate here
         }
+    }
+
+    override fun onInstallationDetailsFailure(error: AdaptyError) {
+        // handle the error
     }
 })
 

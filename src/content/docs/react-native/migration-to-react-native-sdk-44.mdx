@@ -1,0 +1,68 @@
+---
+title: "Migrate Adapty React Native SDK to v4.4"
+description: "Migrate to Adapty React Native SDK v4.4: replace both fallback files, and handle the new flow errors on iOS and Android."
+metadataTitle: "Migrating to Adapty React Native SDK v4.4 | Adapty Docs"
+---
+
+Adapty React Native SDK 4.4 changes the fallback file format, requires iOS 16 for flows, and reports more flow errors to your app. In 4.4, `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString`, and `AdaptySubscription.billingPlan` are no longer optional in TypeScript. To update your app to 4.4, install the latest `react-native-adapty` package, and replace both fallback files in the same build. Earlier SDK versions reject the new files. Then review the other changes in this guide.
+
+If you're still on 4.0, start with [Migrate to v4.1](migration-to-react-native-sdk-41) and then follow this guide.
+
+:::warning
+The fallback file format changed in 4.4, and the compiler can't detect a fallback file for SDK 4.1–4.3. Without [new fallback files](#replace-the-fallback-files), every placement loses its fallback.
+:::
+
+## Quick reference
+
+| v4.3 | v4.4 |
+|---|---|
+| Fallback files downloaded for 4.1–4.3 | New fallback file format; download both files again |
+| Flows open on iOS 15 | Flows require iOS 16 |
+| `AdaptyFlowView` stays empty when its flow can't load | It reports the error to its `onError` handler |
+| `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString`, and `AdaptySubscription.billingPlan` are optional | They're required |
+
+## Installation
+
+Update the `react-native-adapty` package:
+
+```bash showLineNumbers
+npm install react-native-adapty@latest
+# or
+yarn add react-native-adapty@latest
+```
+
+The requirements are unchanged: **iOS 15.0** and **React Native 0.75**. Flows are the exception: see [Flows require iOS 16](#flows-require-ios-16). See [Install Adapty SDK](sdk-installation-reactnative) for the full setup.
+
+## Replace the fallback files
+
+To download the [fallback files](react-native-use-fallback-paywalls) again, in **[Placements](https://app.adapty.io/placements)**, click **Fallbacks** > **Download iOS Fallback**. In the **Adapty SDK v4.4.0 and higher** row, click **Download**. Repeat with **Download Android Fallback**.
+
+The downloaded files are named `ios_4_4_0_fallback.json` and `android_4_4_0_fallback.json`. Use them in place of your fallback files for SDK 4.1–4.3:
+
+- **Pure React Native project**: Add the iOS file to your Xcode project. Put the Android file in the folder of the Android fallback file for 4.1–4.3, as in [Use fallback paywalls in a pure React Native project](react-native-use-fallback-paywalls-pure).
+- **Expo project**: Put each file in the folder of its fallback file for 4.1–4.3, as in [Use fallback paywalls in an Expo project](react-native-use-fallback-paywalls-expo).
+
+Give each file the name that your app passes to `adapty.setFallback`, or update the names in that call. In an Expo project, use these names in the `fallbackFile` option too, and run `npx expo prebuild` again.
+
+With a fallback file for SDK 4.1–4.3, `adapty.setFallback` throws an `AdaptyError`. To verify the new files, run the app on iOS and on Android, and make sure that this call throws no error.
+
+## Flows require iOS 16
+
+Starting from 4.4, flows require iOS 16 or later. On iOS 15, `createFlowView` throws an `AdaptyError` with the `platformNotSupported` code, and `AdaptyFlowView` stays empty and reports the same error. Other SDK features, such as purchases and custom paywalls, still work on iOS 15.
+
+When your app receives this error, show your own content instead, such as a [custom paywall](react-native-implement-paywalls-manually).
+
+## Flow load errors reach the onError handler
+
+The `onError` handler of `AdaptyFlowView` receives an error when the component can't show the flow. Each time your app renders a new `AdaptyFlowView`, it reports the error once. Before 4.4, the component stayed empty. The component reports the following errors:
+
+- On iOS 15: `platformNotSupported`.
+- On Android, and on iOS 16 and later, when the flow fails to load: the error that `createFlowView` throws for that flow. For example, the flow fails to load while AdaptyUI isn't activated, or for a `customLayoutId` that the flow doesn't have.
+
+Your flow error handling now runs in these cases too. The return value of the `onError` handler doesn't close an embedded flow. To close it, stop rendering the component, and show your own content.
+
+## Price and subscription properties are required
+
+In TypeScript, `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString`, and `AdaptySubscription.billingPlan` are no longer optional. If your code creates these objects, such as mocks in tests, set these properties in them.
+
+In 4.4, every subscription has `billingPlan`: `up_front`, unless the user bought a [commitment plan](set-up-12-month-commitment). Before 4.4, only App Store subscriptions had `billingPlan`.

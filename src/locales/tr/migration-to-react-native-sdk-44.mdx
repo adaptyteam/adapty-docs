@@ -1,0 +1,68 @@
+---
+title: "Adapty React Native SDK'yı v4.4'e Geçirin"
+description: "Adapty React Native SDK v4.4'e geçiş: her iki yedek dosyayı değiştirin ve iOS ile Android'de yeni flow hatalarını ele alın."
+metadataTitle: "Adapty React Native SDK v4.4'e Geçiş | Adapty Dokümanları"
+---
+
+Adapty React Native SDK 4.4, yedek dosya formatını değiştiriyor, flow'lar için iOS 16 gerektiriyor ve daha fazla flow hatasını uygulamanıza bildiriyor. 4.4'te `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString` ve `AdaptySubscription.billingPlan` artık TypeScript'te zorunlu alan. Uygulamanızı 4.4'e güncellemek için en son `react-native-adapty` paketini yükleyin ve aynı derlemede her iki yedek dosyayı da değiştirin. Eski SDK sürümleri yeni dosyaları reddeder. Ardından bu kılavuzdaki diğer değişiklikleri inceleyin.
+
+Hâlâ 4.0 sürümündeyseniz önce [v4.1'e Geçiş](migration-to-react-native-sdk-41) kılavuzunu takip edin, ardından bu kılavuza devam edin.
+
+:::warning
+Yedek paywall dosya formatı 4.4 sürümünde değişti ve derleyici SDK 4.1–4.3 için yedek dosyayı algılayamıyor. [Yeni yedek dosyalar](#replace-the-fallback-files) eklemezseniz her placement yedek paywall'unu kaybeder.
+:::
+
+## Hızlı referans \{#quick-reference\}
+
+| v4.3 | v4.4 |
+|---|---|
+| 4.1–4.3 için indirilen yedek dosyalar | Yeni yedek dosya formatı; her iki dosyayı da tekrar indirin |
+| Flow'lar iOS 15'te açılır | Flow'lar iOS 16 gerektirir |
+| `AdaptyFlowView`, flow'u yükleyemediğinde boş kalır | Hatayı `onError` işleyicisine bildirir |
+| `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString` ve `AdaptySubscription.billingPlan` isteğe bağlıdır | Zorunludur |
+
+## Kurulum \{#installation\}
+
+`react-native-adapty` paketini güncelleyin:
+
+```bash showLineNumbers
+npm install react-native-adapty@latest
+# or
+yarn add react-native-adapty@latest
+```
+
+Gereksinimler değişmedi: **iOS 15.0** ve **React Native 0.75**. Flow'lar bu kuralın istisnasıdır: bkz. [Flow'lar için iOS 16 gereklidir](#flows-require-ios-16). Tam kurulum için bkz. [Adapty SDK'yı Yükleme](sdk-installation-reactnative).
+
+## Yedek dosyaları değiştirin \{#replace-the-fallback-files\}
+
+[Yedek dosyaları](react-native-use-fallback-paywalls) yeniden indirmek için **[Placements](https://app.adapty.io/placements)** bölümünde **Fallbacks** > **Download iOS Fallback** seçeneğine tıklayın. **Adapty SDK v4.4.0 and higher** satırında **Download** butonuna tıklayın. Aynı adımları **Download Android Fallback** için de tekrarlayın.
+
+İndirilen dosyalar `ios_4_4_0_fallback.json` ve `android_4_4_0_fallback.json` olarak adlandırılmıştır. SDK 4.1–4.3 için kullandığınız yedek dosyaların yerine bunları kullanın:
+
+- **Saf React Native projesi**: iOS dosyasını Xcode projenize ekleyin. Android dosyasını, [Saf React Native projesinde yedek paywall kullanımı](react-native-use-fallback-paywalls-pure) bölümünde açıklandığı gibi 4.1–4.3 için Android yedek paywall dosyasının bulunduğu klasöre koyun.
+- **Expo projesi**: Her dosyayı, [Expo projesinde yedek paywall kullanımı](react-native-use-fallback-paywalls-expo) bölümünde açıklandığı gibi 4.1–4.3 için kendi yedek dosyasının bulunduğu klasöre koyun.
+
+Her dosyaya, uygulamanızın `adapty.setFallback` çağrısına geçirdiği adı verin ya da bu çağrıdaki adları güncelleyin. Expo projesinde bu adları `fallbackFile` seçeneğinde de kullanın ve ardından `npx expo prebuild` komutunu tekrar çalıştırın.
+
+SDK 4.1–4.3 için bir yedek paywall dosyasıyla `adapty.setFallback`, `AdaptyError` fırlatır. Yeni dosyaları doğrulamak için uygulamayı iOS ve Android'de çalıştırın; bu çağrının hata fırlatmadığından emin olun.
+
+## Flow'lar iOS 16 Gerektirir \{#flows-require-ios-16\}
+
+4.4 sürümünden itibaren flow'lar iOS 16 veya daha yeni bir sürümü gerektirir. iOS 15'te `createFlowView`, `platformNotSupported` koduyla bir `AdaptyError` fırlatır ve `AdaptyFlowView` boş kalarak aynı hatayı bildirir. Satın almalar ve özel paywalllar gibi diğer SDK özellikleri iOS 15'te çalışmaya devam eder.
+
+Uygulamanız bu hatayı aldığında, bunun yerine kendi içeriğinizi gösterin; örneğin bir [özel paywall](react-native-implement-paywalls-manually).
+
+## Flow yükleme hataları onError işleyicisine ulaşır \{#flow-load-errors-reach-the-onerror-handler\}
+
+`AdaptyFlowView`'ın `onError` işleyicisi, bileşen flow'u gösteremediğinde bir hata alır. Uygulamanız her yeni `AdaptyFlowView` render ettiğinde, hata yalnızca bir kez raporlanır. 4.4 sürümünden önce bileşen boş kalıyordu. Bileşen şu hataları raporlar:
+
+- iOS 15'te: `platformNotSupported`.
+- Android'de ve iOS 16 ile sonraki sürümlerde, flow yüklenemediğinde: `createFlowView`'ın o flow için fırlattığı hata. Örneğin, AdaptyUI etkinleştirilmemişken flow yüklenemediğinde ya da flow'un sahip olmadığı bir `customLayoutId` için bu durum oluşur.
+
+`onError` işleyicisinin dönüş değeri, gömülü bir flow'u kapatmaz. Kapatmak için componenti render etmeyi durdurun ve kendi içeriğinizi gösterin.
+
+## Fiyat ve abonelik özellikleri artık zorunlu \{#price-and-subscription-properties-are-required\}
+
+TypeScript'te `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString` ve `AdaptySubscription.billingPlan` artık isteğe bağlı değil. Kodunuz bu nesneleri oluşturuyorsa (örneğin testlerde mock olarak), bu özellikleri mutlaka belirtin.
+
+4.4 sürümünde, kullanıcı bir [taahhüt planı](set-up-12-month-commitment) satın almadıkça her aboneliğin `billingPlan` değeri `up_front` olarak gelir. 4.4 öncesinde yalnızca App Store aboneliklerinde `billingPlan` bulunuyordu.

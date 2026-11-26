@@ -1,0 +1,367 @@
+---
+title: "Gastar y vender moneda virtual en flows"
+description: "Crea dos flows para una app iOS con moneda virtual: los usuarios gastan moneda con botones nativos en un flow, y compran más en el otro cuando su saldo es demasiado bajo."
+metadataTitle: "Gastar y vender moneda virtual en flows | iOS SDK | Documentación de Adapty"
+---
+
+Sigue esta receta para combinar flows con moneda virtual en tu app iOS. La receta muestra cómo:
+
+- Muestra el saldo de moneda en un flow y mantenlo actualizado mientras el flow está abierto.
+- Gasta moneda cuando el usuario toca un botón nativo en un flow y muestra un spinner mientras se procesa el gasto.
+- Muestra a los usuarios cuánta moneda les falta.
+- Ofrece packs de moneda y una suscripción en un flow.
+- Cierra un flow y abre otro desde el código de tu app.
+
+Como los packs y la suscripción están en un flow, puedes cambiarlos sin publicar una nueva versión de la app y hacerles [pruebas A/B](ab-tests). El informe de la prueba A/B contabiliza las compras. Los gastos no aparecen en él: tu backend los envía a Adapty sin ningún vínculo con la prueba.
+
+Al final de esta receta, tendrás dos flows para un juego. En el flow de sin energía, los jugadores gastan diamantes en energía. En el flow de recarga, compran diamantes. Los mismos pasos sirven para cualquier app donde los usuarios gasten moneda virtual, como créditos por generación de IA o monedas por episodio de drama. En tu app, sustituye las opciones de energía y los diamantes por tus propias opciones y moneda. El ejemplo terminado funciona así:
+
+<VcTopUpHowItWorks />
+
+<DocVideo id="vc-top-up-demo.mp4" width="300px" alt="El flow de falta de energía en un teléfono, con el saldo de diamantes y dos botones. Con pocos diamantes, el jugador toca un botón y se abre el flow de recarga con el texto “Necesitas 10 diamantes más”. Tras comprar un pack, el flow de falta de energía se abre de nuevo y aparece una marca de verificación al tocar el botón de recarga de energía." />
+
+## Antes de empezar \{#before-you-start\}
+
+- Haz que los usuarios inicien sesión para que [mantengan su saldo](virtual-currency-balance#balances-profiles-and-devices) en cada dispositivo y tras una reinstalación. Cuando un usuario inicie sesión, [identifícalo](identifying-users) en el código de tu app con un customer user ID. Tu backend necesita este ID para identificar al usuario en Adapty.
+- Para mostrar el saldo y los botones en los flows, actualiza tu app al SDK de Adapty para iOS 4.4 o posterior.
+- Configura tu app para [obtener](get-pb-paywalls) y [mostrar](ios-present-paywalls) flows.
+- Configura un backend que llame a la API del servidor con tu [clave secreta de API](ss-authorization). Guarda la clave en tu backend: cualquier persona que tenga la clave puede añadir diamantes a cualquier saldo.
+- En App Store Connect, [crea un producto consumible](app-store-products) para cada pack de diamantes y una suscripción de renovación automática. Luego [añade cada producto a Adapty](create-product).
+- [Crea una moneda virtual](create-virtual-currency) con el código `DIAMONDS`. [Vincula](create-virtual-currency#link-products) cada producto a `DIAMONDS` y establece cuántos diamantes añade Adapty al saldo:
+  - **Diamond pack**: El **Credit amount**, por cada compra.
+  - **Subscription**: El **Credit per cycle**, por cada período de facturación. Cuando un usuario comienza una prueba gratuita, Adapty solo añade el **Credit on trial start**.
+
+  Set each of the three values to at least 30 diamonds, the price of an hour of unlimited energy. With these values, every purchase in the top-up flow covers the missing diamonds.
+
+## 1. Crea el flow donde los jugadores gastan diamantes \{#1-build-the-flow-where-players-spend-diamonds\}
+
+<VcTopUpEnergyFlowPlacement />
+
+### Mostrar el saldo de diamantes \{#show-the-diamond-balance\}
+
+<VcTopUpFlowBalance />
+
+### Añade botones para recargar y gastar energía \{#add-buttons-for-an-energy-refill-and-unlimited-energy\}
+
+<VcTopUpSpendButtons />
+
+## 2. Gastar diamantes cuando el jugador pulsa un botón \{#2-spend-diamonds-when-a-player-taps-a-button\}
+
+En este paso, escribes el código del backend y el código de la app para el flow de sin energía. Después de este paso, los jugadores con suficientes diamantes podrán gastarlos en el flow.
+
+### Gasta diamantes desde tu backend \{#spend-diamonds-from-your-backend\}
+
+<VcTopUpSpend />
+
+### Crear la vista de saldo
+
+Crea un modelo para el saldo de diamantes y una vista SwiftUI para el elemento personalizado `currency_balance`. El código que aparece más adelante en este paso y en el paso 4 establece el saldo en el modelo a partir de las respuestas de tu backend. La vista observa el modelo, por lo que se redibuja cuando el saldo cambia:
+
+```swift showLineNumbers title="Swift"
+
+// The diamond balance that your app keeps up to date
+@MainActor
+final class DiamondWallet: ObservableObject {
+    @Published var balance: Int? // nil until your backend returns a balance
+}
+
+struct DiamondBalanceView: View {
+    @ObservedObject var wallet: DiamondWallet
+
+    var body: some View {
+        Label(wallet.balance?.formatted() ?? "—", systemImage: "diamond.fill")
+    }
+}
+```
+
+`DiamondBalanceView` utiliza el color de texto del sistema, que se vuelve blanco cuando el dispositivo está en modo oscuro. Un flow mantiene sus colores claros a menos que le [añadas un tema oscuro](paywall-dark-mode#add-a-dark-theme). Si tus flows no tienen tema oscuro, establece un color de texto fijo en la vista, como `.foregroundStyle(.black)`.
+
+Para mostrar la vista en ambos flows, devuélvela desde tu [resolver global](ios-flow-custom-elements#set-an-app-wide-resolver), que asocia cada elemento personalizado a una vista según su Type e ID. Añade una propiedad `wallet` de tipo `DiamondWallet`, y un caso que devuelva `DiamondBalanceView` para el Type `currency_balance` y el ID `diamonds`. Las líneas resaltadas muestran qué añadir. Si tu app aún no tiene un resolver global, copia el código completo:
+
+```swift showLineNumbers title="Swift" {5,13-14}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let wallet: DiamondWallet
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "currency_balance" where id == "diamonds":
+            return AnyView(DiamondBalanceView(wallet: wallet))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+Crea el resolver con un `DiamondWallet` y configúralo como resolver global de la app. Llama a `AdaptyUI.setCustomElementsResolver(_:)` una sola vez, por ejemplo al iniciar la app:
+
+```swift showLineNumbers title="Swift"
+
+@MainActor let diamondWallet = DiamondWallet()
+
+// keep this instance: a resolver for one flow can reuse it
+@MainActor let customElementsResolver = CustomElementsResolver(wallet: diamondWallet)
+
+// at app launch, such as in application(_:didFinishLaunchingWithOptions:)
+AdaptyUI.setCustomElementsResolver(customElementsResolver)
+```
+
+### Crear la vista del botón \{#create-the-button-view\}
+
+Crea una vista SwiftUI para ambos botones. La vista recibe el texto del botón y un closure que gasta los diamantes y devuelve `true` cuando el gasto se completa. Mientras se procesa el gasto, los jugadores ven un spinner en el botón, y el botón ignora los toques adicionales. Una vez completado el gasto, los jugadores ven una marca de verificación:
+
+```swift showLineNumbers title="Swift"
+
+struct SpendButton: View {
+    let title: String
+    let spend: @MainActor () async -> Bool // true when the spend goes through
+
+    @State private var phase = Phase.ready
+    private enum Phase { case ready, spending, done }
+
+    var body: some View {
+        Button {
+            guard phase == .ready else { return } // ignore more taps while the spend runs
+            phase = .spending
+            // a Task keeps running when the flow closes and this view disappears
+            Task {
+                phase = await spend() ? .done : .ready
+            }
+        } label: {
+            Group {
+                switch phase {
+                case .ready: Text(title)
+                case .spending: ProgressView().tint(.white) // white on the filled button
+                case .done: Image(systemName: "checkmark")
+                }
+            }
+            .frame(maxWidth: .infinity) // the full width of the custom element
+        }
+        .buttonStyle(.borderedProminent)
+    }
+}
+```
+
+### Conecta los botones con tu backend \{#connect-the-buttons-to-your-backend\}
+
+Crea un enum para las dos opciones. Como valor bruto de cada opción, usa el ID de su elemento personalizado:
+
+```swift showLineNumbers title="Swift"
+// the options to spend diamonds on, with the IDs of their custom elements
+enum EnergyOption: String {
+    case energyRefill = "energy_refill"
+    case unlimitedEnergy = "unlimited_energy"
+
+    // keep the numbers equal to the costs on your backend
+    var title: String {
+        switch self {
+        case .energyRefill: return "Energy refill · 10 ◆"
+        case .unlimitedEnergy: return "Unlimited energy for 1 hour · 30 ◆"
+        }
+    }
+}
+```
+
+The following code is for UIKit. In the view controller that opens the out-of-energy flow, add a method that spends diamonds on an option. The method sends the option to your backend, and sets the balance in `diamondWallet` from the response. Then the method does one of the following:
+
+- **El gasto se realiza correctamente**: El método devuelve `true` y los jugadores ven la marca de verificación en el botón. Tras un segundo, el código cierra el flow.
+- **El saldo es demasiado bajo**: El método llama a `openTopUpFlow`, la función que [abre el flow de recarga](#open-the-top-up-flow-when-a-player-doesnt-have-enough-diamonds).
+
+```swift showLineNumbers title="Swift"
+private var outOfEnergyFlow: AdaptyFlowController? // set when the out-of-energy flow opens
+
+// true when the spend goes through
+func spendDiamonds(on option: EnergyOption) async -> Bool {
+    do {
+        // the client of your backend: your backend sends the spend to Adapty
+        let result = try await GameBackend.shared.spendDiamonds(
+            on: option.rawValue,
+            idempotencyKey: UUID() // a new key for each spend; UUID() creates a version 4 UUID
+        )
+        switch result {
+        case let .spent(available):
+            diamondWallet.balance = available
+            // your backend gave the player the energy: show it in the game
+            Task {
+                try? await Task.sleep(for: .seconds(1)) // players see the checkmark first
+                outOfEnergyFlow?.dismiss(animated: true)
+            }
+            return true
+        case let .insufficientBalance(diamondsNeeded, available):
+            diamondWallet.balance = available
+            await openTopUpFlow(diamondsNeeded: diamondsNeeded)
+            return false
+        }
+    } catch {
+        // handle the error
+        return false
+    }
+}
+```
+
+Luego, escribe un resolver para el flow de energía agotada. Para cada elemento personalizado con el tipo `spend_button`, el resolver lee la opción a partir del ID y devuelve un `SpendButton` que llama al método spend. Un resolver que [vinculas a un flow](ios-flow-custom-elements#attach-a-resolver-to-one-flow) reemplaza al resolver global en ese flow. Para mostrar el saldo en el flow de energía agotada, este resolver llama al resolver global:
+
+```swift showLineNumbers title="Swift"
+
+struct OutOfEnergyResolver: AdaptyUICustomElementsResolver {
+    let spend: @MainActor (EnergyOption) async -> Bool // the spend method of your view controller
+    let appWideResolver: any AdaptyUICustomElementsResolver
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        // the ID tells the buttons apart: energy_refill or unlimited_energy
+        if type == "spend_button", let option = EnergyOption(rawValue: id) {
+            return AnyView(SpendButton(title: option.title) { await spend(option) })
+        }
+        // other custom elements, such as the balance: the views of the app-wide resolver
+        return appWideResolver.view(forType: type, id: id, context: context)
+    }
+}
+```
+
+### Abre el flow de energía agotada desde el código de tu app
+
+Cuando un jugador se quede sin energía, abre el flow de energía agotada con la siguiente función. La función primero consulta tu backend para obtener el saldo, de modo que los jugadores lo vean cuando se abra el flow. Luego, la función adjunta `OutOfEnergyResolver` al flow y mantiene el controlador del flow en `outOfEnergyFlow`. Con esta referencia, `spendDiamonds` puede cerrar el flow:
+
+```swift showLineNumbers title="Swift"
+// call when a player runs out of energy
+func openOutOfEnergyFlow() async {
+    // the balance that players see when the flow opens; without it, players see a dash
+    if let available = try? await GameBackend.shared.diamondBalance() {
+        diamondWallet.balance = available
+    }
+    do {
+        let flow = try await Adapty.getFlow(placementId: "out_of_energy")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            customElementsResolver: OutOfEnergyResolver(
+                spend: { [weak self] option in
+                    await self?.spendDiamonds(on: option) ?? false
+                },
+                appWideResolver: customElementsResolver // the instance that you set app-wide
+            )
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        outOfEnergyFlow = flowController
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+Como delegado del flow sin energía, el controlador de vistas también debe implementar los [métodos de delegado](ios-handling-events#handling-events-in-uikit) para compras y restauraciones. Para `didFinishPurchase`, usa el código del [paso 4](#open-the-out-of-energy-flow-again-after-a-purchase).
+
+En SwiftUI, adjunta `OutOfEnergyResolver` al obtener la configuración del flow. En el closure `spend` del resolver, llama a tu método de gasto. Presenta la configuración del flow con el modificador `.flow`, y usa sus closures en lugar de los métodos del delegado. Los closures no reciben ningún view controller. Para cerrar el flow, establece `isPresented` en `false`.
+
+## 3. Crea el flow donde los jugadores compran diamantes \{#3-build-the-flow-where-players-buy-diamonds\}
+
+<VcTopUpFlowPlacement />
+
+### Muestra cuántos diamantes necesita el jugador \{#show-how-many-diamonds-the-player-needs\}
+
+<VcTopUpFlowDiamondsNeeded />
+
+### Añadir packs de diamantes y una suscripción
+
+<VcTopUpFlowOffers />
+
+## 4. Cerrar un flow y abrir el otro \{#4-close-one-flow-and-open-the-other\}
+
+Tras este paso, los jugadores que no tengan suficientes diamantes podrán comprar más en el flow de recarga y luego gastarlos. En esta receta, un único view controller actúa como delegado de ambos flows. Para distinguirlos en un método delegado, compara la propiedad `controller.flowPlacementId` con el placement ID de cada flow. En SwiftUI, presenta el flow de recarga con un segundo modificador `.flow` y abre un flow desde el closure `didDisappear` del otro.
+
+### Abrir el flow de recarga cuando al jugador le faltan diamantes \{#open-the-top-up-flow-when-a-player-doesnt-have-enough-diamonds\}
+
+La siguiente función pasa el número de diamantes que faltan al tag `diamonds_needed` y abre el flow de recarga. Un view controller presenta un flow a la vez, por lo que la función primero cierra el flow de falta de energía y luego abre el flow de recarga:
+
+```swift showLineNumbers title="Swift"
+func openTopUpFlow(diamondsNeeded: Int) async {
+    // with no value, players see the Initial value of the tag
+    let tags = diamondsNeeded > 0 ? ["diamonds_needed": diamondsNeeded.formatted()] : [:]
+    do {
+        let flow = try await Adapty.getFlow(placementId: "out_of_diamonds")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            tagResolver: tags
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        // a view controller presents one flow at a time
+        outOfEnergyFlow?.dismiss(animated: true) {
+            self.present(flowController, animated: true)
+        }
+    } catch {
+        // handle the error
+    }
+}
+```
+
+### Vuelve a abrir el flow de sin energía después de una compra
+
+Cuando un jugador compra un pack o la suscripción en el flow de recarga, Adapty normalmente añade los diamantes al saldo primero. Después, el SDK de Adapty llama a `didFinishPurchase`, pero no cierra el flow. En este método, el siguiente código le pide a tu backend el nuevo saldo, cierra el flow de recarga y vuelve a abrir el flow de sin energía. El jugador ve el nuevo saldo allí y pulsa un botón para gastar diamantes. No gastes diamantes justo después de la compra: puede que el jugador ya no quiera la energía.
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFinishPurchase product: AdaptyPaywallProduct,
+    purchaseResult: AdaptyPurchaseResult
+) {
+    // canceled or pending: the flow stays open
+    guard purchaseResult.isPurchaseSuccess,
+          controller.flowPlacementId == "out_of_diamonds" // the top-up flow
+    else { return }
+    Task {
+        let balanceBefore = diamondWallet.balance ?? 0
+        if let available = try? await GameBackend.shared.diamondBalance() {
+            diamondWallet.balance = available
+        }
+        let diamondsArrived = (diamondWallet.balance ?? 0) > balanceBefore
+        controller.dismiss(animated: true) {
+            if diamondsArrived {
+                Task { await self.openOutOfEnergyFlow() } // the player taps a button again
+            } else {
+                // Adapty adds the diamonds later: tell the player in your own UI
+            }
+        }
+    }
+}
+```
+
+Cuando el jugador cancela la compra o cuando la compra está pendiente, el código deja el flow de recarga abierto. El SDK también llama a `didFinishPurchase` en estos casos, pero el saldo no cambia.
+
+Cuando una compra se realiza correctamente pero el saldo de tu backend no cambia, el código cierra el flow de recarga y no abre el flow de energía agotada. En cualquiera de los dos flows, el jugador vería el saldo anterior justo después de la compra. El saldo no cambia cuando el SDK no puede validar la compra con Adapty de inmediato. Adapty añade los diamantes más tarde, cuando el SDK vuelve a enviar la compra a Adapty, por ejemplo al siguiente inicio de la app. Hasta entonces, informa al jugador en tu propia UI de que los diamantes están en camino.
+
+No añadas diamantes desde tu backend cuando un usuario compra un producto [vinculado a `DIAMONDS`](create-virtual-currency#link-products): Adapty añade esos diamantes, y el usuario los recibiría dos veces.
+
+## 5. Prueba en un dispositivo \{#5-test-on-a-device\}
+
+El Flow & Paywall Builder no puede ejecutar el código de tu app, por lo que en su lienzo solo verás los valores de respaldo de los elementos personalizados.
+
+Para ver los diamantes de las compras, prueba con una [cuenta sandbox](test-purchases-in-sandbox). En el sandbox, una suscripción se renueva cada pocos minutos y Adapty añade diamantes en cada renovación. Con un archivo de configuración StoreKit en Xcode, el SDK de Adapty no valida las compras con Adapty y Adapty no añade diamantes.
+
+Para probar la receta:
+
+1. [Publica ambos flows](builder-save-publish). Para ver las versiones publicadas más recientes en lugar de las almacenadas en caché, registra el dispositivo como [dispositivo de prueba](test-devices).
+2. Ejecuta tu app con el código de la receta e inicia sesión como un jugador sin diamantes. Quédate sin energía en el juego. Verifica que el flow de sin energía se abra con un saldo de 0.
+3. Toca el botón de energía ilimitada. Verifica que aparezca un indicador de carga en el botón y que luego se abra el flow de recarga con el texto "You need 30 more diamonds".
+4. Compra un paquete de diamantes. Verifica que el flow de sin energía se abra de nuevo con el nuevo saldo.
+5. Toca el botón de recarga de energía. Verifica que aparezca una marca de verificación en el botón, que el flow se cierre y que el juego otorgue al jugador una recarga de energía.
+6. En el Adapty Dashboard, abre el perfil del jugador. [Debita el saldo](virtual-currency-balance#adjust-a-balance-manually) a menos de 10 con la operación **Adjustment**. Quédate sin energía de nuevo, toca el botón de recarga de energía y compra la suscripción en el flow de recarga. Verifica que el flow de sin energía se abra de nuevo con el nuevo saldo.
+7. Toca el botón de energía ilimitada. Verifica que aparezca una marca de verificación en el botón, que el flow se cierre y que el juego otorgue al jugador energía ilimitada.
+8. <VcTopUpVerifyProfile />
+
+Para averiguar por qué aparece un respaldo en lugar del saldo o un botón, sigue los [pasos para probar elementos personalizados](ios-flow-custom-elements#test-on-a-device).

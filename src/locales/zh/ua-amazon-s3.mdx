@@ -5,17 +5,20 @@ metadataTitle: "Amazon S3 | Adapty 归因 | Adapty 文档"
 keywords: ['adapty attribution', 'adapty ua', '用户获取', 's3', 'amazon']
 ---
 
-Adapty Attribution 与 Amazon S3 的集成，可让您将用户获取活动数据安全地存储在一个中央位置。您可以将活动表现数据、归因数据和用户获取事件以 .csv 文件的形式保存到 Amazon S3 存储桶中。
-要设置此集成，您只需在 AWS 控制台和 Adapty Attribution 看板中完成几个简单步骤。
+Adapty Attribution 与 Amazon S3 的集成让您可以将用户获取活动数据安全地存储在一个中心位置。Adapty Attribution 会将 .csv 文件保存到您的 Amazon S3 存储桶中。每一行代表一次应用安装，包含设备标识符和归因数据（例如渠道和活动信息）。这些文件不包含广告支出、收入或购买数据。
+
+要设置此集成，您需要在 AWS 控制台和 Adapty Attribution 看板中完成几个简单步骤。
 
 :::note
 Adapty 归因数据导出每个日历日生成一组文件。导出调度器每天运行三次——分别在 UTC 时间 **02:00**、**04:00** 和 **06:00**。每次运行要么创建前一天的导出任务（如果尚不存在），要么在之前的运行失败时重试。因此，您的数据通常在 02:00 运行后即可获取，后续的运行仅用于故障恢复，而非新增数据。
 
-每个文件将包含整个前一个 UTC 自然日内创建的事件数据。例如，3 月 8 日导出的数据将包含 3 月 7 日 00:00:00 至 23:59:59（UTC）内创建的所有事件。
+每次导出包含 Adapty 归因在前一个 UTC 自然日内记录的安装数据。例如，3 月 8 日的导出包含 3 月 7 日 00:00:00 至 23:59:59 UTC 期间记录的安装数据。
+
+每个文件展示的是导出时刻的归因状态。安装发生后的 30 天内，Adapty 归因仍可能将该安装归属到其他渠道或广告活动。如需用最新归因数据刷新历史文件，请[手动执行导出](#manual-data-export)并指定相应日期。
 :::
 
 :::warning
-定时导出仅对付费计划或试用期内的公司有效。如果您的公司两者都不是，调度程序将跳过执行且不写入任何文件，即使该集成在看板中仍显示为已启用。如果您的存储桶为空且配置看起来正确，请先检查您的计划状态。
+计划导出功能仅适用于付费计划或试用期内的企业。如果您的企业不满足上述条件，调度器将跳过导出并不写入任何文件，即使集成在看板中显示为已启用。如果您的存储桶为空且配置看起来正确，请首先检查您的计划状态。
 :::
 
 ## 如何设置 Amazon S3 集成 \{#how-to-set-up-amazon-s3-integration\}
@@ -222,19 +225,19 @@ Adapty 归因数据导出每个日历日生成一组文件。导出调度器每�
 
 <ZoomImage id="ua-amazon-s3.webp" width="700px" />
 
-## 手动导出数据 \{#manual-data-export\}
+## 手动数据导出 \{#manual-data-export\}
 
-除了自动将事件数据导出到 Amazon S3 之外，Adapty Attribution 还提供手动文件导出功能。通过此功能，您可以选择特定日期的用户获取数据，并手动将其导出到您的 S3 存储桶。这让您能够更灵活地控制导出的数据内容及导出时机。
+如需导出更早日期的数据，请在 **Manual file export** 部分选择日期范围，然后点击 **Export to S3**。如果您的存储桶中已存在相应日期的文件，Adapty Attribution 将覆盖这些文件。
 
-## 表结构 \{#table-structure\}
+## 表格结构 \{#table-structure\}
 
-在 AWS S3 集成中，Adapty Attribution 提供一张表用于存储安装事件的历史数据。该表包含用户画像、收入与实际所得、来源商店等多项数据信息。
+每个文件每行对应 Adapty 归因在某个 UTC 日期内记录的一次安装，包含设备数据和归因信息。文件中不含广告支出、收入或购买数据。
 
 :::warning
-请注意，随着我们或第三方合作伙伴引入新数据，该结构可能会持续扩展。请确保处理该数据的代码足够健壮，只依赖特定字段，而不依赖整体结构。
+请注意，随着时间推移，该结构可能会扩展——我们或我们合作的第三方可能会引入新的数据字段。请确保处理这些数据的代码具备足够的健壮性，仅依赖特定字段，而非整体结构。
 :::
 
-以下是事件的表结构：
+这些文件包含以下列：
 
 | 列名                       | 描述                                      |
 |--------------------------|-------------------------------------------|
@@ -242,40 +245,41 @@ Adapty 归因数据导出每个日历日生成一组文件。导出调度器每�
 | `install_id`             | 安装唯一标识符                             |
 | `created_at`             | 记录创建时间戳（ISO 8601）                 |
 | `installed_at`           | 应用安装时间戳（ISO 8601）                 |
-| `store`                  | 应用商店（`ios`、`android`）              |
+| `store`                  | 应用商店（`ios`、`android`）               |
 | `country`                | 用户国家代码（ISO 3166-1 alpha-2）         |
-| `ip_address`             | 客户端 IP 地址                            |
-| `idfa`                   | iOS 广告标识符                            |
+| `ip_address`             | 客户端 IP 地址                             |
+| `idfa`                   | iOS 广告主标识符                           |
 | `idfv`                   | iOS 供应商标识符                           |
-| `gaid`                   | Google 广告 ID（Android）                 |
-| `android_id`             | Android 设备 ID                           |
-| `app_set_id`             | Android App Set ID                        |
-| `bundle_id`              | 应用包标识符（如 `com.example.app`）       |
-| `device_brand`           | 设备品牌（如 `Apple`、`Samsung`）         |
-| `device_model`           | 设备型号（如 `iPhone15,2`）               |
-| `os_version`             | 主要 OS 版本                              |
+| `gaid`                   | Google 广告 ID（Android）                  |
+| `android_id`             | Android 设备 ID                            |
+| `app_set_id`             | Android App Set ID                         |
+| `bundle_id`              | 应用包标识符（例如 `com.example.app`）      |
+| `device_brand`           | 设备品牌（例如 `Apple`、`Samsung`）         |
+| `device_model`           | 设备型号（例如 `iPhone15,2`）              |
+| `os_version`             | 主要操作系统版本                           |
 | `app_version`            | Adapty SDK 上报的应用版本                  |
-| `sdk_version`            | Adapty SDK 版本                           |
-| `channel`                | 归因渠道                                  |
+| `sdk_version`            | Adapty SDK 版本                            |
+| `channel`                | 归因渠道                                   |
 | `campaign_id`            | 广告活动标识符                             |
-| `campaign_name`          | 广告活动名称                              |
-| `adset_id`               | 广告组标识符                              |
-| `adset_name`             | 广告组名称                                |
-| `ad_id`                  | 广告标识符                                |
-| `ad_name`                | 广告名称                                  |
-| `keyword_id`             | 关键词标识符                              |
-| `keyword_name`           | 关键词名称                                |
-| `asa_org_id`             | Apple Search Ads 组织 ID                  |
-| `asa_keyword_match_type` | ASA 关键词匹配类型（`Exact`、`Broad`）    |
-| `asa_attribution`        | ASA 归因数据（JSON 字符串）               |
-| `asa_conversion_type`    | ASA 转化类型                              |
-| `asa_country_or_region`  | ASA 国家或地区                            |
-| `asa_creative_set_name`  | ASA 创意组名称                            |
-| `fbclid`                 | Facebook 点击 ID                          |
-| `ttclid`                 | TikTok 点击 ID                            |
-| `utm_source`             | UTM source 参数                           |
-| `utm_medium`             | UTM medium 参数                           |
-| `utm_campaign`           | UTM campaign 参数                         |
-| `utm_term`               | UTM term 参数                             |
-| `utm_content`            | UTM content 参数                          |
-| `click_time`             | 归因点击的时间戳，以 Unix 秒为单位。若该安装未归因到任何点击，则为空。 |
+| `campaign_name`          | 广告活动名称                               |
+| `adset_id`               | 广告组标识符                               |
+| `adset_name`             | 广告组名称                                 |
+| `ad_id`                  | 广告标识符                                 |
+| `ad_name`                | 广告名称                                   |
+| `keyword_id`             | 关键词标识符                               |
+| `keyword_name`           | 关键词名称                                 |
+| `asa_org_id`             | Apple Search Ads 组织 ID                   |
+| `asa_keyword_match_type` | ASA 关键词匹配类型（`Exact`、`Broad`）     |
+| `asa_attribution`        | ASA 归因数据（JSON 字符串）                |
+| `asa_conversion_type`    | ASA 转化类型                               |
+| `asa_country_or_region`  | ASA 国家或地区                             |
+| `asa_creative_set_name`  | ASA 创意组名称                             |
+| `fbclid`                 | Facebook 点击 ID                           |
+| `ttclid`                 | TikTok 点击 ID                             |
+| `utm_source`             | UTM 来源参数                               |
+| `utm_medium`             | UTM 媒介参数                               |
+| `utm_campaign`           | UTM 广告活动参数                           |
+| `utm_term`               | UTM 关键词参数                             |
+| `utm_content`            | UTM 内容参数                               |
+| `click_time`             | 归因点击的时间戳，单位为 Unix 秒。若该安装没有归因到任何点击，则为空。 |
+| `asa_click_time`         | 安装前 Apple Search Ads 点击的时间戳，单位为 Unix 秒，精确到分钟。若 Apple Search Ads 未上报该安装对应的点击，则为空。与 `click_time` 不同，即使 Adapty 归因将该安装归因到其他渠道，此字段也可能有值。 |

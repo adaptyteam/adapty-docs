@@ -1,0 +1,380 @@
+---
+title: "Отображение пользовательских элементов с помощью React Native SDK"
+description: "Отображайте нативный iOS или Android вид в каждом пользовательском элементе флоу и тестируйте флоу на устройстве."
+metadataTitle: "Отображение пользовательских элементов | React Native SDK | Документация Adapty"
+---
+
+<FlowCustomElementsIntro />
+
+## Перед началом работы \{#before-you-start\}
+
+:::important
+В проекте Expo пользовательские элементы работают только в том случае, если вы сохраняете папки `ios` и `android` в Git и не запускаете `npx expo prebuild --clean`. В противном случае Expo пересоздаёт эти папки и удаляет код с этой страницы. В новых проектах Expo эти папки не включаются в Git, поэтому EAS Build пересоздаёт их при каждой сборке.
+:::
+
+Вам понадобится:
+
+- **Adapty React Native SDK 4.4 или выше**: В более ранних версиях резервный вариант отображается для каждого кастомного элемента.
+- **Нативный код для iOS и Android**: Вы не можете отобразить React Native компонент в кастомном элементе. Пишите этот код на Swift для iOS и на Kotlin для Android. Добавьте Swift-код в таргет вашего приложения в Xcode, а Kotlin-код — в папку с `MainApplication.kt`. Начинайте каждый новый файл Kotlin со строки `package` из `MainApplication.kt`.
+- **Схема именования для кастомных элементов**: Присвойте каждому нативному виду тип (Type), например `lottie_animation`. Используйте в типах только строчные буквы, цифры и знаки подчёркивания. Чтобы различать кастомные элементы одного типа, присвойте каждому из них идентификатор (ID), например `welcome_wave`. Типы и ID в вашем коде должны совпадать с теми, что указаны в [Flow & Paywall Builder](flow-custom-elements#add-and-configure).
+
+Используйте одинаковые типы и идентификаторы в коде для iOS и Android. Если вы не настроили отдельную [аудиторию](audience) для каждой платформы, пользователи iOS и Android увидят одни и те же флоу.
+
+## Настройка вашего Android-проекта \{#set-up-your-android-project\}
+
+Проект для iOS не требует дополнительной настройки. В Android-проекте добавьте библиотеку Adapty UI. Чтобы собирать нативные представления в виде composables, также настройте Jetpack Compose.
+
+### Добавьте библиотеку Adapty UI
+
+В файле `android/app/build.gradle` добавьте `io.adapty:android-ui` в блок `dependencies` без указания версии. Версию устанавливает `react-native-adapty`. Другая версия `android-ui` может сломать флоу.
+
+```groovy showLineNumbers title="android/app/build.gradle"
+dependencies {
+    implementation("io.adapty:android-ui")
+}
+```
+
+Библиотеке требуется `compileSdkVersion` 35 или выше: если в `android/build.gradle` указана более низкая версия, поднимите её до 35.
+
+### Настройка Jetpack Compose \{#set-up-jetpack-compose\}
+
+Шаблон React Native не [настраивает Compose](https://developer.android.com/develop/ui/compose/setup-compose-dependencies-and-compiler) в модуле приложения. Android `View` не требует настройки Compose. Чтобы создавать нативные представления как composable-функции, настройте компилятор Compose для версии Kotlin вашего приложения — `kotlinVersion` в `android/build.gradle`:
+
+<Tabs groupId="kotlin-version" queryString>
+<TabItem value="kotlin-2" label="Kotlin 2.0 and later" default>
+
+Шаблоны React Native 0.77 и выше используют Kotlin 2.0 или новее. Добавьте Gradle-плагин компилятора Compose в зависимости `buildscript`:
+
+```groovy showLineNumbers title="android/build.gradle"
+buildscript {
+    dependencies {
+        classpath("org.jetbrains.kotlin:compose-compiler-gradle-plugin:$kotlinVersion")
+    }
+}
+```
+
+Затем примените плагин к модулю приложения и установите `compose true` в блоке `buildFeatures`:
+
+```groovy showLineNumbers title="android/app/build.gradle"
+apply plugin: "org.jetbrains.kotlin.plugin.compose"
+
+android {
+    buildFeatures {
+        compose true
+    }
+}
+```
+
+</TabItem>
+<TabItem value="kotlin-1-9" label="Kotlin 1.9">
+
+Шаблоны React Native 0.75 и 0.76 используют Kotlin 1.9. В блоке `android` укажите `compose true` и версию Compose compiler, соответствующую вашей версии Kotlin. React Native 0.75 и 0.76 собираются с Kotlin 1.9.24, которому нужен Compose compiler 1.5.14. Для других версий Kotlin см. [таблицу совместимости Compose и Kotlin](https://developer.android.com/jetpack/androidx/releases/compose-kotlin).
+
+```groovy showLineNumbers title="android/app/build.gradle"
+android {
+    buildFeatures {
+        compose true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion "1.5.14"
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+Для отображения Lottie на этой странице также добавьте `com.airbnb.android:lottie-compose`.
+
+## Создание представлений для кастомных элементов \{#create-views-for-custom-elements\}
+
+Для каждого типа создайте нативное представление для iOS и Android или переиспользуйте уже существующее из нативного кода. Представления ниже типа `lottie_animation` воспроизводят Lottie-анимацию. Android-представление — это composable, использующий библиотеку `com.airbnb.android:lottie-compose`:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift"
+
+struct LottieElementView: View {
+    let animation: LottieAnimation?
+
+    var body: some View {
+        LottieView(animation: animation)
+            .resizable()
+            .looping()
+    }
+}
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin"
+
+@Composable
+fun LottieElement(animationFile: String) {
+    val composition by rememberLottieComposition(LottieCompositionSpec.Asset(animationFile))
+    LottieAnimation(
+        composition = composition,
+        iterations = LottieConstants.IterateForever,
+    )
+}
+```
+
+</TabItem>
+</Tabs>
+
+### Требования и лучшие практики \{#requirements-and-best-practices\}
+
+- **Размер**:
+  - **Отступы и выравнивание**: Убедитесь, что нативный вид вписывается в контейнер, который вы выделили для него в Flow & Paywall Builder, с учётом отступов. Если вид не занимает всю область, по умолчанию он отображается в верхнем начальном углу этой области. Чтобы изменить положение, настройте выравнивание в разделе **Layout** кастомного элемента.
+  - **Высота Hug**: Если для высоты кастомного элемента задано значение **Hug**, вид, растягивающийся на всё доступное пространство (например, карта или ленивый список), схлопнется или растянется до высоты экрана. Задайте кастомному элементу [фиксированную высоту (**Fixed**)](flow-custom-elements#add-and-configure).
+- **Тема**: Нативные виды не наследуют стили ваших React Native компонентов. Устанавливайте цвета и шрифты в нативном коде.
+- **Действия флоу**: Нативный вид не может выполнять действия флоу, например переход на следующий экран. Контекст элемента может отправлять сообщения во флоу с помощью `sendMessage` на iOS и `send` на Android, однако они зарезервированы для будущих возможностей Flow & Paywall Builder. Кнопки навигации, кнопки покупки и другие кнопки с действиями флоу размещайте за пределами кастомного элемента.
+- **Выбираемые элементы**: Размещайте кастомный элемент за пределами карточек продуктов и других [выбираемых элементов](flow-selectable-elements). При изменении выбора нативный вид может потерять своё состояние.
+- **Обработка навигации**: Когда пользователь переходит на следующий экран, SDK удаляет нативный вид с экрана. Завершайте то, что запустил вид, — например, камерные сессии, плееры и обновления геолокации:
+  - **SwiftUI view**: Используйте действие `onDisappear`. Для асинхронных задач используйте `.task`: SwiftUI отменяет его при исчезновении вида.
+  - **Composable**: Используйте блок `onDispose` в `DisposableEffect`. Для асинхронных задач используйте `LaunchedEffect`: Compose отменяет его, когда composable покидает композицию.
+  - **Android `View`**: Переопределите `onDetachedFromWindow` в подклассе `View` или добавьте `View.OnAttachStateChangeListener` к `View`.
+
+  Когда пользователь возвращается, SDK снова вызывает резолвер, и нативное представление запускается без состояния предыдущего. На Android в флоу, который вы открываете с помощью `present()`, поворот экрана заставляет SDK снова вызвать резолвер. Во встроенном `AdaptyFlowView` нативное представление сохраняет своё состояние после поворота.
+- **Представления UIKit**: На iOS оберните их в `UIViewRepresentable`.
+- **Карусели**: На Android в [карусели](builder-containers#carousel) нативные представления на всех слайдах остаются активными, пока экран открыт, а не только представление на видимом слайде. Не помещайте в карусели превью с камеры и плееры со звуком.
+
+## Напишите резолвер для сопоставления пользовательских элементов и представлений \{#write-a-resolver-to-match-custom-elements-and-views\}
+
+Напишите резолвер для каждой платформы. Резолвер получает тип и ID пользовательского элемента и возвращает соответствующее нативное представление.
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+Чтобы написать резолвер, реализуйте протокол `AdaptyUICustomElementsResolver` и метод `view(forType:id:context:)`.
+
+Для типа `lottie_animation` следующий резолвер возвращает `LottieElementView`. ID указывает на имя файла анимации в бандле приложения, например `welcome_wave`:
+
+```swift showLineNumbers title="Swift"
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "lottie_animation":
+            // the ID names the animation file, such as welcome_wave.json
+            guard let animation = LottieAnimation.named(id) else {
+                return nil // no file for this ID: show the fallback
+            }
+            return AnyView(LottieElementView(animation: animation))
+        default:
+            return nil
+        }
+    }
+}
+```
+
+В блоке `default` верните `nil`.
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+Чтобы написать резолвер, реализуйте интерфейс `AdaptyCustomElementsResolver`. Его метод `resolve` возвращает соответствующий виджет в одном из следующих видов:
+
+- **Composable**: Верните `AdaptyCustomElementContent.compose`, передав composable внутрь лямбды.
+- **Android `View`**: Верните `AdaptyCustomElementContent.view`, передав функцию, создающую `View`. Обязательно укажите имя параметра `factory`: `AdaptyCustomElementContent.view(factory = { context, _ -> ChartView(context) })`. Без имени Kotlin передаёт трейлинг-лямбду в необязательный параметр `update`, и код не компилируется.
+
+Для типа `lottie_animation` следующий резолвер возвращает [Lottie view](#create-views-for-custom-elements). ID указывает на файл анимации в папке `assets`, `android/app/src/main/assets`, например `welcome_wave` для `welcome_wave.json`:
+
+```kotlin showLineNumbers title="Kotlin"
+
+class CustomElementsResolver(context: Context) : AdaptyCustomElementsResolver {
+    // the animation files in the assets folder, listed once
+    private val animationFiles: Set<String> = try {
+        context.assets.list("").orEmpty().toSet()
+    } catch (e: IOException) {
+        emptySet() // no list of files: every Lottie element shows the fallback
+    }
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        when (type) {
+            "lottie_animation" -> {
+                // the ID names the animation file, such as welcome_wave.json
+                val file = "$id.json"
+                if (file in animationFiles) {
+                    AdaptyCustomElementContent.compose { LottieElement(file) }
+                } else {
+                    null // no file for this ID: show the fallback
+                }
+            }
+            else -> null
+        }
+}
+```
+
+Для любого другого Type возвращайте `null`.
+
+</TabItem>
+</Tabs>
+
+Если вы [добавите пользовательский элемент с новым Type](flow-custom-elements#what-changes-require-an-app-release) после релиза приложения, пользователи выпущенной версии увидят его фолбэк.
+
+К резолверу предъявляются следующие требования:
+
+- **Сетевые данные и плееры**: Храните сетевые данные и плееры в состоянии [нативного вью](#create-views-for-custom-elements), а не в резолвере. SDK вызывает резолвер много раз, пока экран открыт. Код в резолвере выполняется заново при каждом вызове, поэтому сетевые запросы повторяются, а плееры начинают воспроизведение сначала. Нативное вью сохраняет своё состояние между вызовами, поэтому данные загружаются один раз, а плееры продолжают воспроизведение. Создавайте плееры, сессии и сетевые запросы внутри нативного вью:
+  - **SwiftUI view**: Создавайте плееры, сессии и сетевые запросы в `.task` или в `@StateObject`, а не в начальном значении свойства `@State`. Swift вычисляет это начальное значение заново каждый раз, когда резолвер создаёт вью.
+  - **Composable**: Создавайте плееры и сессии в `remember`, а сетевые запросы — в `LaunchedEffect`.
+  - **Android `View`**: Создавайте плееры, сессии и сетевые запросы в `onAttachedToWindow`.
+- **Одно нативное вью на каждый кастомный элемент**: Некоторые нативные вью изменяются, пока экран открыт, — например, когда загружаются данные или когда пользователь нажимает на них. Реализуйте эту логику в самом нативном вью, а не в резолвере. Если резолвер возвращает другое вью для того же кастомного элемента, вью теряет своё состояние.
+- **Новый `View` при каждом появлении**: На Android создавайте новый `View` при каждом вызове `factory`. SDK вызывает `factory` каждый раз, когда кастомный элемент появляется, — например, при открытии экрана, при возврате пользователя на экран или, во флоу, открытом с помощью `present()`, после поворота устройства.
+- **Данные приложения**: Храните объект с данными, например `ObservableObject` или `StateFlow` с [ежедневной серией](react-native-custom-element-lottie-animation), в свойстве резолвера. Передавайте объект в нативное вью и подписывайтесь на него там:
+  - **SwiftUI view**: Подпишитесь на `ObservableObject` с помощью `@ObservedObject`.
+  - **Composable**: Собирайте `StateFlow` с помощью `collectAsState` или наблюдайте за `LiveData` с помощью `observeAsState`.
+  - **Android `View`**: Подпишитесь на объект в `onAttachedToWindow` и отпишитесь в `onDetachedFromWindow`.
+
+  Значение, которое вы копируете в резолвер, например номер серии дней, остаётся таким, каким оно было в момент создания резолвера. Если в JavaScript-коде есть данные, например текущая серия дней, передавайте каждое новое значение в нативный код через [Turbo Native Module](https://reactnative.dev/docs/turbo-native-modules-introduction) и обновляйте объект там.
+
+### Задайте условия для резервного контента \{#set-conditions-for-fallback-content\}
+
+<FlowCustomElementsFallbackConditions />
+
+Возвращайте «нет вью» только в том случае, если пользователь ранее уже отклонил разрешение до открытия экрана. На Android `ContextCompat.checkSelfPermission` возвращает одно и то же значение — `PERMISSION_DENIED` — в двух ситуациях: до того как приложение впервые запросило разрешение, и после того как пользователь его отклонил. Чтобы различить эти случаи, сохраняйте результат запроса разрешения и считывайте его в резолвере. Если приложение ещё не запрашивало разрешение, возвращайте нативный вью и запрашивайте разрешение внутри вью. Например, запрашивайте доступ к геолокации при появлении [вью с картой](react-native-custom-element-map#3-match-the-map-to-the-custom-element) и показывайте карту сразу после того, как пользователь предоставит доступ. Если вы вернёте «нет вью», а пользователь позже предоставит доступ, он всё равно увидит фолбэк. Изменение разрешения не заставляет SDK повторно вызвать резолвер. Нативный вью появится только тогда, когда SDK снова вызовет резолвер — например, когда пользователь вернётся на экран.
+
+## Передайте resolver в SDK \{#pass-the-resolver-to-the-sdk\}
+
+Задайте resolver один раз для каждой платформы при запуске приложения. SDK вызывает его в каждом флоу, включая флоу, встроенный с помощью `AdaptyFlowView`. Пользователи видят ваши нативные экраны в новых флоу и A/B-тестах без обновления приложения. Эти экраны по-прежнему отображают персональные данные каждого пользователя, например [ежедневную серию](react-native-custom-element-lottie-animation), так как получают их из вашего приложения.
+
+### iOS
+
+<Tabs groupId="ios-app-delegate" queryString>
+<TabItem value="swift" label="AppDelegate.swift" default>
+
+В файле `AppDelegate.swift` импортируйте `AdaptyUI` и вызовите `AdaptyUI.setCustomElementsResolver(_:)` в методе `application(_:didFinishLaunchingWithOptions:)`. Выделенные строки показывают, что нужно добавить. Остальную часть класса `AppDelegate` оставьте без изменений:
+
+```swift showLineNumbers title="ios/YourApp/AppDelegate.swift" {1,10}
+
+@main
+class AppDelegate: UIResponder, UIApplicationDelegate {
+  func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+  ) -> Bool {
+    AdaptyUI.setCustomElementsResolver(CustomElementsResolver())
+    // the rest of your launch code
+    return true
+  }
+}
+```
+
+Если вы пишете резолвер прямо в `AppDelegate.swift`, также импортируйте там `AdaptyUIBuilder`.
+
+Если `application(_:didFinishLaunchingWithOptions:)` заканчивается на `true` без `return`, как в шаблоне React Native 0.88, измените `true` на `return true`.
+
+</TabItem>
+<TabItem value="objc" label="AppDelegate.mm">
+
+Установите резолвер через Swift-класс, поскольку `AdaptyUI.setCustomElementsResolver(_:)` доступен только в Swift:
+
+1. Добавьте в таргет приложения Swift-файл с классом:
+
+   ```swift showLineNumbers title="CustomElementsSetup.swift"
+   import AdaptyUI
+
+   @objc final class CustomElementsSetup: NSObject {
+     @MainActor @objc static func register() {
+       AdaptyUI.setCustomElementsResolver(CustomElementsResolver())
+     }
+   }
+   ```
+
+2. В `AppDelegate.mm` импортируйте Swift-заголовок, который Xcode генерирует для вашего таргета: `<YourApp>-Swift.h`. Вызовите `[CustomElementsSetup register]` в начале `application:didFinishLaunchingWithOptions:`. В проекте на Expo перед заголовком вашего таргета импортируйте `<ExpoModulesCore/ExpoModulesCore-Swift.h>`.
+
+   ```objectivec showLineNumbers title="ios/YourApp/AppDelegate.mm" {1,5}
+   #import "YourApp-Swift.h"
+
+   - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+   {
+     [CustomElementsSetup register];
+     // the rest of your launch code
+   }
+   ```
+
+</TabItem>
+</Tabs>
+
+### Android
+
+В `MainApplication.kt` импортируйте `AdaptyUI` и вызовите `AdaptyUI.setCustomElementsResolver` в методе `onCreate`. Выделенные строки показывают, что нужно добавить. Остальную часть класса `MainApplication` оставьте без изменений:
+
+```kotlin showLineNumbers title="MainApplication.kt" {1,8}
+
+class MainApplication : Application(), ReactApplication {
+  // the other members of your MainApplication class
+
+  override fun onCreate() {
+    super.onCreate()
+    AdaptyUI.setCustomElementsResolver(CustomElementsResolver(this))
+    // the rest of your onCreate code
+  }
+}
+```
+
+:::tip
+Чтобы отображать одно и то же представление в каждом кастомном элементе типа, передайте словарь типов и представлений вместо резолвера. С словарём вы пишете меньше кода, чем с резолвером, но не сможете [задать условия для резервного контента](#set-conditions-for-fallback-content).
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+Словарь имеет тип `[String: AdaptyUICustomElementBuilder]`. Если вы добавляете его в `AppDelegate.swift`, также импортируйте там `Lottie`.
+
+```swift showLineNumbers title="Swift"
+AdaptyUI.setCustomElementsResolver([
+    "lottie_animation": .init { _, id, _ in LottieElementView(animation: .named(id)) },
+])
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+Передайте map в `AdaptyCustomElementsResolver.of`:
+
+```kotlin showLineNumbers title="Kotlin"
+val appWideViews = mapOf(
+    "confetti" to AdaptyCustomElementContent.compose { LottieElement("confetti.json") },
+)
+AdaptyUI.setCustomElementsResolver(AdaptyCustomElementsResolver.of(appWideViews))
+```
+
+</TabItem>
+</Tabs>
+:::
+
+Нельзя привязать resolver к одному флоу. Чтобы отобразить данные, которые ваше приложение получает только при открытии флоу, передайте эти данные в нативный код до открытия флоу. Затем считайте их в resolver. Например, пейвол отображает [вес, который пользователь ввёл в предыдущем флоу](react-native-custom-element-interactive-chart).
+
+## Тестирование на устройстве \{#test-on-a-device\}
+
+Paywall Builder не может выполнять код вашего приложения, поэтому на его холсте отображается только резервный вариант. Ошибка в нативном представлении может привести к краше приложения. Перед выпуском протестируйте каждый экран с кастомным элементом на iOS-устройстве и на Android-устройстве:
+
+1. Чтобы увидеть последнюю опубликованную версию каждого флоу вместо кэшированной, зарегистрируйте устройство как [тестовое устройство](test-devices).
+2. Чтобы видеть предупреждения Adapty SDK в консоли Xcode и в Logcat, установите [уровень логирования](sdk-installation-react-native-pure#logging) на `warn` или более детальный.
+3. На устройстве запустите сборку, включающую резолвер. Откройте каждый экран с кастомным элементом и убедитесь, что нативный вид отображается и вписывается в кастомный элемент. Если вид прокручивается или реагирует на свайпы, протестируйте эти жесты.
+4. Если вместо нативного вида отображается резервный, найдите в консоли Xcode или в Logcat следующее предупреждение: `custom element <type>:<id> is not served by a resolver`. Затем проверьте:
+   - Совпадают ли Type и ID в предупреждении с указанными в вашем коде — посимвольно.
+   - Есть ли у вашего приложения файл, данные или разрешение, необходимые для отображения вида.
+   - Устанавливает ли ваше приложение резолвер при запуске: в классе `AppDelegate` на iOS и в классе `MainApplication` на Android.
+
+   Если предупреждение не появляется, убедитесь, что приложение использует Adapty React Native SDK 4.4 или более позднюю версию.
+5. На Android, если пользовательский элемент остаётся пустым, найдите одно из этих предупреждений в Logcat:
+   - `custom element <type>:<id> is not served by a resolver`: У пользовательского элемента нет резервного содержимого, и ни один резолвер не возвращает для него представление. Проверьте каждый пункт шага 4.
+   - `content does not report its size`: У composable нет собственной высоты. Задайте пользовательскому элементу [**Fixed** высоту](flow-custom-elements#add-and-configure).
+
+   SDK логирует предупреждение о размере только для composable-элементов. Если Android `View` остаётся пустым без предупреждений, задайте элементу также **Fixed** высоту.
+6. Чтобы просмотреть резервный вариант, не возвращайте вид для данного типа и откройте экран заново.
+
+## Примеры \{#examples\}
+
+Каждый рецепт содержит настройку в билдере и код для вашего приложения:
+
+- [Показ прогресса пользователя с анимацией Lottie](react-native-custom-element-lottie-animation): Кольцо, которое заполняется по мере роста серии.
+- [Показ интерактивного графика цели по весу в пейволе](react-native-custom-element-interactive-chart): График цели по весу в пейволе, который следует за онбординг-флоу.
+- [Показ ближайших мест на карте во флоу](react-native-custom-element-map): Карта фитнес-центров рядом с каждым пользователем.

@@ -1,0 +1,68 @@
+---
+title: "Adapty React Native SDK を v4.4 に移行する"
+description: "Adapty React Native SDK v4.4 への移行: 両方のフォールバックファイルを置き換え、iOS および Android の新しいフローエラーを処理します。"
+metadataTitle: "Adapty React Native SDK v4.4 への移行 | Adapty ドキュメント"
+---
+
+Adapty React Native SDK 4.4 では、フォールバックファイルのフォーマットが変更され、フローに iOS 16 が必要になり、より多くのフローエラーがアプリに報告されるようになりました。4.4 では、`AdaptyPrice.currencyCode`、`AdaptyPrice.localizedString`、`AdaptySubscription.billingPlan` が TypeScript でオプショナルでなくなりました。アプリを 4.4 にアップデートするには、最新の `react-native-adapty` パッケージをインストールし、同じビルドで両方のフォールバックファイルを置き換えてください。旧バージョンの SDK は新しいファイルを受け付けません。その後、このガイドで他の変更点を確認してください。
+
+まだ 4.0 をお使いの場合は、まず [v4.1 への移行](migration-to-react-native-sdk-41) を行ってから、このガイドに従ってください。
+
+:::warning
+フォールバックファイルのフォーマットは 4.4 で変更されており、コンパイラは SDK 4.1〜4.3 のフォールバックファイルを検出できません。[新しいフォールバックファイル](#replace-the-fallback-files) がない場合、すべてのプレースメントでフォールバックが機能しなくなります。
+:::
+
+## クイックリファレンス \{#quick-reference\}
+
+| v4.3 | v4.4 |
+|---|---|
+| 4.1〜4.3 向けのフォールバックファイルをダウンロード済み | フォールバックファイルの形式が新しくなったため、両ファイルを再ダウンロードする必要があります |
+| フローは iOS 15 で動作する | フローには iOS 16 が必要 |
+| `AdaptyFlowView` はフローを読み込めない場合に空のままになる | エラーを `onError` ハンドラーに報告するようになった |
+| `AdaptyPrice.currencyCode`、`AdaptyPrice.localizedString`、`AdaptySubscription.billingPlan` はオプション | 必須になった |
+
+## インストール \{#installation\}
+
+`react-native-adapty` パッケージを更新してください：
+
+```bash showLineNumbers
+npm install react-native-adapty@latest
+# or
+yarn add react-native-adapty@latest
+```
+
+要件に変更はありません：**iOS 15.0** および **React Native 0.75**。フローは例外です。詳しくは [フローには iOS 16 が必要](#flows-require-ios-16) を参照してください。完全なセットアップ手順については [Adapty SDK のインストール](sdk-installation-reactnative) をご覧ください。
+
+## フォールバックファイルの置き換え \{#replace-the-fallback-files\}
+
+[フォールバックファイル](react-native-use-fallback-paywalls)を再度ダウンロードするには、**[Placements](https://app.adapty.io/placements)** で **Fallbacks** > **Download iOS Fallback** をクリックします。**Adapty SDK v4.4.0 and higher** の行で **Download** をクリックします。**Download Android Fallback** でも同様に繰り返してください。
+
+ダウンロードされたファイルの名前は `ios_4_4_0_fallback.json` と `android_4_4_0_fallback.json` です。SDK 4.1〜4.3 のフォールバックファイルの代わりにこれらを使用してください。
+
+- **純粋な React Native プロジェクト**: iOS ファイルを Xcode プロジェクトに追加してください。Android ファイルは、[純粋な React Native プロジェクトでフォールバックペイウォールを使用する](react-native-use-fallback-paywalls-pure)の手順に従い、4.1〜4.3 用の Android フォールバックファイルのフォルダに配置してください。
+- **Expo プロジェクト**: 各ファイルを、[Expo プロジェクトでフォールバックペイウォールを使用する](react-native-use-fallback-paywalls-expo)の手順に従い、4.1〜4.3 用のフォールバックファイルのフォルダに配置してください。
+
+アプリが `adapty.setFallback` に渡すファイル名に合わせるか、その呼び出し内のファイル名を更新してください。Expo プロジェクトでは、`fallbackFile` オプションにもこれらのファイル名を使用し、`npx expo prebuild` を再度実行してください。
+
+SDK 4.1〜4.3 用のフォールバックファイルを使用している場合、`adapty.setFallback` は `AdaptyError` をスローします。新しいファイルを確認するには、iOS と Android でアプリを実行し、この呼び出しがエラーをスローしないことを確認してください。
+
+## フローにはiOS 16が必要です \{#flows-require-ios-16\}
+
+バージョン4.4以降、フローにはiOS 16以降が必要です。iOS 15では、`createFlowView`が`platformNotSupported`コードの`AdaptyError`をスローし、`AdaptyFlowView`は空のままで同じエラーを報告します。購入やカスタムペイウォールなど、その他のSDK機能はiOS 15でも引き続き動作します。
+
+アプリがこのエラーを受け取った場合は、[カスタムペイウォール](react-native-implement-paywalls-manually)など、独自のコンテンツを代わりに表示してください。
+
+## フローの読み込みエラーが onError ハンドラーに渡されるようになりました \{#flow-load-errors-reach-the-onerror-handler\}
+
+`AdaptyFlowView` の `onError` ハンドラーは、コンポーネントがフローを表示できない場合にエラーを受け取ります。アプリが新しい `AdaptyFlowView` をレンダリングするたびに、エラーが1回報告されます。4.4 より前のバージョンでは、コンポーネントは空のままでした。コンポーネントが報告するエラーは以下のとおりです。
+
+- iOS 15 の場合: `platformNotSupported`。
+- Android、および iOS 16 以降で、フローの読み込みに失敗した場合: 該当フローに対して `createFlowView` がスローするエラー。たとえば、AdaptyUI がアクティベートされていない状態でフローの読み込みが失敗した場合や、フローが持っていない `customLayoutId` を指定した場合などです。
+
+フローのエラーハンドリングは、これらのケースでも実行されるようになりました。`onError` ハンドラーの戻り値は、埋め込みフローを閉じません。閉じるには、コンポーネントのレンダリングを停止し、独自のコンテンツを表示してください。
+
+## 価格とサブスクリプションのプロパティが必須になりました \{#price-and-subscription-properties-are-required\}
+
+TypeScript では、`AdaptyPrice.currencyCode`、`AdaptyPrice.localizedString`、`AdaptySubscription.billingPlan` がオプションではなくなりました。テストのモックなど、これらのオブジェクトをコードで作成している場合は、これらのプロパティを設定してください。
+
+4.4 では、ユーザーが[コミットメントプラン](set-up-12-month-commitment)を購入していない限り、すべてのサブスクリプションの `billingPlan` は `up_front` になります。4.4 以前は、App Store のサブスクリプションのみが `billingPlan` を持っていました。

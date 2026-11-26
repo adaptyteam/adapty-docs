@@ -1,0 +1,367 @@
+---
+title: "Flow'larda sanal para birimi harcama ve satma"
+description: "Sanal para birimi içeren bir iOS uygulaması için iki flow oluşturun: kullanıcılar bir flow'da yerel düğmelerle para birimini harcar, bakiyeleri yetersiz olduğunda ise diğer flow'da daha fazlasını satın alır."
+metadataTitle: "Flow'larda sanal para birimi harcama ve satma | iOS SDK | Adapty Dokümanları"
+---
+
+Bu tarifi, iOS uygulamanızda flow'ları sanal para birimiyle birleştirmek için takip edin. Tarif şunları nasıl yapacağınızı gösteriyor:
+
+- Bir flow içinde para birimi bakiyesini gösterin ve flow açıkken güncel tutun.
+- Kullanıcı flow'daki bir native düğmeye dokunduğunda para birimi harcayın ve harcama işlemi sürerken bir döndürme animasyonu gösterin.
+- Kullanıcılara ne kadar daha fazla para birimine ihtiyaçları olduğunu gösterin.
+- Bir flow içinde para birimi paketleri ve abonelik sunun.
+- Uygulama kodunuzdan bir flow'u kapatıp başka bir flow açın.
+
+Paketler ve abonelik bir flow içinde olduğundan, uygulama yayınlamadan bunları değiştirebilir ve [A/B testi](ab-tests) yapabilirsiniz. A/B testi raporu satın alımları sayar. Harcamalar raporda görünmez: backend'iniz bunları Adapty'ye testle herhangi bir bağlantı olmaksızın gönderir.
+
+Bu tarifi tamamladığınızda, bir oyun için iki flow'unuz olacak. Enerji bitti flow'unda oyuncular, enerji için elmas harcar. Üst yükleme flow'unda ise elmas satın alırlar. Aynı adımlar, kullanıcıların sanal para harcadığı her uygulama için geçerlidir; örneğin yapay zeka üretimi başına kredi veya drama bölümü başına jeton. Kendi uygulamanızda enerji seçeneklerini ve elmasları kendi seçenekleriniz ve para biriminizle değiştirin. Tamamlanmış örnek şu şekilde çalışır:
+
+<VcTopUpHowItWorks />
+
+<DocVideo id="vc-top-up-demo.mp4" width="300px" alt="Bir telefonda elmas bakiyesi ve iki düğmeyle enerji bitmesi flow'u. Yetersiz elmasla oyuncu bir düğmeye dokunuyor ve 'You need 10 more diamonds' yazısıyla yenileme flow'u açılıyor. Bir paket satın alındıktan sonra enerji bitmesi flow'u yeniden açılıyor ve enerji yenileme düğmesine dokunulduğunda bir onay işareti beliriyor." />
+
+## Başlamadan önce \{#before-you-start\}
+
+- Kullanıcıların her cihazda ve yeniden yüklemeden sonra [bakiyelerini koruyabilmeleri](virtual-currency-balance#balances-profiles-and-devices) için oturum açmalarını sağlayın. Bir kullanıcı oturum açtığında, uygulama kodunuzda kullanıcıyı bir customer user ID ile [tanımlayın](identifying-users). Backend'inizin kullanıcıyı Adapty'ye tanıtabilmesi için bu ID'ye ihtiyacı vardır.
+- Flow'larda bakiyeyi ve butonları göstermek için uygulamanızı Adapty iOS SDK 4.4 veya sonraki bir sürüme güncelleyin.
+- Uygulamanızı flow'ları [çekmek](get-pb-paywalls) ve [görüntülemek](ios-present-paywalls) için yapılandırın.
+- [Gizli API anahtarınızla](ss-authorization) sunucu tarafı API'sini çağıran bir backend kurun. Anahtarı backend'inizde tutun: anahtara sahip olan herkes herhangi bir bakiyeye elmas ekleyebilir.
+- App Store Connect'te her elmas paketi için bir [consumable ürün](app-store-products) ve bir otomatik yenilenen abonelik [oluşturun](app-store-products). Ardından [her ürünü Adapty'ye ekleyin](create-product).
+- `DIAMONDS` koduyla bir [sanal para birimi oluşturun](create-virtual-currency). Her ürünü `DIAMONDS`'a [bağlayın](create-virtual-currency#link-products) ve Adapty'nin bakiyeye kaç elmas ekleyeceğini ayarlayın:
+  - **Diamond pack**: Her satın alma için **Credit amount**.
+  - **Subscription**: Her fatura dönemi için **Credit per cycle**. Bir kullanıcı ücretsiz deneme başlattığında Adapty yalnızca **Credit on trial start** miktarını ekler.
+
+  Set each of the three values to at least 30 diamonds, the price of an hour of unlimited energy. With these values, every purchase in the top-up flow covers the missing diamonds.
+
+## 1. Oyuncuların elmas harcadığı flow'u oluşturun \{#1-build-the-flow-where-players-spend-diamonds\}
+
+<VcTopUpEnergyFlowPlacement />
+
+### Elmas bakiyesini göster \{#show-the-diamond-balance\}
+
+<VcTopUpFlowBalance />
+
+### Enerji yenileme ve sınırsız enerji için düğme ekleme \{#add-buttons-for-an-energy-refill-and-unlimited-energy\}
+
+<VcTopUpSpendButtons />
+
+## 2. Oyuncu bir düğmeye dokunduğunda elmas harcama \{#2-spend-diamonds-when-a-player-taps-a-button\}
+
+Bu adımda, enerji bitmesi flow'u için backend kodunu ve uygulama kodunu yazacaksınız. Bu adımın sonunda yeterli elması olan oyuncular bunları flow içinde harcayabilecek.
+
+### Arka uçunuzdan elmas harcama \{#spend-diamonds-from-your-backend\}
+
+<VcTopUpSpend />
+
+### Elmas bakiyesi görünümünü oluşturun \{#create-the-balance-view\}
+
+Elmas bakiyesi için bir model ve `currency_balance` özel öğesi için bir SwiftUI görünümü oluşturun. Bu adımın ilerleyen kısımlarındaki ve 4. adımdaki kod, bakiyeyi backend'inizin yanıtlarından modele aktarır. Görünüm modeli gözlemlediğinden, bakiye değiştiğinde yeniden çizilir:
+
+```swift showLineNumbers title="Swift"
+
+// The diamond balance that your app keeps up to date
+@MainActor
+final class DiamondWallet: ObservableObject {
+    @Published var balance: Int? // nil until your backend returns a balance
+}
+
+struct DiamondBalanceView: View {
+    @ObservedObject var wallet: DiamondWallet
+
+    var body: some View {
+        Label(wallet.balance?.formatted() ?? "—", systemImage: "diamond.fill")
+    }
+}
+```
+
+`DiamondBalanceView`, sistem metin rengini kullanır; bu renk cihaz karanlık moddayken beyaza döner. Bir flow, [karanlık tema eklemediğiniz](paywall-dark-mode#add-a-dark-theme) sürece açık renklerini korur. Flow'larınızda karanlık tema yoksa görünüme `.foregroundStyle(.black)` gibi sabit bir metin rengi ayarlayın.
+
+Her iki flow'da da görünümü görüntülemek için, her özel öğeyi Type ve ID'sine göre bir görünümle eşleştiren [uygulama genelinde resolver](ios-flow-custom-elements#set-an-app-wide-resolver)'ınızdan döndürün. `DiamondWallet` türünde bir `wallet` özelliği ve `currency_balance` Type ile `diamonds` ID için `DiamondBalanceView` döndüren bir case ekleyin. Vurgulanan satırlar eklenecek kısımları göstermektedir. Uygulamanızda henüz uygulama genelinde bir resolver yoksa kodun tamamını kopyalayın:
+
+```swift showLineNumbers title="Swift" {5,13-14}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let wallet: DiamondWallet
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "currency_balance" where id == "diamonds":
+            return AnyView(DiamondBalanceView(wallet: wallet))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+`DiamondWallet` ile resolver oluşturun ve bunu uygulama genelinde resolver olarak ayarlayın. `AdaptyUI.setCustomElementsResolver(_:)` fonksiyonunu, örneğin uygulama başlangıcında, yalnızca bir kez çağırın:
+
+```swift showLineNumbers title="Swift"
+
+@MainActor let diamondWallet = DiamondWallet()
+
+// keep this instance: a resolver for one flow can reuse it
+@MainActor let customElementsResolver = CustomElementsResolver(wallet: diamondWallet)
+
+// at app launch, such as in application(_:didFinishLaunchingWithOptions:)
+AdaptyUI.setCustomElementsResolver(customElementsResolver)
+```
+
+### Düğme görünümünü oluşturun \{#create-the-button-view\}
+
+Her iki düğme için tek bir SwiftUI görünümü oluşturun. Bu görünüm, düğme metnini ve elmasları harcayan; harcama başarılı olduğunda `true` döndüren bir closure alır. Harcama işlemi sürerken oyuncular düğmede bir döngü gösterir ve düğme ek dokunuşları yok sayar. Harcama tamamlandıktan sonra oyuncular bir onay işareti görür:
+
+```swift showLineNumbers title="Swift"
+
+struct SpendButton: View {
+    let title: String
+    let spend: @MainActor () async -> Bool // true when the spend goes through
+
+    @State private var phase = Phase.ready
+    private enum Phase { case ready, spending, done }
+
+    var body: some View {
+        Button {
+            guard phase == .ready else { return } // ignore more taps while the spend runs
+            phase = .spending
+            // a Task keeps running when the flow closes and this view disappears
+            Task {
+                phase = await spend() ? .done : .ready
+            }
+        } label: {
+            Group {
+                switch phase {
+                case .ready: Text(title)
+                case .spending: ProgressView().tint(.white) // white on the filled button
+                case .done: Image(systemName: "checkmark")
+                }
+            }
+            .frame(maxWidth: .infinity) // the full width of the custom element
+        }
+        .buttonStyle(.borderedProminent)
+    }
+}
+```
+
+### Düğmeleri backend'inize bağlayın \{#connect-the-buttons-to-your-backend\}
+
+İki seçenek için bir enum oluşturun. Her seçeneğin ham değeri olarak ilgili özel öğenin kimliğini kullanın:
+
+```swift showLineNumbers title="Swift"
+// the options to spend diamonds on, with the IDs of their custom elements
+enum EnergyOption: String {
+    case energyRefill = "energy_refill"
+    case unlimitedEnergy = "unlimited_energy"
+
+    // keep the numbers equal to the costs on your backend
+    var title: String {
+        switch self {
+        case .energyRefill: return "Energy refill · 10 ◆"
+        case .unlimitedEnergy: return "Unlimited energy for 1 hour · 30 ◆"
+        }
+    }
+}
+```
+
+The following code is for UIKit. In the view controller that opens the out-of-energy flow, add a method that spends diamonds on an option. The method sends the option to your backend, and sets the balance in `diamondWallet` from the response. Then the method does one of the following:
+
+- **Harcama gerçekleşir**: Metot `true` döndürür ve oyuncular butonda onay işaretini görür. Bir saniye sonra kod flow'u kapatır.
+- **Bakiye yetersizdir**: Metot `openTopUpFlow` işlevini çağırır; bu işlev [bakiye yükleme flow'unu açar](#open-the-top-up-flow-when-a-player-doesnt-have-enough-diamonds).
+
+```swift showLineNumbers title="Swift"
+private var outOfEnergyFlow: AdaptyFlowController? // set when the out-of-energy flow opens
+
+// true when the spend goes through
+func spendDiamonds(on option: EnergyOption) async -> Bool {
+    do {
+        // the client of your backend: your backend sends the spend to Adapty
+        let result = try await GameBackend.shared.spendDiamonds(
+            on: option.rawValue,
+            idempotencyKey: UUID() // a new key for each spend; UUID() creates a version 4 UUID
+        )
+        switch result {
+        case let .spent(available):
+            diamondWallet.balance = available
+            // your backend gave the player the energy: show it in the game
+            Task {
+                try? await Task.sleep(for: .seconds(1)) // players see the checkmark first
+                outOfEnergyFlow?.dismiss(animated: true)
+            }
+            return true
+        case let .insufficientBalance(diamondsNeeded, available):
+            diamondWallet.balance = available
+            await openTopUpFlow(diamondsNeeded: diamondsNeeded)
+            return false
+        }
+    } catch {
+        // handle the error
+        return false
+    }
+}
+```
+
+Ardından enerji bitti flow'u için bir resolver yazın. `spend_button` Type'ına sahip her özel element için resolver, ID'den seçeneği okur ve spend metodunu çağıran bir `SpendButton` döndürür. Bir flow'a [eklediğiniz resolver](ios-flow-custom-elements#attach-a-resolver-to-one-flow), o flow'da uygulama genelindeki resolver'ın yerini alır. Enerji bitti flow'unda bakiyeyi göstermek için bu resolver, uygulama genelindeki resolver'ı çağırır:
+
+```swift showLineNumbers title="Swift"
+
+struct OutOfEnergyResolver: AdaptyUICustomElementsResolver {
+    let spend: @MainActor (EnergyOption) async -> Bool // the spend method of your view controller
+    let appWideResolver: any AdaptyUICustomElementsResolver
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        // the ID tells the buttons apart: energy_refill or unlimited_energy
+        if type == "spend_button", let option = EnergyOption(rawValue: id) {
+            return AnyView(SpendButton(title: option.title) { await spend(option) })
+        }
+        // other custom elements, such as the balance: the views of the app-wide resolver
+        return appWideResolver.view(forType: type, id: id, context: context)
+    }
+}
+```
+
+### Enerji bitti flow'unu uygulama kodunuzdan açın \{#open-the-out-of-energy-flow-from-your-app-code\}
+
+Bir oyuncunun enerjisi bittiğinde, aşağıdaki fonksiyonla enerji bitti flow'unu açın. Fonksiyon önce bakiyeyi almak için backend'inize sorgu yapar; böylece oyuncular flow açıldığında bakiyelerini görebilir. Ardından fonksiyon, `OutOfEnergyResolver`'ı flow'a ekler ve flow controller'ı `outOfEnergyFlow`'da tutar. Bu referans sayesinde `spendDiamonds`, flow'u kapatabilir:
+
+```swift showLineNumbers title="Swift"
+// call when a player runs out of energy
+func openOutOfEnergyFlow() async {
+    // the balance that players see when the flow opens; without it, players see a dash
+    if let available = try? await GameBackend.shared.diamondBalance() {
+        diamondWallet.balance = available
+    }
+    do {
+        let flow = try await Adapty.getFlow(placementId: "out_of_energy")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            customElementsResolver: OutOfEnergyResolver(
+                spend: { [weak self] option in
+                    await self?.spendDiamonds(on: option) ?? false
+                },
+                appWideResolver: customElementsResolver // the instance that you set app-wide
+            )
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        outOfEnergyFlow = flowController
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+Enerji bitti flow'unun delegate'i olarak, view controller aynı zamanda satın alma ve geri yüklemeler için [delegate metodlarını](ios-handling-events#handling-events-in-uikit) da uygulamalıdır. `didFinishPurchase` için [4. adımdaki](#open-the-out-of-energy-flow-again-after-a-purchase) kodu kullanın.
+
+SwiftUI'de, flow yapılandırmasını çekerken `OutOfEnergyResolver` ekleyin. Resolver'ın `spend` closure'ında spend metodunuzu çağırın. Flow yapılandırmasını `.flow` modifier'ı ile sunun ve delegate metodları yerine onun closure'larını kullanın. Closure'lar herhangi bir view controller almaz. Flow'u kapatmak için `isPresented` değerini `false` yapın.
+
+## 3. Oyuncuların elmas satın aldığı flow'u oluşturun \{#3-build-the-flow-where-players-buy-diamonds\}
+
+<VcTopUpFlowPlacement />
+
+### Oyuncunun kaç elmasa ihtiyacı olduğunu göster \{#show-how-many-diamonds-the-player-needs\}
+
+<VcTopUpFlowDiamondsNeeded />
+
+### Elmas paketleri ve abonelik ekle \{#add-diamond-packs-and-a-subscription\}
+
+<VcTopUpFlowOffers />
+
+## 4. Bir flow'u kapat ve diğerini aç \{#close-one-flow-and-open-the-other\}
+
+Bu adımın ardından, yeterli elması olmayan oyuncular top-up flow'undan daha fazla elmas satın alabilir ve ardından harcayabilir. Bu tarifde, tek bir view controller her iki flow'un da delegate'idir. Delegate metodunda flow'ları birbirinden ayırt etmek için `controller.flowPlacementId` özelliğini her flow'un placement ID'siyle karşılaştırın. SwiftUI'da, top-up flow'unu ikinci bir `.flow` modifier ile sunun ve bir flow'u diğerinin `didDisappear` closure'ından açın.
+
+### Bir oyuncunun yeterli elması olmadığında yenileme flow'unu açın \{#open-the-top-up-flow-when-a-player-doesnt-have-enough-diamonds\}
+
+Aşağıdaki fonksiyon, eksik elmas sayısını `diamonds_needed` etiketine iletir ve yenileme flow'unu açar. Bir view controller aynı anda yalnızca bir flow gösterebildiğinden, fonksiyon önce enerji bitti flow'unu kapatır, ardından yenileme flow'unu açar:
+
+```swift showLineNumbers title="Swift"
+func openTopUpFlow(diamondsNeeded: Int) async {
+    // with no value, players see the Initial value of the tag
+    let tags = diamondsNeeded > 0 ? ["diamonds_needed": diamondsNeeded.formatted()] : [:]
+    do {
+        let flow = try await Adapty.getFlow(placementId: "out_of_diamonds")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            tagResolver: tags
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        // a view controller presents one flow at a time
+        outOfEnergyFlow?.dismiss(animated: true) {
+            self.present(flowController, animated: true)
+        }
+    } catch {
+        // handle the error
+    }
+}
+```
+
+### Satın alma sonrasında enerji bitti flow'unu yeniden açma \{#open-the-out-of-energy-flow-again-after-a-purchase\}
+
+Bir oyuncu üst yenileme flow'unda bir paket veya abonelik satın aldığında, Adapty genellikle önce elmasları bakiyeye ekler. Ardından Adapty SDK'sı `didFinishPurchase`'ı çağırır ancak flow'u kapatmaz. Bu metodda aşağıdaki kod, backend'inizden yeni bakiyeyi ister, üst yenileme flow'unu kapatır ve enerji bitti flow'unu yeniden açar. Oyuncu orada yeni bakiyeyi görür ve elmas harcamak için bir butona basar. Satın almadan hemen sonra elmas harcamayın: oyuncu artık enerji istemeyebilir.
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFinishPurchase product: AdaptyPaywallProduct,
+    purchaseResult: AdaptyPurchaseResult
+) {
+    // canceled or pending: the flow stays open
+    guard purchaseResult.isPurchaseSuccess,
+          controller.flowPlacementId == "out_of_diamonds" // the top-up flow
+    else { return }
+    Task {
+        let balanceBefore = diamondWallet.balance ?? 0
+        if let available = try? await GameBackend.shared.diamondBalance() {
+            diamondWallet.balance = available
+        }
+        let diamondsArrived = (diamondWallet.balance ?? 0) > balanceBefore
+        controller.dismiss(animated: true) {
+            if diamondsArrived {
+                Task { await self.openOutOfEnergyFlow() } // the player taps a button again
+            } else {
+                // Adapty adds the diamonds later: tell the player in your own UI
+            }
+        }
+    }
+}
+```
+
+Oyuncu satın almayı iptal ettiğinde ya da satın alma beklemede olduğunda, kod üst yükleme flow'unu açık bırakır. Adapty SDK bu durumlarda da `didFinishPurchase`'ı çağırır, ancak bakiye aynı kalır.
+
+Bir satın alma başarılı olduğunda ancak backend'inizden gelen bakiye değişmediğinde, kod enerji doldurma flow'unu kapatır ve enerji tükendi flow'unu açmaz. Her iki flow'da da oyuncu, satın alma işleminin hemen ardından eski bakiyeyi görür. Adapty SDK'sı satın almayı Adapty ile anında doğrulayamazsa bakiye değişmez. Adapty, elmasları daha sonra, örneğin bir sonraki uygulama açılışında Adapty SDK'sı satın almayı Adapty'ye tekrar gönderdiğinde ekler. Bu süreye kadar, elmasların yolda olduğunu kendi arayüzünüzde oyuncuya bildirin.
+
+Kullanıcı [`DIAMONDS`'a bağlı](create-virtual-currency#link-products) bir ürün satın aldığında backend'inizden elmas eklemeyin: Bu elmasları Adapty ekler ve kullanıcı onları iki kez alır.
+
+## 5. Cihazda test edin \{#test-on-a-device\}
+
+Flow & Paywall Builder, uygulama kodunuzu çalıştıramaz; bu nedenle tuval üzerinde yalnızca özel öğelerin yedeklerini görürsünüz.
+
+Satın almalardan elde edilen elmasları görmek için [sandbox hesabıyla](test-purchases-in-sandbox) test edin. Sandbox ortamında bir abonelik birkaç dakikada bir yenilenir ve Adapty her yenilemede elmas ekler. Xcode'da bir StoreKit yapılandırma dosyası kullanıldığında, Adapty SDK satın almaları Adapty ile doğrulamaz ve Adapty hiç elmas eklemez.
+
+Tarifi test etmek için:
+
+1. [Her iki flow'u da yayınlayın](builder-save-publish). Önbelleğe alınmış sürümler yerine en son yayınlanan sürümleri görmek için cihazı bir [test cihazı](test-devices) olarak kaydedin.
+2. Uygulamanızı tarif koduyla çalıştırın ve elması olmayan bir oyuncu olarak giriş yapın. Oyunda enerjiyi bitirin. Enerji bitti flow'unun 0 bakiyesiyle açıldığını doğrulayın.
+3. Sınırsız enerji düğmesine dokunun. Düğmede bir yükleme simgesi belirdiğini ve ardından "You need 30 more diamonds" metniyle birlikte yükleme flow'unun açıldığını doğrulayın.
+4. Bir elmas paketi satın alın. Enerji bitti flow'unun yeni bakiyeyle tekrar açıldığını doğrulayın.
+5. Enerji yenileme düğmesine dokunun. Düğmede bir onay işareti belirdiğini, flow'un kapandığını ve oyunun oyuncuya enerji yenilemesi verdiğini doğrulayın.
+6. Adapty Kontrol Paneli'nde oyuncunun profilini açın. **Adjustment** işlemiyle [bakiyeyi](virtual-currency-balance#adjust-a-balance-manually) 10'un altına düşürün. Enerjiyi tekrar bitirin, enerji yenileme düğmesine dokunun ve yükleme flow'unda aboneliği satın alın. Enerji bitti flow'unun yeni bakiyeyle tekrar açıldığını doğrulayın.
+7. Sınırsız enerji düğmesine dokunun. Düğmede bir onay işareti belirdiğini, flow'un kapandığını ve oyunun oyuncuya sınırsız enerji verdiğini doğrulayın.
+8. <VcTopUpVerifyProfile />
+
+Bakiye veya bir düğme yerine neden yedek göründüğünü öğrenmek için [özel öğeleri test etme adımlarını](ios-flow-custom-elements#test-on-a-device) takip edin.

@@ -1,0 +1,51 @@
+---
+no_index: true
+---
+
+import Callout from '../Callout.astro';
+
+When a player taps a button in the out-of-energy flow, your app code calls your backend to spend diamonds on the option of that button. Your app code can't send the spend to Adapty, because the request needs your secret API key. Your backend calls [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction) with a negative `amount`, as in the [Virtual currency quickstart](virtual-currency-quickstart) tutorial. Send the spend without a balance request first: Adapty verifies the balance as part of the spend.
+
+Keep the cost of each option on your backend: 10 diamonds for an energy refill, and 30 for an hour of unlimited energy. Your app code only sends the option to your backend, so a modified version of your app can't lower the cost.
+
+```bash title="Spend diamonds"
+curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
+  -H "Authorization: Api-Key {your secret key}" \
+  -H "adapty-customer-user-id: player-42" \
+  -H "Idempotency-Key: 5221577a-8b4c-419a-a0f5-028e4598b265" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "items": [{"currency_code": "DIAMONDS", "amount": -30}],
+        "operation": "spend",
+        "feature": "unlimited_energy",
+        "customer_placement_id": "out_of_energy",
+        "reference_id": "energy_order_7781"
+      }'
+```
+
+The request identifies the spend, the player, and the option:
+
+- **`Idempotency-Key`**: A UUID v4 that your app code creates for each new spend, to protect the user from being debited multiple times for the same transaction. If you need to retry a transaction (for example, due to a network failure), reuse the key from the original transaction. The key stays valid for 1 hour. Once a transaction with the key succeeds, later requests with that key return the original transaction and don't change the balance.
+- **`adapty-customer-user-id`**: The customer user ID of the signed-in user. In your backend, read it from the sign-in session.
+- **`feature`**: A [label](virtual-currencies#feature) for the option, such as `unlimited_energy`. With this label, you can see what each spend was for in the [event history](virtual-currency-balance#review-balance-changes-in-the-event-history) of the player.
+
+Two optional fields help you trace a spend later. Both appear in the [transaction details](virtual-currency-balance#transaction-details) of the event history:
+
+- **`customer_placement_id`**: The ID of the screen in your app where the spend happened. With it, you can see which screen each spend came from. In this recipe, use the placement ID of the out-of-energy flow, `out_of_energy`.
+- **`reference_id`**: The ID of the related record in your backend, such as the energy order that the spend pays for. With it, your support team can match a spend to what the user received.
+
+If the spend goes through, give the player the energy from your backend: Adapty keeps the diamond balance, not the energy. Give the energy once per `transaction_id` of the response, because a retry with the same `Idempotency-Key` returns the original transaction. The `balances` array of the response includes the `available` value of `DIAMONDS`: the diamonds that the player can spend now. Return this value to your app code.
+
+If the balance can't cover the cost, the request fails with HTTP status 400 and doesn't change the balance. To detect this error, compare `error_code` with `insufficient_balance`. Then calculate how many diamonds the player needs: read the balance with [List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances), and subtract the `available` value of `DIAMONDS` from the cost. Return the result and the `available` value to your app code.
+
+If the result is 0 or less, Adapty added diamonds to the balance after the spend failed, such as for a subscription renewal. In this case, retry the request with the same `Idempotency-Key`, and return the result of the retry instead. Adapty doesn't keep the key of a failed spend, so it accepts the second request.
+
+When the first request with the same `Idempotency-Key` is still in progress, the retry fails with HTTP status 409 and the `idempotency_in_flight` error code. Wait for the number of seconds in the `Retry-After` header of the response, and retry the request with the same key.
+
+Spend requests from all your users count toward one limit: by default, 600 requests per minute for your app. A request over the limit fails with HTTP status 429 and the `rate_limited` error code. If you expect more spend requests at peak times, ask support which [rate limit](ss-authorization#rate-limits) applies to your app.
+
+On your backend, add an endpoint for the balance: call List virtual currency balances, and return the `available` value of `DIAMONDS`. The app code in this recipe calls this endpoint before the out-of-energy flow opens, and after a purchase.
+
+<Callout type="tip">
+When you [turn on credit expiration](create-virtual-currency#link-products) for the subscription, remind users to spend their credits in time. The `expiry.expiring` array of [List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances) lists how many credits expire and when. Show the soonest amount in a flow with a [custom tag](flow-custom-tags), such as "30 diamonds expire in 2 days".
+</Callout>

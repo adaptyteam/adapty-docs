@@ -24,20 +24,24 @@ Then ask, for example, "Before I publish this flow, did I miss anything?" Name t
 
 Five phases, all read-only:
 
-1. **Resolve and authenticate.** Confirms the CLI is new enough and your Adapty login is valid.
+1. **Resolve and authenticate.** Runs the latest Adapty CLI through `npx`, so the audit installs nothing on your machine, and confirms that your Adapty login is valid.
 2. **Pick the flow.** Lists your flows (`adapty flows list`) and asks which one to check.
-3. **Fetch.** Pulls the flow's config and your product catalog — the snapshot every check runs against.
+3. **Fetch.** Pulls the flow's config, your product catalog and offers, and every placement with its audiences — the snapshot every check runs against.
 4. **Run the checks.** Every check runs against that snapshot alone.
 5. **Report.** A verdict, not a list.
 
 ## What it checks
 
 - **Triggers**: An element whose copy promises an action but carries no interaction anywhere up its ancestor chain. It renders exactly like a working control and does nothing.
-- **Store compliance**: A restore action reachable somewhere in the flow, a link to your terms, a link to your privacy policy, and a way for a user to leave a paywall without buying.
+- **Store rules**: A restore action reachable somewhere in the flow, a link to your terms, a link to your privacy policy, and a way for a user to leave a paywall without buying. These checks come from the [paywall-compliance skill](paywall-compliance-skill), which flow-audit runs on every audit.
 - **Products**: A bound product missing from your catalog, a product with no store binding, a card claiming a billing period the product doesn't have, or a hardcoded price where a price variable belongs.
 - **Variables**: A variable the flow sets but never reads, so a screen collects an answer nothing acts on.
 - **Localization**: Empty translations, untranslated values, and per-locale coverage.
+- **Navigation**: A quiz branch that can never fire or leads to the wrong answer's screen, a screen with no way forward, and a purchase button that leaves the screen before the store answers.
+- **Fonts**: A custom font name that iOS or Android can't find in your app bundle, so the screen falls back to the system font.
 - **Placeholders**: Copy that was never finished — `Lorem ipsum`, `TODO`, `Your headline here` — and a flow still called `Untitled`.
+
+The paywall-compliance checker also reports shapes that have drawn store rejections, like a free-trial toggle or a per-week price larger than the billed amount. These findings appear in their own **Store review** section and never change the verdict: store reviewers are people, so a shape that drew a rejection isn't a certain one. For consumer law in the US, the UK, and the EU, and for recent rejections that developers report, run [paywall-compliance](paywall-compliance-skill) on the same flow. flow-audit offers it as a next step when the flow sells.
 
 ## Severity
 
@@ -52,34 +56,53 @@ Every finding gets one of three tiers:
 ## Example report
 
 ```
-Flow: Nimbus onboarding  ·  publication_failed
-7 screens · 3 locales · 2 products
+Not ready to publish yet: 2 things to fix first.
+Premium onboarding · Draft · 1 screen
 
-NOT READY FOR PRODUCTION — 2 blockers: no restore action, no way off the paywall
+Fix before publishing
 
-BLOCKERS
+1. There's no way to restore a purchase. Someone who reinstalls your app or moves
+   to a new phone can't get their subscription back.
+   Fix: Add a "Restore purchases" action to a button, usually a small link under
+   the purchase button. (App Store 3.1.1)
 
-1. This row is dead text.
-   scr_paywall / el_089T reads "Restore purchase · Terms · Privacy" and carries no
-   interaction at all. It renders exactly like a working row, and none of the following work:
-     · no restorePurchases action anywhere in the flow    → App Store 3.1.1
-     · no link to terms/EULA                              → App Store 3.1.2
-     · no link to a privacy policy                        → App Store 3.1.2
+2. There are no links to your Terms of Use or Privacy Policy: the flow has no
+   "Open URL" action at all.
+   Fix: Add two links with "Open URL" actions that open those pages. (App Store 3.1.2)
 
-2. a user who does not buy cannot leave this screen: no closeFlow or navigateBack is
-   reachable from it.
+Worth fixing
+
+3. No placement shows this flow yet, so your app can't fetch it and nobody will see it.
+   Fix: Once it's published, attach it to a placement.
+
+What happens next
+
+I can fix all of these. For the links, send me the web addresses of your Terms of Use
+and Privacy Policy pages. I'll show you the screen before and after, and change nothing
+until you say yes. Want me to?
 ```
 
-This flow's status is `publication_failed`, and both the Flow & Paywall Builder's publish checks and `flows config validate` already passed it — neither one reads a screen's copy or walks its interactions. The report itself leads with the verdict, then a numbered list of blockers with the exact element and screen to open.
+The report leads with the verdict, then the numbered findings, grouped by how much they matter: **Fix before publishing**, **Worth fixing**, and **I could not check these**. The Flow & Paywall Builder's publish checks and `flows config validate` can both pass a flow like this one, because neither reads a screen's copy or follows its buttons.
 
-A clean flow's verdict line reads `READY FOR PRODUCTION`, with nothing padded on after it. If flow-audit found no blockers or risks but still has open questions, the verdict reads `READY, PENDING n CHECKS I CANNOT MAKE` instead of certifying something it couldn't see.
+The verdict line has three forms:
+
+| Verdict | When |
+|---|---|
+| **Ready to publish** | No blockers, and you answered every open question. |
+| **Almost ready: n things I could not check** | No blockers, but questions remain open. The report lists them. |
+| **Not ready to publish yet: n things to fix first** | At least one blocker. |
+
+flow-audit doesn't certify what it couldn't see, so an unanswered question keeps the verdict from **Ready to publish**.
 
 ## What it can't check
 
-flow-audit can't tell you whether the flow is attached to a placement. `adapty flows get` returns only a flow's `id`, `name`, `status`, and `updated_at`, and the CLI has no command that lists the placements a flow is on. This is a fixed reminder in every report, never a check: confirm the placement yourself on the [Placements](placements) page, or see [Create placement](create-placement).
+- **Whether your app fetches the placement**: The skill reads which placements show the flow and whether they're switched on, but it can't see your app's code. When a placement shows the flow, the report names it, and your app has to fetch the flow by that placement ID. To attach a flow, see [Create placement](create-placement).
+- **What a custom action does**: The report lists every custom action and asks what each one does in your app. Until you answer, the verdict can't be **Ready to publish**.
+- **Whether your app adds its own close button**: If a paywall relies on the app that presents it for a way out, flow-audit can't see that, so it asks.
+- **Why a flow is in `publication_failed` status**: The skill reports the status as a question and quotes the error that Adapty returned, if there is one. It doesn't guess a cause.
 
 ## Who fixes what
 
-Every report ends with its own `WHAT TO DO NEXT` section, split by who does the work: what an agent can change in the flow itself, what only you can change in the Adapty dashboard, and what to confirm yourself before you ship.
+Every report with findings ends with a **What happens next** section, split by who does the work: the questions to answer first, what the agent can fix, what only you can change in the Adapty dashboard, and what's optional. When nothing blocks the flow, the report also lists what to confirm yourself before you ship, with where to look.
 
-flow-audit doesn't make any of those changes itself — it's read-only by design, so a flow that fails stays exactly as you left it. Hand the report to the [flow-generator skill](flow-generator-skill), which owns the backup, your approval, and the actual write.
+flow-audit doesn't make any of those changes itself — it's read-only by design, so a flow that fails stays exactly as you left it. When you say yes to its offer, the [flow-generator skill](flow-generator-skill) makes the fixes: it backs up the flow, shows you each change, and writes nothing until you approve. Once the flow is published, it can also attach the flow to a placement.

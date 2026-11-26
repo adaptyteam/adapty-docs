@@ -1,0 +1,136 @@
+---
+title: "Refund Saver 的 Agent 技能"
+description: "安装 refund-saver 技能，让你的 AI 工具能够开启 Adapty Refund Saver、设置每个商店及特定用户的退款偏好，并排查 Refund Saver 无法开启或不响应请求的原因。"
+metadataTitle: "Refund Saver Agent 技能 | Adapty 文档"
+---
+
+[Refund Saver](refund-saver) 自动响应 App Store 退款请求和 Google Play 退款争议审核，帮助商店拒绝不合理的退款。refund-saver 技能可让你通过 AI 工具运行 Refund Saver。Agent 会读取各商店已配置的密钥，确认 Refund Saver 所需条件，并将其启用。它可以设置每个商店的退款偏好、App Store 同意政策，以及特定用户的退款偏好。当 Refund Saver 无法启动或未响应任何请求时，Agent 会指出可能的原因。该技能通过 [`adapty refund-saver` CLI 命令](developer-cli-refund-saver)或 [Adapty MCP 服务器](adapty-mcp)运行。
+
+:::note
+在技能开启或关闭 Refund Saver、或更改某项偏好设置或同意设置之前，它会用简单易懂的语言告诉你此次变更的作用，并在你确认后才会执行。
+:::
+
+## 你可以提问的内容 \{#what-you-can-ask\}
+
+像跟同事沟通一样直接说就行，不需要指定技能名称：
+
+```
+Turn on Refund Saver for my app.
+
+Is Refund Saver on, and is anything missing?
+
+Ask the App Store for a prorated refund instead of declining.
+
+Grant every refund request from the user with profile ID <profile-id>.
+
+Refund Saver won't turn on. Why?
+
+Refund Saver is on, but it answers no requests.
+
+Turn on Refund Saver for all my apps.
+```
+
+<AgentChat title="refund-saver" caption="示例对话（来自示例应用）。您的应用和设置可能有所不同。">
+<ChatTurn role="user">为我的应用开启 Refund Saver。</ChatTurn>
+<ChatTurn role="tool" summary="读取状态和商店密钥">
+
+- `adapty refund-saver get`
+- `adapty refund-saver readiness`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+Refund Saver 已关闭。App Store 已具备 Refund Saver 所需的密钥。Google Play 尚未配置：请在 **App settings** > **Android SDK** 中添加包名和服务账号密钥文件。在此之前，Refund Saver 不会响应任何 Google Play 请求。
+
+我无法读取您的商店通知。请验证 App Store Server Notifications V2 和 Google Play 实时开发者通知是否能够到达 Adapty。若没有这些通知，Refund Saver 将无法响应来自该商店的任何请求。
+
+您当前的同意策略是"退出"：Adapty 会向 Apple 发送无同意记录的用户的消费数据。您的应用是否会先询问用户是否同意？如果是，Refund Saver 启用后我将切换为"加入"策略。
+
+</ChatTurn>
+<ChatTurn role="confirm" summary="开启 Refund Saver">
+
+为您的应用开启 Refund Saver。
+
+- App Store：拒绝第一次退款请求，批准下一次。同意政策：选择退出，因此 Adapty 会将没有记录同意的用户的消耗数据发送给 Apple。
+- Google Play：拒绝第一次退款审查，批准下一次。在添加密钥之前不会有任何回应。
+- **您的隐私政策必须声明您出于退款请求目的与 Apple 共享消耗数据。**
+
+是否开启？
+
+1. 是
+2. 否
+
+</ChatTurn>
+</AgentChat>
+
+## 开始之前 \{#before-you-start\}
+
+- **Refund Saver 附加组件**：如果您的账户未激活 Refund Saver 附加组件，Adapty 将拒绝启用 Refund Saver。请在账户设置的 [**Subscription & Billing**](account#subscription--billing) 标签页中激活该附加组件。
+- **应用商店连接**：您销售产品的每个应用商店都必须连接到 Adapty：[App Store](app-store-connection-configuration) 或 [Google Play](google-play-store-connection-configuration)。
+- **应用商店通知**：应用商店通过通知将每条退款请求发送给 Adapty。请设置 [App Store Server Notifications V2](enable-app-store-server-notifications) 和 [Google Play 实时开发者通知](enable-real-time-developer-notifications-rtdn)。
+- **App Store 隐私政策与用户同意**：选择您的应用获取用户同意的方式——选择加入提示或选择退出条款，并在隐私政策中声明您将消费数据分享给 Apple。详见[获取用户同意](refund-saver#obtain-user-consent)。
+- **已连接到 Adapty 账户的 AI 工具**：该技能通过 [Adapty MCP 服务器](adapty-mcp) 或 [Adapty CLI](developer-cli) 运行。在 Claude Code 和 Codex 中，插件会自动添加 MCP 服务器，您只需登录即可。如果两者都未配置，技能将询问您使用哪个并完成设置。
+
+## 安装技能 \{#install-the-skill\}
+
+refund-saver 技能是 [Adapty 插件](manage-adapty-with-ai) 的组成部分。
+
+<AdaptySkillsInstall />
+
+## 技能如何设置 Refund Saver \{#how-the-skill-sets-up-refund-saver\}
+
+1. **读取状态**：技能会读取应用的 Refund Saver 是否已开启，以及每个应用商店是否具备 Refund Saver 所需的密钥：App Store 所需的[应用内购买密钥](generate-in-app-purchase-key)，以及 Google Play 所需的服务账号密钥。对于缺少密钥的商店，技能会说明需要在 **App settings** > **iOS SDK** 或 **Android SDK** 中添加什么。
+2. **说明无法读取的内容**：没有任何命令能显示商店通知、隐私政策或应用的用户授权方式。技能会请你确认商店通知是否已到达 Adapty，并附上[商店前提条件](refund-saver#store-specific-prerequisites)的链接，说明隐私政策和授权要求。
+3. **开启 Refund Saver**：当你销售产品的至少一个商店已具备所需密钥时，技能会请求你的确认，然后为两个商店同时开启 Refund Saver，并向你展示 Adapty 关于 Refund Saver 附加功能的说明。尚未配置密钥的商店在添加密钥之前不会有任何反应。若没有任何商店准备就绪，技能不会开启任何功能，并会说明需要添加的内容。
+4. **设置你选择的偏好**：对于大多数应用，技能推荐使用默认退款偏好 **Decline first refund request, grant all next**。对某个商店偏好、授权政策或单个用户设置的每次更改，都需要单独确认。
+
+Refund Saver 在已回复的请求出现在 [Refund Saver](https://app.adapty.io/refund-saver) 页面时，或者当技能根据您的请求列出这些请求时才会生效。Adapty 会在下一个退款请求到来时回复第一条，这在购买量较少的应用中可能需要等待数周。
+
+同意策略决定 Refund Saver 是否向 Apple 发送没有记录同意状态的用户数据。请选择与您应用获取同意方式相匹配的策略。由于技能无法查看您应用的同意提示，因此会询问您哪种策略适合。如需了解每个选项的具体作用，请参阅[设置默认同意策略](refund-saver#set-the-default-consent-policy)。
+
+要更改单个用户的设置，请向技能提供该用户的 **Adapty 用户画像 ID**，而非你的应用中的 customer user ID。你可以在看板中该用户的[用户画像](profiles-crm)页面找到此 ID。技能也可以从 Refund Saver 已回复的退款申请中读取该 ID。
+
+如需为多个应用开启 Refund Saver，请一次性告知所有应用。技能会逐一读取每个应用的信息，然后显示一条确认信息，列出所有将被更改的应用。
+
+## 每次变更前技能会询问的内容 \{#what-the-skill-asks-before-each-change\}
+
+只有你对技能问题的回答才算数。在技能展示变更之前笼统地说"继续"是无效的。如果你回答"否"，技能将不做任何修改。
+
+| 变更 | 技能提示内容 |
+|---|---|
+| 开启 Refund Saver | 从现在起，Adapty 将按照各商店的偏好设置，代为处理该应用的 App Store 退款请求和 Google Play 拒付申诉。技能会说明 App Store 的同意政策。选择 **Opt-out** 时，Adapty 还会向 Apple 发送未记录同意的用户的消费数据。无论选择哪种政策，您的隐私政策中都必须说明：您会将消费数据共享给 Apple 用于退款请求处理。 |
+| 关闭 Refund Saver | Adapty 停止处理该应用的 App Store 退款请求和 Google Play 拒付申诉。Refund Saver 附加功能将持续有效，直到您在 **Subscription & Billing** 标签页中取消订阅。 |
+| 更改某个商店的偏好或同意政策 | 当前值和新值。新值将应用于该商店的所有新请求。 |
+| 更改某个用户的设置 | 该用户的当前偏好或同意状态，以及更改后的值。针对单个用户的授权或拒绝设置，在两个商店上均优先于商店的全局偏好设置。 |
+
+在计划任务或脚本中运行时，无需人工响应，技能仅执行读取操作。若需变更，它会说明变更内容并提供供你执行的命令。
+
+## 当 Refund Saver 未按预期工作时 \{#when-refund-saver-doesnt-work-as-expected\}
+
+- **Adapty 拒绝开启 Refund Saver**：技能会告知 Adapty 返回的原因以及由谁来处理：
+  - 您的账户未激活 Refund Saver 附加组件。请在 **Subscription & Billing** 标签页中激活。
+  - 您账户的 Apple 凭证无效。请在 **App settings** 中修复。
+  - 您的账户无法开启 Refund Saver。请联系 Adapty 支持团队。
+
+  - 修复后，请让技能重新尝试。它不会自动重试。
+- **Adapty 拒绝每次更改**：您的 Adapty 账户可以查看该应用，但在其公司内没有编辑权限。请联系公司所有者或管理员获取编辑权限。
+- **退款保护已开启，但未响应任何请求**：技能会读取退款保护已响应的请求及每个商店的密钥，然后列出可能的原因：
+  - 某个商店没有密钥，或商店不接受密钥。请在 **App settings** 中进行验证。
+  - 商店通知未到达 Adapty。
+  - 同意策略设置为 **Opt-in**，但您的应用从未向 Adapty 发送用户同意信息，Adapty 因此不会向 Apple 发送消费数据。
+  - 在 Google Play 上，退款保护仅响应拒付（chargeback）。普通退款请求由 Google 自行决定，无需 Adapty 介入。详见[商店差异说明](refund-saver#how-the-stores-differ)。
+  - 购买量较少的应用可能数周内都不会收到退款请求。
+- **Google Play 处理结果显示延迟**：Google 在拒绝拒付请求时不会通知 Adapty，因此 Adapty 会轮询订单状态，直到审核完成。Google Play 的处理结果进入请求列表和节省金额统计的时间晚于 App Store。
+
+## 与其他技能配合使用 \{#with-other-skills\}
+
+- **查看 Refund Saver 的节省情况**：[growth-advisor 技能](export-analytics-with-ai)会读取 Refund Saver 挽回的金额及其胜率，并与您的退款数据进行对比。当退款率较高且 Refund Saver 未开启时，它会建议您启用 Refund Saver。当某个应用中的 Refund Saver 已产生节省效果时，它还会读取您的其他应用信息，并为尚未开启 Refund Saver 的应用提供开启建议。您确认后，它会将变更交由 refund-saver 技能执行。
+- **接入 Adapty SDK**：[adapty-integration 技能](adapty-sdk-integration-skill)完成后，会提示您是否要配置 Refund Saver。
+
+## 限制 \{#limits\}
+
+- **无法更改插件**：该技能无法激活或取消 Refund Saver 插件。请在账户设置的 **Subscription & Billing** 标签中操作。
+- **不涉及应用代码**：该技能不会编写向 Adapty 发送用户偏好或同意信息的应用代码。如需添加此代码，请参阅[在应用代码中管理 Refund Saver](refund-saver#manage-refund-saver-from-your-app-code)。
+- **无法预估节省的退款金额**：每个请求由应用商店决定，因此该技能无法预测 Refund Saver 能节省多少退款。
+
+要自行运行命令（不使用技能），请参阅[退款拦截命令](developer-cli-refund-saver)。
