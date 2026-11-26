@@ -5,9 +5,8 @@ interface Props {
     currentSectionId: 'tutorial' | 'sdk' | 'api';
     currentPlatformId: string;
     currentSlug: string;
-    tutorialSidebar: any[];
-    apiSidebar: any[];
-    allSdkSidebars: Record<string, any[]>;
+    /** JSON with every tree the menu can show; see src/pages/sidebars.json.ts */
+    sidebarsUrl: string;
     sdkPlatforms: { id: string; label: string; sidebar: string }[];
     currentLocale?: string;
 }
@@ -16,9 +15,7 @@ const {
     currentSectionId,
     currentPlatformId,
     currentSlug,
-    tutorialSidebar,
-    apiSidebar,
-    allSdkSidebars,
+    sidebarsUrl,
     sdkPlatforms,
     currentLocale,
 } = Astro.props;
@@ -36,6 +33,7 @@ const ui = getUIStrings(currentLocale);
     class="msw-root lg:hidden px-3 pt-2 pb-1"
     data-current-section={currentSectionId}
     data-current-platform={currentPlatformId}
+    data-sidebars-url={sidebarsUrl}
 >
     <!-- Tab bar -->
     <nav class="msw-tabs" aria-label="Documentation sections">
@@ -59,8 +57,8 @@ const ui = getUIStrings(currentLocale);
     <!--
       The link trees are not server-rendered: the desktop nav already carries
       the current section's links, and repeating all three trees here more than
-      doubled every page. They are rendered from the JSON island below the
-      first time the menu opens on a given page.
+      doubled every page. They are rendered from sidebars.json, fetched the
+      first time the menu opens.
     -->
 
     <!-- Tutorial panel -->
@@ -97,8 +95,6 @@ const ui = getUIStrings(currentLocale);
         <ul class="space-y-1 mt-2" data-msw-list="api"></ul>
     </section>
 
-    <!-- JSON data island: every sidebar the menu can show, resolved via transformItems() at build time -->
-    <script type="application/json" id="msw-sidebars-data" set:html={JSON.stringify({ tutorial: tutorialSidebar, api: apiSidebar, sdk: allSdkSidebars })}></script>
 
 <script>
     // ─── HTML helpers ────────────────────────────────────────────────────────────
@@ -121,7 +117,7 @@ const ui = getUIStrings(currentLocale);
 
     /**
      * Render a sidebar item as an HTML string matching SidebarItem.astro structure.
-     * Called when swapping SDK platform links client-side from the JSON island.
+     * Called when rendering a panel client-side from sidebars.json.
      *
      * Uses data-msw-link / data-msw-container (NOT data-sidebar-link / data-sidebar-container)
      * so that Sidebar.astro's updateActiveState() — which does document.querySelectorAll('[data-sidebar-link]')
@@ -293,27 +289,49 @@ const ui = getUIStrings(currentLocale);
         });
     }
 
-    // ─── JSON data island ─────────────────────────────────────────────────────────
+    // ─── Sidebar data ─────────────────────────────────────────────────────────────
 
     type SidebarsData = { tutorial?: any[]; api?: any[]; sdk?: Record<string, any[]> };
 
-    // Parsed once per island element; a cross-platform navigation swaps the
-    // <aside>, and with it the element, so the cache follows the element.
-    let cachedData: { el: Element; data: SidebarsData } | null = null;
+    // One fetch per URL (the URL differs per locale). Module state survives
+    // client-side navigations, so the menu fetches at most once per locale.
+    const loaded = new Map<string, SidebarsData>();
+    const pending = new Map<string, Promise<void>>();
 
-    function getSidebarsData(): SidebarsData {
-        // Only one MobileSectionSwitcher exists per page — id is unique
-        const el = document.getElementById('msw-sidebars-data');
-        if (!el) return {};
-        if (cachedData?.el === el) return cachedData.data;
-        let data: SidebarsData = {};
-        try { data = JSON.parse(el.textContent || '{}'); } catch { /* keep empty */ }
-        cachedData = { el, data };
-        return data;
+    function sidebarsUrl(): string {
+        return document.querySelector<HTMLElement>('.msw-root')?.dataset.sidebarsUrl ?? '';
     }
 
-    function getSdkSidebars(): Record<string, any[]> {
-        return getSidebarsData().sdk ?? {};
+    /** The data if it has arrived; otherwise starts the fetch and returns null. */
+    function getSidebarsData(): SidebarsData | null {
+        const url = sidebarsUrl();
+        return loaded.get(url) ?? (void loadSidebars(), null);
+    }
+
+    const hasSidebarsData = () => loaded.has(sidebarsUrl());
+
+    function loadSidebars(): Promise<void> {
+        const url = sidebarsUrl();
+        if (!url || loaded.has(url)) return Promise.resolve();
+        let request = pending.get(url);
+        if (!request) {
+            request = fetch(url)
+                .then((r) => {
+                    if (!r.ok) throw new Error(`${r.status} ${url}`);
+                    return r.json();
+                })
+                .then((data: SidebarsData) => { loaded.set(url, data); })
+                .catch((error) => console.error('Mobile menu: could not load the navigation.', error))
+                .finally(() => pending.delete(url)); // a failed load is retried on the next open
+            pending.set(url, request);
+        }
+        return request;
+    }
+
+    /** API pages start with the API tree's top-level categories collapsed, so the spec's own nav stands out. */
+    function apiItems(root: HTMLElement, items: any[]): any[] {
+        if (root.dataset.currentSection !== 'api') return items;
+        return items.map((it) => it.type === 'category' ? { ...it, collapsible: true, collapsed: true } : it);
     }
 
     function currentActiveId(): string {
@@ -325,7 +343,13 @@ const ui = getUIStrings(currentLocale);
         const list = root.querySelector<HTMLElement>(`[data-msw-list="${section}"]`);
         if (!list) return;
         if (!list.hasAttribute('data-rendered')) {
-            list.innerHTML = renderItems(getSidebarsData()[section] ?? [], currentActiveId());
+            const data = getSidebarsData();
+            if (!data) {
+                loadSidebars().then(() => { if (hasSidebarsData()) ensureListRendered(root, section); });
+                return;
+            }
+            const items = data[section] ?? [];
+            list.innerHTML = renderItems(section === 'api' ? apiItems(root, items) : items, currentActiveId());
             list.setAttribute('data-rendered', '');
             initToggles(list);
         }
@@ -368,17 +392,30 @@ const ui = getUIStrings(currentLocale);
 
     // ─── SDK platform switching ───────────────────────────────────────────────────
 
-    function switchPlatform(root: HTMLElement, platformId: string) {
-        const sidebars = getSdkSidebars();
-        const items = sidebars[platformId];
-        if (!items) return;
-
-        // Update picker: data-is-selected tracks browsing selection (not data-is-current which is fixed)
+    /** data-is-selected tracks the platform being browsed (data-is-current stays the page's own). */
+    function markSelectedPlatform(root: HTMLElement, platformId: string) {
         root.querySelectorAll<HTMLElement>('.msw-platform-btn').forEach((btn) => {
             btn.dataset.platformId === platformId
                 ? btn.setAttribute('data-is-selected', '')
                 : btn.removeAttribute('data-is-selected');
         });
+    }
+
+    function switchPlatform(root: HTMLElement, platformId: string) {
+        const data = getSidebarsData();
+        if (!data) {
+            // Render once the data arrives, unless another platform was picked meanwhile
+            markSelectedPlatform(root, platformId);
+            loadSidebars().then(() => {
+                const selected = root.querySelector<HTMLElement>('.msw-platform-btn[data-is-selected]');
+                if (hasSidebarsData() && selected?.dataset.platformId === platformId) switchPlatform(root, platformId);
+            });
+            return;
+        }
+        const items = data.sdk?.[platformId];
+        if (!items) return;
+
+        markSelectedPlatform(root, platformId);
 
         // Re-render SDK links
         const linksContainer = root.querySelector<HTMLElement>('#msw-sdk-links');
@@ -452,6 +489,11 @@ const ui = getUIStrings(currentLocale);
      * Called whenever the sidebar transitions from closed → open.
      */
     function resetToCurrentPage(root: HTMLElement) {
+        if (!getSidebarsData()) {
+            // First open: reset once the trees arrive, so the panel can scroll to the current page
+            loadSidebars().then(() => { if (hasSidebarsData() && isMenuOpen()) resetToCurrentPage(root); });
+            return;
+        }
         const section = root.dataset.currentSection as string;
         const platform = root.dataset.currentPlatform as string;
 
@@ -533,6 +575,10 @@ const ui = getUIStrings(currentLocale);
     //   syncFromSSR is NOT called here — SSR HTML is already correct at after-swap time.
     init();
     document.addEventListener('astro:page-load', () => { syncFromSSR(); init(); });
+    // Start fetching the trees on the tap that opens the menu, ahead of the open itself
+    document.addEventListener('pointerdown', (e) => {
+        if ((e.target as Element | null)?.closest?.('#mobile-menu-btn')) void loadSidebars();
+    });
     document.addEventListener('astro:after-swap', () => { init(); });
 </script>
 </div>

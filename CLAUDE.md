@@ -189,7 +189,7 @@ These apply to every doc edit, however small. They are the rules no linter can c
 
 These are the styled visual blocks that articles use. Most of their CSS lives in `global.css`; the two component-scoped exceptions are noted below.
 
-- **Code blocks** (`.code-block-wrapper`) — title bar, copy button, Shiki syntax highlighting, dark mode color inversion, diff styling, line highlighting (`.highlight-line`)
+- **Code blocks** (`.code-block-wrapper`) — title bar, copy button, Shiki syntax highlighting, diff styling, line highlighting (`.highlight-line`). The frame and copy button are rendered at build time by the Shiki transformers in `src/plugins/shiki-highlight-transformer.mjs`; dark-mode token colors come from Shiki's dual themes (`--shiki-dark`), not JS
 - **Callouts** — rendered by remark-aside plugin into `<Callout>` (note/tip/info/warning/danger/important/link). Styles are scoped inside `src/components/Callout.astro`, not `global.css`
 - **Details/Accordion** — collapsible sections with a tinted summary bar and chevron. Styles are scoped in `src/components/Details.astro`, not `global.css` (see the `Details` row in the components table)
 - **Ordered lists** (`.docs-prose ol`) — circular step-number bullets (Mintlify-inspired)

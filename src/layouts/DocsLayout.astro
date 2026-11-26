@@ -871,128 +871,30 @@ const showHreflang = !isFullWidth && !noindex;
     <!-- End LiveChat Widget -->
 
     <script>
-      // Recolor Shiki token <span> colors for dark mode (CSS cannot reach into
-      // Shiki's inline per-token `style="color:..."` attributes, so this stays
-      // in JS). Stores the original (light-mode) color on first run and
-      // restores it when light mode is active again.
-      function adjustTokenBrightness(code) {
-        const isDark = document.documentElement.classList.contains('dark');
-        const tokens = code.querySelectorAll('span[style*="color"], span[data-original-color]');
+      // Copy buttons on code blocks. The frame and button are rendered at build
+      // time (codeBlockWrapperTransformer in src/plugins/shiki-highlight-transformer.mjs);
+      // one delegated listener serves every block on every page.
+      document.addEventListener('click', async (e) => {
+        const button = (e.target as Element | null)?.closest?.('.code-block-wrapper > .copy-button');
+        const pre = button?.parentElement?.querySelector('pre');
+        if (!button || !pre) return;
 
-        tokens.forEach(token => {
-          if (!token.hasAttribute('data-original-color')) {
-            token.setAttribute('data-original-color', token.style.color);
-          }
-
-          const originalColor = token.getAttribute('data-original-color');
-          if (!originalColor) return;
-
-          if (isDark) {
-            const colorMatch = originalColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-            if (colorMatch) {
-              const [, r, g, b] = colorMatch.map(Number);
-
-              // Calculate brightness (perceived luminance)
-              const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
-
-              // If color is very dark (black or near-black), lighten to the dark-mode token color
-              if (brightness < 50) {
-                token.style.setProperty('color', 'rgb(212, 212, 216)', 'important'); // #d4d4d8
-              } else {
-                // Otherwise brighten by 50%
-                const newR = Math.min(255, Math.floor(r * 1.5));
-                const newG = Math.min(255, Math.floor(g * 1.5));
-                const newB = Math.min(255, Math.floor(b * 1.5));
-                token.style.setProperty('color', `rgb(${newR}, ${newG}, ${newB})`, 'important');
-              }
-            }
-          } else {
-            // Light mode: restore original color
-            token.style.setProperty('color', originalColor, 'important');
-          }
-        });
-      }
-
-      function enhanceCodeBlocks() {
-        const preElements = document.querySelectorAll('article pre:not(.processed)');
-
-        preElements.forEach((pre) => {
-          // Skip pres inside the API reference code-samples block — that component
-          // owns its own header, copy button, and Shiki syntax highlighting.
-          if (pre.closest('.api-code-samples')) {
-            pre.classList.add('processed'); // mark so theme-change pass also ignores
-            return;
-          }
-          pre.classList.add('processed');
-
-          // Mark that JS has processed this element (for CSS to remove the brightness filter)
-          pre.setAttribute('data-js-enhanced', 'true');
-
-          const code = pre.querySelector('code');
-          if (code) {
-            adjustTokenBrightness(code);
-          }
-
-          // Extract metadata from the pre tag (populated by Shiki transformer)
-          const title = pre.getAttribute('data-title') || '';
-
-          const wrapper = document.createElement('div');
-          wrapper.className = 'code-block-wrapper';
-          if (title) {
-            wrapper.setAttribute('data-title', title);
-          }
-
-          // Copy button — structure and state only, all visuals come from CSS
-          const copyBtn = document.createElement('button');
-          copyBtn.className = 'copy-button';
-          copyBtn.textContent = 'Copy';
-
-          copyBtn.onclick = async () => {
-            try {
-              await navigator.clipboard.writeText(pre.textContent || '');
-              (window as any).docsTrack?.('docs_code_copied', {
-                language: pre.getAttribute('data-language') || undefined,
-                title: title || undefined,
-              });
-              copyBtn.textContent = 'Copied!';
-              copyBtn.classList.add('copied');
-
-              setTimeout(() => {
-                copyBtn.textContent = 'Copy';
-                copyBtn.classList.remove('copied');
-              }, 2000);
-            } catch (err) {
-              console.error('Failed to copy text: ', err);
-            }
-          };
-
-          pre.parentNode?.insertBefore(wrapper, pre);
-          wrapper.appendChild(copyBtn);
-          wrapper.appendChild(pre);
-        });
-      }
-
-      // Re-run token brightness adjustment when theme changes.
-      // Backgrounds, borders, and button chrome are handled by CSS via the
-      // `.dark` class and need no JS involvement here.
-      window.addEventListener('themechange', () => {
-        document.querySelectorAll('article pre').forEach(pre => {
-          // Skip pres inside the API reference code-samples block — they are
-          // self-styled by Shiki and the component, not by the global enhancer.
-          if (pre.closest('.api-code-samples')) return;
-
-          const code = pre.querySelector('code');
-          if (code) {
-            adjustTokenBrightness(code);
-          }
-        });
+        try {
+          await navigator.clipboard.writeText(pre.textContent || '');
+          (window as any).docsTrack?.('docs_code_copied', {
+            language: pre.getAttribute('data-language') || undefined,
+            title: button.parentElement?.getAttribute('data-title') || undefined,
+          });
+          button.textContent = 'Copied!';
+          button.classList.add('copied');
+          setTimeout(() => {
+            button.textContent = 'Copy';
+            button.classList.remove('copied');
+          }, 2000);
+        } catch (err) {
+          console.error('Failed to copy text: ', err);
+        }
       });
-
-      // Run immediately to prevent flash
-      enhanceCodeBlocks();
-      
-      // Also run on Astro page transitions
-      document.addEventListener('astro:page-load', enhanceCodeBlocks);
     </script>
 
     <script>
@@ -1108,13 +1010,6 @@ const showHreflang = !isFullWidth && !noindex;
   .dark .docs-prose :global(pre) {
     background-color: var(--bg-code) !important;
     background: var(--bg-code) !important;
-  }
-
-  /* Apply brightness filter initially, remove once JS has enhanced */
-  :root.dark .docs-prose :global(pre:not([data-js-enhanced]) code span[style*="color"]),
-  html.dark .docs-prose :global(pre:not([data-js-enhanced]) code span[style*="color"]),
-  .dark .docs-prose :global(pre:not([data-js-enhanced]) code span[style*="color"]) {
-    filter: brightness(1.4) !important;
   }
   
   .docs-prose :global(table) {
