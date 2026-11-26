@@ -270,6 +270,7 @@ Every translated heading must end with a \\{#anchor-id\\} that matches what the 
   Slug algorithm: lowercase → replace spaces with hyphens → keep only [a-z0-9-] → collapse consecutive hyphens.
   Example: \`## Quick Start\` → \`## 快速入门 \\{#quick-start\\}\`
   Example: \`## SDK Installation & Setup\` → \`## SDK 安装与配置 \\{#sdk-installation--setup\\}\`
+- Keep the heading structure exactly: every line that starts with # in the input stays a heading at the same level, and no other line becomes a heading. A short label line such as \`Response parameters:\` or \`**Setting amplitudeUserId**\` is not a heading: translate it and keep its formatting.
 
 TRANSLATE:
 - frontmatter field VALUES: title, description, keywords array items
@@ -1365,6 +1366,13 @@ async function translateFileWithSections(
           translation = retried;
         }
       }
+      translation = await repairHeadingStructure(
+        client,
+        systemPrompt,
+        section.content,
+        translation,
+        `    ${section.id}`,
+      );
       apiCallCount++;
     }
 
@@ -1763,7 +1771,14 @@ async function translateBatchSections(
           }
           continue;
         }
-        translationsByCustomId[r.custom_id] = text;
+        const meta = customIdLookup[r.custom_id];
+        translationsByCustomId[r.custom_id] = await repairHeadingStructure(
+          client,
+          systemPrompt,
+          meta?.content ?? "",
+          text,
+          `  ${meta?.basename}::${meta?.sectionId}`,
+        );
       } else {
         console.error(
           `  ✗ ${customIdLookup[r.custom_id]?.basename}::${customIdLookup[r.custom_id]?.sectionId} (${r.custom_id}): ${JSON.stringify(r.result)}`,
@@ -3824,11 +3839,56 @@ export function looksLikeRefusal(text) {
   return REFUSAL_PATTERNS.some((re) => re.test(text));
 }
 
+// Heading levels of a fragment, in order, ignoring fenced code blocks.
+// ["h2", "h3"] for "## A\n...\n### B".
+export function headingLevels(text) {
+  const levels = [];
+  let fence = null;
+  for (const line of (text ?? "").split("\n")) {
+    const m = line.match(/^\s*(`{3,}|~{3,})/);
+    if (m) {
+      if (fence === null) fence = m[1][0];
+      else if (line.trimStart()[0] === fence) fence = null;
+      continue;
+    }
+    if (fence !== null) continue;
+    const h = line.match(/^(#{1,6}) \S/);
+    if (h) levels.push("h" + h[1].length);
+  }
+  return levels;
+}
+
+// True when a translation added, dropped, or re-levelled a heading. The model
+// does this with short fragments: it promotes a lone label line ("Response
+// parameters:") to "## … {#…}", or drops a one-word heading ("### Text").
+export function headingStructureMismatch(source, translation) {
+  return headingLevels(source).join(",") !== headingLevels(translation).join(",");
+}
+
 /**
  * Re-translate a short/odd fragment with an explicit, refusal-proof instruction.
  * Used as a fallback when the normal translation reply looked like a refusal.
  * The returned text may itself still be a refusal — the caller must re-check.
  */
+// One retry when a translation's headings don't match its source (see
+// headingStructureMismatch). Keeps the first translation if the retry fails
+// the same check: its prose is fine, and a warning flags it for a hand fix.
+async function repairHeadingStructure(client, systemPrompt, source, translation, label) {
+  if (!headingStructureMismatch(source, translation)) return translation;
+  console.warn(`${label} → headings differ from the source; retrying with hardened prompt`);
+  let retried = "";
+  try {
+    retried = await translateFragmentHardened(client, systemPrompt, source);
+  } catch (e) {
+    console.error(`${label} → retry failed: ${e.message}`);
+  }
+  if (retried.trim() && !looksLikeRefusal(retried) && !headingStructureMismatch(source, retried)) {
+    return retried;
+  }
+  console.error(`${label} → headings still differ from the source; keeping the first translation`);
+  return translation;
+}
+
 async function translateFragmentHardened(client, systemPrompt, content) {
   const resp = await withRetry(() =>
     client.messages.create({
@@ -3842,6 +3902,7 @@ async function translateFragmentHardened(client, systemPrompt, content) {
             "Translate the natural-language text in the MDX fragment below. " +
             "It may be very short — a single heading, label, table, or code block — but it is NOT empty. " +
             "Translate all prose; leave code, markup, URLs, attributes, and identifiers unchanged. " +
+            "Keep every heading line (a line starting with #) as a heading at the same level, and don't turn any other line into a heading. " +
             "Return ONLY the translated fragment, with no commentary, apology, or request for more input — in English or the target language:\n\n" +
             content,
         },
