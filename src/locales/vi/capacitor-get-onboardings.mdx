@@ -1,0 +1,116 @@
+---
+title: "Lấy onboardings trong Capacitor SDK"
+description: "Tìm hiểu cách lấy onboardings trong Adapty cho Capacitor."
+metadataTitle: "Lấy onboardings trong Adapty | Tài liệu Adapty"
+customSlug: /capacitor-get-onboardings
+displayed_sidebar: sdkcapacitor
+---
+
+<OnboardingDeprecation />
+
+Sau khi [bạn đã thiết kế phần giao diện cho onboarding của mình](design-onboarding) bằng builder trong Adapty Dashboard, bạn có thể hiển thị nó trong ứng dụng Capacitor của mình. Bước đầu tiên trong quá trình này là lấy onboarding được liên kết với placement và cấu hình view của nó như mô tả bên dưới.
+
+Trước khi bắt đầu, hãy đảm bảo rằng:
+
+1. Bạn đã [tạo một onboarding](create-onboarding).
+2. Bạn đã thêm onboarding vào một [placement](placements).
+
+## Lấy onboarding \{#fetch-onboarding\}
+
+Khi bạn tạo một [onboarding](onboardings) bằng trình tạo no-code của chúng tôi, nó được lưu trữ dưới dạng một container chứa cấu hình mà ứng dụng cần lấy về và hiển thị. Container này quản lý toàn bộ trải nghiệm — nội dung hiển thị, cách trình bày, và cách xử lý các tương tác của người dùng (như câu trả lời câu hỏi hoặc dữ liệu nhập vào form). Container cũng tự động theo dõi các sự kiện analytics, vì vậy bạn không cần phải tự triển khai tính năng theo dõi lượt xem riêng.
+
+Để đạt hiệu suất tốt nhất, hãy lấy cấu hình onboarding sớm để hình ảnh có đủ thời gian tải xuống trước khi hiển thị cho người dùng.
+
+Để lấy onboarding, hãy dùng phương thức `getOnboarding`:
+
+```typescript showLineNumbers
+
+try {
+  const onboarding = await adapty.getOnboarding({ 
+    placementId: 'YOUR_PLACEMENT_ID', 
+    locale: 'en',
+    params: {
+      fetchPolicy: 'reload_revalidating_cache_data', // Load from server, fallback to cache
+      loadTimeoutMs: 5000 // 5 second timeout
+    }
+  });
+  console.log('Onboarding fetched successfully');
+} catch (error) {
+  console.error('Failed to fetch onboarding:', error);
+}
+```
+
+Sau đó, gọi phương thức `createOnboardingView` để tạo một instance view.
+
+:::warning
+Kết quả của phương thức `createOnboardingView` chỉ có thể được sử dụng một lần. Nếu bạn cần sử dụng lại, hãy gọi lại phương thức `createOnboardingView` từ đầu.
+:::
+
+```typescript showLineNumbers
+
+if (onboarding.hasViewConfiguration) {
+  try {
+    const view = await createOnboardingView(onboarding);
+    console.log('Onboarding view created successfully');
+  } catch (error) {
+    console.error('Failed to create onboarding view:', error);
+  }
+} else {
+  // Use your custom logic
+  console.log('Onboarding does not have view configuration');
+}
+```
+
+Các tham số:
+
+| Tham số | Bắt buộc | Mô tả |
+|---------|--------|-----------|
+| **placementId** | bắt buộc | Định danh của [Placement](placements) mong muốn. Đây là giá trị bạn đã chỉ định khi tạo placement trong Adapty Dashboard. |
+| **locale** | <p>tùy chọn</p><p>mặc định: `en`</p> | <p>Định danh của bản địa hóa onboarding. Tham số này được kỳ vọng là mã ngôn ngữ gồm một hoặc hai thẻ con phân cách bởi dấu trừ (**-**). Thẻ con đầu tiên dành cho ngôn ngữ, thẻ con thứ hai dành cho khu vực.</p><p></p><p>Ví dụ: `en` là tiếng Anh, `pt-br` là tiếng Bồ Đào Nha của Brazil.</p><p>Xem [Localizations and locale codes](localizations-and-locale-codes) để biết thêm thông tin về mã locale và cách chúng tôi khuyến nghị sử dụng chúng.</p> |
+| **params.fetchPolicy** | <p>tùy chọn</p><p>mặc định: `'reload_revalidating_cache_data'`</p> | <p>Theo mặc định, SDK sẽ cố tải dữ liệu từ máy chủ và trả về dữ liệu đã lưu trong bộ nhớ đệm nếu thất bại. Chúng tôi khuyến nghị tùy chọn này vì nó đảm bảo người dùng của bạn luôn nhận được dữ liệu mới nhất.</p><p></p><p>Tuy nhiên, nếu bạn cho rằng người dùng của mình thường xuyên gặp tình trạng kết nối internet không ổn định, hãy cân nhắc dùng `'return_cache_data_else_load'` để trả về dữ liệu từ bộ nhớ đệm nếu có. Trong trường hợp này, người dùng có thể không nhận được dữ liệu mới nhất tuyệt đối, nhưng họ sẽ trải nghiệm thời gian tải nhanh hơn, bất kể kết nối internet của họ có tốt hay không. Bộ nhớ đệm được cập nhật thường xuyên, vì vậy có thể dùng an toàn trong suốt phiên để tránh các yêu cầu mạng.</p><p></p><p>Lưu ý rằng bộ nhớ đệm vẫn còn nguyên khi khởi động lại ứng dụng và chỉ bị xóa khi ứng dụng được cài đặt lại hoặc xóa thủ công.</p> |
+| **params.loadTimeoutMs** | <p>tùy chọn</p><p>mặc định: 5000 ms</p> | <p>Giá trị này giới hạn thời gian chờ (tính bằng mili giây) cho phương thức này. Nếu máy chủ Adapty không phản hồi kịp thời hoặc trả về lỗi, SDK sẽ trả về onboarding đã lưu trong bộ nhớ đệm. Nếu không có gì trong bộ nhớ đệm và máy chủ hết thời gian chờ hoặc trả về lỗi, SDK sẽ yêu cầu onboarding từ máy chủ dự phòng (bản sao CDN chỉ phục vụ đối tượng **All Users** của placement). Là phương án cuối cùng, SDK trả về onboarding từ [tệp dự phòng](capacitor-use-fallback-paywalls) của bạn.</p><p>SDK v3 sử dụng ba nguồn tương tự theo thứ tự khác.</p><p>Lưu ý rằng trong một số trường hợp hiếm gặp, phương thức này có thể hết thời gian chờ muộn hơn một chút so với giá trị được chỉ định trong `loadTimeoutMs`, do thao tác có thể bao gồm nhiều yêu cầu khác nhau bên dưới.</p> |
+
+## Các tham số phản hồi \{#response-parameters\}
+
+| Tham số | Mô tả |
+|:----------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **onboarding** | Một đối tượng [`AdaptyOnboarding`](https://capacitor.adapty.io/interfaces/adaptyonboarding) chứa: mã định danh và cấu hình onboarding, Remote Config, và một số thuộc tính khác. |
+
+## Tăng tốc độ tải onboarding với onboarding cho đối tượng mặc định \{#speed-up-onboarding-fetching-with-default-audience-onboarding\}
+
+Thông thường, onboarding được tải gần như ngay lập tức, nên bạn không cần lo lắng về việc tăng tốc quá trình này. Tuy nhiên, trong trường hợp bạn có nhiều đối tượng và onboarding, và người dùng có kết nối internet yếu, việc tải onboarding có thể mất nhiều thời gian hơn mong muốn. Trong những tình huống như vậy, bạn có thể muốn hiển thị một onboarding mặc định để đảm bảo trải nghiệm người dùng mượt mà thay vì không hiển thị gì cả.
+
+Để giải quyết vấn đề này, bạn có thể sử dụng phương thức `getOnboardingForDefaultAudience`, phương thức này sẽ lấy onboarding của placement đã chỉ định cho đối tượng **All Users**. Tuy nhiên, điều quan trọng cần hiểu là cách tiếp cận được khuyến nghị là lấy onboarding bằng phương thức `getOnboarding`, như đã mô tả chi tiết trong phần [Lấy Onboarding](#fetch-onboarding) ở trên.
+
+:::warning
+Hãy cân nhắc sử dụng `getOnboarding` thay vì `getOnboardingForDefaultAudience`, vì phương thức sau có những hạn chế quan trọng:
+
+- **Vấn đề tương thích**: Có thể gây ra sự cố khi hỗ trợ nhiều phiên bản app, đòi hỏi thiết kế tương thích ngược hoặc chấp nhận rằng các phiên bản cũ hơn có thể hiển thị không đúng.
+- **Không cá nhân hóa**: Chỉ hiển thị nội dung cho đối tượng "All Users", loại bỏ khả năng nhắm mục tiêu dựa trên quốc gia, attribution hoặc các thuộc tính tùy chỉnh.
+
+Nếu tốc độ tải nhanh hơn đáng giá so với những hạn chế này trong trường hợp của bạn, hãy dùng `getOnboardingForDefaultAudience` như hướng dẫn bên dưới. Nếu không, hãy dùng `getOnboarding` như đã mô tả [ở trên](#fetch-onboarding).
+:::
+
+```typescript showLineNumbers
+
+try {
+  const onboarding = await adapty.getOnboardingForDefaultAudience({ 
+    placementId: 'YOUR_PLACEMENT_ID', 
+    locale: 'en',
+    params: {
+      fetchPolicy: 'reload_revalidating_cache_data' // Load from server, fallback to cache
+    }
+  });
+  console.log('Default audience onboarding fetched successfully');
+} catch (error) {
+  console.error('Failed to fetch default audience onboarding:', error);
+}
+```
+
+Tham số:
+
+| Tham số | Bắt buộc | Mô tả |
+|---------|--------|-----------|
+| **placementId** | bắt buộc | Định danh của [Placement](placements) mong muốn. Đây là giá trị bạn đã chỉ định khi tạo placement trong Adapty Dashboard. |
+| **locale** | <p>tùy chọn</p><p>mặc định: `en`</p> | <p>Định danh của bản địa hóa onboarding. Tham số này cần là mã ngôn ngữ gồm một hoặc hai subtag được phân tách bằng ký tự dấu trừ (**-**). Subtag đầu tiên là mã ngôn ngữ, subtag thứ hai là mã vùng.</p><p></p><p>Ví dụ: `en` là tiếng Anh, `pt-br` là tiếng Bồ Đào Nha của Brazil.</p><p>Xem [Bản địa hóa và mã ngôn ngữ](localizations-and-locale-codes) để biết thêm thông tin về mã ngôn ngữ và cách chúng tôi khuyến nghị sử dụng chúng.</p> |
+| **params.fetchPolicy** | <p>tùy chọn</p><p>mặc định: `'reload_revalidating_cache_data'`</p> | <p>Theo mặc định, SDK sẽ cố tải dữ liệu từ máy chủ và trả về dữ liệu đã lưu trong bộ nhớ đệm nếu thất bại. Chúng tôi khuyến nghị tùy chọn này vì nó đảm bảo người dùng luôn nhận được dữ liệu mới nhất.</p><p></p><p>Tuy nhiên, nếu bạn cho rằng người dùng của mình thường gặp vấn đề với kết nối internet không ổn định, hãy cân nhắc dùng `'return_cache_data_else_load'` để trả về dữ liệu đã lưu trong bộ nhớ đệm nếu có. Trong trường hợp này, người dùng có thể không nhận được dữ liệu mới nhất tuyệt đối, nhưng thời gian tải sẽ nhanh hơn, bất kể kết nối internet của họ kém đến đâu. Bộ nhớ đệm được cập nhật thường xuyên, vì vậy có thể sử dụng an toàn trong suốt phiên làm việc để tránh các yêu cầu mạng.</p><p></p><p>Lưu ý rằng bộ nhớ đệm vẫn còn nguyên khi khởi động lại ứng dụng và chỉ bị xóa khi ứng dụng được cài đặt lại hoặc xóa thủ công.</p> |
