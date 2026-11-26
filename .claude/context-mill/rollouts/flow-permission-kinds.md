@@ -19,6 +19,7 @@ The Flow & Paywall Builder's **Request permission** action asks for any permissi
 - The five cross-platform guides gain `## Request each permission` (KMP: `### Use moko-permissions` under its platform section): one table of what the usual permission library requests per kind, and its status mapping to the flow's strings.
 - The analytics events are documented once, in `FlowPermissionEvents`; the seven guides only point to it. The builder's warning about a screen whose only way off is the request lives in `onboarding-actions#request-permission`, not in the guides.
 - The guides keep their v1 outline and gain `## Declare the permissions` before the registration section, and, on the five cross-platform guides, `## Request each permission` before it.
+- Every guide has `## Code for each permission` after `## Implement the handler`: a dispatcher that routes all 21 values, then one H3 per kind with the reference's id, a `See [System permissions](flow-permissions#<id>)` pointer and one self-contained block. Kinds the platform or plugin can't request still get an H3 that answers `unsupported`. A deviation from the reference's mapping is one bullet that starts with **Differs from System permissions** (decision of 2026-11-27).
 
 ## Platform state
 | platform | code branch | code | docs | articles written | docs commit | docs PR |
@@ -47,6 +48,7 @@ The Flow & Paywall Builder's **Request permission** action asks for any permissi
 - Unverified claims kept out of the docs on 2026-11-26 are listed in the `sdk-flows-display` brief, `Gaps and misses`, "Per-kind permission reference — 2026-11-26".
 - Android refusal rule: the reference treats "no rationale before a repeated request" as `permanently_denied`, which also catches a dialog dismissed on the previous request. Is that acceptable, or should the flow script get a separate status for "dismissed"?
 - Capacitor on Android: a dialog closed without a choice returns `denied`, so the Capacitor mapping sends it to **When denied** with `permanently_denied`. Accept, or document native code to tell them apart?
-- Media library: Apple defines `MPMediaLibraryAuthorizationStatus.restricted` as "may access some of the content". The reference maps it to `restricted`; should it be `limited`?
+- Media library: Apple defines `MPMediaLibraryAuthorizationStatus.restricted` as "may access some of the content". The reference keeps `restricted` (decision of 2026-11-27); revisit if a device shows partial access.
 - HomeKit: the reference no longer maps the `.restricted` flag to `restricted`; a device check of which flags iOS sets after a refusal would settle it.
 - The iOS SDK doc comment for `.music` names `SKCloudServiceController`, deprecated in iOS 18 (`Sources.UIBuilder/UIBuilder/Public/AdaptyUIBuilder+Permissions.swift`). Update it to MusicKit?
+- Not verified on a device (from the per-kind code, 2026-11-27): Unity coroutines on iOS under a presented flow; Android permission results while the wrapper's flow activity covers the app's activity; the iOS `location_always` "no alert within 2 seconds" heuristic; the iOS 17 calendar upgrade prompt from write-only to full access.

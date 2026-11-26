@@ -252,6 +252,11 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
   Adapty SDK versions: those differ per SDK. Third-party plugin mappings (permission_handler,
   react-native-permissions, Capacitor plugins, Unity APIs, moko-permissions) live only in the matching
   guide's `## Request each permission` section (KMP: `### Use moko-permissions`).
+  Since 2026-11-27, each of the seven guides also has `## Code for each permission`: a dispatcher in
+  `## Implement the handler` and one H3 per kind, with the reference's heading text and wire-value id,
+  a pointer `See [System permissions](flow-permissions#<id>)`, and one self-contained code block. A
+  place where the code can't follow the reference's mapping (a plugin that can't report a status) is
+  one bullet that starts with **Differs from System permissions**.
 
 ## Articles
 <!-- mill:auto:roster -->
@@ -284,7 +289,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | android-flow-screen-views | — | dev | 4 | android |
 | android-get-pb-paywalls | — | dev | 9 | android |
 | android-handle-paywall-actions | — | dev | 8 | android |
-| android-handle-permissions | — | dev | 6 | android |
+| android-handle-permissions | — | dev | 28 | android |
 | android-handling-events | — | dev | 7 | android |
 | android-localizations-and-locale-codes | — | dev | 11 | android |
 | android-paywalls | entry | dev | 4 | android |
@@ -296,7 +301,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | capacitor-flow-screen-views | — | dev | 4 | capacitor |
 | capacitor-get-pb-paywalls | — | dev | 9 | capacitor |
 | capacitor-handle-paywall-actions | — | dev | 8 | capacitor |
-| capacitor-handle-permissions | — | dev | 7 | capacitor |
+| capacitor-handle-permissions | — | dev | 29 | capacitor |
 | capacitor-handling-events | — | dev | 4 | capacitor |
 | capacitor-localizations-and-locale-codes | — | dev | 11 | capacitor |
 | capacitor-paywalls | entry | dev | 4 | capacitor |
@@ -309,7 +314,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | flutter-flow-screen-views | — | dev | 4 | flutter |
 | flutter-get-pb-paywalls | — | dev | 11 | flutter |
 | flutter-handle-paywall-actions | — | dev | 9 | flutter |
-| flutter-handle-permissions | — | dev | 7 | flutter |
+| flutter-handle-permissions | — | dev | 30 | flutter |
 | flutter-handling-events | — | dev | 7 | flutter |
 | flutter-localizations-and-locale-codes | — | dev | 11 | flutter |
 | flutter-paywalls | entry | dev | 4 | flutter |
@@ -322,7 +327,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | handle-paywall-actions | — | dev | 8 | ios |
 | ios-flow-input | — | dev | 11 | ios |
 | ios-flow-screen-views | — | dev | 4 | ios |
-| ios-handle-permissions | — | dev | 6 | ios |
+| ios-handle-permissions | — | dev | 28 | ios |
 | ios-handling-events | — | dev | 14 | ios |
 | ios-paywalls | entry | dev | 4 | ios |
 | ios-present-paywall-builder-paywalls-in-observer-mode | — | dev | 2 | ios |
@@ -335,7 +340,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | kmp-flow-screen-views | — | dev | 4 | kmp |
 | kmp-get-pb-paywalls | — | dev | 9 | kmp |
 | kmp-handle-paywall-actions | — | dev | 12 | kmp |
-| kmp-handle-permissions | — | dev | 8 | kmp |
+| kmp-handle-permissions | — | dev | 29 | kmp |
 | kmp-handling-events | — | dev | 16 | kmp |
 | kmp-localizations-and-locale-codes | — | dev | 11 | kmp |
 | kmp-paywalls | entry | dev | 4 | kmp |
@@ -349,12 +354,12 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | react-native-flow-screen-views | — | dev | 4 | react-native |
 | react-native-get-pb-paywalls | — | dev | 9 | react-native |
 | react-native-handle-paywall-actions | — | dev | 8 | react-native |
-| react-native-handle-permissions | — | dev | 7 | react-native |
+| react-native-handle-permissions | — | dev | 29 | react-native |
 | react-native-handling-events-1 | — | dev | 4 | react-native |
 | react-native-localizations-and-locale-codes | — | dev | 11 | react-native |
 | react-native-paywalls | entry | dev | 4 | react-native |
 | react-native-present-flows-in-observer-mode | — | dev | 3 | react-native |
-| react-native-present-paywalls | — | dev | 15 | react-native |
+| react-native-present-paywalls | — | dev | 16 | react-native |
 | react-native-troubleshoot-paywall-builder | — | dev | 3 | react-native |
 | react-native-use-fallback-paywalls | entry | dev | 0 | react-native |
 | react-native-use-fallback-paywalls-expo | — | dev | 2 | react-native |
@@ -364,7 +369,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | unity-flow-screen-views | — | dev | 4 | unity |
 | unity-get-pb-paywalls | — | dev | 11 | unity |
 | unity-handle-paywall-actions | — | dev | 11 | unity |
-| unity-handle-permissions | — | dev | 7 | unity |
+| unity-handle-permissions | — | dev | 29 | unity |
 | unity-handling-events | — | dev | 8 | unity |
 | unity-localizations-and-locale-codes | — | dev | 12 | unity |
 | unity-paywalls | entry | dev | 4 | unity |
@@ -439,6 +444,11 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
     per-kind tables, the `FlowInputParams` event-name row.
   - **Changed no-handler behavior, SDK minimums or handler names:** the seven guides and the
     `onboarding-actions` warning only. Not the reference.
+  - **Changed native result → answer mapping in a kind's table, or a changed rule in `## Rules for every
+    permission`** (for example the Android rationale order): the code block of that kind in all seven
+    guides' `## Code for each permission`, and the shared helpers in their dispatchers (Android and KMP
+    `RuntimePermissionRequester` / runtime helpers, Unity's Android helper, React Native's
+    `answerAndroid`). Re-run each platform's compile check after the change.
   The Section and `outcome` columns are derived from `FlowPermissionAnswers` and the `FlowPermissionEvents`
   table, never chosen per kind. `FlowInputParams` names the permission events in its row for the event
   name, because the flow-input articles filter the same analytics callback. Each `*-handle-permissions`
@@ -794,3 +804,34 @@ evidence:
   flow's `AdaptyUiActivity` covers it (the KMP guide only says to bind the controller to the activity that
   shows the flow); whether Media library and Apple Music share one privacy setting on iOS; whether
   `RecognizerIntent` needs no `RECORD_AUDIO`.
+
+### Per-kind code in the seven guides — 2026-11-27
+
+- **Decisions applied to the reference (product decisions, 2026-11-27):** the Android rationale checks
+  run in order (a rationale before or after → `denied`; none and an earlier request →
+  `permanently_denied`; none on the first request → no status); iOS location kinds and contacts have a
+  "still `.notDetermined` or no answer before the app's timeout → no status" row; **Allow Once** and
+  **Allow While Using App** both answer `provisional` for `location_always` (both report
+  `.authorizedWhenInUse`); Android `location_always` applies the general rule to the foreground step and
+  answers `denied` when no settings page appears; Health Connect counts any request without a grant as a
+  cancel and answers `permanently_denied` on the request after two cancels (the second cancel answers
+  `denied`); Bluetooth on Android 11 and earlier needs `ACCESS_FINE_LOCATION` (Android 9 and earlier
+  accept coarse); `SKCloudServiceController` is an acceptable fallback for `music` where MusicKit can't be
+  called; push on Android 13+ can be granted while `areNotificationsEnabled()` is false.
+- **Code corrected to the rationale order (2026-11-27):** the KMP runtime helper and Unity's Android
+  helper checked "requested before" first; both now check the rationale first. KMP's Health Connect
+  counter answered `permanently_denied` on the second cancel; it now counts cancels before the request.
+  Capacitor `local_network` answers `granted` below target or device API 37 (`@capacitor/device`
+  `androidSDKVersion` plus an app constant for the target SDK), and `unsupported` above, because no
+  official plugin requests `ACCESS_LOCAL_NETWORK`.
+- **Could not confirm (2026-11-27), recorded by the code authors:**
+  - Unity coroutines keep running on iOS while a flow is presented (the Unity samples that poll in a
+    coroutine depend on it).
+  - Android permission results (Unity `PermissionCallbacks`, moko-permissions, `ActivityResult` from a
+    non-flow activity) reach the app while the wrapper's `AdaptyUiActivity` covers the app's activity.
+  - The iOS `location_always` heuristic: the app resigns active when the upgrade alert appears, and a
+    short wait (2 s in the iOS sample) tells "no alert" apart from "alert shown". Not checked on a device.
+  - Whether a full-access calendar request after write-only access shows an upgrade prompt on iOS 17+.
+  - Media library `.restricted`: Apple's definition is "may access some of the content"; the reference
+    keeps `restricted` (product decision, 2026-11-27). Open question in the rollout.
+
