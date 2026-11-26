@@ -1648,16 +1648,33 @@ paths:
                     balance: 12450
                     held: 0
                     available: 12450
+                    expiry:
+                      non_expiring: 12450
+                      expiring: []
+                      expiring_later: 0
+                      expired: 0
                   - code: GEMS
                     name: Gems
                     balance: 3280
                     held: 0
                     available: 3280
+                    expiry:
+                      non_expiring: 280
+                      expiring:
+                        - amount: 3000
+                          expires_at: 2026-12-24T10:00:00.000000+0000
+                      expiring_later: 0
+                      expired: 0
                   - code: ENERGY
                     name: Energy
                     balance: 840
                     held: 0
                     available: 840
+                    expiry:
+                      non_expiring: 840
+                      expiring: []
+                      expiring_later: 0
+                      expired: 0
         '400':
           description: Solicitud incorrecta. No se envía ni `adapty-profile-id` ni `adapty-customer-user-id` (`error_code` es `validation_error`).
           content:
@@ -3342,15 +3359,15 @@ components:
       properties:
         code:
           type: string
-          description: Código de moneda virtual.
+          description: Código de la moneda virtual.
         name:
           type: string
-          description: Nombre visible de la moneda virtual.
+          description: Nombre de visualización de la moneda virtual.
         balance:
           type: integer
           format: int32
           minimum: 0
-          description: Saldo total, incluidos los importes retenidos actualmente.
+          description: Saldo total, incluyendo los importes retenidos en este momento.
         held:
           type: integer
           format: int32
@@ -3359,7 +3376,7 @@ components:
         available:
           type: integer
           format: int32
-          description: Saldo disponible para gastar, calculado como `balance - held`.
+          description: Saldo disponible para gastar, calculado como `balance` menos `held` menos los créditos expirados que Adapty aún no ha eliminado.
       required:
         - code
         - name
@@ -3368,7 +3385,7 @@ components:
         - available
     VirtualCurrencyBalanceListResponse:
       type: object
-      description: Saldos actuales de todas las monedas virtuales de un perfil.
+      description: Saldos actuales de un perfil para cada moneda virtual de la aplicación, incluidas las monedas con saldo 0.
       properties:
         response_created_at:
           type: integer
@@ -3386,7 +3403,7 @@ components:
       properties:
         code:
           type: string
-          description: Código único de moneda virtual dentro de la app. Letras ASCII, dígitos y guion bajo.
+          description: Código único de moneda virtual dentro de la app. Letras ASCII, dígitos y guión bajo.
         name:
           type: string
           description: Nombre de visualización de la moneda virtual.
@@ -3399,17 +3416,65 @@ components:
           type: integer
           format: int32
           minimum: 0
-          description: Suma de todas las retenciones activas (importes reservados). Actualmente siempre es 0.
+          description: Suma de todas las retenciones activas (cantidades reservadas). Actualmente siempre es 0.
         available:
           type: integer
           format: int32
-          description: Saldo disponible para gastar, calculado como `balance - held`.
+          minimum: 0
+          description: Saldo disponible para gastar, calculado como `balance` menos `held` menos `expiry.expired`.
+        expiry:
+          $ref: '#/components/schemas/VirtualCurrencyBalanceExpiry'
       required:
         - code
         - name
         - balance
         - held
         - available
+        - expiry
+    VirtualCurrencyBalanceExpiry:
+      type: object
+      description: El saldo, desglosado por tiempo de vencimiento en el momento de la respuesta. `non_expiring`, la suma de `expiring[].amount`, `expiring_later` y `expired` suman `balance`.
+      properties:
+        non_expiring:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Créditos que nunca vencen.
+        expiring:
+          type: array
+          description: Créditos que vencen, agrupados por tiempo de vencimiento, del más próximo al más lejano. Lista hasta 10 tiempos de vencimiento. Los créditos con tiempos de vencimiento posteriores se suman en `expiring_later`.
+          items:
+            $ref: '#/components/schemas/VirtualCurrencyExpiringAmount'
+        expiring_later:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Créditos por vencer más allá de los 10 tiempos de vencimiento en `expiring`. Es 0 a menos que `expiring` tenga 10 entradas.
+        expired:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Créditos que han superado su tiempo de vencimiento y que aún se contabilizan en `balance`. Los usuarios no pueden gastarlos, y Adapty los elimina de `balance` en pocos minutos, por lo que el valor suele ser 0.
+      required:
+        - non_expiring
+        - expiring
+        - expiring_later
+        - expired
+    VirtualCurrencyExpiringAmount:
+      type: object
+      properties:
+        amount:
+          type: integer
+          format: int32
+          minimum: 1
+          description: El número de créditos que vencen en `expires_at` a menos que el usuario los gaste antes.
+        expires_at:
+          type: string
+          description: La fecha y hora más tardía en que vencen estos créditos, en UTC. Una renovación de suscripción antes del fin del período, o un reembolso, puede eliminarlos antes.
+          example: 2026-12-24T10:00:00.000000+0000
+      required:
+        - amount
+        - expires_at
     VirtualCurrencyTransactionsHistoryResponse:
       type: object
       description: Lista paginada de transacciones de moneda virtual para un perfil.

@@ -5,17 +5,19 @@ metadataTitle: "Amazon S3 | Adapty アトリビューション | Adapty ドキ�
 keywords: ['adapty アトリビューション', 'adapty ua', 'ユーザー獲得', 's3', 'amazon']
 ---
 
-Adapty AttributionとAmazon S3の連携により、ユーザー獲得キャンペーンデータを一か所に安全に保存できます。キャンペーンのパフォーマンスデータ、アトリビューションデータ、ユーザー獲得イベントを.csvファイルとしてAmazon S3バケットに保存することが可能です。
-この連携を設定するには、AWS ConsoleとAdapty Attributionダッシュボードでいくつかの簡単な手順を実行する必要があります。
+Adapty AttributionとAmazon S3の統合により、ユーザー獲得キャンペーンのデータを安全に一か所で管理できます。Adapty Attributionは.csvファイルをAmazon S3バケットに保存します。各行は1件のアプリインストールを表しており、デバイス識別子やチャネル・キャンペーンなどのアトリビューションデータが含まれます。ファイルには広告費、収益、購入データは含まれません。
+この統合を設定するには、AWSコンソールとAdapty Attributionダッシュボードでいくつかの簡単な手順を実行する必要があります。
 
 :::note
 Adapty Attributionのエクスポートは、カレンダー上の1日につき1セットのファイルを出力します。エクスポートスケジューラーは1日3回 — **02:00**、**04:00**、**06:00 UTC** — に実行されます。各実行では、前日のエクスポートジョブが存在しない場合は新規作成し、以前の実行が失敗していた場合は再試行します。そのため、通常データは02:00の実行後に利用可能になり、それ以降の実行は新たなデータを追加するためではなく、失敗からの復旧を目的としています。
 
-各ファイルには、UTC時間で前日1日分のイベントデータが含まれます。たとえば、3月8日にエクスポートされたデータには、3月7日の00:00:00から23:59:59（UTC）までに作成されたすべてのイベントが含まれます。
+各エクスポートには、UTC の前日（1 暦日分）に Adapty アトリビューションが記録したインストールが含まれます。たとえば、3 月 8 日のエクスポートには、3 月 7 日の 00:00:00〜23:59:59 UTC に記録されたインストールが含まれます。
+
+各ファイルには、エクスポート時点のアトリビューション情報が反映されます。インストールから最大 30 日間、Adapty アトリビューションは別のチャネルやキャンペーンにインストールを再帰属させる場合があります。最新のアトリビューション情報で古いファイルを更新するには、対象日付の[手動エクスポートを実行](#manual-data-export)してください。
 :::
 
 :::warning
-スケジュールエクスポートは、有料プランまたはトライアル中の企業のみ実行されます。いずれにも該当しない場合、スケジューラーはスキップしてファイルを書き込みません（インテグレーションがダッシュボードで有効になっていても同様です）。バケットが空でかつ設定が正しい場合は、まずプランのステータスを確認してください。
+スケジュールされたエクスポートは、有料プランまたはトライアル中の会社のみ実行されます。どちらにも該当しない場合、スケジューラーはエクスポートをスキップし、インテグレーションがダッシュボードで有効になっていてもファイルは書き込まれません。バケットが空でかつ設定が正しい場合は、まずプランのステータスを確認してください。
 :::
 
 ## Amazon S3 インテグレーションのセットアップ方法 \{#how-to-set-up-amazon-s3-integration\}
@@ -224,58 +226,59 @@ Adapty アトリビューションがバケットへ生データレポートを�
 
 ## 手動データエクスポート \{#manual-data-export\}
 
-Amazon S3 への自動イベントデータエクスポートに加えて、Adapty UA では手動ファイルエクスポート機能も提供しています。この機能を使用すると、ユーザー獲得データの特定の日付を選択して、S3 バケットに手動でエクスポートできます。これにより、エクスポートするデータとそのタイミングをより細かく制御できます。
+以前の日付のデータをエクスポートするには、**Manual file export** セクションで日付範囲を選択し、**Export to S3** をクリックします。指定した日付のファイルがすでにバケットに存在する場合、Adapty アトリビューションはそれらを上書きします。
 
 ## テーブル構造 \{#table-structure\}
 
-AWS S3 インテグレーションでは、Adapty アトリビューションはインストールイベントの履歴データを保存するテーブルを提供します。このテーブルには、ユーザープロファイル、収益と手取り額、オリジンストアなど、さまざまなデータポイントの情報が含まれています。
+各ファイルには、Adapty アトリビューションが1 UTC 日に記録したインストールごとに1行のデータが含まれており、デバイス情報とアトリビューションデータが記録されています。ファイルには広告費、収益、購入データは含まれません。
 
 :::warning
-この構造は、Adapty または連携しているサードパーティによって新しいデータが追加されると、今後変更される可能性があります。処理するコードは、構造全体に依存せず、特定のフィールドに基づいて動作するよう堅牢に設計してください。
+この構造は、当社または連携サードパーティによって新しいデータが追加されるなど、今後変更される場合があります。処理するコードは特定のフィールドに依存するように実装し、構造全体に依存しないようにしてください。
 :::
 
-イベントのテーブル構造は以下のとおりです：
+ファイルには以下のカラムが含まれます：
 
-| カラム                   | 説明                                      |
+| カラム                   | 説明                               |
 |--------------------------|-------------------------------------------|
-| `adapty_profile_id`      | Adapty プロファイルの一意の識別子         |
-| `install_id`             | インストールの一意の識別子                |
-| `created_at`             | レコード作成タイムスタンプ（ISO 8601）    |
-| `installed_at`           | アプリインストールタイムスタンプ（ISO 8601）|
-| `store`                  | アプリストア（`ios`、`android`）          |
+| `adapty_profile_id`      | Adapty プロファイルの一意識別子          |
+| `install_id`             | インストールの一意識別子            |
+| `created_at`             | レコード作成タイムスタンプ（ISO 8601）      |
+| `installed_at`           | アプリインストールタイムスタンプ（ISO 8601）     |
+| `store`                  | アプリストア（`ios`、`android`）              |
 | `country`                | ユーザーの国コード（ISO 3166-1 alpha-2）  |
-| `ip_address`             | クライアント IP アドレス                  |
-| `idfa`                   | iOS 広告主識別子                          |
-| `idfv`                   | iOS ベンダー識別子                        |
-| `gaid`                   | Google 広告 ID（Android）                 |
-| `android_id`             | Android デバイス ID                       |
+| `ip_address`             | クライアント IP アドレス                         |
+| `idfa`                   | iOS 広告識別子（IDFA）            |
+| `idfv`                   | iOS ベンダー識別子（IDFV）                |
+| `gaid`                   | Google 広告 ID（Android）           |
+| `android_id`             | Android デバイス ID                         |
 | `app_set_id`             | Android App Set ID                        |
-| `bundle_id`              | アプリバンドル識別子（例：`com.example.app`）|
-| `device_brand`           | デバイスブランド（例：`Apple`、`Samsung`）|
-| `device_model`           | デバイスモデル（例：`iPhone15,2`）        |
-| `os_version`             | OS のメジャーバージョン                   |
-| `app_version`            | Adapty SDK が報告するアプリバージョン     |
-| `sdk_version`            | Adapty SDK バージョン                     |
-| `channel`                | アトリビューションチャネル                |
-| `campaign_id`            | キャンペーン識別子                        |
-| `campaign_name`          | キャンペーン名                            |
-| `adset_id`               | 広告セット識別子                          |
-| `adset_name`             | 広告セット名                              |
-| `ad_id`                  | 広告識別子                                |
-| `ad_name`                | 広告名                                    |
-| `keyword_id`             | キーワード識別子                          |
+| `bundle_id`              | アプリバンドル識別子（例：`com.example.app`） |
+| `device_brand`           | デバイスブランド（例：`Apple`、`Samsung`）    |
+| `device_model`           | デバイスモデル（例：`iPhone15,2`）          |
+| `os_version`             | OS のメジャーバージョン                          |
+| `app_version`            | Adapty SDK が報告するアプリバージョン    |
+| `sdk_version`            | Adapty SDK バージョン                        |
+| `channel`                | アトリビューションチャネル                       |
+| `campaign_id`            | キャンペーン識別子                       |
+| `campaign_name`          | キャンペーン名                             |
+| `adset_id`               | 広告セット識別子                         |
+| `adset_name`             | 広告セット名                               |
+| `ad_id`                  | 広告識別子                             |
+| `ad_name`                | 広告名                                   |
+| `keyword_id`             | キーワード識別子                        |
 | `keyword_name`           | キーワード名                              |
-| `asa_org_id`             | Apple Search Ads 組織 ID                  |
-| `asa_keyword_match_type` | ASA キーワードマッチタイプ（`Exact`、`Broad`）|
-| `asa_attribution`        | ASA アトリビューションデータ（JSON 文字列）|
-| `asa_conversion_type`    | ASA コンバージョンタイプ                  |
-| `asa_country_or_region`  | ASA の国またはリージョン                  |
-| `asa_creative_set_name`  | ASA クリエイティブセット名                |
-| `fbclid`                 | Facebook クリック ID                      |
-| `ttclid`                 | TikTok クリック ID                        |
-| `utm_source`             | UTM source パラメーター                   |
-| `utm_medium`             | UTM medium パラメーター                   |
-| `utm_campaign`           | UTM campaign パラメーター                 |
-| `utm_term`               | UTM term パラメーター                     |
-| `utm_content`            | UTM content パラメーター                  |
-| `click_time`             | アトリビューションされたクリックのタイムスタンプ（Unix 秒）。インストールにクリックがアトリビューションされていない場合は空。|
+| `asa_org_id`             | Apple Search Ads 組織 ID          |
+| `asa_keyword_match_type` | ASA キーワードマッチタイプ（`Exact`、`Broad`） |
+| `asa_attribution`        | ASA アトリビューションデータ（JSON 文字列）        |
+| `asa_conversion_type`    | ASA コンバージョンタイプ                       |
+| `asa_country_or_region`  | ASA の国またはリージョン                     |
+| `asa_creative_set_name`  | ASA クリエイティブセット名                     |
+| `fbclid`                 | Facebook クリック ID                         |
+| `ttclid`                 | TikTok クリック ID                           |
+| `utm_source`             | UTM ソースパラメータ                      |
+| `utm_medium`             | UTM メディアパラメータ                      |
+| `utm_campaign`           | UTM キャンペーンパラメータ                    |
+| `utm_term`               | UTM タームパラメータ                        |
+| `utm_content`            | UTM コンテンツパラメータ                     |
+| `click_time`             | アトリビュートされたクリックのタイムスタンプ（Unix 秒）。インストールにクリックが紐付いていない場合は空。 |
+| `asa_click_time`         | インストール前の Apple Search Ads タップのタイムスタンプ（Unix 秒、分単位で丸め）。Apple Search Ads がインストールのタップを報告しない場合は空。`click_time` と異なり、Adapty アトリビューションが別チャネルにインストールを帰属させた場合でも値が入ります。 |

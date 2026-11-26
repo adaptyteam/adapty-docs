@@ -13,9 +13,13 @@ Adapty SDK 4.1 sürümünden itibaren Adapty Attribution varsayılan olarak devr
 
 Nasıl çalıştığı aşağıda açıklanmıştır:
 
-1. Bir kullanıcı reklamınıza tıkladığında, Adapty tıklama verilerini kaydeder.
-2. Adapty yükleme olayını kaydettiğinde, tıklamadan ertelenmiş verileri alır.
-3. Kullanıcı uygulamanızı yükleyip ilk kez başlattığında, Adapty depolanan verileri getirir ve uygulamanız özel parametreleri alır; bu sayede uygulama kodunda farklı değerlere göre tepki verebilirsiniz.
+1. Bir kullanıcı reklamınıza tıkladığında, Adapty tıklama verisini kaydeder.
+2. Adapty yükleme olayını kaydettiğinde, tıklamaya ait ertelenmiş veriyi alır.
+3. Kullanıcı uygulamanızı yükleyip ilk kez başlattıktan sonra, Adapty depolanan veriyi getirir ve uygulamanız özel parametreleri alır; bu sayede uygulama kodunuzda farklı değerlere göre işlem yapabilirsiniz.
+
+Uygulamanız ertelenmiş veriyi yalnızca Adapty, yüklemeyi tıklamayla eşleştirdiğinde alır. Uygulamanız zaten yüklü olan bir kullanıcı reklamınıza tıklarsa, uygulama yeni bir ertelenmiş veri almaz.
+
+iOS'ta Adapty, kurulumu yalnızca aynı IP adresi aralığından gelen tıklamalarla eşleştirir. Örneğin, Wi-Fi üzerinden yapılan bir tıklama ile hücresel ağda gerçekleşen ilk başlatma eşleştirilemez; bu durumda uygulamanız hiçbir ertelenmiş veri almaz.
 
 Adapty aşağıdaki ertelenmiş veri parametrelerini destekler:
 
@@ -23,7 +27,7 @@ Adapty aşağıdaki ertelenmiş veri parametrelerini destekler:
 - `android_deferred_data`
 - `deferred_data_sub[1-10]`
 
-Ertelenmiş veri parametreleri eklemek için, kampanya ayarlarınızda bunları bağlantınıza ekleyin:
+Ertelenmiş veri parametreleri eklemek için bunları kampanya ayarlarınızda bağlantınıza ekleyin:
 
 1. Kampanyanız Meta Ads veya TikTok üzerinde yayınlanıyorsa, izleme bağlantınızı **Integrations** > **Meta Ads** veya **TikTok Ads** bölümünde bulabilirsiniz. Kampanyanız farklı bir platformu hedefliyorsa **Integrations** > **Custom** kısmını açın. Ardından kullanmak istediğiniz bağlantıyı kopyalayın.
 
@@ -35,9 +39,12 @@ Ertelenmiş veri parametreleri eklemek için, kampanya ayarlarınızda bunları 
 https://api-ua.adapty.io/api/v1/attribution/c/YOUR_CODE?campaign_id=__CAMPAIGN_ID__&adset_id=__AID__&ad_id=__CID__&campaign_name=__CAMPAIGN_NAME__&adset_name=__AID_NAME__&ad_name=__CID_NAME__&redirect_url=__APP_LINK__&ios_deferred_data=welcome
 ```
 
-3. Uygulama kodunuzda parametrelere yanıt verin. Ertelenmiş veri parametrelerinin `payload` parametresi içinde yer aldığını ve `payload` parametresinin kaçışlı bir JSON olduğunu unutmayın; bu nedenle uygulama kodunuzda parse etmeniz gerekir.
+3. Uygulama kodunuzda parametrelere yanıt verin. SDK, bunları kurulum detaylarının `payload` özelliğinde iletir:
+   - **iOS**: `payload.dictionary` üzerinden okuyun.
+   - **Android**: `payload.dataMap` üzerinden okuyun.
+   - **React Native ve Flutter**: `payload` bir JSON dizesidir, bu yüzden önce ayrıştırın.
 
-Örneğin, `ios_deferred_data` değerinin `welcome` olduğu kurulumları şu şekilde ele alabilirsiniz:
+Örneğin, `ios_deferred_data` değeri `welcome` olan kurulumları şu şekilde ele alabilirsiniz:
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
@@ -47,10 +54,7 @@ Adapty.delegate = self
 
 nonisolated func onInstallationDetailsSuccess(_ details: AdaptyInstallationDetails) {
     guard
-        let payloadStr = details.payload,
-        let data = payloadStr.data(using: .utf8),
-        let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-        let deeplink = payload["ios_deferred_data"] as? String,
+        let deeplink = details.payload?.dictionary?["ios_deferred_data"] as? String,
         deeplink == "welcome"
     else { return }
 
@@ -68,15 +72,14 @@ nonisolated func onInstallationDetailsSuccess(_ details: AdaptyInstallationDetai
 ```kotlin showLineNumbers
 Adapty.setOnInstallationDetailsListener(object : OnInstallationDetailsListener {
     override fun onInstallationDetailsSuccess(details: AdaptyInstallationDetails) {
-        details.payload?.let {
-            runCatching {
-                val json = JSONObject(it)
-                if (json.optString("android_deferred_data") == "welcome") {
-                    println("Navigate to welcome screen")
-                    // navigate here
-                }
-            }.onFailure(Throwable::printStackTrace)
+        if (details.payload?.dataMap?.get("android_deferred_data") == "welcome") {
+            println("Navigate to welcome screen")
+            // navigate here
         }
+    }
+
+    override fun onInstallationDetailsFailure(error: AdaptyError) {
+        // handle the error
     }
 })
 

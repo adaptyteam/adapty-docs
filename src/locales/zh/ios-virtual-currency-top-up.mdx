@@ -1,0 +1,367 @@
+---
+title: "在流程中消费和出售虚拟货币"
+description: "为 iOS 应用构建两个含虚拟货币的流程：一个流程让用户通过原生按钮消费货币，另一个在余额不足时引导用户购买更多货币。"
+metadataTitle: "在流程中消费和出售虚拟货币 | iOS SDK | Adapty 文档"
+---
+
+按照本教程，将流程与虚拟货币结合运用到你的 iOS 应用中。本教程将介绍如何：
+
+- 在流程中显示货币余额，并在流程打开期间保持实时更新。
+- 当用户点击流程中的原生按钮时消耗货币，并在消耗过程中显示加载动画。
+- 向用户显示还需要多少货币。
+- 在流程中提供货币包和订阅。
+- 从应用代码中关闭一个流程并打开另一个流程。
+
+由于货币包和订阅都在流程中，你可以在不发布新版本的情况下随时修改，还可以对其进行 [A/B 测试](ab-tests)。A/B 测试报告会统计购买次数。消耗操作不会出现在报告中：你的后端会将消耗数据发送给 Adapty，但不会与测试关联。
+
+完成本教程后，你将为游戏创建两个流程：在能量不足流程中，玩家使用钻石购买能量；在充值流程中，玩家购买钻石。同样的步骤适用于任何使用虚拟货币的应用，例如 AI 生成所需的积分或剧集所需的代币。在你的应用中，将能量选项和钻石替换为你自己的选项和货币。最终效果如下：
+
+<VcTopUpHowItWorks />
+
+<DocVideo id="vc-top-up-demo.mp4" width="300px" alt="手机上的能量耗尽流程，显示钻石余额和两个按钮。钻石不足时，玩家点击按钮，补充流程弹出并显示“您还需要10颗钻石”。购买礼包后，能量耗尽流程再次出现，点击能量补充按钮后显示一个对勾。" />
+
+## 开始之前 \{#before-you-start\}
+
+- 让用户登录，这样他们就能在每台设备上以及重新安装后[保留余额](virtual-currency-balance#balances-profiles-and-devices)。用户登录时，在应用代码中通过客户用户 ID [识别该用户](identifying-users)。您的后端需要此 ID 来向 Adapty 标识用户。
+- 要在流程中显示余额和按钮，请将您的应用更新至 Adapty iOS SDK 4.4 或更高版本。
+- 配置您的应用以[获取](get-pb-paywalls)并[展示](ios-present-paywalls)流程。
+- 搭建一个后端，使用您的[密钥 API 密钥](ss-authorization)调用服务端 API。请将密钥保存在后端：任何持有该密钥的人都可以向任意余额添加钻石。
+- 在 App Store Connect 中，为每个钻石包[创建一个消耗型商品](app-store-products)，并创建一个自动续期订阅。然后[将每个产品添加到 Adapty](create-product)。
+- [创建一个虚拟货币](create-virtual-currency)，代码设为 `DIAMONDS`。将每个产品[关联](create-virtual-currency#link-products)到 `DIAMONDS`，并设置 Adapty 向余额添加的钻石数量：
+  - **Diamond pack**：每次购买对应的 **Credit amount**。
+  - **Subscription**：每个计费周期对应的 **Credit per cycle**。当用户开始免费试用时，Adapty 仅添加 **Credit on trial start**。
+
+  将三个值都设置为至少 30 颗钻石（即一小时无限能量的价格）。设置这些值后，充值流程中的每笔购买都能补足缺少的钻石数量。
+
+## 1. 构建玩家消耗钻石的流程 \{#1-build-the-flow-where-players-spend-diamonds\}
+
+<VcTopUpEnergyFlowPlacement />
+
+### 显示钻石余额 \{#show-the-diamond-balance\}
+
+<VcTopUpFlowBalance />
+
+### 添加能量补充和无限能量按钮 \{#add-buttons-for-an-energy-refill-and-unlimited-energy\}
+
+<VcTopUpSpendButtons />
+
+## 2. 玩家点击按钮时消耗钻石 \{#2-spend-diamonds-when-a-player-taps-a-button\}
+
+在这一步，你将为能量耗尽流程编写后端代码和应用代码。完成后，钻石充足的玩家就可以在该流程中消耗钻石。
+
+### 从后端扣除钻石 \{#spend-diamonds-from-your-backend\}
+
+<VcTopUpSpend />
+
+### 创建余额视图 \{#create-the-balance-view\}
+
+为钻石余额创建一个模型，并为 `currency_balance` 自定义元素创建一个 SwiftUI 视图。本步骤后续代码以及第 4 步的代码会根据后端响应来设置模型中的余额。视图会监听模型变化，从而在余额更新时自动重绘：
+
+```swift showLineNumbers title="Swift"
+
+// The diamond balance that your app keeps up to date
+@MainActor
+final class DiamondWallet: ObservableObject {
+    @Published var balance: Int? // nil until your backend returns a balance
+}
+
+struct DiamondBalanceView: View {
+    @ObservedObject var wallet: DiamondWallet
+
+    var body: some View {
+        Label(wallet.balance?.formatted() ?? "—", systemImage: "diamond.fill")
+    }
+}
+```
+
+`DiamondBalanceView` 使用系统文本颜色，当设备切换到深色模式时，该颜色会变为白色。除非你为流程[添加深色主题](paywall-dark-mode#add-a-dark-theme)，否则流程会保持浅色配色。如果你的流程没有深色主题，请在视图中设置固定的文本颜色，例如 `.foregroundStyle(.black)`。
+
+要在两个流程中都显示该视图，请从[全局解析器](ios-flow-custom-elements#set-an-app-wide-resolver)中返回它，该解析器通过 Type 和 ID 将每个自定义元素匹配到对应的视图。添加一个 `DiamondWallet` 类型的 `wallet` 属性，以及一个针对 `currency_balance` Type 和 `diamonds` ID 返回 `DiamondBalanceView` 的 case。高亮行显示了需要添加的内容。如果你的应用还没有全局解析器，可以直接复制完整代码：
+
+```swift showLineNumbers title="Swift" {5,13-14}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let wallet: DiamondWallet
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "currency_balance" where id == "diamonds":
+            return AnyView(DiamondBalanceView(wallet: wallet))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+使用 `DiamondWallet` 创建解析器，并将其设置为全局解析器。在应用启动时调用一次 `AdaptyUI.setCustomElementsResolver(_:)`，例如：
+
+```swift showLineNumbers title="Swift"
+
+@MainActor let diamondWallet = DiamondWallet()
+
+// keep this instance: a resolver for one flow can reuse it
+@MainActor let customElementsResolver = CustomElementsResolver(wallet: diamondWallet)
+
+// at app launch, such as in application(_:didFinishLaunchingWithOptions:)
+AdaptyUI.setCustomElementsResolver(customElementsResolver)
+```
+
+### 创建按钮视图 \{#create-the-button-view\}
+
+为两个按钮创建一个 SwiftUI 视图。该视图接收按钮文本，以及一个用于消耗钻石并在消耗成功时返回 `true` 的闭包。消耗进行时，玩家会看到按钮中显示加载动画，此时按钮忽略多余的点击。消耗成功后，玩家会看到一个对勾图标：
+
+```swift showLineNumbers title="Swift"
+
+struct SpendButton: View {
+    let title: String
+    let spend: @MainActor () async -> Bool // true when the spend goes through
+
+    @State private var phase = Phase.ready
+    private enum Phase { case ready, spending, done }
+
+    var body: some View {
+        Button {
+            guard phase == .ready else { return } // ignore more taps while the spend runs
+            phase = .spending
+            // a Task keeps running when the flow closes and this view disappears
+            Task {
+                phase = await spend() ? .done : .ready
+            }
+        } label: {
+            Group {
+                switch phase {
+                case .ready: Text(title)
+                case .spending: ProgressView().tint(.white) // white on the filled button
+                case .done: Image(systemName: "checkmark")
+                }
+            }
+            .frame(maxWidth: .infinity) // the full width of the custom element
+        }
+        .buttonStyle(.borderedProminent)
+    }
+}
+```
+
+### 将按钮连接到您的后端 \{#connect-the-buttons-to-your-backend\}
+
+为两个选项创建一个枚举。将每个选项的自定义元素 ID 作为其原始值：
+
+```swift showLineNumbers title="Swift"
+// the options to spend diamonds on, with the IDs of their custom elements
+enum EnergyOption: String {
+    case energyRefill = "energy_refill"
+    case unlimitedEnergy = "unlimited_energy"
+
+    // keep the numbers equal to the costs on your backend
+    var title: String {
+        switch self {
+        case .energyRefill: return "Energy refill · 10 ◆"
+        case .unlimitedEnergy: return "Unlimited energy for 1 hour · 30 ◆"
+        }
+    }
+}
+```
+
+The following code is for UIKit. In the view controller that opens the out-of-energy flow, add a method that spends diamonds on an option. The method sends the option to your backend, and sets the balance in `diamondWallet` from the response. Then the method does one of the following:
+
+- **消费成功**：方法返回 `true`，玩家在按钮上看到勾选标记。一秒后，代码关闭流程。
+- **余额不足**：方法调用 `openTopUpFlow`，即[在玩家钻石不足时打开充值流程](#open-the-top-up-flow-when-a-player-doesnt-have-enough-diamonds)的函数。
+
+```swift showLineNumbers title="Swift"
+private var outOfEnergyFlow: AdaptyFlowController? // set when the out-of-energy flow opens
+
+// true when the spend goes through
+func spendDiamonds(on option: EnergyOption) async -> Bool {
+    do {
+        // the client of your backend: your backend sends the spend to Adapty
+        let result = try await GameBackend.shared.spendDiamonds(
+            on: option.rawValue,
+            idempotencyKey: UUID() // a new key for each spend; UUID() creates a version 4 UUID
+        )
+        switch result {
+        case let .spent(available):
+            diamondWallet.balance = available
+            // your backend gave the player the energy: show it in the game
+            Task {
+                try? await Task.sleep(for: .seconds(1)) // players see the checkmark first
+                outOfEnergyFlow?.dismiss(animated: true)
+            }
+            return true
+        case let .insufficientBalance(diamondsNeeded, available):
+            diamondWallet.balance = available
+            await openTopUpFlow(diamondsNeeded: diamondsNeeded)
+            return false
+        }
+    } catch {
+        // handle the error
+        return false
+    }
+}
+```
+
+然后为能量耗尽流程编写一个解析器。对于每个 `spend_button` 类型的自定义元素，解析器从 ID 中读取选项，并返回一个调用 spend 方法的 `SpendButton`。[附加到某个流程](ios-flow-custom-elements#attach-a-resolver-to-one-flow)的解析器会在该流程中替代全局解析器。为了在能量耗尽流程中显示余额，此解析器会调用全局解析器：
+
+```swift showLineNumbers title="Swift"
+
+struct OutOfEnergyResolver: AdaptyUICustomElementsResolver {
+    let spend: @MainActor (EnergyOption) async -> Bool // the spend method of your view controller
+    let appWideResolver: any AdaptyUICustomElementsResolver
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        // the ID tells the buttons apart: energy_refill or unlimited_energy
+        if type == "spend_button", let option = EnergyOption(rawValue: id) {
+            return AnyView(SpendButton(title: option.title) { await spend(option) })
+        }
+        // other custom elements, such as the balance: the views of the app-wide resolver
+        return appWideResolver.view(forType: type, id: id, context: context)
+    }
+}
+```
+
+### 从应用代码中打开能量耗尽流程 \{#open-the-out-of-energy-flow-from-your-app-code\}
+
+当玩家能量耗尽时，使用以下函数打开能量耗尽流程。该函数会先向后端请求余额，确保玩家在流程打开时能看到余额信息。随后，函数将 `OutOfEnergyResolver` 附加到流程上，并将流程控制器保存在 `outOfEnergyFlow` 中。通过这个引用，`spendDiamonds` 可以关闭该流程：
+
+```swift showLineNumbers title="Swift"
+// call when a player runs out of energy
+func openOutOfEnergyFlow() async {
+    // the balance that players see when the flow opens; without it, players see a dash
+    if let available = try? await GameBackend.shared.diamondBalance() {
+        diamondWallet.balance = available
+    }
+    do {
+        let flow = try await Adapty.getFlow(placementId: "out_of_energy")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            customElementsResolver: OutOfEnergyResolver(
+                spend: { [weak self] option in
+                    await self?.spendDiamonds(on: option) ?? false
+                },
+                appWideResolver: customElementsResolver // the instance that you set app-wide
+            )
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        outOfEnergyFlow = flowController
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+作为低电量流程的委托，视图控制器还必须实现用于购买和恢复的[委托方法](ios-handling-events#handling-events-in-uikit)。对于 `didFinishPurchase`，请使用[步骤 4](#open-the-out-of-energy-flow-again-after-a-purchase) 中的代码。
+
+在 SwiftUI 中，获取流程配置时附加 `OutOfEnergyResolver`。在解析器的 `spend` 闭包中，调用你的消耗方法。使用 `.flow` 修饰符展示流程配置，并使用其闭包替代委托方法。闭包不接收视图控制器。若要关闭流程，将 `isPresented` 设置为 `false`。
+
+## 3. 创建玩家购买钻石的流程 \{#3-build-the-flow-where-players-buy-diamonds\}
+
+<VcTopUpFlowPlacement />
+
+### 显示玩家需要多少钻石 \{#show-how-many-diamonds-the-player-needs\}
+
+<VcTopUpFlowDiamondsNeeded />
+
+### 添加钻石礼包和订阅 \{#add-diamond-packs-and-a-subscription\}
+
+<VcTopUpFlowOffers />
+
+## 4. 关闭一个流程并打开另一个 \{#close-one-flow-and-open-the-other\}
+
+完成此步骤后，钻石不足的玩家可以在充值流程中购买更多钻石，然后再进行消费。在本示例中，一个视图控制器同时作为两个流程的代理。为了在代理方法中区分这两个流程，可以将 `controller.flowPlacementId` 属性与每个流程的版位 ID 进行比较。在 SwiftUI 中，使用第二个 `.flow` 修饰符来呈现充值流程，并在另一个流程的 `didDisappear` 闭包中打开当前流程。
+
+### 当玩家钻石不足时打开充值流程 \{#open-the-top-up-flow-when-a-player-doesnt-have-enough-diamonds\}
+
+以下函数将缺少的钻石数量传递给 `diamonds_needed` 标签，并打开充值流程。由于视图控制器每次只能呈现一个流程，该函数会先关闭能量不足流程，再打开充值流程：
+
+```swift showLineNumbers title="Swift"
+func openTopUpFlow(diamondsNeeded: Int) async {
+    // with no value, players see the Initial value of the tag
+    let tags = diamondsNeeded > 0 ? ["diamonds_needed": diamondsNeeded.formatted()] : [:]
+    do {
+        let flow = try await Adapty.getFlow(placementId: "out_of_diamonds")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            tagResolver: tags
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        // a view controller presents one flow at a time
+        outOfEnergyFlow?.dismiss(animated: true) {
+            self.present(flowController, animated: true)
+        }
+    } catch {
+        // handle the error
+    }
+}
+```
+
+### 购买后重新打开能量不足流程 \{#open-the-out-of-energy-flow-again-after-a-purchase\}
+
+当玩家在充值流程中购买礼包或订阅后，Adapty 通常会先将钻石添加到余额中。随后 Adapty SDK 会调用 `didFinishPurchase`，但不会关闭流程。在该方法中，以下代码会向您的后端请求新余额，关闭充值流程，并重新打开能量不足流程。玩家在那里看到新余额后，可以点击按钮来消耗钻石。不要在购买后立即消耗钻石：玩家可能已经不想要能量了。
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFinishPurchase product: AdaptyPaywallProduct,
+    purchaseResult: AdaptyPurchaseResult
+) {
+    // canceled or pending: the flow stays open
+    guard purchaseResult.isPurchaseSuccess,
+          controller.flowPlacementId == "out_of_diamonds" // the top-up flow
+    else { return }
+    Task {
+        let balanceBefore = diamondWallet.balance ?? 0
+        if let available = try? await GameBackend.shared.diamondBalance() {
+            diamondWallet.balance = available
+        }
+        let diamondsArrived = (diamondWallet.balance ?? 0) > balanceBefore
+        controller.dismiss(animated: true) {
+            if diamondsArrived {
+                Task { await self.openOutOfEnergyFlow() } // the player taps a button again
+            } else {
+                // Adapty adds the diamonds later: tell the player in your own UI
+            }
+        }
+    }
+}
+```
+
+当玩家取消购买，或购买处于待处理状态时，代码会保持充值流程处于打开状态。Adapty SDK 在这些情况下同样会调用 `didFinishPurchase`，但余额保持不变。
+
+当购买成功但后端余额未变化时，代码会关闭充值流程，而不会打开能量不足流程。在任一流程中，玩家在购买后都会看到旧余额。余额未变化的原因是 Adapty SDK 无法立即与 Adapty 完成购买验证。Adapty 会在之后补充钻石，具体时机是 Adapty SDK 再次向 Adapty 发送购买记录时，例如在下次启动应用时。在此之前，请在您自己的 UI 中告知玩家钻石正在路上。
+
+当用户购买与 `DIAMONDS` [关联的产品](create-virtual-currency#link-products)时，请勿从您的后端添加钻石：Adapty 会自动添加这些钻石，否则用户将收到双倍钻石。
+
+## 5. 在设备上测试 \{#5-test-on-a-device\}
+
+付费墙编辑工具无法运行你的应用代码，因此在画布上，你只能看到自定义元素的备用内容。
+
+要查看购买后获得的钻石，请使用[沙盒账户](test-purchases-in-sandbox)进行测试。在沙盒环境中，订阅每隔几分钟就会续期一次，Adapty 会在每次续期时添加钻石。如果在 Xcode 中使用 StoreKit 配置文件，Adapty SDK 不会通过 Adapty 验证购买，也不会添加钻石。
+
+测试方法如下：
+
+1. [发布两个流程](builder-save-publish)。若要查看最新发布版本而非缓存版本，请将设备注册为[测试设备](test-devices)。
+2. 使用示例代码运行应用，以一个没有钻石的玩家账号登录。在游戏中耗尽能量，验证能量耗尽流程是否以余额 0 的状态打开。
+3. 点击"无限能量"按钮，验证按钮上是否出现加载动画，然后充值流程以"You need 30 more diamonds"的文本打开。
+4. 购买一包钻石，验证能量耗尽流程是否再次打开并显示新余额。
+5. 点击"能量补充"按钮，验证按钮上是否出现对勾标记、流程是否关闭，以及游戏是否为玩家补充了能量。
+6. 在 Adapty 看板中，打开该玩家的用户画像，使用 **Adjustment** 操作[扣减余额](virtual-currency-balance#adjust-a-balance-manually)至低于 10。再次耗尽能量，点击"能量补充"按钮，并在充值流程中购买订阅。验证能量耗尽流程是否再次打开并显示新余额。
+7. 点击"无限能量"按钮，验证按钮上是否出现对勾标记、流程是否关闭，以及游戏是否为玩家开启了无限能量。
+8. <VcTopUpVerifyProfile />
+
+要了解为什么显示的是备用付费墙而非余额或按钮，请按照[测试自定义元素的步骤](ios-flow-custom-elements#test-on-a-device)操作。
