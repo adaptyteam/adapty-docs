@@ -6,10 +6,10 @@ metadataTitle: "Migrating to Adapty iOS SDK v4.5 | Adapty Docs"
 
 To update your app from Adapty iOS SDK 4.4 to 4.5, apply every change in this guide. An app on 4.3 or earlier needs the [v4.4 changes](migration-to-ios-sdk-44) first.
 
-In 4.5, `getFlowConfiguration` takes a list of languages instead of one locale code. The SDK [selects a localization of the flow from this list](localizations-and-locale-codes).
+In 4.5, `getFlowConfiguration` requires a list of languages in `preferredLocales`, instead of an optional locale code in `locale`. The SDK [selects a localization of the flow from this list](localizations-and-locale-codes).
 
 :::warning
-In 4.5, users can see [a different localization of the same flow](#what-users-see-after-the-update) than in 4.4, and the compiler can't detect the difference. A `getFlowConfiguration` call without `locale` still compiles, and the flow now shows its default locale instead of `en`. To show users the flow in their languages, [add the `preferredLocales` parameter](#replace-locale-with-the-users-languages).
+The build fails until every `getFlowConfiguration` call passes [`preferredLocales`](#replace-locale-with-the-users-languages). After you fix the build, SDK 4.5 can show users [a different localization of the same flow](#what-users-see-after-the-update) than SDK 4.4 did.
 :::
 
 ## Quick reference
@@ -17,12 +17,19 @@ In 4.5, users can see [a different localization of the same flow](#what-users-se
 | Before | After |
 |---|---|
 | `getFlowConfiguration(forFlow: flow, locale: "fr")` | `getFlowConfiguration(forFlow: flow, preferredLocales: Locale.preferredLanguages)` |
-| No `locale`: users see `en`, or the default locale when the flow has no `en` | No `preferredLocales`: users see the flow in its default locale |
+| `locale`: optional | `preferredLocales`: required |
+| No `locale`: users see `en`, even when the default locale of the flow is another language. Without `en` in the flow, users see the default locale | `preferredLocales: []`: all users see the flow in its default locale, whatever their device languages |
 | No strategy parameter | `localizationStrategy:`, optional. The default, `.auto`, fits most apps. |
 
 ## Replace `locale` with the user's languages
 
-In 4.5, both `getFlowConfiguration` methods, async and completion-handler, take a `preferredLocales` list instead of `locale`. Neither method keeps `locale` as a deprecated parameter, so Xcode reports `extra argument 'locale' in call`. The `locale` parameter of `getOnboarding` doesn't change.
+In 4.5, both `getFlowConfiguration` methods, async and completion-handler, take a `preferredLocales` list instead of `locale`. The `preferredLocales` parameter is required. For a call with `locale` or without either parameter, Xcode reports:
+
+```text
+'getFlowConfiguration(forFlow:locale:…)' is unavailable: Pass preferredLocales: Locale.preferredLanguages to show the flow in the device's language, or [] to use the flow's default localization.
+```
+
+The `locale` parameter of `getOnboarding` doesn't change.
 
 ```diff showLineNumbers
   let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
@@ -40,6 +47,8 @@ What your app passed in 4.4 determines what to pass in 4.5:
 
 To show the flow in the language of the UI of your app instead of the device languages, pass `Bundle.main.preferredLocalizations`. To compare the two lists, read [Pass the user's languages to the SDK](localizations-and-locale-codes#pass-the-users-languages-to-the-sdk).
 
+To show every user the flow in its default locale, pass an empty list: `preferredLocales: []`.
+
 You don't need to pass `localizationStrategy`. Its default, `.auto`, is suitable for flows from the Flow & Paywall Builder and for paywalls from the old Paywall Builder. The [other strategies](localizations-and-locale-codes#select-a-localization-strategy) change how the SDK matches languages.
 
 ## What users see after the update
@@ -48,7 +57,7 @@ With the default `localizationStrategy`, SDK 4.5 can show users a different loca
 
 | The app passes | The flow has | 4.4 | 4.5 |
 |---|---|---|---|
-| No languages | Any locales | `en`, if the flow has it; otherwise, the default locale | The default locale |
+| No languages: no `locale` in 4.4, `[]` in 4.5 | Any locales | `en`, if the flow has it; otherwise, the default locale | The default locale |
 | A code with another case or separator, such as `pt_BR` | `pt-BR` | The default locale | `pt-BR` |
 | A regional code, such as `pt-BR` | The language alone, such as `pt` | The default locale | `pt` |
 | A regional code that implies a script, such as `zh-TW` | The script, such as `zh-hant` | The default locale | `zh-hant`; on paywalls from the old Paywall Builder, the default locale |
