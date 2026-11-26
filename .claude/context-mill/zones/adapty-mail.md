@@ -242,17 +242,17 @@ core in-app paywall/subscription product.
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
 | adapty-mail | entry | marketer | 4 | tutorial |
-| mail-ab-testing | — | marketer | 7 | tutorial |
-| mail-analytics | — | marketer | 11 | tutorial |
+| mail-ab-testing | — | marketer | 9 | tutorial |
+| mail-analytics | — | marketer | 10 | tutorial |
 | mail-brand | — | marketer | 10 | tutorial |
 | mail-checkout | — | marketer | 7 | tutorial |
 | mail-collect-emails | — | marketer | 7 | tutorial |
 | mail-create-campaign | — | marketer | 6 | tutorial |
-| mail-create-flow | — | marketer | 4 | tutorial |
+| mail-create-flow | — | marketer | 5 | tutorial |
 | mail-double-opt-in | — | marketer | 6 | tutorial |
 | mail-email-campaigns | entry | marketer | 0 | tutorial |
 | mail-entry-points | entry | marketer | 0 | tutorial |
-| mail-flows | entry | marketer | 8 | tutorial |
+| mail-flows | entry | marketer | 9 | tutorial |
 | mail-funnelfox | how-to | marketer | 4 | tutorial |
 | mail-get-started | — | marketer | 15 | tutorial |
 | mail-mcp | — | — | 14 | tutorial |

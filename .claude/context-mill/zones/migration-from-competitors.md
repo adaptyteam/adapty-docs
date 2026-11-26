@@ -34,7 +34,7 @@ integration.
 <!-- mill:auto:roster -->
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
-| flows-with-your-own-payments | how-to | dev, marketer | 6 | — |
+| flows-with-your-own-payments | how-to | dev, marketer | 6 | tutorial |
 | importing-historical-data-to-adapty | — | dev | 5 | tutorial |
 | migrate-integrations-to-adapty | migration | dev | 8 | tutorial |
 | migrate-to-adapty-from-another-solutions | entry | dev | 3 | tutorial |

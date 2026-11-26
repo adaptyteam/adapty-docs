@@ -179,7 +179,7 @@ table in the roster as a *transcription* of an enum, never as the enum.
 | ios-sdk-error-handling | entry | dev | 5 | ios |
 | kmp-handle-errors | entry | dev | 9 | kmp |
 | kmp-reference | entry | dev | 0 | kmp |
-| react-native-handle-errors | entry | dev | 5 | react-native |
+| react-native-handle-errors | entry | dev | 6 | react-native |
 | react-native-reference | entry | dev | 0 | react-native |
 | unity-handle-errors | entry | dev | 5 | unity |
 | unity-reference | entry | dev | 0 | unity |

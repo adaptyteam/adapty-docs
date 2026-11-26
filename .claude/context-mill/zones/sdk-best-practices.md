@@ -150,7 +150,7 @@ recommendations become articles and which stay where the mechanism is documented
 | android-optimize-paywall-fetching | — | dev | 7 | android |
 | android-sdk-call-order | — | dev | 3 | android |
 | capacitor-best-practices | entry | dev | 0 | capacitor |
-| capacitor-optimize-paywall-fetching | — | dev | 3 | capacitor |
+| capacitor-optimize-paywall-fetching | — | dev | 6 | capacitor |
 | capacitor-sdk-call-order | — | dev | 2 | capacitor |
 | capacitor-show-aa-targeted-paywall | — | dev | 4 | capacitor |
 | flutter-best-practices | entry | dev | 0 | flutter |
@@ -170,7 +170,7 @@ recommendations become articles and which stay where the mechanism is documented
 | react-native-sdk-call-order | — | dev | 2 | react-native |
 | react-native-show-aa-targeted-paywall | — | dev | 4 | react-native |
 | unity-best-practices | entry | dev | 0 | unity |
-| unity-optimize-paywall-fetching | — | dev | 3 | unity |
+| unity-optimize-paywall-fetching | — | dev | 6 | unity |
 | unity-sdk-call-order | — | dev | 2 | unity |
 | unity-show-aa-targeted-paywall | — | dev | 3 | unity |
 <!-- /mill:auto -->

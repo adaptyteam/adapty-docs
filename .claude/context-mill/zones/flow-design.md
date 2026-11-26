@@ -57,7 +57,7 @@ article for platform X" as a gap — coverage review isn't in scope for this too
 | add-flow-remote-config-locale | — | marketer | 4 | tutorial |
 | add-paywall-locale-in-adapty-paywall-builder | — | marketer | 20 | tutorial |
 | builder-containers | — | marketer | 14 | tutorial |
-| builder-element-states | — | marketer | 10 | tutorial |
+| builder-element-states | — | marketer | 11 | tutorial |
 | builder-elements | entry | marketer | 20 | tutorial |
 | builder-inputs-and-forms | — | marketer | 7 | tutorial |
 | builder-number-picker | how-to | marketer, dev | 6 | tutorial |
@@ -69,7 +69,7 @@ article for platform X" as a gap — coverage review isn't in scope for this too
 | custom-media | — | marketer | 9 | tutorial |
 | flow-analytics-ids | — | — | 6 | tutorial |
 | flow-selectable-elements | entry | marketer | 6 | tutorial |
-| flow-timer | — | marketer | 8 | tutorial |
+| flow-timer | — | marketer | 9 | tutorial |
 | manage-paywall-ui-elements | — | marketer | 15 | tutorial |
 | onboarding-quizzes | — | marketer | 3 | tutorial |
 | onboarding-text | entry | marketer | 10 | tutorial |

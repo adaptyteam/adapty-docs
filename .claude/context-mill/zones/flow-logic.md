@@ -240,7 +240,7 @@ or developer can see and click.
 | adapty-flow-builder | entry | marketer, dev | 3 | tutorial |
 | archive-flows | — | marketer, dev | 2 | tutorial |
 | basic-paywall-screen | — | marketer, dev | 11 | tutorial |
-| builder-loaders-and-progress-bars | — | marketer, dev | 6 | tutorial |
+| builder-loaders-and-progress-bars | — | marketer, dev | 13 | tutorial |
 | builder-navigation-actions | entry | marketer, dev | 0 | tutorial |
 | builder-save-publish | — | marketer, dev | 4 | tutorial |
 | builder-ui | — | marketer, dev | 15 | tutorial |
@@ -260,7 +260,7 @@ or developer can see and click.
 | flows-and-paywalls | entry | marketer, dev | 2 | tutorial |
 | import-from-figma | how-to | marketer, dev | 12 | tutorial |
 | migrate-to-flows | migration | marketer, dev | 8 | tutorial |
-| onboarding-actions | — | marketer, dev | 24 | tutorial |
+| onboarding-actions | — | marketer, dev | 25 | tutorial |
 | onboarding-element-visibility | — | marketer, dev | 1 | tutorial |
 | onboarding-flow-tutorial | — | marketer, dev | 10 | tutorial |
 | onboarding-navigation-branching | — | marketer, dev | 4 | tutorial |
