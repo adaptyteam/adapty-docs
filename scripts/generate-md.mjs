@@ -386,7 +386,7 @@ async function processLocaleFiles(locale, baseComponents, englishFiles) {
 
         let content = cleanFrontmatter(rawContent);
         content = stripContent(content, components);
-        content = withSkillNote(content);
+        content = withSkillNote(content, locale);
 
         const rawBasename = entry.name.replace(/\.(md|mdx)$/, '');
         const basename = MD_BASENAME_OVERRIDES.get(rawBasename) ?? rawBasename;
