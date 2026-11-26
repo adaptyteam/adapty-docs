@@ -34,6 +34,29 @@ test('lines inside code blocks are not headings', () => {
   assert.equal(headingStructureMismatch(en, tr), false);
 });
 
+// Source headings the English docs really have. A check that missed them
+// flagged correct translations, then accepted only a retry with no heading.
+test('a heading with a non-breaking space after the #s is a heading', () => {
+  const en = '##  System StoreKit codes\n';
+  const es = '## Códigos del sistema StoreKit \\{#system-storekit-codes\\}\n';
+  assert.deepEqual(headingLevels(en), ['h2']);
+  assert.equal(headingStructureMismatch(en, es), false);
+});
+
+test('a heading with two spaces after the #s is a heading', () => {
+  const en = '####  Step 1: The automated screening\n';
+  const fr = '#### Étape 1 : la vérification automatisée \\{#step-1-the-automated-screening\\}\n';
+  assert.equal(headingStructureMismatch(en, fr), false);
+});
+
+test('a heading indented by up to 3 spaces is a heading', () => {
+  assert.deepEqual(headingLevels('   ### A\n    ### B\n'), ['h3']);
+});
+
+test('a hash with no text after it is not a heading', () => {
+  assert.deepEqual(headingLevels('#hashtag\n##\n'), []);
+});
+
 test('a fragment with no headings matches', () => {
   assert.equal(headingStructureMismatch('Plain text.\n', 'Texte simple.\n'), false);
 });

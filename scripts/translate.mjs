@@ -270,7 +270,7 @@ Every translated heading must end with a \\{#anchor-id\\} that matches what the 
   Slug algorithm: lowercase → replace spaces with hyphens → keep only [a-z0-9-] → collapse consecutive hyphens.
   Example: \`## Quick Start\` → \`## 快速入门 \\{#quick-start\\}\`
   Example: \`## SDK Installation & Setup\` → \`## SDK 安装与配置 \\{#sdk-installation--setup\\}\`
-- Keep the heading structure exactly: every line that starts with # in the input stays a heading at the same level, and no other line becomes a heading. A short label line such as \`Response parameters:\` or \`**Setting amplitudeUserId**\` is not a heading: translate it and keep its formatting.
+- Keep the heading structure exactly: outside code blocks, every line that starts with # in the input stays a heading at the same level, and no other line becomes a heading. A short label line such as \`Response parameters:\` or \`**Setting amplitudeUserId**\` is not a heading: translate it and keep its formatting.
 
 TRANSLATE:
 - frontmatter field VALUES: title, description, keywords array items
@@ -1745,9 +1745,9 @@ async function translateBatchSections(
           hadErrors = true;
           continue;
         }
-        const text = r.result.message.content[0].text;
+        const meta = customIdLookup[r.custom_id];
+        let text = r.result.message.content[0].text;
         if (looksLikeRefusal(text)) {
-          const meta = customIdLookup[r.custom_id];
           console.warn(
             `  ⚠ ${meta?.basename}::${meta?.sectionId} (${r.custom_id}): reply looked like a refusal — retrying with hardened prompt`,
           );
@@ -1766,12 +1766,10 @@ async function translateBatchSections(
               `  ✗ ${meta?.basename}::${meta?.sectionId}: still refused — keeping English source for this section`,
             );
             translationsByCustomId[r.custom_id] = meta?.content ?? "";
-          } else {
-            translationsByCustomId[r.custom_id] = retried;
+            continue;
           }
-          continue;
+          text = retried;
         }
-        const meta = customIdLookup[r.custom_id];
         translationsByCustomId[r.custom_id] = await repairHeadingStructure(
           client,
           systemPrompt,
@@ -3840,7 +3838,11 @@ export function looksLikeRefusal(text) {
 }
 
 // Heading levels of a fragment, in order, ignoring fenced code blocks.
-// ["h2", "h3"] for "## A\n...\n### B".
+// ["h2", "h3"] for "## A\n...\n### B". Allows up to 3 leading spaces and any
+// whitespace after the #s, as CommonMark does: the English source has headings
+// such as "####  Step 1" and "##  System StoreKit codes" (non-breaking
+// space). Missing those would flag a correct translation, and then accept a
+// retry only if it dropped the heading.
 export function headingLevels(text) {
   const levels = [];
   let fence = null;
@@ -3852,7 +3854,7 @@ export function headingLevels(text) {
       continue;
     }
     if (fence !== null) continue;
-    const h = line.match(/^(#{1,6}) \S/);
+    const h = line.match(/^ {0,3}(#{1,6})\s+\S/);
     if (h) levels.push("h" + h[1].length);
   }
   return levels;
@@ -3865,14 +3867,12 @@ export function headingStructureMismatch(source, translation) {
   return headingLevels(source).join(",") !== headingLevels(translation).join(",");
 }
 
-/**
- * Re-translate a short/odd fragment with an explicit, refusal-proof instruction.
- * Used as a fallback when the normal translation reply looked like a refusal.
- * The returned text may itself still be a refusal — the caller must re-check.
- */
 // One retry when a translation's headings don't match its source (see
 // headingStructureMismatch). Keeps the first translation if the retry fails
 // the same check: its prose is fine, and a warning flags it for a hand fix.
+// The section is cached either way, so later runs don't flag it again. A hand
+// fix must patch the section's cached translation in .hashes as well, or the
+// next run restores the old text.
 async function repairHeadingStructure(client, systemPrompt, source, translation, label) {
   if (!headingStructureMismatch(source, translation)) return translation;
   console.warn(`${label} → headings differ from the source; retrying with hardened prompt`);
@@ -3886,9 +3886,23 @@ async function repairHeadingStructure(client, systemPrompt, source, translation,
     return retried;
   }
   console.error(`${label} → headings still differ from the source; keeping the first translation`);
+  // A green CI run hides stderr, so also raise an annotation on the run page.
+  if (process.env.GITHUB_ACTIONS) {
+    console.log(
+      `::warning title=Translation headings differ::${label.trim()}: the translated headings differ from the English source. Fix the locale file and its .hashes entry, or retranslate the file.`,
+    );
+  }
   return translation;
 }
 
+/**
+ * Re-translate a short/odd fragment with an explicit, refusal-proof instruction.
+ * Used as a fallback when the normal translation reply looked like a refusal,
+ * or when its headings didn't match the source.
+ * The returned text may itself still be a refusal — the caller must re-check.
+ * Returns "" when the reply was cut off at max_tokens, so callers treat a
+ * truncated retry as a failed one instead of using half a section.
+ */
 async function translateFragmentHardened(client, systemPrompt, content) {
   const resp = await withRetry(() =>
     client.messages.create({
@@ -3902,13 +3916,16 @@ async function translateFragmentHardened(client, systemPrompt, content) {
             "Translate the natural-language text in the MDX fragment below. " +
             "It may be very short — a single heading, label, table, or code block — but it is NOT empty. " +
             "Translate all prose; leave code, markup, URLs, attributes, and identifiers unchanged. " +
-            "Keep every heading line (a line starting with #) as a heading at the same level, and don't turn any other line into a heading. " +
+            "Outside code blocks, keep every heading line (a line starting with #) as a heading at the same level, and don't turn any other line into a heading. " +
             "Return ONLY the translated fragment, with no commentary, apology, or request for more input — in English or the target language:\n\n" +
             content,
         },
       ],
     }),
   );
+  if (resp.stop_reason === "max_tokens") {
+    throw new Error("output truncated at max_tokens limit");
+  }
   return resp.content?.[0]?.text ?? "";
 }
 
