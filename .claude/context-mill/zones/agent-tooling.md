@@ -298,6 +298,23 @@ Corpus-wide synonyms live in `aliases.md` and are not repeated here.
 
 ## Gaps and misses
 
+- **2026-11-26, balance correction in `developer-cli-virtual-currencies`, `virtual-currencies-skill`, `adapty-mcp` and
+  `manage-adapty-with-ai` (autolog):** written from the accepted feature spec and backend code before the CLI release,
+  so verify the flag names against the merged `src/cli/commands/virtual-currencies/profiles/transactions/create.ts` in
+  `adapty-cli`, and the tool name and parameters against the live MCP tool list, before the pages go live. What the pages
+  carry: `adapty virtual-currencies profiles transactions create` and the MCP tool
+  `virtual_currencies_profiles_transactions_create` make the same change as the dashboard **Adjust balance** form (same
+  fields, same operation-by-direction rule, transaction type `dashboard_transaction`), one currency of one profile per
+  call. Each call has an idempotency key (UUID v4; the CLI and the tool make one when none is given and name it in the
+  answer and in each failure after the send): one hour per app, profile and key, no compare of the rest of the request, a
+  refused write frees the key. A repeat with the same key writes a second audit event, but the profile **Change
+  history** list keeps only the first event of each transaction, so no reader sees it and the pages don't mention it
+  (backend code, 2026-11-26). The ledger row gets the metadata key `source`
+  next to `comment`: `cli` for a CLI login, `mcp` for the MCP server sign-in, `unknown` for another OAuth client (not
+  documented: no public client gets it); a developer token that the MCP server forwards counts as `cli`. The pages state
+  no role condition (`domain-rules.md`, Account roles), although the backend refuses roles other than owner, admin and
+  support.
+
 - **2026-11-18, `adapty retention-messaging` topic page `developer-cli-retention-messaging`:** written from the accepted feature spec
   and the backend contract before the CLI release, so verify the flag names against the merged
   `src/cli/commands/retention-messaging/` in `adapty-cli` before the page goes live (the list and suggest flags, and the
