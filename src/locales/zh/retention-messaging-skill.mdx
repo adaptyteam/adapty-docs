@@ -1,0 +1,132 @@
+---
+title: "用于留存消息的 Agent 技能"
+description: "安装 retention-messaging 技能，让你的 AI 工具在 Adapty 中配置 Apple 留存消息，创建和编辑订阅者取消时看到的消息，并查看每条消息的效果数据。"
+metadataTitle: "留存消息 Agent 技能 | Adapty 文档"
+---
+
+[Apple 留存消息](retention-messaging) 会在订阅者确认取消前，在 Apple 的**取消订阅**页面展示你的消息或优惠，从而减少流失。retention-messaging 技能可让你在 AI 工具中完成配置与管理。你的 AI 代理会读取应用的配置状态，并引导你完成每个剩余步骤：在 Apple 中设置 Adapty 的 URL、运行 Apple 的性能测试，以及切换到正式环境。之后，它会为每种所需语言编写默认消息和促销消息，激活或停用这些消息，并读取每条消息的留存订阅者数量。该技能通过 [`adapty retention-messaging` CLI 命令](developer-cli-retention-messaging) 或 [Adapty MCP 服务器](adapty-mcp) 运行。
+
+:::note
+一旦 Apple 审核通过某条消息，取消了相关产品订阅的用户就会看到它。在技能于 Apple 中设置 Adapty URL、创建、编辑、激活或停用消息之前，它会用通俗易懂的语言说明此次变更的具体内容，并在您确认后才会执行操作。
+:::
+
+## 你可以问什么 \{#what-you-can-ask\}
+
+像跟同事沟通一样提问就好，不需要指定技能名称：
+
+```
+Set up retention messaging for my app.
+
+Is retention messaging on, and what is missing?
+
+Create a retention message for my Annual plan in English and German.
+
+Show my 50% off promotional offer to monthly subscribers who cancel.
+
+Offer monthly subscribers who cancel a switch to the Annual plan.
+
+Add a German translation to my retention message.
+
+How are my retention messages doing?
+
+Deactivate the Black Friday message.
+```
+
+<AgentChat title="retention-messaging" caption="示例对话（使用样例应用，您的产品和消息内容可能不同）。">
+<ChatTurn role="user">为我的年度计划创建英语和德语的留存消息。</ChatTurn>
+<ChatTurn role="tool" summary="读取设置和消息">
+
+- `adapty retention-messaging setup-status`
+- `adapty retention-messaging products suggest --mode production --type default`
+- `adapty retention-messaging messages list --mode production`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+生产环境已就绪，Annual 计划尚无默认消息。以下是我将创建的消息。
+
+</ChatTurn>
+<ChatTurn role="confirm" summary="创建留存消息">
+
+在生产环境中将"Annual: stay"创建为默认消息。
+
+- 产品：Annual。语言：英语、德语。无图片。
+- 英语："Before you go" / "Keep your plan and your saved progress."
+- 德语："Bevor du gehst" / "Behalte deinen Plan und deinen Fortschritt."
+- Apple 现在进行审核。**审核通过后，取消 Annual 计划的订阅者将看到此消息。**
+
+确认创建？
+
+1. 是
+2. 否
+
+</ChatTurn>
+</AgentChat>
+
+## 开始之前 \{#before-you-start\}
+
+- **Apple 对您应用的审批**：Apple 仅向其审批通过的应用开放 Retention Messaging API 访问权限，审核周期最长可达一个月。您需要自行向 Apple 提交申请。如果您的应用尚未获得访问权限，该技能会提供 Adapty URL，供您填写至 [Apple 的申请表单](retention-messaging-setup#request-access-from-apple)。
+- **Adapty 中的 App Store 配置**：您的应用需要完成 [App Store 配置](app-store-connection-configuration)，并添加应用内购买密钥。如需发送促销消息，还需在 **App Store promotional offers** 部分添加密钥；若要提供套餐切换功能，则还需配置 [App Store Connect API 密钥](app-store-connect-api-key)。
+- **Adapty 中的产品**：至少需要一个[产品](create-product)供消息关联使用。
+- **已连接到 Adapty 账户的 AI 工具**：该技能通过 [Adapty MCP 服务器](adapty-mcp)或 [Adapty CLI](developer-cli) 运行。在 Claude Code 和 Codex 中，插件会自动添加 MCP 服务器，您只需登录即可。两者都可用时，该技能将使用 CLI（参见[限制](#limits)）。当您选择 CLI 时，该技能会自动安装或更新它。在 claude.ai、ChatGPT 或您 AI 工具的移动端应用中，该技能仅使用 MCP 服务器，并会提示您进行连接。若您的设备上两者均未安装，该技能会询问您希望配置哪一个。当您的 CLI 无法运行 Retention Messaging 命令时，如果 MCP 服务器已连接，该技能会切换至 MCP 服务器；否则，它会引导您前往[在看板中配置 Retention Messaging](retention-messaging-setup)。
+
+## 安装技能 \{#install-the-skill\}
+
+retention-messaging 技能是 [Adapty 插件](manage-adapty-with-ai)的一部分。
+
+<AdaptySkillsInstall />
+
+## 技能如何设置留存消息 \{#how-the-skill-sets-up-retention-messaging\}
+
+Apple 有两个环境：沙盒和生产环境。Adapty 使用同一个 URL 为两者提供服务，但 Apple 会为每个环境单独存储该 URL。每个环境都有各自的消息。
+
+技能会先读取你应用的配置状态，然后提示下一步操作：
+
+1. **App Store 密钥或服务器通知缺失**：该技能会引导你前往看板中的 App Store 设置页面。
+2. **Apple 尚未审核通过该应用**：该技能会提供需要填写在 Apple 申请表中的 Adapty URL。
+3. **Apple 尚未向 Adapty 发送沙盒请求**：该技能会提示你在 Apple 中为沙盒设置 Adapty 的 URL。
+4. **性能测试尚未通过**：为了准备 [Apple 的性能测试](retention-messaging-setup#pass-the-performance-test)，请在测试前使用[沙盒账户](test-purchases-in-sandbox)或通过 TestFlight 购买时长最长的产品，并保持订阅有效。之后该技能会启动测试。订阅用户不会看到此测试，因此这一步无需确认。测试最长可能耗时一小时。测试进行期间，该技能会重新读取状态，而不会重新发起测试。
+5. **测试通过**：该技能会提示你在 Apple 中为生产环境设置 Adapty 的 URL，然后创建你的第一条默认消息。
+
+## 技能如何撰写消息 \{#how-the-skill-writes-messages\}
+
+- **默认消息优先**：促销消息需要同一产品上已有默认消息。技能会先创建默认消息，再创建促销消息。
+- **仅限未被覆盖的产品**：技能不会为同一环境下同类型消息已覆盖的产品提供选项。对于促销消息，它也不会为没有默认消息的产品提供选项。
+- **仅使用已有的优惠和方案**：促销消息将每个产品与促销活动或切换到同一订阅组中其他方案关联。技能仅建议 App Store Connect 和 Adapty 中已存在的优惠和方案。
+- **涵盖您要求的每种语言**：技能在 Apple 的限制范围内编写英文文本及各语言译文。在 Apple 批准某种语言之前，使用该语言的订阅者将看到英文文本。
+- **编辑仅修改您指定的内容**：其他所有文本、语言、产品和图片保持不变。技能仅在您明确要求时才会删除某种语言、某个要点、某个产品或图片。
+
+要了解每个消息字段的含义，请参阅[创建留存消息](retention-messaging-create)。
+
+## 技能在每次修改前会询问什么 \{#what-the-skill-asks-before-each-change\}
+
+只有你对技能问题的回答才算数。在技能展示变更之前笼统地说"继续"是不算的。如果你说不，技能将不做任何修改。
+
+| 变更 | 技能提示内容 |
+|---|---|
+| 在 Apple 中设置 Adapty 的 URL | 对于您选择的环境，Apple 会将来自 **Cancel Subscription** 页面的请求发送至 Adapty。如果该环境的请求当前已发送至其他服务器，技能会提示该服务器将停止接收请求，并要求您再次确认。 |
+| 创建消息 | Apple 将审核该消息。审核通过后，取消订阅相关产品的用户将看到该消息。在沙盒环境中，仅沙盒测试人员可见。 |
+| 编辑消息 | 每次编辑（即使仅修改名称）都会将消息重新提交至 Apple 审核。审核通过后，原本处于未激活状态的消息将重新展示。在技能读取与写入之间，若有人在看板中进行了修改，这些修改可能会丢失。 |
+| 激活或停用消息 | 激活后，Apple 审核通过即开始展示该消息。已获批的语言版本无需重新等待审核。停用后，Apple 将停止展示该消息，但已看过该消息的用户不受影响。 |
+
+通过 MCP 服务器操作时，每次对话中有两处读取操作需要确认。第一次读取设置状态时，可保存 Apple 性能测试的结果。第一次读取消息时，会向 Apple 询问每条消息的审核情况，并可开始向订阅者展示已通过审核的消息。通过 CLI 操作时，这些读取操作效果相同，无需确认。
+
+如果技能创建消息后 Adapty 没有响应，技能不会重新创建该消息，而是在消息列表中按名称搜索，逐一展示匹配结果，并询问哪条（如果有的话）是你创建的。
+
+## 技能如何读取消息效果数据 \{#how-the-skill-reads-message-performance\}
+
+询问消息的表现情况时，技能会读取生产环境的消息列表，包含 **Shown**、**Retained users**、**Saved users**、**Retention rate**、**Save rate** 和 **Saved revenue** 等列。每个数字涵盖该消息的完整生命周期数据，沙盒消息不计入其中。**Retained users** 仅在每位订阅者进入下一个计费日后才会更新。如需了解各数字的含义，请参阅[追踪消息效果](retention-messaging-analytics)。
+
+## 与其他技能配合使用 \{#with-other-skills\}
+
+- **决定是否使用 Retention Messaging**：[growth-advisor 技能](export-analytics-with-ai)会读取你的 Retention Messaging 状态，以及在 App Store 取消订阅导致订阅终止时的线上消息。经你确认后，它会将设置和消息内容移交给 retention-messaging 技能处理。
+- **为产品添加促销活动**：发送折扣优惠的促销消息需要在 App Store Connect 和 Adapty 中都存在对应的促销活动。若要在 Adapty 中为产品添加已有的商店优惠，请告知你的 agent 优惠 ID，例如："将 App Store 优惠 `annual_50_off` 添加到我的 Annual 产品中。"growth-advisor 技能将在你确认后完成修改。
+
+## 限制 \{#limits\}
+
+- **不可删除**：留存消息无法删除。如果你要求删除，技能会提议将其停用。
+- **图片和项目符号需要使用 CLI**：通过 MCP 服务器时，技能无法为默认消息添加页眉图片或项目符号，因为两者都需要上传文件。对于这些操作，技能会提供 CLI 命令或看板操作步骤。
+- **标题位置固定**：创建默认消息时，请告知技能 **Title position**。创建后无法更改，无论是在技能中还是在看板中。
+- **不会无人值守地执行变更**：在定时运行或脚本中，由于没有人确认，技能只会读取数据。如需变更，它会说明操作内容并提供供你手动执行的命令。
+
+如需自行运行命令（不使用技能），请参阅[通过 CLI 管理留存消息](developer-cli-retention-messaging)。

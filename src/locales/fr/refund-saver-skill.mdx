@@ -1,0 +1,136 @@
+---
+title: "Skill d'agent pour Refund Saver"
+description: "Installez le skill refund-saver afin que votre outil IA active Adapty Refund Saver, définisse la préférence de remboursement de chaque store et d'un utilisateur spécifique, et découvre pourquoi Refund Saver ne s'active pas ou ne répond à aucune demande."
+metadataTitle: "Skill d'agent Refund Saver | Documentation Adapty"
+---
+
+[Refund Saver](refund-saver) répond aux demandes de remboursement de l'App Store et aux examens de rétrofacturation de Google Play à votre place, afin que le store puisse refuser celles qui ne sont pas justifiées. Le skill refund-saver exécute Refund Saver depuis votre outil d'IA. Votre agent vérifie quels stores disposent des clés dont Refund Saver a besoin et active Refund Saver. Il configure la préférence de remboursement de chaque store, la politique de consentement de l'App Store, et la préférence d'un utilisateur spécifique. Lorsque Refund Saver ne s'active pas ou ne répond à aucune demande, l'agent en identifie les causes probables. Le skill fonctionne via les [commandes CLI `adapty refund-saver`](developer-cli-refund-saver) ou le [serveur Adapty MCP](adapty-mcp).
+
+:::note
+Avant d'activer ou de désactiver Refund Saver, ou de modifier une préférence ou un paramètre de consentement, le skill vous explique clairement ce que le changement implique. Il n'effectue la modification qu'après votre confirmation.
+:::
+
+## Ce que vous pouvez demander \{#what-you-can-ask\}
+
+Posez vos questions comme vous le feriez avec un collègue. Inutile de nommer le skill :
+
+```
+Turn on Refund Saver for my app.
+
+Is Refund Saver on, and is anything missing?
+
+Ask the App Store for a prorated refund instead of declining.
+
+Grant every refund request from the user with profile ID <profile-id>.
+
+Refund Saver won't turn on. Why?
+
+Refund Saver is on, but it answers no requests.
+
+Turn on Refund Saver for all my apps.
+```
+
+<AgentChat title="refund-saver" caption="Exemple de conversation avec une application test. Votre application et vos paramètres seront différents.">
+<ChatTurn role="user">Active le Refund Saver pour mon application.</ChatTurn>
+<ChatTurn role="tool" summary="Lire l'état et les clés du store">
+
+- `adapty refund-saver get`
+- `adapty refund-saver readiness`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+Le Refund Saver est désactivé. L'App Store dispose des clés dont le Refund Saver a besoin. Pas Google Play : ajoutez le nom de package et le fichier de clé de compte de service dans **App settings** > **Android SDK**. Dans l'intervalle, le Refund Saver ne traitera aucune requête Google Play.
+
+Je ne reçois pas les notifications de votre store. Vérifiez que les App Store Server Notifications V2 et les Google Play real-time developer notifications parviennent bien à Adapty. Sans elles, Refund Saver ne peut traiter aucune demande de ce store.
+
+Votre politique de consentement est Opt-out : Adapty envoie à Apple les données de consommation des utilisateurs pour lesquels aucun consentement n'est enregistré. Votre application demande-t-elle le consentement aux utilisateurs au préalable ? Si c'est le cas, je passerai en Opt-in une fois Refund Saver activé.
+
+</ChatTurn>
+<ChatTurn role="confirm" summary="Activer Refund Saver">
+
+Activer Refund Saver pour votre application.
+
+- App Store : refuser la première demande de remboursement pour un achat, accorder la suivante. Politique de consentement : Opt-out, donc Adapty envoie à Apple les données de consommation des utilisateurs n'ayant enregistré aucun consentement.
+- Google Play : refuser le premier examen de rétrofacturation, accorder le suivant. Aucune réponse tant que les clés ne sont pas ajoutées.
+- **Votre politique de confidentialité doit indiquer que vous partagez les données de consommation avec Apple pour les demandes de remboursement.**
+
+Activer ?
+
+1. Oui
+2. Non
+
+</ChatTurn>
+</AgentChat>
+
+## Avant de commencer \{#before-you-start\}
+
+- **Le module complémentaire Refund Saver** : si le module complémentaire Refund Saver n'est pas actif sur votre compte, Adapty refuse d'activer Refund Saver. Activez le module complémentaire dans l'onglet [**Subscription & Billing**](account#subscription--billing) de vos paramètres de compte.
+- **La connexion au store** : chaque store sur lequel vous vendez doit être connecté à Adapty : l'[App Store](app-store-connection-configuration) ou [Google Play](google-play-store-connection-configuration).
+- **Les notifications du store** : le store envoie à Adapty chaque demande de remboursement via une notification. Configurez les [Notifications serveur App Store V2](enable-app-store-server-notifications) et les [notifications en temps réel pour les développeurs Google Play](enable-real-time-developer-notifications-rtdn).
+- **Politique de confidentialité et consentement sur l'App Store** : choisissez comment votre application obtient le consentement des utilisateurs, via une invite d'acceptation ou des conditions de désactivation, et indiquez dans votre politique de confidentialité que vous partagez des données de consommation avec Apple. Voir [Obtenir le consentement des utilisateurs](refund-saver#obtain-user-consent).
+- **Un outil IA connecté à votre compte Adapty** : le skill fonctionne via le [serveur Adapty MCP](adapty-mcp) ou l'[Adapty CLI](developer-cli). Dans Claude Code et Codex, le plugin ajoute le serveur MCP, vous n'avez donc qu'à vous connecter. Si aucun des deux n'est configuré, le skill vous demande lequel utiliser et le configure.
+
+## Installer le skill \{#install-the-skill\}
+
+Le skill refund-saver fait partie du [plugin Adapty](manage-adapty-with-ai).
+
+<AdaptySkillsInstall />
+
+## Comment le skill configure Refund Saver \{#how-the-skill-sets-up-refund-saver\}
+
+1. **Lit l'état** : Le skill vérifie si Refund Saver est activé pour l'application, et si chaque store dispose des clés dont Refund Saver a besoin : la [clé d'achat intégré](generate-in-app-purchase-key) pour l'App Store, et la clé de compte de service pour Google Play. Pour un store sans sa clé, le skill indique ce qu'il faut ajouter dans **App settings** > **iOS SDK** ou **Android SDK**.
+2. **Indique ce qu'il ne peut pas lire** : Aucune commande n'affiche les notifications de store, votre politique de confidentialité, ni la façon dont votre application demande le consentement. Le skill vous demande de vérifier que les notifications du store parviennent à Adapty, et renvoie vers les [prérequis du store](refund-saver#store-specific-prerequisites) pour la politique de confidentialité et le consentement.
+3. **Active Refund Saver** : Dès qu'au moins un store sur lequel vous vendez dispose des clés, le skill vous demande confirmation, puis active Refund Saver pour les deux stores. Il affiche la note d'Adapty concernant le module complémentaire Refund Saver. Un store sans les clés n'obtient aucune réponse tant que vous ne les ajoutez pas. Si aucun store n'est prêt, le skill n'active rien et indique ce qu'il faut ajouter.
+4. **Applique les préférences choisies** : Pour la plupart des applications, le skill recommande la préférence de remboursement par défaut, **Decline first refund request, grant all next**. Chaque modification de la préférence d'un store, de la politique de consentement ou des paramètres d'un utilisateur nécessite sa propre confirmation.
+
+Refund Saver fonctionne quand des demandes de réponse apparaissent dans la section [Refund Saver](https://app.adapty.io/refund-saver), ou quand le skill les liste à votre demande. Adapty répond à la première dès que la prochaine demande de remboursement arrive, ce qui peut prendre plusieurs semaines dans une application avec peu d'achats.
+
+La politique de consentement détermine si Refund Saver envoie à Apple les données d'un utilisateur sans consentement enregistré. Faites correspondre la politique à la façon dont votre app demande le consentement. Le skill ne peut pas voir la demande de consentement de votre app, il vous demande donc quelle politique convient. Pour en savoir plus sur ce que fait chaque option, consultez [Définir la politique de consentement par défaut](refund-saver#set-the-default-consent-policy).
+
+Pour modifier les paramètres d'un utilisateur spécifique, donnez au skill l'**Adapty profile ID** de cet utilisateur, et non l'identifiant utilisateur de votre application. Vous le trouverez sur le [profil](profiles-crm) de l'utilisateur dans le tableau de bord. Le skill peut également le lire depuis une demande de remboursement à laquelle Refund Saver a répondu.
+
+Pour activer Refund Saver sur plusieurs applications, demandez-les toutes en même temps. Le skill lit chaque application, puis affiche une confirmation unique qui liste toutes les applications qu'il modifie.
+
+## Ce que le skill demande avant chaque modification \{#what-the-skill-asks-before-each-change\}
+
+Seule votre réponse à la question du skill compte. Un « allez-y » général donné avant que le skill affiche la modification ne compte pas. Si vous répondez non, le skill ne modifie rien.
+
+| Changement | Ce que le skill vous indique |
+|---|---|
+| Activer Refund Saver | Désormais, Adapty répond aux demandes de remboursement App Store et aux contestations Google Play de cette application, selon les préférences de chaque store. Le skill indique la politique de consentement App Store. Avec **Opt-out**, Adapty envoie également à Apple les données de consommation des utilisateurs pour lesquels aucun consentement n'est enregistré. Dans les deux cas, votre politique de confidentialité doit préciser que vous partagez des données de consommation avec Apple pour les demandes de remboursement. |
+| Désactiver Refund Saver | Adapty cesse de répondre aux demandes de remboursement App Store et aux contestations Google Play de cette application. Le module Refund Saver reste actif jusqu'à ce que vous l'annuliez depuis l'onglet **Subscription & Billing**. |
+| Modifier la préférence d'un store ou la politique de consentement | La valeur actuelle et la nouvelle valeur. La nouvelle valeur s'applique à toutes les nouvelles demandes de ce store. |
+| Modifier les paramètres d'un utilisateur | La préférence ou le consentement actuel et le nouveau pour cet utilisateur. Un accord ou un refus accordé à l'utilisateur a la priorité sur la préférence du store, sur les deux stores. |
+
+Dans une exécution planifiée ou un script, sans personne pour répondre, le skill se contente de lire. Pour une modification, il indique ce que fait le changement et la commande à exécuter.
+
+## Quand Refund Saver ne fonctionne pas comme prévu \{#when-refund-saver-doesnt-work-as-expected\}
+
+- **Adapty refuse d'activer Refund Saver** : le skill vous indique la raison renvoyée par Adapty et qui doit corriger le problème :
+  - Le module complémentaire Refund Saver n'est pas actif pour votre compte. Activez-le dans l'onglet **Subscription & Billing**.
+  - Les identifiants Apple de votre compte ne fonctionnent pas. Corrigez-les dans **App settings**.
+  - Refund Saver ne peut pas être activé pour votre compte. Contactez le support Adapty.
+
+  Après une correction, demandez au skill de réessayer. Il ne le fait pas de lui-même.
+- **Adapty refuse chaque modification** : Votre compte Adapty peut consulter l'application mais n'a pas de droits de modification dans sa société. Demandez à un propriétaire ou à un administrateur de la société de vous accorder ces droits.
+- **Refund Saver est activé, mais il ne répond à aucune demande** : Le skill lit les demandes auxquelles Refund Saver a répondu et les clés de chaque store. Il identifie ensuite les causes possibles :
+  - Un store n'a pas de clés, ou le store ne les accepte pas. Vérifiez-les dans **App settings**.
+  - Les notifications du store n'atteignent pas Adapty.
+  - La politique de consentement est **Opt-in**, et votre application n'envoie jamais le consentement d'un utilisateur à Adapty. Adapty n'envoie alors aucune donnée de consommation à Apple.
+  - Sur Google Play, Refund Saver ne répond qu'aux rétrofacturations. Google traite les demandes de remboursement ordinaires sans intervention d'Adapty. Consultez [Comment les stores diffèrent](refund-saver#how-the-stores-differ).
+  - Une application avec peu d'achats peut passer des semaines sans demande de remboursement.
+- **Les résultats Google Play apparaissent en retard** : Google ne notifie pas Adapty lorsqu'il refuse une rétrofacturation, Adapty interroge donc le statut de la commande jusqu'à ce que l'examen soit terminé. Les résultats Google Play parviennent à la liste des demandes et aux économies plus tard que ceux de l'App Store.
+
+## Avec d'autres skills \{#with-other-skills\}
+
+- **Voir ce que Refund Saver a économisé** : Le [skill growth-advisor](export-analytics-with-ai) lit le montant économisé par Refund Saver et son taux de réussite, puis les compare avec vos remboursements. Quand vos remboursements sont élevés et que Refund Saver est désactivé, il propose de l'activer. Quand Refund Saver a économisé de l'argent dans une application, il lit vos autres applications et propose d'activer Refund Saver là où il est désactivé. Sur votre accord, il transmet la modification au skill refund-saver.
+- **Intégrer le SDK Adapty** : Lorsque le [skill adapty-integration](adapty-sdk-integration-skill) se termine, il propose de configurer Refund Saver.
+
+## Limites \{#limits\}
+
+- **Pas de modification des add-ons** : Le skill ne peut pas activer ni désactiver l'add-on Refund Saver. Faites-le depuis l'onglet **Subscription & Billing** de vos paramètres de compte.
+- **Pas de code applicatif** : Le skill n'écrit pas le code qui envoie à Adapty la préférence ou le consentement d'un utilisateur. Pour ajouter ce code, consultez [Gérer Refund Saver depuis le code de votre application](refund-saver#manage-refund-saver-from-your-app-code).
+- **Pas d'estimation des remboursements évités** : C'est le store qui statue sur chaque demande, donc le skill ne prédit pas ce que Refund Saver permettra de conserver.
+
+Pour exécuter les commandes vous-même, sans le skill, consultez [les commandes Refund Saver](developer-cli-refund-saver).

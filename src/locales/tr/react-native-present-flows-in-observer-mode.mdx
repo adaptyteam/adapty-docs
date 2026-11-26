@@ -14,12 +14,12 @@ Bu kılavuz, bir flow'un nasıl sunulacağını ve satın alma callback'lerinin 
 
 Şunlara ihtiyacınız var:
 
-- **Adapty React Native SDK 4.0 veya üzeri**: Daha eski sürümler flow'ları render edemez. Mevcut bir uygulamayı taşımak için [migration kılavuzuna](migration-to-react-native-sdk-v4) bakın.
+- **Adapty React Native SDK 4.0 veya üzeri**: Daha eski sürümler flow'ları render edemez. Android'de 4.4.0 veya üzerini kullanın: daha eski sürümler, bildirilen satın almaları flow ile ilişkilendiremeyebilir. Mevcut bir uygulamayı taşımak için [migration kılavuzuna](migration-to-react-native-sdk-v4) bakın.
 - **`observerMode` değeri `true` olarak ayarlanmış**: [React Native SDK kurulum kılavuzuna](sdk-installation-reactnative) bakın.
 - **İlk mağaza entegrasyonu**: Adapty'yi [App Store ile](initial_ios) ve [Google Play ile](initial-android) kurun.
-- **Ürünleri olan yayımlanmış bir flow**: [Flow & Paywall Builder](adapty-flow-builder)'da oluşturun ve [ürünler](create-product) atayın.
-- **Bir flow placement'ı**: [Placement oluşturun](create-placement) ve flow'unuzu atayın.
-- **Uygulamanızda fetch edilmiş flow**: Sunmadan önce [flow'u ve yapılandırmasını alın](react-native-get-pb-paywalls).
+- **Ürünleri olan yayınlanmış bir flow**: [Flow & Paywall Builder](adapty-flow-builder)'da oluşturun ve [ürünleri](create-product) atayın.
+- **Bir flow placement'ı**: [Bir placement oluşturun](create-placement) ve flow'unuzu atayın.
+- **Uygulamanızda yüklenen flow**: Flow'u sunmadan önce [flow'u ve yapılandırmasını alın](react-native-get-pb-paywalls).
 
 Observer modunda SDK, satın alma işlemlerini sizin yerinize gerçekleştirmez. Kullanıcı Adapty tarafından render edilen bir flow'da satın alma veya geri yükleme düğmesine dokunduğunda, SDK sizin `onObserverPurchaseInitiated` veya `onObserverRestoreInitiated` olay işleyicinizi çağırır — satın alma veya geri yükleme işlemini orada kendi kodunuzla gerçekleştirin.
 
@@ -63,13 +63,13 @@ function MyFlow({ flow }) {
 ```
 
 :::note
-Gömülü bileşende, bir işleyicinin döndürdüğü değer flow'u kapatmaz — başarılı bir satın alma veya geri yükleme işleminden sonra bileşeni kendiniz unmount edin.
+Gömülü bileşende, bir işleyicinin döndürdüğü değer flow'u kapatmaz. Bir satın alma veya satın alma geri yükleme işlemi başarılı olduğunda bileşeni kendiniz unmount edin.
 :::
 
 </TabItem>
-<TabItem value="standalone" label="Modal presentation">
+<TabItem value="standalone" label="Modal sunum">
 
-Modal sunum için, oluşturduğunuz view üzerinde işleyicileri ayarlayın:
+Modal sunum için, oluşturduğunuz view'da işleyicileri ayarlayın:
 
 ```typescript showLineNumbers title="React Native (TSX)"
 
@@ -81,7 +81,7 @@ const unsubscribe = view.setEventHandlers({
     myPurchaseApi(product.vendorProductId)
       .then((transactionId) => adapty.reportTransaction(transactionId, product.variationId))
       .finally(() => onFinishPurchase()); // the flow hides the loading indicator
-    return false; // keep the flow open; dismiss it yourself after success
+    return false; // keep the flow open; dismiss it yourself after success, or let the flow continue
   },
   onObserverRestoreInitiated(onStartRestore, onFinishRestore) {
     onStartRestore();
@@ -105,10 +105,12 @@ Ayrıca, satın alma veya geri yükleme sürecini AdaptyUI'ya bildirmek için a�
 | onStartRestore()   | Geri yükleme başladığında AdaptyUI'ya bildirimde bulunmak için bu callback çağrılmalıdır.       |
 | onFinishRestore()  | Geri yükleme tamamlandığında AdaptyUI'ya bildirimde bulunmak için bu callback çağrılmalıdır.    |
 
+`onFinishPurchase()` çağrısından sonra, flow; iptal edilen bir satın alma dahil olmak üzere ne olursa olsun aynı [sonuç eylemlerini](respond-to-purchase-outcomes#add-actions-for-a-result) çalıştırır: iOS'ta **When pending** eylemleri, Android'de **When succeeded** eylemleri. Satın alma sonucuna bağlı ekranları (örneğin teşekkür ekranı) kendi kodunuzdan gösterin; sonucu yalnızca kodunuz bilir. `onFinishRestore()` çağrısından sonra ise flow, ne olursa olsun **When restore completed** eylemlerini çalıştırır.
+
 ## Flow'u sunun \{#present-the-flow\}
 
-Flow'u her zamanki gibi sunun: [flow'u alın ve görünümünü oluşturun](react-native-get-pb-paywalls), ardından [sunun](react-native-present-paywalls). Herhangi bir ek parametre gerekmez — handler'lar yalnızca SDK `observerMode: true` ile etkinleştirildiğinde tetiklenir.
+Flow'u her zamanki gibi sunun: [flow'u alın ve görünümünü oluşturun](react-native-get-pb-paywalls), ardından [sunun](react-native-present-paywalls). Ekstra parametre gerekmez — handler'lar yalnızca SDK, `observerMode: true` ile etkinleştirildiğinde tetiklenir.
 
 :::warning
-[İşlemi raporlamayı ve paywall ile ilişkilendirmeyi](report-transactions-observer-mode-react-native) unutmayın. Aksi takdirde Adapty işlemi tanımayacak ve satın almanın kaynak paywall'ını belirleyemeyecektir.
+[İşlemi bildirmeyi ve onu paywall ile ilişkilendirmeyi](report-transactions-observer-mode-react-native) unutmayın. Aksi takdirde, Adapty işlemi tanımayacak ve satın almanın kaynak paywall'ını belirleyemeyecektir. Kullanıcının satın aldığı `AdaptyPaywallProduct` öğesinin `variationId` değerini iletin, `AdaptyFlow.variationId` değerini değil: bir flow'un kendi varyasyon ID'si, satın almayı flow ile ilişkilendirmez.
 :::

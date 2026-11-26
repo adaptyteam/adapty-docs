@@ -86,6 +86,8 @@ function MyFlow({ flow }) {
 }
 ```
 
+`AdaptyFlowView` 的 `onError` 处理器会在组件无法显示流程时接收错误。这可能发生在流程加载失败，或设备运行 iOS 15（流程不支持该版本）时。此时应停止渲染该组件，并展示你自己的内容。
+
 ## 模态呈现 \{#modal-presentation\}
 
 要将流程作为独立屏幕显示，请在由 [`createFlowView`](react-native-get-pb-paywalls#fetch-the-view-configuration) 方法创建的 `view` 上调用 `view.present()` 方法。如果需要再次显示该流程，可以再次调用 `createFlowView` 创建一个新的 `view` 实例，或[保留已关闭的流程以备后用](#keep-a-closed-flow-for-later)。
@@ -165,14 +167,18 @@ view.setEventHandlers({
 
 ## 使用开发者自定义计时器 \{#use-developer-defined-timer\}
 
-要在移动应用中使用开发者自定义计时器，请使用 `timerId`，本例中为 `CUSTOM_TIMER_NY`，即你在 Adapty 看板中设置的开发者自定义计时器的 **Timer ID**。它能确保应用动态更新计时器并显示正确的值，例如 `13d 09h 03m 34s`（计算方式为计时器的结束时间（如元旦）减去当前时间）。
+本节适用于在 Flow & Paywall Builder 中行为设置为 **Developer defined** 的计时器。在编辑工具中，每个此类计时器都有一个 **Timer ID**（详见[让应用设置结束时间](flow-timer#let-your-app-set-the-end-date)），由你的应用为其设置结束时间。代码中使用的 Timer ID 必须与编辑工具中完全一致，包括大小写和空格。如果 ID 不匹配，计时器将无法从应用获取结束时间。
+
+要设置结束日期，请传入 `customTimers` 参数：该对象将每个 Timer ID 映射到一个 `Date`，即计时器的结束日期。
 
 <Tabs>
 <TabItem value="component" label="React component">
 ```typescript showLineNumbers title="React Native (TSX)"
-const flowParams = {
-  customTimers: { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
-};
+const flowParams = useMemo(() => ({
+  customTimers: {
+    CUSTOM_TIMER_NY: new Date(new Date().getFullYear() + 1, 0, 1), // next New Year's Day
+  },
+}), []);
 
 <AdaptyFlowView
   flow={flow}
@@ -183,13 +189,24 @@ const flowParams = {
 </TabItem>
 <TabItem value="modal" label="Modal presentation">
 ```typescript showLineNumbers title="React Native (TSX)"
-const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
 
-const view = await createFlowView(flow, { customTimers });
+const customTimers = {
+  CUSTOM_TIMER_NY: new Date(new Date().getFullYear() + 1, 0, 1), // next New Year's Day
+};
+
+try {
+  const view = await createFlowView(flow, { customTimers });
+  await view.present();
+} catch (error) {
+  // handle the error
+}
 ```
 </TabItem>
 </Tabs>
-在此示例中，`CUSTOM_TIMER_NY` 是你在 Adapty 看板中设置的开发者自定义计时器的 **Timer ID**。`timerResolver` 会确保你的应用动态更新计时器，显示正确的值——例如 `13d 09h 03m 34s`（由计时器的结束时间（如元旦）减去当前时间计算得出）。
+
+在此示例中，`CUSTOM_TIMER_NY` 是编辑工具中**开发者自定义**计时器的 Timer ID。该计时器显示距下一个元旦的剩余时间，例如 `13d 09h 03m 34s`。
+
+SDK 在创建视图时会读取一次 `customTimers`，因此你设置的日期（例如从现在起 6 小时后）从那一刻开始计时。如果日期已过，计时器立即显示为零，并触发其 **On timer end** 事件。如果 `customTimers` 中没有某个 Timer ID 对应的键，计时器将从屏幕打开时倒计时一小时。
 
 ## 显示对话框 \{#show-dialog\}
 
@@ -213,6 +230,10 @@ try {
   // handle error
 }
 ```
+
+## 向流程发送消息 \{#send-messages-to-a-flow\}
+
+流程视图的 `sendAppMessage` 方法用于以 JSON 对象的形式向流程发送消息。该方法为未来的流程与付费墙编辑工具功能预留，当前流程会忽略这些消息，因此无需调用此方法。
 
 ## 用新订阅替换旧订阅 \{#replace-one-subscription-with-another\}
 
@@ -362,7 +383,7 @@ try {
 
 ## 使用开发者自定义计时器 \{#use-developer-defined-timer\}
 
-要在移动应用中使用开发者自定义计时器，请使用 `timerId`——在本示例中为 `CUSTOM_TIMER_NY`，即你在 Adapty 看板中设置的开发者自定义计时器的 **Timer ID**。这样可以确保应用动态地以正确的值更新计时器——例如 `13d 09h 03m 34s`（由计时器的结束时间（如元旦）减去当前时间计算得出）。
+要在移动应用中使用开发者自定义计时器，请使用 `timerId`，本例中为 `CUSTOM_TIMER_NY`，即你在 Adapty 看板中设置的开发者自定义计时器的 **Timer ID**。它能确保应用动态更新计时器并显示正确的值，例如 `13d 09h 03m 34s`（计算方式为计时器的结束时间（如元旦）减去当前时间）。
 
 <Tabs>
 <TabItem value="component" label="React component">
@@ -386,7 +407,7 @@ const view = await createPaywallView(paywall, { customTimers });
 ```
 </TabItem>
 </Tabs>
-在此示例中，`CUSTOM_TIMER_NY` 是你在 Adapty 看板中设置的开发者自定义计时器的 **Timer ID**。`timerResolver` 会确保你的应用动态更新计时器，显示正确的值——例如 `13d 09h 03m 34s`（由计时器的结束时间（如元旦）减去当前时间得出）。
+在此示例中，`CUSTOM_TIMER_NY` 是你在 Adapty 看板中设置的开发者自定义计时器的 **Timer ID**。`timerResolver` 会确保你的应用动态更新计时器，显示正确的值——例如 `13d 09h 03m 34s`（由计时器的结束时间（如元旦）减去当前时间计算得出）。
 
 ## 显示对话框 \{#show-dialog\}
 

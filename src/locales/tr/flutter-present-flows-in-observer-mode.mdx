@@ -15,11 +15,11 @@ Bu kılavuz, bir flow'un nasıl sunulacağını ve satın alma callback'lerinin 
 
 Şunlara ihtiyacınız var:
 
-- **Adapty Flutter SDK 4.0 veya üzeri**: Eski sürümler flow'ları render edemez. Mevcut bir uygulamayı taşımak için [migration kılavuzuna](migration-to-flutter-sdk-v4) bakın.
-- **`observerMode` `true` olarak ayarlanmış**: Flutter SDK kurulum kılavuzundaki [Flutter SDK installation guide](sdk-installation-flutter#activate-adapty-module-of-adapty-sdk) bölümüne bakın.
+- **Adapty Flutter SDK 4.0 veya üzeri**: Daha eski sürümler flow'ları render edemez. Android'de 4.4.0 veya üzerini kullanın: daha eski sürümler raporlanan satın almaları flow ile ilişkilendiremeyebilir. Mevcut bir uygulamayı taşımak için [geçiş kılavuzuna](migration-to-flutter-sdk-v4) bakın.
+- **`observerMode` değerinin `true` olarak ayarlanması**: [Flutter SDK kurulum kılavuzuna](sdk-installation-flutter#activate-adapty-module-of-adapty-sdk) bakın.
 - **İlk mağaza entegrasyonu**: Adapty'yi [App Store ile](initial_ios) ve [Google Play ile](initial-android) kurun.
-- **Ürünleri olan yayımlanmış bir flow**: [Flow & Paywall Builder](adapty-flow-builder)'da oluşturun ve [ürünleri](create-product) atayın.
-- **Bir flow placement'ı**: [Bir placement oluşturun](create-placement) ve flow'unuzu atayın.
+- **Ürünler içeren yayımlanmış bir flow**: [Flow & Paywall Builder](adapty-flow-builder) içinde oluşturun ve [ürünleri](create-product) flow'a atayın.
+- **Bir flow placement'ı**: [Bir placement oluşturun](create-placement) ve flow'unuzu ona atayın.
 - **Uygulamanızda çekilen flow**: Flow'u sunmadan önce [flow'u ve yapılandırmasını alın](flutter-get-pb-paywalls).
 
 ## Uygulama \{#implementation\}
@@ -55,25 +55,27 @@ Observer modunda SDK, satın alma işlemlerini sizin adınıza gerçekleştirmez
    }
    ```
 
-`observerModeDidInitiatePurchase` metodu, kullanıcının bir satın alma işlemi başlattığını; `observerModeDidInitiateRestore` ise kullanıcının bir geri yükleme işlemi başlattığını size bildirir. Buna yanıt olarak özel satın alma veya geri yükleme flow'unuzu tetikleyin.
+   `observerModeDidInitiatePurchase` metodu, kullanıcının bir satın alma işlemi başlattığını; `observerModeDidInitiateRestore` ise kullanıcının bir geri yükleme işlemi başlattığını size bildirir. Buna yanıt olarak özel satın alma veya geri yükleme flow'unuzu tetikleyin.
 
    Ayrıca, satın alma veya geri yükleme sürecini AdaptyUI'a bildirmek için aşağıdaki callback'leri çağırmayı unutmayın. Bu, yükleyiciyi göstermek gibi düzgün flow davranışı için gereklidir:
 
-| Callback           | Description                                                                                        |
+   | Callback           | Description                                                                                        |
    | :----------------- | :------------------------------------------------------------------------------------------------- |
    | onStartPurchase()  | Satın alma işleminin başladığını AdaptyUI'ya bildirmek için bu callback çağrılmalıdır.  |
    | onFinishPurchase() | Satın alma işleminin tamamlandığını AdaptyUI'ya bildirmek için bu callback çağrılmalıdır. |
    | onStartRestore()   | Geri yükleme işleminin başladığını AdaptyUI'ya bildirmek için bu callback çağrılmalıdır.   |
    | onFinishRestore()  | Geri yükleme işleminin tamamlandığını AdaptyUI'ya bildirmek için bu callback çağrılmalıdır.  |
 
-2. Herhangi bir ekran göstermeden önce resolver'ı kaydedin:
+   `onFinishPurchase()` çağrısından sonra, flow; iptal edilmiş bir satın alma dahil ne olursa olsun aynı [sonuç eylemlerini](respond-to-purchase-outcomes#add-actions-for-a-result) çalıştırır: iOS'ta **When pending** eylemleri, Android'de ise **When succeeded** eylemleri. Satın alma sonucuna bağlı olan herhangi bir ekranı (örneğin teşekkür ekranı) kendi kodunuzdan gösterin; zira sonucu yalnızca kodunuz bilir. `onFinishRestore()` çağrısından sonra ise flow, ne olursa olsun **When restore completed** eylemlerini çalıştırır.
+
+2. Herhangi bir ekran gösterilmeden önce resolver'ı kaydedin:
 
    ```dart showLineNumbers title="Flutter"
    AdaptyUI().setObserverModeResolver(MyObserverModeResolver());
    ```
 
-3. Flow görünümünü her zamanki gibi oluşturun ve gösterin: [flow'u alın ve görünümünü oluşturun](flutter-get-pb-paywalls), ardından [gösterin](flutter-present-paywalls). Ekstra parametre gerekmez — resolver kaydedildiğinde, Adapty tarafından render edilen her flow satın alma ve geri yükleme işlemlerini onun üzerinden yönlendirir.
+3. Flow görünümünü zamanki gibi oluşturun ve sunun: [flow'u alın ve görünümünü oluşturun](flutter-get-pb-paywalls), ardından [sunun](flutter-present-paywalls). Ekstra parametre gerekmez — resolver kaydedildikten sonra Adapty tarafından render edilen her flow, satın almaları ve geri yüklemeleri bu resolver üzerinden yönlendirir.
 
 :::warning
-[İşlemi bildirmeyi ve paywall ile ilişkilendirmeyi](report-transactions-observer-mode-flutter) unutmayın. Aksi takdirde Adapty işlemi tanımayacak ve satın alma işleminin kaynak paywall'ını belirleyemeyecektir.
+[İşlemi bildirmeyi ve onu paywall ile ilişkilendirmeyi](report-transactions-observer-mode-flutter) unutmayın. Aksi takdirde Adapty işlemi tanımayacak ve satın almanın kaynak paywall'ını belirleyemeyecektir. Kullanıcının satın aldığı `AdaptyPaywallProduct`'ın `paywallVariationId`'sini geçirin, `AdaptyFlow.variationId`'yi değil: bir flow'un kendi varyasyon ID'si satın almayı flow ile ilişkilendirmez.
 :::

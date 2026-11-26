@@ -222,6 +222,12 @@ source id is named.
   `create-virtual-currency`, and `virtual-currency-quickstart` (step 3, after `insufficient_balance`);
   their link text must not promise an ad. The shared builder and backend steps sit in the `VcTopUp*`
   reusable snippets, ready for an Android version of the recipe.
+- **The virtual currency ledger export lives in the `integrations` zone (2026-11-19).** The daily S3 and
+  Google Cloud Storage export has a third feed, one row per balance change; its columns and limits are
+  in the "Virtual currency transactions" section of `s3-exports` and `google-cloud-storage`.
+  `virtual-currencies` only links there ("How it works", item 8). A change to the transaction fields
+  (`operation` values, `feature`, `reference_id`, `customer_placement_id`, `is_sandbox`, `metadata`)
+  also moves that 19-column table, in both pages.
 
 ## Boundaries
 
@@ -288,8 +294,9 @@ Corpus-wide synonyms live in `aliases.md` and aren't repeated here.
     re-checked on 2026-11-18. The dashboard
     adjustment is gated to Owner, Admin, and Support; requires `feature`; takes an optional reference
     ID (≤128) and one-line comment (≤200); is idempotent per request key; is marked sandbox when the
-    profile is a test user; and is not sent to webhooks or integrations (the last per the feature
-    owner, not traced in code). The comment reaches the event-history **Details** block as the
+    profile is a test user; and is not sent to webhooks or realtime integrations, but appears in the S3 and GCS virtual
+    currency export as `dashboard_transaction` (2026-11-23, backend code: the export reads the whole
+    ledger with no type filter). The comment reaches the event-history **Details** block as the
     metadata key `comment`. A **Change history** window lists manual adjustments of the last 3 months
     with the actor and role, with up to ~2 minutes of lag. Owner article: `virtual-currency-balance`.
   - *Unverified:* what makes a profile a "test user" for the sandbox flag has no UI label and no docs

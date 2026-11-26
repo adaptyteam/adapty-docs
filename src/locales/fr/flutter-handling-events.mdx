@@ -214,11 +214,11 @@ void flowViewDidFinishRestore(AdaptyUIFlowView view, AdaptyProfile profile) {
 ```
 </Details>
 
-Nous vous recommandons de fermer l'écran si l'utilisateur dispose du `accessLevel` requis. Consultez la rubrique [Statut de l'abonnement](flutter-listen-subscription-changes) pour savoir comment le vérifier, et la rubrique [Répondre aux actions des boutons](flutter-handle-paywall-actions) pour savoir comment fermer un écran.
+Pour afficher d'autres écrans après une restauration d'achat, comme un écran de bienvenue, configurez des [actions de résultat](respond-to-purchase-outcomes#respond-to-a-purchase-restoration) dans le Flow & Paywall Builder. Utilisez le code de l'application pour ce que le flow ne peut pas faire, comme ouvrir un écran de votre application une fois que l'utilisateur a accès. Consultez la rubrique [Statut d'abonnement](flutter-listen-subscription-changes) pour savoir comment vérifier le niveau d'accès et la rubrique [Répondre aux actions des boutons](flutter-handle-paywall-actions) pour savoir comment fermer le flow.
 
 #### Échec de la restauration \{#failed-restore\}
 
-Si la restauration d'un achat échoue, cette méthode sera invoquée :
+Si la restauration d'un achat échoue, cette méthode sera appelée :
 
 ```dart showLineNumbers title="Flutter"
 void flowViewDidFailRestore(AdaptyUIFlowView view, AdaptyError error) {
@@ -243,11 +243,13 @@ Cette méthode est **obligatoire**. Elle remplace la méthode `paywallViewDidFai
 ```dart showLineNumbers title="Flutter"
 void flowViewDidReceiveError(AdaptyUIFlowView view, AdaptyError error) {
   // log the error and dismiss the broken view
-  view.dismiss();
+  view.dismiss().catchError((_) {});
 }
 ```
 
-Dans une situation normale, les erreurs de rendu ne devraient pas se produire, donc si vous en rencontrez une, veuillez nous en informer.
+Pour un flow intégré avec `AdaptyUIFlowPlatformView`, `view.dismiss()` échoue, donc l'exemple intercepte son erreur. Sur iOS, cette méthode reçoit également les erreurs de chargement des flows intégrés. Pour fermer un flow intégré, [supprimez son widget](flutter-present-paywalls#embed-in-widget-hierarchy).
+
+Dans une situation normale, les erreurs de rendu ne devraient pas se produire. Si vous en rencontrez une, merci de nous en informer.
 
 ### Événements d'analyse \{#analytics-events\}
 
@@ -272,16 +274,16 @@ Si vous avez activé le SDK en [mode observateur](implement-observer-mode-flutte
 
 ### Gérer les requêtes système \{#handle-system-requests\}
 
-Le `AdaptyUISystemRequestsHandler` (enregistré via `AdaptyUI().setSystemRequestsHandler(...)`) est réservé aux requêtes système émises par un flow : demandes de permissions OS (notifications push ou accès à la caméra, par exemple) et demandes d'avis sur l'App Store. Les flows ne déclenchent pas encore ces requêtes, vous n'avez donc pas besoin d'enregistrer de handler.
+Le `AdaptyUISystemRequestsHandler`, enregistré avec `AdaptyUI().setSystemRequestsHandler(...)`, répond aux requêtes système émises par un flow. Un flow envoie une demande de permission pour les notifications push lorsqu'il exécute l'action **Request permission**. Sans gestionnaire, la requête ne reçoit aucune réponse et le flow reste bloqué sur l'écran qui l'a envoyée. Pour implémenter le gestionnaire, consultez [Gérer les demandes de permission dans les flows](flutter-handle-permissions).
 
-Si vous en enregistrez un, notez que `handlePermission` est la méthode requise de la classe — demandez la permission avec votre propre code, puis retournez `AdaptyUIPermissionResult.granted()` ou `AdaptyUIPermissionResult.denied()` ; `handleAppReviewRequest` est optionnel.
+`handlePermission` est la méthode obligatoire de la classe — faites la demande de permission avec votre propre code, puis renvoyez `AdaptyUIPermissionResult.granted()` ou `AdaptyUIPermissionResult.denied()` ; `handleAppReviewRequest` est optionnelle.
 
 </SDKv4>
 
 <SDKv3>
 
 :::important
-Ce guide couvre la gestion des événements liés aux achats, aux restaurations, à la sélection de produits et à l'affichage des paywalls. Vous devez également implémenter la gestion des boutons (fermeture du paywall, ouverture de liens, etc.). Consultez notre [guide sur la gestion des actions de boutons](flutter-handle-paywall-actions) pour plus de détails.
+Ce guide couvre la gestion des événements pour les achats, les restaurations, la sélection de produits et le rendu des paywalls. Vous devez également implémenter la gestion des boutons (fermeture du paywall, ouverture de liens, etc.). Consultez notre [guide sur la gestion des actions de boutons](flutter-handle-paywall-actions) pour plus de détails.
 :::
 
 Les paywalls configurés avec le [Paywall Builder](adapty-paywall-builder) n'ont pas besoin de code supplémentaire pour effectuer et restaurer des achats. Cependant, ils génèrent certains événements auxquels votre application peut réagir. Ces événements comprennent les pressions sur des boutons (boutons de fermeture, URLs, sélections de produits, etc.) ainsi que des notifications sur les actions liées aux achats effectuées sur le paywall. Découvrez ci-dessous comment réagir à ces événements.

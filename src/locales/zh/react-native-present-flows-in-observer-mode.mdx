@@ -14,12 +14,12 @@ metadataTitle: "在观察者模式下展示流程 - React Native | Adapty 文档
 
 你需要：
 
-- **Adapty React Native SDK 4.0 或更高版本**：旧版本无法渲染流程。如需迁移现有应用，请参阅[迁移指南](migration-to-react-native-sdk-v4)。
+- **Adapty React Native SDK 4.0 或更高版本**：旧版本无法渲染流程。在 Android 上，请使用 4.4.0 或更高版本：旧版本可能无法将已报告的购买与流程关联。如需迁移现有应用，请参阅[迁移指南](migration-to-react-native-sdk-v4)。
 - **`observerMode` 设置为 `true`**：请参阅 [React Native SDK 安装指南](sdk-installation-reactnative)。
-- **初始商店集成**：配置 Adapty [与 App Store 的集成](initial_ios)以及[与 Google Play 的集成](initial-android)。
-- **已发布的包含产品的流程**：在[流程与付费墙编辑工具](adapty-flow-builder)中构建，并为其分配[产品](create-product)。
-- **流程版位**：[创建版位](create-placement)并将你的流程分配给它。
-- **在应用中获取流程**：在展示之前，先[获取流程及其配置](react-native-get-pb-paywalls)。
+- **初始商店集成**：分别完成 Adapty [与 App Store 的集成](initial_ios)和[与 Google Play 的集成](initial-android)。
+- **已发布且包含产品的流程**：在[流程与付费墙编辑工具](adapty-flow-builder)中构建，并为其分配[产品](create-product)。
+- **流程版位**：[创建版位](create-placement)并将你的流程分配到该版位。
+- **在应用中获取流程**：在展示流程之前，先[获取流程及其配置](react-native-get-pb-paywalls)。
 
 在观察者模式下，SDK 不会代替您执行购买操作。当用户在 Adapty 渲染的流程中点击购买或恢复按钮时，SDK 会调用您的 `onObserverPurchaseInitiated` 或 `onObserverRestoreInitiated` 事件处理器——请在其中使用您自己的代码完成购买或恢复操作。
 
@@ -63,13 +63,13 @@ function MyFlow({ flow }) {
 ```
 
 :::note
-在嵌入式组件中，处理程序的返回值不会关闭流程——请在成功购买或恢复后自行卸载组件。
+在嵌入式组件中，处理程序的返回值不会关闭流程。当购买或恢复购买成功后，请自行卸载该组件。
 :::
 
 </TabItem>
 <TabItem value="standalone" label="Modal presentation">
 
-对于模态展示，在你创建的视图上设置处理程序：
+对于模态展示，请在你创建的视图上设置处理程序：
 
 ```typescript showLineNumbers title="React Native (TSX)"
 
@@ -81,7 +81,7 @@ const unsubscribe = view.setEventHandlers({
     myPurchaseApi(product.vendorProductId)
       .then((transactionId) => adapty.reportTransaction(transactionId, product.variationId))
       .finally(() => onFinishPurchase()); // the flow hides the loading indicator
-    return false; // keep the flow open; dismiss it yourself after success
+    return false; // keep the flow open; dismiss it yourself after success, or let the flow continue
   },
   onObserverRestoreInitiated(onStartRestore, onFinishRestore) {
     onStartRestore();
@@ -105,10 +105,12 @@ const unsubscribe = view.setEventHandlers({
 | onStartRestore()   | 应调用此回调以通知 AdaptyUI 恢复购买已开始。   |
 | onFinishRestore()  | 应调用此回调以通知 AdaptyUI 恢复购买已完成。  |
 
+在 `onFinishPurchase()` 之后，无论发生什么情况（包括取消购买），流程都会执行相同的[结果动作](respond-to-purchase-outcomes#add-actions-for-a-result)：iOS 上执行 **When pending** 动作，Android 上执行 **When succeeded** 动作。如果需要根据购买结果展示相应页面（例如感谢页），请在你的代码中处理——只有你的代码才知道最终结果。在 `onFinishRestore()` 之后，无论发生什么，流程都会执行 **When restore completed** 动作。
+
 ## 展示流程 \{#present-the-flow\}
 
-像往常一样展示流程：[获取流程并创建其视图](react-native-get-pb-paywalls)，然后[展示它](react-native-present-paywalls)。无需额外参数——只有当 SDK 以 `observerMode: true` 激活时，相应的处理程序才会触发。
+像平常一样展示流程：[获取流程并创建其视图](react-native-get-pb-paywalls)，然后[展示它](react-native-present-paywalls)。无需任何额外参数——只有在 SDK 以 `observerMode: true` 激活时，处理器才会触发。
 
 :::warning
-别忘了[上报交易并将其与付费墙关联](report-transactions-observer-mode-react-native)。否则，Adapty 将无法识别该交易，也无法确定购买来源的付费墙。
+不要忘记[上报交易并将其与付费墙关联](report-transactions-observer-mode-react-native)。否则，Adapty 将无法识别该交易，也无法确定购买来源的付费墙。请传入用户所购买的 `AdaptyPaywallProduct` 的 `variationId`，而非 `AdaptyFlow.variationId`：流程自身的 variation ID 不会将购买与该流程关联。
 :::

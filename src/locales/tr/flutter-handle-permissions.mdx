@@ -1,0 +1,100 @@
+---
+title: "Flow'larda izin isteklerini yönetme - Flutter"
+description: "Flutter uygulamanızda bir flow'dan push bildirimi iznini AdaptyUISystemRequestsHandler ile kullanıcılardan isteyin ve kullanıcının yanıtını flow'a döndürün."
+metadataTitle: "Flow İzinlerini Yönetme - Flutter | Adapty Dokümanları"
+---
+
+Bir [flow](adapty-flow-builder), **Request permission** eylemiyle kullanıcılardan push bildirim izni isteyebilir; örneğin bildirimlerin ne işe yaradığını anlatan bir onboarding ekranında. Adapty SDK, sistem izin diyalogunu kendisi göstermez. İsteği uygulamanızdaki bir `AdaptyUISystemRequestsHandler`'a iletir. Uygulamanız diyalogu gösterir, kullanıcının yanıtını döndürür ve flow devam eder.
+
+## Başlamadan önce \{#before-you-start\}
+
+Şunlara ihtiyacınız var:
+
+- **Adapty Flutter SDK 4.0.0 veya üzeri**: Daha eski sürümlerde `AdaptyUISystemRequestsHandler` bulunmaz. Bkz. [SDK'yı yükle ve yapılandır](sdk-installation-flutter).
+- **Request permission eylemi içeren bir flow**: Flow & Paywall Builder'da, bir öğenin **On Tap** veya **On Screen Appear** tetikleyicisine **Request permission** eylemini ekleyin. **After response** bölümünde, kullanıcı yanıt verdikten sonra çalışacak eylemleri (örneğin **Navigate Next**) ekleyin. Eylem ayarları için bkz. [Request permission](onboarding-actions#request-permission).
+- **Bildirim iletişim kutusunu gösteren bir kütüphane**: Örnekte [permission_handler](https://pub.dev/packages/permission_handler) kullanılmaktadır. Başka bir paket veya kendi platform kodunuz da aynı şekilde çalışır.
+- **Android manifest dosyanızda `POST_NOTIFICATIONS` izni ve `targetSdk` 33 veya üzeri**: Android 13 ve sonraki sürümler, bildirim izni iletişim kutusunu yalnızca bu izni bildiren ve Android 13 veya üzerini hedefleyen uygulamalara gösterir:
+
+  ```xml showLineNumbers title="android/app/src/main/AndroidManifest.xml"
+  <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+      <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+      <!-- ... -->
+  </manifest>
+  ```
+
+- **CocoaPods ile iOS için**: [permission_handler kurulumunda](https://pub.dev/packages/permission_handler) açıklandığı gibi, `Podfile` dosyanızdaki `GCC_PREPROCESSOR_DEFINITIONS` bölümüne `PERMISSION_NOTIFICATIONS=1` ekleyin. Bu olmadan `Permission.notification.request()` reddedildi olarak döner ve iOS hiçbir iletişim kutusu göstermez. Swift Package Manager ile permission_handler, bildirim iznini varsayılan olarak dahil eder.
+
+## Flow bir izin nasıl talep eder \{#how-the-flow-requests-a-permission\}
+
+1. Flow, **Request permission** eylemine ulaşır: kullanıcı elemana dokunur ya da ekran görünür.
+2. Adapty SDK, `AdaptyUIPermission.push` ile handler'ınızda `handlePermission` metodunu çağırır.
+3. Uygulamanız OS'tan izni ister ve `AdaptyUIPermissionResult.granted()` ya da `AdaptyUIPermissionResult.denied()` döndürür.
+4. Flow, **After response** eylemlerini çalıştırır. Her iki yanıt için de aynıdır.
+
+Flow, uygulamanız yanıt döndürene kadar ekranda bekler. Uygulamanız hiç yanıt vermezse flow ekranda kalmaya devam eder. İşletim sistemi diyaloğu göstermezse, örneğin kullanıcı daha önce zaten yanıt verdiyse, `Permission.notification.request()` önceki yanıtı hemen döndürür ve flow **After response** eylemlerini anında çalıştırır. Bu eylemler ekrandan çıkılmasına yol açıyorsa, kullanıcı izin isteyen ekranı yalnızca bir an için görür.
+
+**Ekranda Görünme** ile, kullanıcı **Geri git** eylemiyle ekrana geri döndüğünde flow yeni bir istek göndermez. **Dokunma** ile ise her dokunuş yeni bir istek gönderir; ancak bir istek yanıtınızı beklerken yapılan dokunuşlar bunun dışındadır.
+
+## Handler'ı uygulayın \{#implement-the-handler\}
+
+İzin isteklerini yanıtlamak için `AdaptyUISystemRequestsHandler`'ı genişleten bir sınıf oluşturun ve `handlePermission`'ı uygulayın. Uygulamanızın talep etmediği izinler için denied döndürün.
+
+```dart showLineNumbers title="Flutter"
+
+class FlowSystemRequestsHandler extends AdaptyUISystemRequestsHandler {
+  @override
+  Future<AdaptyUIPermissionResult> handlePermission(
+    AdaptyUIFlowView view,
+    AdaptyUIPermission permission,
+    Map<String, String>? customArgs,
+  ) async {
+    // Answer "denied" to every permission your app doesn't request
+    if (permission != AdaptyUIPermission.push) {
+      return const AdaptyUIPermissionResult.denied();
+    }
+
+    try {
+      final status = await Permission.notification.request();
+      return status.isGranted
+          ? const AdaptyUIPermissionResult.granted()
+          : const AdaptyUIPermissionResult.denied();
+    } catch (_) {
+      return const AdaptyUIPermissionResult.denied();
+    }
+  }
+
+  // The base method does nothing: this keeps the native review prompt.
+  @override
+  Future<void> handleAppReviewRequest(AdaptyUIFlowView view) {
+    return AdaptyUI().requestAppReview();
+  }
+}
+```
+
+`handlePermission` şunu alır:
+
+- **`view`**: İsteği gönderen flow view'ı.
+- **`permission`**: Flow'un talep ettiği izin. **Request permission** aksiyonu `AdaptyUIPermission.push` gönderir.
+- **`customArgs`**: İsteğin özel argümanları. **Request permission** aksiyonu hiçbir şey göndermez, dolayısıyla değer `null`'dur.
+
+`handlePermission` hata fırlatırsa veya hiç tamamlanmazsa, flow yanıt alamaz ve ekranda kalır. Örnek bu nedenle hataları yakalar.
+
+Verilen bir izin, uygulamanızın bildirim göstermesine olanak tanır. Push bildirimleri almak için, cihazı push sağlayıcınıza kaydedin; bunu uygulamanız flow'ların dışında zaten yapar.
+
+Bir handler kaydedildiğinde, Adapty SDK uygulama değerlendirme isteklerini `handleAppReviewRequest` metoduna iletir; bu metodun temel uygulaması hiçbir şey yapmaz. Örnekte native değerlendirme istemi kullanılmaktadır.
+
+## Handler'ı kaydedin \{#register-the-handler\}
+
+:::warning
+**Handler olmadan flow, izin isteğinde durur.** Uygulamanız herhangi bir handler kaydetmezse, Adapty SDK hem iOS hem Android'de flow'a yanıt göndermez. Flow, isteği gönderen ekranda kalır ve **After response** aksiyonlarını çalıştırmaz.
+:::
+
+Tüm flow'lardan gelen izin isteklerini handler'ınıza göndermek için, bir flow sunmadan önce `AdaptyUI().setSystemRequestsHandler` fonksiyonunu bir kez çağırın. Örneğin, flow olayları gözlemcisini ayarladıktan hemen sonra çağırabilirsiniz:
+
+```dart showLineNumbers title="Flutter"
+AdaptyUI().setSystemRequestsHandler(FlowSystemRequestsHandler());
+```
+
+## İzin isteğini test etme \{#test-the-permission-request\}
+
+iOS, bildirim iletişim kutusunu uygulama başına yalnızca bir kez gösterir. Android ise kullanıcı bildirimlere izin verdikten veya iki kez reddettikten sonra bu kutuyu göstermeyi bırakır. Flow'u test ederken iletişim kutusunu tekrar görmek için uygulamayı cihazdan silip yeniden yükleyin. Ardından flow'u açın ve **Request permission** eylemine ulaşın. Ekran kalıp hiçbir iletişim kutusu görünmüyorsa flow henüz bir yanıt almamış demektir: uygulamanızın flow'u göstermeden önce handler'ı kaydettiğinden emin olun. Flow bir iletişim kutusu göstermeden ilerliyorsa Android uygulamasının `POST_NOTIFICATIONS` bildirdiğinden ve Android 13 veya sonraki sürümü hedeflediğinden, iOS `Podfile` dosyasının ise `PERMISSION_NOTIFICATIONS` özelliğini etkinleştirdiğinden emin olun.

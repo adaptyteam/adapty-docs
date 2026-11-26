@@ -27,7 +27,7 @@ Most readers will either:
 This fundamentally shapes how to structure documentation:
 - **The intro must stand alone.** A reader who reads only the intro should understand what this article covers and whether it's relevant to them.
 - **Every H2 section must be self-contained.** A reader jumping to "Configure competitors" shouldn't need to have read "Configure products" first, unless there's an explicit prerequisite stated at the top of the section.
-- **Don't bury critical information.** If something applies to the entire workflow (a prerequisite, a limitation, a gotcha), put it in the intro or in a dedicated "Before you begin" section — not inside step 4 of 7. Likewise, put a fact that concerns one step under that step, not in **Before you start**.
+- **Don't bury critical information.** If something applies to the entire workflow (a prerequisite, a limitation, a gotcha), put it in the intro or in a dedicated "Before you begin" section — not inside step 4 of 7. Likewise, put a fact that concerns one step under that step, not in **Before you start**: a name the code uses, a setup item, or a requirement. When a prerequisite has to come before its step, say in the same sentence what it's for.
 - **Headings are the article's API.** Readers scan headings to decide what to read. Each heading must clearly signal what that section covers. Vague headings ("Additional options", "Other settings") force the reader to read the section to understand it.
 - **Front-load value in each section.** The first sentence of each section should tell the reader what they'll get from reading it. Don't start with background — start with the outcome.
 
@@ -106,6 +106,14 @@ If the zone brief and roster still leave candidates open, search the map:
    - **No change needed**: Articles that mention the broader area but aren't affected by this specific change
 5. **Verify content fit per article**: When planning shared content (reusable components, callouts, or identical text) across multiple articles, don't assume that matching a structural pattern means the content applies. Read what each article actually does and verify the shared content is relevant there. For example, a note about user ID timing is irrelevant in an article that only passes device IDs.
 
+**Then check open PRs for the same articles.** Docs often wait in an open PR until the feature ships, and that PR can name a different ticket than yours. For each affected article, list the open PRs that change it:
+
+```bash
+gh pr list --state open --json number,title,author,headRefName,files --jq '.[] | select(any(.files[]; .path | endswith("/<article>.mdx"))) | "#\(.number) \(.title) by \(.author.login) (\(.headRefName))"'
+```
+
+When an open PR already covers the feature, don't draft it again. Read the PR, and plan only what it lacks or what the code changed after its last commit. Those changes go into that PR's branch as commits, with a PR comment that says what you added and why. Leave the merge to the PR's author.
+
 **Documentation research** (for each affected article):
 1. **Read the full article**: Understand the current structure, tone, depth, and heading patterns
 2. **Read neighboring articles**: Understand how this article fits in its sidebar section
@@ -118,13 +126,14 @@ If the zone brief and roster still leave candidates open, search the map:
 4. **Feature importance**: Is this a core part of the workflow that every reader needs, or an optional setting that most users skip? This determines prominence in the structure.
 
 **Fact research** (every claim the content will make about what Adapty, the SDK, or the UI does):
-1. **Write each fact with its source.** Keep a facts list: the claim, and the file and line, doc, or test that settles it. A claim with no source is a question for the user, not a fact.
+1. **Write each fact with its source.** Keep a facts list: the claim, and the file and line, doc, or test that settles it. For a fact from code, also record the repo, the branch, and the commit you read. A UI label is a code fact too: a later commit on the same branch can rename it. A claim with no source is a question for the user, not a fact.
 2. **Follow a control end to end.** For a control the article documents, trace it from the frontend call through the backend route to the code that handles it. A stub (a 501, a TODO, an empty list) is a fact: record it, and don't document the control as working.
-3. **Use the owning article for side effects.** Before you record a side effect, find the article that owns that mechanism and use its facts.
-4. **Verify third-party claims on the third party's side.** What a third-party tool does with forwarded data (aggregates, deduplicates, reports) needs that tool's own docs or a test. Adapty's code settles only the Adapty side. In a compound claim, verify each part or cut the part you can't.
-5. **Check scenarios against the product.** A scenario the text puts to the reader is a claim: "if you publish a broken flow" fails when publishing blocks broken flows. A behavior claim is true only in the states you verified: list the settings and device states that can change it (alignment, element size, an open or closed display), verify it in each, and narrow the claim or add a step when one changes the outcome.
-6. **Name icons from the SVG or a screenshot**, never from the file name.
-7. **Confirm release state in code.** A ticket status, a chat announcement, or a wiki page is a claim, not proof. Find the change on the production branch. When a team brief contradicts production, document production.
+3. **Trace a mechanism for every case the article covers.** A mechanism verified for one product type, store, or platform is a fact about that one only. Subscriptions and one-time purchases, the App Store and Google Play, and the native and cross-platform SDKs can each take a different path. For each case, trace both ends: what the SDK does, and which backend path completes it. When a case takes another path, describe it separately, or narrow the claim to the cases you traced.
+4. **Use the owning article for side effects.** Before you record a side effect, find the article that owns that mechanism and use its facts.
+5. **Verify third-party claims on the third party's side.** What a third-party tool does with forwarded data (aggregates, deduplicates, reports) needs that tool's own docs or a test. Adapty's code settles only the Adapty side. In a compound claim, verify each part or cut the part you can't.
+6. **Check scenarios against the product.** A scenario the text puts to the reader is a claim: "if you publish a broken flow" fails when publishing blocks broken flows. A behavior claim is true only in the states you verified: list the settings and device states that can change it (alignment, element size, an open or closed display), verify it in each, and narrow the claim or add a step when one changes the outcome.
+7. **Name icons from the SVG or a screenshot**, never from the file name.
+8. **Confirm release state in code.** A ticket status, a chat announcement, or a wiki page is a claim, not proof. Find the change on the production branch. When a team brief contradicts production, document production. When you researched a fact before its release tag existed, re-check the fact against the tag once the tag exists: a signature, an overload, or a default can change before release.
 
 **Then classify the change for shipped-skill ripple.** The same feature often changes one of the
 seven skills shipped from `sdk-integration-skill`, and the plan is the moment to find out — asked
@@ -156,6 +165,7 @@ When a class does fire, name the file, not the skill: resolve it from the skills
 - Any existing content that overlaps with or relates to the planned change
 - The article's heading style (verb phrases, noun phrases, or mixed)
 - Your product analysis: who reads this, what they're trying to do, and how the new feature fits their workflow
+- **Open PRs**: each open PR that changes an affected article, and what it already covers
 - **Shipped-skill ripple**: the class that fired and which file in which skill, or one line saying none
 
 ### Step 3: Assess Documentation Scope

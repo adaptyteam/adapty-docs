@@ -1,64 +1,77 @@
 ---
-title: "响应购买结果"
-description: "在应用代码中处理每种购买结果，并在购买成功时打开第二个流程。"
-metadataTitle: "响应购买结果 | 流程与付费墙 | Adapty 文档"
+title: "响应购买和购买恢复"
+description: "在付费墙屏幕后继续流程：设置用户在购买或购买恢复的每种结果后看到的内容。"
+metadataTitle: "响应购买和购买恢复 | 流程与付费墙 | Adapty 文档"
 ---
 
-购买完成后，Adapty SDK 会将结果回调给你的应用。在应用做出响应之前，界面不会发生任何变化。你的应用可以关闭付费墙、保持其打开以供用户再次尝试，或者打开第二个流程来确认购买结果。
+付费墙屏幕之后，流程可以继续进行——恢复用户引导流程、向新订阅者展示感谢页面，或欢迎那些恢复早期购买的用户回归。
 
-编辑工具无法根据购买结果进行分支跳转：购买完成时不会触发任何[触发器](onboarding-actions#trigger-types)，也没有任何[变量](onboarding-variables)携带购买结果。因此，跳转逻辑需要在你的代码中处理，因为购买结果正是在那里返回的。
+您可以在操作设置中为每种购买条件设置对应的结果。未设置操作的结果会让用户停留在付费墙页面。
 
-整个流程分为三个部分：
-
-- 构建购买后的流程，并将其分配到独立的版位。
-- 在应用代码中，根据购买结果进行分支判断。
-- 购买成功后，关闭付费墙并展示购买后的流程。
+- **Purchase** 操作包含以下条件：**When succeeded**、**When failed**、**When cancelled by user** 和 **When pending**。
+- **Restore purchases** 操作包含两个条件：**When restore completed** 和 **When restore failed**。
 
 ## 开始之前 \{#before-you-start\}
 
-- 流程需要 Adapty SDK v4.0 或更高版本。
-- 构建一个付费墙页面——例如，参考[创建基础付费墙页面](basic-paywall-screen)教程。
+确保已满足以下条件：
 
-## 1. 构建购后流程 \{#1-build-the-post-purchase-flow\}
+- 您的应用使用 Adapty SDK v4.0 或更高版本。
+- 流程中包含一个付费墙页面。要创建该页面，请参照[创建基础付费墙页面](basic-paywall-screen)教程。
+- 付费墙页面上的某个元素（例如按钮）配置了 [**Purchase** 动作](paywall-product-block#trigger-a-purchase)。
+- 您的应用在流程保持开启状态时处理相关回调，可参考 <InlineTooltip tooltip="购买与恢复回调">[iOS](ios-handling-events)、[Android](android-handling-events)、[React Native](react-native-handling-events-1)、[Flutter](flutter-handling-events)、[Unity](unity-handling-events)、[Kotlin Multiplatform](kmp-handling-events) 和 [Capacitor](capacitor-handling-events)</InlineTooltip>。
 
-[创建流程](paywall-builder-templates)。该流程在购买完成后运行，因此无需配置产品。若要将用户引导回应用自身的界面，请在最后一个屏幕上添加一个绑定 **Close Flow** 操作的按钮。
+## 为结果添加动作 \{#add-actions-for-a-result\}
 
-<ZoomImage id="post-purchase-flow-close-action.webp" width="700px" alt="Post-purchase flow in the builder with a Thank you screen, the Start button selected, and its On Tap trigger set to the Close Flow action" />
-
-当流程有多个分支出口时，请使用[**自定义操作**](onboarding-actions#custom-actions)。为每个按钮设置独立的 Action ID，这样应用就能区分 **Set up now** 和 **Set up later**。
-
-## 2. 将购后流程添加到独立版位 \{#2-add-the-post-purchase-flow-to-its-own-placement\}
-
-要在应用中获取购后流程，需将其分配到独立的版位。购后流程的版位不能与主流程共用——一个版位在同一目标受众下只能提供一个流程。
-
-1. [发布流程](builder-save-publish)。
-2. [创建流程版位](create-placement)。记录 **Placement ID**——应用将使用它来获取该流程。
-3. 将购后流程分配到新创建的版位。
-
-## 3. 根据购买结果进行分支处理 \{#3-branch-on-the-purchase-result\}
-
-您的应用通过两个回调接收购买结果：
-
-- **Completion**：购买已得出结论——成功完成、用户取消，或付款正在等待审批（例如家长确认）。通过读取结果类型来区分这三种情况。成功时，结果中包含更新后的 `AdaptyProfile`。
-- **Failure**：发生错误导致购买中断，回调中携带一个 `AdaptyError`——可能是付款限制、无效产品、网络故障或交易验证失败。
-
-回调名称与签名：[iOS](ios-handling-events) | [Android](android-handling-events) | [React Native](react-native-handling-events-1) | [Flutter](flutter-handling-events) | [Unity](unity-handling-events) | [Kotlin Multiplatform](kmp-handling-events) | [Capacitor](capacitor-handling-events)
-
-根据结果进行分支处理：
-
-- 购买成功时，关闭付费墙，然后展示购后流程。
-- 取消、待处理或失败时，保持付费墙开启。
-
-:::note
-通过专属回调处理恢复购买，可覆盖重新安装应用或更换设备的用户。确认返回的用户画像具有有效的[访问等级](access-level)后，按照相同方式关闭并展示流程。将该回调指向独立流程——感谢用户购买的页面并不适合作为恢复购买的流程。
+:::important
+流程只能响应 **In-App Store** 购买的结果，不支持 **Web Payment** 购买的结果。
 :::
 
-## 4. 加载并展示购后流程 \{#4-load-and-present-the-post-purchase-flow\}
+1. 选择已配置 **Purchase** 或 **Restore purchases** 动作的元素。
+2. 点击 **Purchase** 或 **Restore purchases** 动作。
+3. 找到您需要处理的购买或恢复结果（例如 **When succeeded**），点击 <Inline id="plus.svg" alt="Add action" />。
+4. 在 **Action** 下拉菜单中，选择要执行的动作以替换 **Do nothing**。
 
-如需在购买完成后立即打开购后流程，应在获取付费墙的同时一并获取该流程，而非在处理程序内部获取。同时也要请求其 UI 配置——正是这个调用会在后台启动流程图片的缓存预加载。
+:::note
+在同一触发器中，位于 **Purchase** 或 **Restore purchases** 之后的导航或 **Close Flow** 动作会立即执行，而不会等待结果。请将其作为结果动作添加。
+:::
 
-在 [iOS](ios-optimize-paywall-fetching#preload-placements) 和 [Android](android-optimize-paywall-fetching#preload-placements) 上，`preloadFlows`（SDK 4.1+）可在一次调用中预热多个版位。它仅缓存版位 JSON，因此请搭配 `ReturnCacheDataElseLoad` 获取策略使用，并提前请求 UI 配置。
+:::tip
+当 **Purchase** 动作包含结果动作时，双击不会触发第二次购买。在商店返回结果之前（最长 60 秒），流程会忽略对该动作的后续点击。**Restore purchases** 的行为与此相同。
+:::
 
-获取流程和付费墙：[iOS](get-pb-paywalls) | [Android](android-get-pb-paywalls) | [React Native](react-native-get-pb-paywalls) | [Flutter](flutter-get-pb-paywalls) | [Unity](unity-get-pb-paywalls) | [Kotlin Multiplatform](kmp-get-pb-paywalls) | [Capacitor](capacitor-get-pb-paywalls)
+要在你的应用中查看结果动作，请[进行沙盒购买](test-purchases-in-sandbox)。
 
-展示流程和付费墙：[iOS](ios-present-paywalls) | [Android](android-present-paywalls) | [React Native](react-native-present-paywalls) | [Flutter](flutter-present-paywalls) | [Unity](unity-present-paywalls) | [Kotlin Multiplatform](kmp-present-paywalls) | [Capacitor](capacitor-present-paywalls)
+您无法在 [Adapty 移动应用的预览](paywall-device-compatibility-preview#preview-on-devices)中进行真实购买。
+
+如果流程在您的应用中跳过了结果动作，请参阅[流程为什么跳过结果动作](flow-common-issues#the-flow-doesnt-run-the-actions-set-for-a-purchase-result)。
+
+:::tip
+如需在应用代码中处理购买结果（例如打开原生页面），请使用 Adapty SDK 的购买和恢复回调。每次修改相关代码都需要发布新版本。如果应用在购买后会打开第二个流程，可以将其页面合并到包含付费墙的流程中。
+:::
+
+### 购买成功后显示下一个页面 \{#show-the-next-screen-after-a-successful-purchase\}
+
+若要在购买成功后继续用户引导流程或显示感谢页面，请将 **When succeeded** 结果与 [**Navigate to Screen**](onboarding-actions#navigate-to-screen) 动作配对，并将目标页面设置为跳转目标。
+
+### 购买成功后关闭流程 \{#close-the-flow-after-a-successful-purchase\}
+
+购买成功后如需结束流程，请在 **When succeeded** 中添加 [**Close Flow**](onboarding-actions#close-flow)，而不是使用导航操作。这样流程只会在购买成功时关闭，无需在应用代码中手动处理关闭逻辑。
+
+### 响应失败、取消或待处理的购买 \{#respond-to-a-failed-canceled-or-pending-purchase\}
+
+要在购买失败、取消或待处理后显示提示框或跳转页面，请为 **Purchase** 动作的以下结果添加相应操作：
+
+- **When failed**: 发生错误导致购买失败。例如，[显示一个提示框](onboarding-actions#show-alert)，让用户稍后重试。
+- **When cancelled by user**: 用户取消了购买。例如，可以展示另一个优惠页面。
+- **When pending**: 购买正在等待审批，例如银行正在确认付款，或家长正在通过 iOS 的"购买申请"功能进行审批。当银行或家长完成审批后，流程不会自动响应，因此请显示一个页面，说明用户需要等待的原因。
+
+:::tip
+如需让用户在购买失败后重新尝试，请将其留在付费墙上，例如通过 **When failed** 配置一个提示。你无法将 **Purchase**、**Restore purchases** 或 [**Request permission**](onboarding-actions#request-permission) 添加到结果中。
+:::
+
+### 响应购买恢复 \{#respond-to-a-purchase-restoration\}
+
+[**Restore purchases**](paywall-product-block#restore-purchases) 操作有两种结果：**When restore completed** 和 **When restore failed**。
+
+**When restore completed** 表示恢复操作完成且未发生错误，并不代表用户已获得访问权限。在流程中无法验证访问等级。如需根据访问权限显示内容，请在 **When restore completed** 时添加 **Close Flow** 操作，然后在应用中验证[访问等级](access-level)。
+

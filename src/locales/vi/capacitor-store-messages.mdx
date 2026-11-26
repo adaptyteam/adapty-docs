@@ -1,0 +1,123 @@
+---
+title: "Kiểm soát thông báo cửa hàng trong Capacitor SDK"
+description: "Chọn thời điểm ứng dụng Capacitor của bạn hiển thị thông báo từ App Store và Google Play về việc tăng giá, vấn đề thanh toán và thanh toán bị từ chối, để chúng không làm gián đoạn flow hoặc onboarding."
+metadataTitle: "Kiểm soát thông báo cửa hàng | Capacitor SDK | Tài liệu Adapty"
+---
+
+App Store và Google Play đôi khi cần hiển thị thông báo cho người dùng của bạn về gói đăng ký của họ:
+
+- **App Store**: Yêu cầu chấp thuận tăng giá, thông báo sự cố thanh toán, hoặc ưu đãi thu hút khách hàng cũ. Theo mặc định, StoreKit tự hiển thị các thông báo này khi ứng dụng đang mở.
+- **Google Play**: Thông báo rằng thanh toán gói đăng ký bị từ chối và cần cập nhật phương thức thanh toán. Từ SDK 4.3.0 trở đi, Adapty SDK mặc định yêu cầu các thông báo này mỗi khi một `Activity` của ứng dụng khởi động sau `activate`, kể cả khi ứng dụng quay lại foreground.
+
+Dù thế nào, thông báo vẫn có thể xuất hiện trên flow, onboarding hoặc màn hình thanh toán. Để tự chọn thời điểm hiển thị, hãy chuyển SDK sang chế độ xử lý thông báo thủ công và gọi `showStoreMessages` khi thông báo không làm gián đoạn người dùng.
+
+:::warning
+Ở chế độ thủ công, cửa hàng sẽ không tự hiển thị thông báo. Nếu ứng dụng của bạn không bao giờ gọi `showStoreMessages`, người dùng sẽ không bao giờ nhìn thấy yêu cầu xác nhận tăng giá, thông báo vấn đề thanh toán hay thông báo thanh toán bị từ chối.
+:::
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+Bạn cần:
+
+- **Adapty Capacitor SDK 4.3.0 trở lên**: Các phiên bản cũ hơn không có API thông báo từ cửa hàng.
+- **iOS 16 trở lên** để nhận thông báo từ App Store: StoreKit không gửi thông báo đến ứng dụng trên các phiên bản cũ hơn. Trên iOS 15, `getPendingStoreMessageTypes` và `showStoreMessages` sẽ trả về lỗi `decodingFailed`, vì vậy nếu ứng dụng của bạn hỗ trợ iOS 15, hãy bắt lỗi này như trong các ví dụ bên dưới.
+
+## Bật xử lý thủ công \{#enable-manual-handling\}
+
+Để chỉ hiển thị thông báo từ cửa hàng khi ứng dụng của bạn gọi `showStoreMessages`, hãy đặt `storeMessagesHandling` thành `'manual'` khi bạn [kích hoạt SDK](sdk-installation-capacitor#activate-adapty-module-of-adapty-sdk):
+
+```typescript showLineNumbers
+
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    storeMessagesHandling: 'manual', // 'auto' is the default
+  },
+});
+```
+
+Trên iOS, SDK sẽ thêm từng thông báo App Store vào danh sách chờ của phiên ứng dụng hiện tại. Trên Android, SDK ngừng tự yêu cầu thông báo Google Play. Với giá trị mặc định là `'auto'`, SDK không chặn thông báo App Store, do đó trên iOS, `getPendingStoreMessageTypes` và `showStoreMessages` sẽ không có gì để trả về hoặc hiển thị.
+
+## Lấy các loại tin nhắn đang chờ \{#get-pending-message-types\}
+
+Trên iOS, để kiểm tra xem có tin nhắn nào từ App Store đang chờ hay không, hãy gọi `getPendingStoreMessageTypes`. Hàm này trả về các loại tin nhắn đang chờ mà không hiển thị hay xóa chúng:
+
+```typescript showLineNumbers
+try {
+  const pendingTypes = await adapty.getPendingStoreMessageTypes();
+
+  if (pendingTypes === null) {
+    // Android: Google Play decides whether a message applies when you show it
+    await adapty.showStoreMessages();
+  } else if (pendingTypes.includes('billing_issue')) {
+    // For example, skip the upsell and show the billing message first
+  }
+} catch (error) {
+  // On iOS 15, the call fails with decodingFailed (2006)
+}
+```
+
+Trên Android, phương thức trả về `null` mà không gọi SDK native: Google Play không báo cáo các tin nhắn đang chờ, và chỉ quyết định xem tin nhắn có áp dụng hay không khi ứng dụng của bạn yêu cầu. Mảng rỗng có nghĩa là không có tin nhắn đang chờ trên iOS. Cho đến khi `activate` hoàn tất, mảng luôn rỗng.
+
+Mỗi tin nhắn App Store có một trong các loại sau:
+
+| Loại | Thông báo |
+|:-----|:--------|
+| `generic` | Thông báo chung từ App Store. |
+| `price_increase_consent` | Yêu cầu đồng ý tăng giá gói đăng ký. |
+| `billing_issue` | Thông báo về sự cố thanh toán gói đăng ký. Chỉ khả dụng trên iOS 16.4 trở lên. |
+| `win_back_offer` | [Ưu đãi thu hút khách hàng cũ](app-store-offers#win-back-offers) đủ điều kiện. Chỉ khả dụng trên iOS 18 trở lên. |
+
+Các loại thông báo StoreKit mới sẽ có giá trị `storekit_<number>`. Hãy xử lý mọi giá trị ngoài bảng này như một loại mà SDK chưa nhận dạng được.
+
+## Hiển thị thông báo \{#show-messages\}
+
+Khi ứng dụng của bạn đến điểm mà thông báo cửa hàng sẽ không làm gián đoạn người dùng — ví dụ, sau khi người dùng đóng một flow hoặc hoàn tất onboarding — hãy gọi `showStoreMessages`:
+
+```typescript showLineNumbers
+try {
+  await adapty.showStoreMessages();
+} catch (error) {
+  // handle the error
+}
+```
+
+- **iOS**: SDK hiển thị các tin nhắn đang chờ lần lượt từng cái một. Sau khi StoreKit hiển thị một tin nhắn, SDK xóa nó khỏi danh sách chờ. Nếu StoreKit không hiển thị được tin nhắn, SDK giữ lại tin nhắn đó cho lần gọi tiếp theo và tiếp tục xử lý các tin nhắn còn lại.
+- **Android**: SDK yêu cầu Google Play hiển thị tin nhắn cho `Activity` hiện tại. Google Play tự quyết định tin nhắn có áp dụng cho người dùng hay không, vì vậy một yêu cầu không phải lúc nào cũng hiển thị tin nhắn. Lệnh gọi trả về ngay lập tức mà không chờ Google Play và không báo cáo lỗi từ Google Play. Nếu người dùng sửa phương thức thanh toán từ tin nhắn, SDK sẽ đồng bộ các giao dịch mua của người dùng với Adapty, và [profile listener](capacitor-listen-subscription-changes) của bạn sẽ nhận được mức độ truy cập đã cập nhật.
+
+### Hiển thị thông báo khi khởi động trên Android \{#show-messages-at-launch-on-android\}
+
+Ở chế độ mặc định `'auto'`, `Activity` chứa ứng dụng của bạn khởi động trước khi `activate` chạy, do đó không kích hoạt yêu cầu và các thông báo Google Play sẽ không xuất hiện khi khởi động. Để hiển thị chúng khi khởi động, hãy gọi `showStoreMessages` một lần sau `activate`, chỉ trên Android:
+
+```typescript showLineNumbers
+
+await adapty.activate({ apiKey: 'YOUR_PUBLIC_SDK_KEY' });
+
+if (Capacitor.getPlatform() === 'android') {
+  await adapty.showStoreMessages();
+}
+```
+
+Đừng thực hiện lệnh gọi này trên iOS: ở chế độ `'auto'`, nó không có gì để hiển thị, và trên iOS 15 thì nó sẽ bị lỗi.
+
+### Chỉ hiển thị một số loại thông báo nhất định \{#show-only-some-message-types\}
+
+Để chỉ hiển thị một số thông báo App Store đang chờ xử lý, hãy truyền các loại vào `ios.filter`. Các thông báo còn lại vẫn ở trạng thái chờ:
+
+```typescript showLineNumbers
+await adapty.showStoreMessages({
+  ios: { filter: ['billing_issue', 'price_increase_consent'] },
+});
+```
+
+Nếu không có `filter`, SDK sẽ hiển thị tất cả các thông báo đang chờ, kể cả những loại mà nó không nhận ra. Truyền mảng rỗng sẽ không hiển thị thông báo nào. Android bỏ qua `filter` và yêu cầu tất cả thông báo Google Play.
+
+### Lỗi \{#errors\}
+
+Trên iOS, `showStoreMessages` sẽ throw một [`AdaptyError`](capacitor-handle-errors) với một trong các mã lỗi sau:
+
+| Code | Tên | Nguyên nhân |
+|:-----|:-----|:------|
+| 2006 | `decodingFailed` | Thiết bị đang chạy iOS 15 trở xuống. Chỉ gọi phương thức này trên iOS 16 trở lên. |
+| 3201 | `operationInProgress` | Một lệnh gọi `showStoreMessages` khác vẫn đang hiển thị thông báo, và lệnh gọi này cũng có thông báo cần hiển thị. Hãy đợi lệnh gọi đầu tiên hoàn tất rồi thử lại. |
+| 3202 | `resolverFailure` | SDK không tìm thấy window scene nào đang hoạt động ở foreground để hiển thị thông báo. Các thông báo đã hiển thị trước khi xảy ra lỗi sẽ được xóa khỏi danh sách chờ. Gọi lại phương thức khi ứng dụng đang ở foreground để hiển thị phần còn lại. |

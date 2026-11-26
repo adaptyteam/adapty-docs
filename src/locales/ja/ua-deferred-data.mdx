@@ -14,16 +14,20 @@ Adapty SDK バージョン 4.1 以降、Adapty アトリビューションはデ
 動作の仕組みは次のとおりです。
 
 1. ユーザーが広告をクリックすると、Adapty はクリックデータを保存します。
-2. Adapty がインストールイベントを登録すると、クリックからの遅延データを取得します。
-3. ユーザーがアプリをインストールして初めて起動すると、Adapty は保存されたデータを取得し、アプリがカスタムパラメータを受け取ります。これにより、アプリコード内でさまざまな値に応じた処理を行えます。
+2. Adapty がインストールイベントを登録すると、クリック時の遅延データを取得します。
+3. ユーザーがアプリをインストールして初めて起動すると、Adapty は保存されたデータを取得し、アプリがカスタムパラメータを受け取ります。これにより、アプリのコード内でさまざまな値に応じた処理が可能になります。
 
-Adapty は以下の遅延データパラメータをサポートしています：
+アプリが遅延データを受け取るのは、Adapty がインストールとクリックを紐付けた場合のみです。すでにアプリをインストール済みのユーザーが広告をクリックしても、アプリは新しい遅延データを受け取りません。
+
+iOSでは、AdaptyはクリックとインストールのIPアドレス範囲が同じ場合にのみ、インストールをクリックに紐付けます。たとえば、Wi-Fiでのクリックとモバイルデータ通信での初回起動は紐付けられないため、アプリは遅延データを受け取れません。
+
+Adaptyは以下の遅延データパラメーターをサポートしています：
 
 - `ios_deferred_data`
 - `android_deferred_data`
 - `deferred_data_sub[1-10]`
 
-遅延データパラメータを追加するには、キャンペーン設定でリンクにパラメータを付加してください：
+遅延データパラメーターを追加するには、キャンペーン設定のリンクにこれらを追加してください：
 
 1. キャンペーンがMeta AdsまたはTikTokで実施している場合は、**Integrations** > **Meta Ads**または**TikTok Ads**でトラッキングリンクを確認してください。別のプラットフォームを対象としている場合は、**Integrations** > **Custom**を開いてください。使用するリンクをコピーします。
 
@@ -35,9 +39,12 @@ Adapty は以下の遅延データパラメータをサポートしています�
 https://api-ua.adapty.io/api/v1/attribution/c/YOUR_CODE?campaign_id=__CAMPAIGN_ID__&adset_id=__AID__&ad_id=__CID__&campaign_name=__CAMPAIGN_NAME__&adset_name=__AID_NAME__&ad_name=__CID_NAME__&redirect_url=__APP_LINK__&ios_deferred_data=welcome
 ```
 
-3. アプリのコードでパラメーターを処理します。なお、遅延データのパラメーターは `payload` パラメーターに含まれており、`payload` パラメーターはエスケープされた JSON であるため、アプリのコード内でパースする必要があります。
+3. アプリのコード内でパラメータに応答します。SDK はインストール詳細の `payload` プロパティでそれらを渡します：
+   - **iOS**: `payload.dictionary` から読み取ります。
+   - **Android**: `payload.dataMap` から読み取ります。
+   - **React Native と Flutter**: `payload` は JSON 文字列なので、最初にパースしてください。
 
-たとえば、`ios_deferred_data` が `welcome` のインストールを処理する方法は次のとおりです。
+例えば、`ios_deferred_data` が `welcome` のインストールを処理する方法は次のとおりです：
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
@@ -47,10 +54,7 @@ Adapty.delegate = self
 
 nonisolated func onInstallationDetailsSuccess(_ details: AdaptyInstallationDetails) {
     guard
-        let payloadStr = details.payload,
-        let data = payloadStr.data(using: .utf8),
-        let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-        let deeplink = payload["ios_deferred_data"] as? String,
+        let deeplink = details.payload?.dictionary?["ios_deferred_data"] as? String,
         deeplink == "welcome"
     else { return }
 
@@ -68,15 +72,14 @@ nonisolated func onInstallationDetailsSuccess(_ details: AdaptyInstallationDetai
 ```kotlin showLineNumbers
 Adapty.setOnInstallationDetailsListener(object : OnInstallationDetailsListener {
     override fun onInstallationDetailsSuccess(details: AdaptyInstallationDetails) {
-        details.payload?.let {
-            runCatching {
-                val json = JSONObject(it)
-                if (json.optString("android_deferred_data") == "welcome") {
-                    println("Navigate to welcome screen")
-                    // navigate here
-                }
-            }.onFailure(Throwable::printStackTrace)
+        if (details.payload?.dataMap?.get("android_deferred_data") == "welcome") {
+            println("Navigate to welcome screen")
+            // navigate here
         }
+    }
+
+    override fun onInstallationDetailsFailure(error: AdaptyError) {
+        // handle the error
     }
 })
 

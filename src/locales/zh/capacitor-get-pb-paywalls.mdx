@@ -29,9 +29,13 @@ keywords: ['getFlow', 'getPaywall', 'createFlowView', 'createPaywallView', 'getF
 
 如果你已经在编辑工具中设计好了流程或付费墙，就无需在移动应用代码中手动处理其渲染逻辑来向用户展示它。这类流程或付费墙已经包含了展示内容和展示方式的完整配置。不过，你仍然需要通过版位获取其 ID 和视图配置，然后在移动应用中将其呈现出来。
 
-尽早获取流程或付费墙并创建其[视图](capacitor-get-pb-paywalls#fetch-the-view-configuration)——最好在展示前提前完成。`createFlowView` 方法会加载视图配置，并在后台开始下载和缓存图片。调用时机越早，下载所需的时间就越充裕。当你真正展示流程或付费墙时，其配置和图片可能已经缓存完毕，可以直接显示。
+尽早获取流程或付费墙并创建其[视图](capacitor-get-pb-paywalls#fetch-the-view-configuration)——最好在展示之前提前完成。`createFlowView` 方法会加载视图配置，并在后台开始下载和缓存图片。调用越早，下载完成的时间就越充裕。等到真正展示流程或付费墙时，其配置和图片可能已经缓存完毕，随时可以显示。
 
-要获取流程或付费墙，请使用 `getFlow` 方法：
+:::tip
+若要同时预热多个版位，可调用 [`preloadFlows`](capacitor-optimize-paywall-fetching#preload-placements)（Capacitor SDK 4.3.0+）。该方法仅缓存版位 JSON，因此 `createFlowView` 仍需加载布局和图片。
+:::
+
+使用 `getFlow` 方法获取流程或付费墙：
 
 ```typescript showLineNumbers
 try {
@@ -81,7 +85,7 @@ if (flow.hasViewConfiguration) {
 在 Capacitor SDK 中，直接调用 `createFlowView` 即可——无需提前获取视图配置。
 
 :::warning
-`createFlowView` 方法的返回结果只能使用一次。如果需要再次使用，请重新调用 `createFlowView` 方法。不重新创建而直接调用两次可能会导致错误。
+默认情况下，已关闭的 `view` 会被销毁，重复使用会导致报错。如需再次展示流程，请再次调用 `createFlowView` 创建新的 `view` 实例，或在关闭时[保留已关闭的流程](capacitor-present-paywalls#keep-a-closed-flow-for-later)。
 :::
 
 ```typescript showLineNumbers
@@ -95,14 +99,15 @@ try {
 
 参数：
 
-| 参数                         | 是否必填 | 描述                                                         |
+| 参数 | 是否必填 | 描述 |
 | :------------------- | :------- | :----------------------------------------------------------- |
-| **flow**             | 必填 | 用于获取目标流程/付费墙控制器的 `AdaptyFlow` 对象。 |
-| **locale**           | 可选 | 用于渲染视图的[流程本地化](add-paywall-locale-in-adapty-paywall-builder)标识符，例如 `en` 或 `pt-br`。若省略，则以 `en` 渲染；若流程没有 `en`，则使用该流程的默认本地化。详见[本地化与语言代码](capacitor-localizations-and-locale-codes)。 |
-| **customLayoutId**   | <p>可选</p><p>默认值：`undefined`</p><p>SDK 4.1+</p> | 流程布局配置中某个布局的自定义 ID。传入后将渲染该指定布局，而非 SDK 根据设备类型和屏幕尺寸自动选择的布局。若没有布局与该 ID 匹配，调用将以 no-view-configuration 错误失败。Flow & Paywall Builder 目前尚未支持分配自定义布局 ID，请保持未设置状态。 |
-| **customTags**       | 可选 | 应用为流程[自定义标签](flow-custom-tags)提供的值，以各标签完整名称为键的对象。详情请阅读[向流程传递数据](capacitor-flow-custom-tags)。 |
-| **prefetchProducts** | 可选 | 启用后可优化产品在屏幕上的显示时机。设为 `true` 时，AdaptyUI 将自动预获取所需产品。默认值：`true`。 |
-| **android.enableSafeArea** | 可选 | 仅限 Android（在 iOS 上忽略），嵌套在 `android` 键下。设为 `true` 时，流程视图将应用安全区域内边距。默认值：`true`，适用于大多数场景。 |
+| **flow** | 必填 | 一个 `AdaptyFlow` 对象，用于获取所需流程/付费墙的控制器。 |
+| **locale** | 选填 | 用于渲染视图的[流程本地化](add-paywall-locale-in-adapty-paywall-builder)标识符，例如 `en` 或 `pt-br`。若省略，视图将以 `en` 渲染；若流程没有 `en` 本地化，则使用流程的默认本地化。详见[本地化与语言代码](capacitor-localizations-and-locale-codes)。 |
+| **customLayoutId** | <p>选填</p><p>默认值：`undefined`</p><p>SDK 4.1+</p> | 流程布局配置中某个布局的自定义 ID。传入后将渲染该指定布局，而非 SDK 根据设备类型和屏幕尺寸自动选择的布局。若没有布局与该 ID 匹配，调用将以 no-view-configuration 错误失败。Flow & Paywall Builder 目前尚未支持分配自定义布局 ID，请暂时不要设置此参数。 |
+| **customTags** | 选填 | 应用为流程[自定义标签](flow-custom-tags)提供的值，以各标签完整名称为键的对象。详情请阅读[向流程传递数据](capacitor-flow-custom-tags)。 |
+| **customTimers** | 选填 | 流程中**开发者定义**计时器的结束日期，以各计时器 ID 映射到 `Date` 的对象形式传入。详情请阅读[使用开发者定义的计时器](capacitor-present-paywalls#use-developer-defined-timer)。 |
+| **prefetchProducts** | 选填 | 启用后可优化产品在屏幕上的显示时机。设为 `true` 时，AdaptyUI 将自动预取所需产品。默认值：`true`。 |
+| **android.enableSafeArea** | 选填 | 仅 Android 有效（iOS 上忽略）。嵌套在 `android` 键下。设为 `true` 时，流程视图将应用安全区域内边距。默认值：`true`，该默认值适用于大多数场景。 |
 
 :::note
 如果您使用多种语言，请了解如何添加[流程本地化](add-paywall-locale-in-adapty-paywall-builder)，以及如何在[此处](capacitor-localizations-and-locale-codes)正确使用语言区域代码。

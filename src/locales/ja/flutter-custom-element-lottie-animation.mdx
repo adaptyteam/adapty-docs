@@ -1,0 +1,301 @@
+---
+title: "Lottieアニメーションでユーザーの進捗を表示する"
+description: "デイリーストリークなどの各ユーザーの進捗を、フロー画面上でLottieアニメーションとして表示します。"
+metadataTitle: "Lottieアニメーションでユーザーの進捗を表示する | Flutter SDK | Adapty ドキュメント"
+---
+
+<CustomElementLottieIntro />
+
+## 始める前に \{#before-you-start\}
+
+- アプリを Adapty Flutter SDK 4.4 以降にアップデートしてください。それ以前の SDK バージョンでは、すべてのカスタム要素に[フォールバックコンテンツ](flow-custom-elements#set-fallback-content)が表示されます。
+- [フェッチ](flutter-get-pb-paywalls)と[表示](flutter-present-paywalls)のフローをアプリに設定してください。
+- [Flutter ガイド](flutter-flow-custom-elements#before-you-start)に従って、カスタム要素用のネイティブコードをアプリに設定してください。
+- iOS では、`https://github.com/airbnb/lottie-spm.git` から Swift Package Manager を使って Xcode の `Runner` ターゲットに Lottie を追加してください。
+- Android では、アプリモジュールに [Jetpack Compose を設定](flutter-flow-custom-elements#set-up-jetpack-compose)してください。このレシピのアニメーションビューはコンポーザブルです。`androidx.compose.foundation:foundation` と `com.airbnb.android:lottie-compose` から Gradle でアプリに Compose Foundation と Lottie for Jetpack Compose を追加してください。
+
+<CustomElementLottieAnimationRequirements />
+
+## 1. カスタム要素を画面に追加する \{#1-add-the-custom-element-to-the-screen\}
+
+<CustomElementLottieBuilderSetup />
+
+## 2. アニメーションファイルをアプリに追加する \{#2-add-the-animation-file-to-your-app\}
+
+ネイティブコードは、Flutterの`assets`フォルダではなく、iOSおよびAndroidプロジェクトからアニメーションファイルを読み込みます。
+
+- **iOS**: Xcodeで`Runner`ターゲットにファイルを追加してください。
+- **Android**: `android/app/src/main/assets`（Androidアプリモジュールの`assets`フォルダ）にファイルを配置してください。サブフォルダではなく、このフォルダのルートに置いてください。
+
+`.json`を除いたファイル名は、カスタム要素のIDと一致する必要があります。たとえば、`streak_ring`の場合は`streak_ring.json`となります。
+
+## 3. アニメーションビューを作成する \{#create-the-animation-view\}
+
+ストリークのモデルと、アニメーションを再生するビューを作成します。ストリークが変化したときにアプリがモデルを更新します。ビューはモデルを読み取るため、画面が開いたときにリングに現在のストリークが表示されます。
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift"
+
+// The streak that your app keeps up to date
+@MainActor
+final class StreakStore: ObservableObject {
+    @Published var currentStreak = 0 // days in a row
+}
+
+struct StreakRingView: View {
+    let animation: LottieAnimation
+    @ObservedObject var streakStore: StreakStore
+
+    // 7 days fill the ring: from 0 for an empty ring to 1 for a full one
+    private var progress: AnimationProgressTime {
+        min(AnimationProgressTime(streakStore.currentStreak) / 7, 1)
+    }
+
+    var body: some View {
+        LottieView(animation: animation)
+            .resizable()
+            .playing(.fromProgress(0, toProgress: progress, loopMode: .playOnce))
+    }
+}
+```
+
+`.playing(.fromProgress(0, toProgress: progress, loopMode: .playOnce))` はリングを空の状態から `progress` まで一度だけアニメーションで満たします。
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin"
+
+// the streak that your app keeps up to date
+class StreakStore {
+    val currentStreak = MutableStateFlow(0) // days in a row
+}
+
+@Composable
+fun StreakRing(animationFile: String, streakStore: StreakStore) {
+    val composition by rememberLottieComposition(LottieCompositionSpec.Asset(animationFile))
+    val streak by streakStore.currentStreak.collectAsState()
+
+    // 7 days fill the ring: from 0 for an empty ring to 1 for a full one
+    val progress = minOf(streak / 7f, 1f)
+
+    LottieAnimation(
+        composition = composition,
+        modifier = Modifier.fillMaxSize(), // scale the animation to fit the custom element
+        clipSpec = LottieClipSpec.Progress(0f, progress),
+    )
+}
+```
+
+`clipSpec = LottieClipSpec.Progress(0f, progress)` は、リングを空の状態から `progress` まで一度塗りつぶします。
+
+</TabItem>
+</Tabs>
+
+## 4. アニメーションをカスタム要素に対応させる \{#match-the-animation-to-the-custom-element\}
+
+[アプリ全体のリゾルバー](flutter-flow-custom-elements#pass-the-resolver-to-the-sdk)に、ストリークモデル用のプロパティを追加します。次に、`lottie_animation` タイプと `streak_ring` IDに対してアニメーションビューを返します。ハイライトされた行が追加・変更箇所です。アプリにまだアプリ全体の[リゾルバー](flutter-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views)がない場合は、コード全体をコピーしてください：
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift" {6,14-18}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let streakStore: StreakStore
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "lottie_animation" where id == "streak_ring":
+            guard let animation = LottieAnimation.named(id) else {
+                return nil // no animation file: show the fallback
+            }
+            return AnyView(StreakRingView(animation: animation, streakStore: streakStore))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+`streak_ring` ケースを他の `lottie_animation` ケースより前に置いてください。Swift は最初にマッチしたケースのみを実行するためです。アプリバンドルにそのIDのファイルが存在しない場合、リゾルバは `nil` を返し、ユーザーにはフォールバックが表示されます。
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin" {8,22-28}
+
+class CustomElementsResolver(
+    context: Context,
+    private val streakStore: StreakStore,
+) : AdaptyCustomElementsResolver {
+    // the animation files in the assets folder, listed once
+    private val animationFiles: Set<String> = try {
+        context.assets.list("").orEmpty().toSet()
+    } catch (e: IOException) {
+        emptySet() // no list of files: every Lottie element shows the fallback
+    }
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        when (type) {
+            "lottie_animation" -> {
+                // the ID names the animation file, such as streak_ring.json
+                val file = "$id.json"
+                when {
+                    file !in animationFiles -> null // no file for this ID: show the fallback
+                    id == "streak_ring" ->
+                        AdaptyCustomElementContent.compose { StreakRing(file, streakStore) }
+                    // the other animations of your resolver
+                    else -> null
+                }
+            }
+            // the other Types of your resolver
+            else -> null
+        }
+}
+```
+
+`assets` フォルダにIDに対応するファイルがない場合、リゾルバーは `null` を返し、ユーザーにはフォールバックが表示されます。リゾルバーがすでに[すべてのアニメーションファイルに対してビューを返す](flutter-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views)場合は、IDが `streak_ring` でないときに `null` ではなくそのビューを返してください。これにより、他の `lottie_animation` カスタム要素のアニメーションも引き続き表示されます。
+
+</TabItem>
+</Tabs>
+
+ストリークモデルを使ってリゾルバーを作成し、アプリ起動時にアプリ全体のリゾルバーとして設定します：
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="ios/Runner/AppDelegate.swift"
+
+@main
+@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
+  // the streak model that your app updates
+  let streakStore = StreakStore()
+
+  override func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+  ) -> Bool {
+    AdaptyUI.setCustomElementsResolver(CustomElementsResolver(streakStore: streakStore))
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+  }
+}
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin"
+
+class App : Application() {
+    // the streak model that your app updates
+    val streakStore = StreakStore()
+
+    override fun onCreate() {
+        super.onCreate()
+        AdaptyUI.setCustomElementsResolver(CustomElementsResolver(this, streakStore))
+    }
+}
+```
+
+`App` クラスは `android/app/src/main/AndroidManifest.xml` に記述してください。詳細は[リゾルバーを SDK に渡す](flutter-flow-custom-elements#pass-the-resolver-to-the-sdk)を参照してください。
+
+</TabItem>
+</Tabs>
+
+## 5. StreakをDartコードから送信する \{#5-send-the-streak-from-your-dart-code\}
+
+Dartコードがstreakを管理し、ネイティブビューはstreakモデルからそれを読み取ります。モデルを更新するには、[プラットフォームチャンネル](https://docs.flutter.dev/platform-integration/platform-channels)を通じてネイティブコードにstreakを送信します。iOSおよびAndroidのコードでは、チャンネルをリッスンします：
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+`AppDelegate`クラスの`didInitializeImplicitFlutterEngine`メソッドに、ハイライトされた行を追加します：
+
+```swift showLineNumbers title="ios/Runner/AppDelegate.swift" {3-14}
+func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+  GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+  let streakChannel = FlutterMethodChannel(
+    name: "custom_elements/streak",
+    binaryMessenger: engineBridge.applicationRegistrar.messenger()
+  )
+  streakChannel.setMethodCallHandler { [streakStore] call, result in
+    guard call.method == "setStreak", let days = call.arguments as? Int else {
+      return result(FlutterMethodNotImplemented)
+    }
+    // the channel calls this handler on the main thread
+    MainActor.assumeIsolated { streakStore.currentStreak = days }
+    result(nil)
+  }
+}
+```
+
+:::note
+このレシピの `AppDelegate` コードは、`FlutterImplicitEngineDelegate` を採用したFlutter 3.41以降のiOSテンプレートに従っています。`AppDelegate` クラスがこのプロトコルを採用していない場合は、プロトコルと `didInitializeImplicitFlutterEngine` メソッドを省略してください。代わりに `application(_:didFinishLaunchingWithOptions:)` 内で、`return super.application(...)` の前に、ルートビューコントローラーのメッセンジャーを使ってチャンネルを作成してください。テンプレートの `GeneratedPluginRegistrant` の呼び出しはそのまま維持してください：
+
+```swift showLineNumbers title="ios/Runner/AppDelegate.swift"
+GeneratedPluginRegistrant.register(with: self)
+let controller = window?.rootViewController as! FlutterViewController
+let streakChannel = FlutterMethodChannel(
+  name: "custom_elements/streak",
+  binaryMessenger: controller.binaryMessenger
+)
+```
+:::
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+`MainActivity` クラスで `configureFlutterEngine` メソッドをオーバーライドします：
+
+```kotlin showLineNumbers title="Kotlin"
+
+class MainActivity : FlutterFragmentActivity() {
+    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
+        val streakStore = (application as App).streakStore
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "custom_elements/streak")
+            .setMethodCallHandler { call, result ->
+                if (call.method == "setStreak") {
+                    streakStore.currentStreak.value = call.arguments as Int
+                    result.success(null)
+                } else {
+                    result.notImplemented()
+                }
+            }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+Dartコードで、アプリ起動時およびストリーク変更のたびにストリークを送信します：
+
+```dart showLineNumbers title="Flutter"
+
+// your iOS and Android code listens to this channel
+const streakChannel = MethodChannel('custom_elements/streak');
+
+// call at app launch, and each time the streak changes
+Future<void> sendStreak(int days) async {
+  await streakChannel.invokeMethod('setStreak', days);
+}
+```
+
+## 6. デバイスでテストする \{#test-on-a-device\}
+
+<CustomElementLottieTest />
+
+フォールバックがアニメーションの代わりに表示される理由を確認するには、Flutterガイドの[デバイスでテストする](flutter-flow-custom-elements#test-on-a-device)セクションの手順に従ってください。

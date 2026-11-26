@@ -1,0 +1,100 @@
+---
+title: "在流程中处理权限请求 - Android"
+description: "通过 onShowRequestPermission 在 Android 应用的流程中向用户申请推送通知权限，并将用户的回答返回给流程。"
+metadataTitle: "处理流程中的权限请求 - Android | Adapty 文档"
+---
+
+[流程](adapty-flow-builder)可以通过 **Request permission** 操作请求用户授予推送通知权限，例如在用户引导界面上解释通知用途时使用。Adapty SDK 本身不会显示系统权限弹窗，而是将请求传递给流程事件监听器的 `onShowRequestPermission` 方法。您的应用负责显示弹窗并返回用户的选择，流程随后继续执行。
+
+## 开始之前 \{#before-you-start\}
+
+您需要：
+
+- **Adapty Android SDK 4.0.0 或更高版本**：早期版本不支持 `onShowRequestPermission`。
+- **包含 Request permission 动作的流程**：在 Flow & Paywall Builder 中，将 **Request permission** 动作添加到某个元素的 **On Tap** 或 **On Screen Appear** 触发器。在其 **After response** 部分，添加用户响应后需要执行的动作，例如 **Navigate Next**。有关动作设置，请参阅 [Request permission](onboarding-actions#request-permission)。
+- **在 Android 清单中声明 `POST_NOTIFICATIONS` 权限，并将 `targetSdk` 设置为 33 或更高**：Android 13 及更高版本仅向已声明该权限且目标 API 级别为 Android 13 或更高的应用显示通知权限对话框：
+
+  ```xml title="AndroidManifest.xml"
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  ```
+
+## 流程如何请求权限 \{#how-the-flow-requests-a-permission\}
+
+1. 流程触发 **Request permission** 操作：用户点击元素，或屏幕出现。
+2. Adapty SDK 在流程视图的事件监听器上调用 `onShowRequestPermission`，并将 `permission` 设置为 `"push"`。
+3. 您的应用向 Android 请求该权限，并通过 `callback` 返回结果。
+4. 流程执行 **After response** 操作。两种答案对应的操作相同。
+
+流程会停留在当前屏幕，直到你的应用调用 `callback`。如果你的应用始终未调用它，流程将保持停留在该屏幕。如果 Android 不显示对话框，你的应用会立即获得答案，流程也会立即执行 **After response** 操作。如果这些操作导致页面跳转，用户只会短暂看到请求权限的屏幕。以下情况下 Android 不会显示对话框：
+
+- **Android 12 及更低版本**：通知无需运行时权限，因此不会显示对话框。
+- **用户此前已允许通知**：权限已授予。
+- **用户两次拒绝了对话框**：Android 将停止为该应用显示对话框，并拒绝所有新请求。
+
+使用 **On Screen Appear** 时，当用户通过 **Navigate back** 操作返回该屏幕时，流程不会再次发送请求。使用 **On Tap** 时，每次点击都会发送新请求，但在请求等待回应期间的点击除外。
+
+## 重写 onShowRequestPermission \{#override-onshowrequestpermission\}
+
+:::warning
+**默认监听器不会向用户请求权限。** `AdaptyFlowDefaultEventListener` 对所有权限请求返回 `false`，且不显示任何对话框。如果你的监听器继承了 `AdaptyFlowDefaultEventListener` 且没有重写 `onShowRequestPermission`，流程会立即执行 **After response** 操作。
+:::
+
+如需响应权限请求，请在你的事件监听器中重写 `onShowRequestPermission`。在下面的示例中，负责展示流程的 Activity 会注册一个用于权限对话框的启动器：
+
+```kotlin showLineNumbers title="Kotlin"
+
+class FlowActivity : ComponentActivity() {
+
+    // The flow waits for this callback while the system dialog is open.
+    private var pendingPermissionCallback: AdaptyFlowEventListener.PermissionCallback? = null
+
+    private val notificationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            pendingPermissionCallback?.invoke(granted, null)
+            pendingPermissionCallback = null
+        }
+
+    private val eventListener = object : AdaptyFlowDefaultEventListener() {
+        override fun onShowRequestPermission(
+            permission: String?,
+            customArgs: Map<String, String>?,
+            callback: AdaptyFlowEventListener.PermissionCallback,
+            context: Context,
+        ) {
+            if (permission != "push") {
+                callback(false, null)
+                return
+            }
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                // Android 12 and earlier: return whether notifications are turned on for the app.
+                callback(NotificationManagerCompat.from(context).areNotificationsEnabled(), null)
+                return
+            }
+            pendingPermissionCallback = callback
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    // Pass eventListener to the flow view.
+}
+```
+
+`onShowRequestPermission` 接收以下参数：
+
+- **`permission`**：流程请求的权限类型。**Request permission** 操作会发送 `"push"`。
+- **`customArgs`**：请求的自定义参数。**Request permission** 操作不发送任何参数，因此该值为 `null`。
+- **`callback`**：将结果返回给流程的回调函数。其第一个参数 `granted` 在用户授权时为 `true`，否则为 `false`。第二个参数 `detailResult` 是一个可选字符串，用于描述结果的详细信息。如果没有详细信息，请传入 `null`。
+
+为每个请求调用一次 `callback`。对于应用未申请的权限，返回 `false`。Adapty SDK 不会捕获 `onShowRequestPermission` 中的异常，请在你的重写方法中自行捕获，并调用 `callback(false, null)`。
+
+在 Jetpack Compose 中，请使用 `rememberLauncherForActivityResult` 代替 `registerForActivityResult` 来注册启动器。如果 Activity 在对话框打开期间可能被重建（例如旋转屏幕），请将待处理的回调保存在 `ViewModel` 中，以便新的 Activity 能够调用它。
+
+已授予的权限允许您的应用显示通知。要接收推送通知，请向您的推送服务提供商（例如 Firebase Cloud Messaging）注册设备，操作方式与在流程之外的应用中相同。
+
+## 将监听器传递给流程 \{#pass-the-listener-to-the-flow\}
+
+Adapty SDK 会将权限请求发送至流程视图的事件监听器。在创建视图时，通过 `eventListener` 参数传入你自定义的监听器：可传入 `AdaptyUI.getFlowView()`、`AdaptyFlowView.showFlow()` 或 `AdaptyFlowScreen()`。详情请参阅[展示流程与付费墙](android-present-paywalls)（了解上述调用方式）以及[处理流程与付费墙事件](android-handling-events)（了解其他监听器方法）。
+
+## 测试权限请求 \{#test-the-permission-request\}
+
+在搭载 Android 13 或更高版本的设备上进行测试：更早版本不会显示通知对话框。用户同意通知或两次拒绝后，Android 将不再显示该对话框。如需在测试流程时再次查看对话框，请先从设备上卸载应用，然后重新安装。接着打开该流程，执行到 **Request permission** 操作。若流程未弹出对话框便继续往下走，请确认你的监听器已重写 `onShowRequestPermission`，且应用已声明 `POST_NOTIFICATIONS` 权限并以 Android 13 或更高版本为目标平台。

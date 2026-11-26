@@ -16,12 +16,12 @@ Hướng dẫn này trình bày cách hiển thị màn hình đó và xử lý 
 
 Bạn cần:
 
-- **Adapty Android SDK v4 trở lên**: Các phiên bản cũ hơn không thể render flow. Để chuyển từ v3, xem [hướng dẫn migration](migration-to-android-sdk-v4).
-- **`observerMode` đặt thành `true`**: Xem [hướng dẫn cài đặt Android SDK](sdk-installation-android).
+- **Adapty Android SDK v4.3.4 trở lên**: v3 không thể render flow, và các phiên bản v4 trước 4.3.4 có thể không liên kết các giao dịch mua được báo cáo với flow. Để chuyển ứng dụng hiện có từ v3, xem [hướng dẫn migration](migration-to-android-sdk-v4).
+- **`observerMode` được đặt thành `true`**: Xem [hướng dẫn cài đặt Android SDK](sdk-installation-android).
 - **Tích hợp cửa hàng ban đầu**: Thiết lập Adapty [với Google Play](initial-android).
-- **Một flow đã xuất bản với sản phẩm**: Xây dựng trong [Flow & Paywall Builder](adapty-flow-builder) và gán [sản phẩm](create-product) vào đó.
+- **Một flow đã được xuất bản có sản phẩm**: Xây dựng trong [Flow & Paywall Builder](adapty-flow-builder) và gán [sản phẩm](create-product) vào đó.
 - **Một placement cho flow**: [Tạo một placement](create-placement) và gán flow của bạn vào đó.
-- **Flow đã được tải trong ứng dụng**: [Lấy flow và cấu hình của nó](android-get-pb-paywalls) trước khi hiển thị.
+- **Flow được tải trong ứng dụng của bạn**: [Lấy flow và cấu hình của nó](android-get-pb-paywalls) trước khi hiển thị.
 
 ## Triển khai \{#implementation\}
 
@@ -143,19 +143,21 @@ Sự kiện `onPurchaseInitiated` sẽ thông báo cho bạn biết người dù
 
    Hãy nhớ gọi các callback sau để thông báo cho AdaptyUI biết về quá trình mua hàng hoặc khôi phục. Điều này cần thiết để flow hoạt động đúng, chẳng hạn như hiển thị loader:
 
-   | Callback           | Mô tả                                                                                               |
-   | :----------------- |:----------------------------------------------------------------------------------------------------|
-   | onStartPurchase()  | Callback này cần được gọi để thông báo cho AdaptyUI rằng quá trình mua đã bắt đầu.                 |
-   | onFinishPurchase() | Callback này cần được gọi để thông báo cho AdaptyUI rằng quá trình mua đã hoàn tất.                |
-   | onStartRestore()   | Tùy chọn. Callback này có thể được gọi để thông báo cho AdaptyUI rằng quá trình khôi phục đã bắt đầu. |
-   | onFinishRestore()  | Tùy chọn. Callback này có thể được gọi để thông báo cho AdaptyUI rằng quá trình khôi phục đã hoàn tất. |
+   | Callback           | Mô tả                                                                                  |
+   | :----------------- |:---------------------------------------------------------------------------------------|
+   | onStartPurchase()  | Callback cần được gọi để thông báo cho AdaptyUI rằng quá trình mua hàng đã bắt đầu.   |
+   | onFinishPurchase() | Callback cần được gọi để thông báo cho AdaptyUI rằng quá trình mua hàng đã hoàn tất.  |
+   | onStartRestore()   | Tùy chọn. Callback có thể được gọi để thông báo cho AdaptyUI rằng quá trình khôi phục đã bắt đầu. |
+   | onFinishRestore()  | Bắt buộc nếu bạn đã thiết lập restore handler. Gọi callback này để thông báo cho AdaptyUI rằng quá trình khôi phục đã hoàn tất: cho đến khi được gọi, flow sẽ bỏ qua các lần nhấn khôi phục tiếp theo và không thực thi các hành động **When restore completed**. |
 
-2. Để hiển thị flow trực quan trên màn hình thiết bị, bạn cần cấu hình nó trước.
+   Sau `onFinishPurchase()`, flow sẽ chạy các [hành động kết quả](respond-to-purchase-outcomes#add-actions-for-a-result) **When succeeded** dù có chuyện gì xảy ra, kể cả khi người dùng hủy mua. Mọi màn hình phụ thuộc vào kết quả mua hàng, chẳng hạn như màn hình cảm ơn, hãy hiển thị từ code của bạn: chỉ có code của bạn mới biết kết quả. Sau `onFinishRestore()`, flow sẽ chạy các hành động **When restore completed**, dù có chuyện gì xảy ra.
+
+2. Để hiển thị visual flow trên màn hình thiết bị, bạn phải cấu hình nó trước.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="views" label="Views" default>
 
-Để làm điều này, hãy gọi phương thức `AdaptyUI.getFlowView()` hoặc tạo trực tiếp `AdaptyFlowView`:
+Để thực hiện điều này, hãy gọi phương thức `AdaptyUI.getFlowView()` hoặc tạo trực tiếp `AdaptyFlowView`:
 
 <Tabs groupId="current-os" queryString>
   <TabItem value="kotlin" label="Kotlin (option 1)" default>
@@ -270,7 +272,7 @@ AdaptyFlowScreen(
 | **observerModeHandler** | bắt buộc với Observer mode | `AdaptyUiObserverModeHandler` bạn đã triển khai ở bước trước. |
 
 :::warning
-Đừng quên [liên kết paywall với giao dịch mua hàng](report-transactions-observer-mode-android). Nếu không, Adapty sẽ không xác định được nguồn flow của giao dịch.
+Đừng quên [liên kết paywall với giao dịch mua hàng](report-transactions-observer-mode-android). Nếu không, Adapty sẽ không xác định được flow nguồn của giao dịch mua. Hãy truyền `variationId` của `AdaptyPaywallProduct` mà người dùng đã mua, không phải `AdaptyFlow.variationId`: ID biến thể của chính flow đó không liên kết giao dịch mua với flow.
 :::
 
 </SDKv4>
@@ -280,7 +282,7 @@ AdaptyFlowScreen(
 <Tabs groupId="current-os" queryString> 
 <TabItem value="SDK3" label="Paywall Builder (SDK 3.x)" default> 
 <details>
-   <summary>Trước khi bắt đầu hiển thị paywall (Nhấp để mở rộng)</summary>
+   <summary>Trước khi bắt đầu hiển thị paywall (Nhấn để mở rộng)</summary>
 
       1. Thiết lập tích hợp ban đầu của Adapty [với Google Play](initial-android) và [với App Store](initial_ios).
    2. Cài đặt và cấu hình Adapty SDK. Đảm bảo đặt tham số `observerMode` thành `true`. Tham khảo hướng dẫn theo từng framework [cho Android](sdk-installation-android).
@@ -415,12 +417,12 @@ Các phiên bản Adapty Android SDK trước 3.15.0 cũng truyền paywall và 
 
    Hãy nhớ gọi các callback sau để thông báo cho AdaptyUI về quá trình mua hàng hoặc khôi phục. Điều này cần thiết để paywall hoạt động đúng, chẳng hạn như hiển thị loader:
 
-   | Callback           | Mô tả                                                                                         |
-   | :----------------- |:----------------------------------------------------------------------------------------------|
-   | onStartPurchase()  | Callback cần được gọi để thông báo cho AdaptyUI rằng quá trình mua đã bắt đầu.               |
-   | onFinishPurchase() | Callback cần được gọi để thông báo cho AdaptyUI rằng quá trình mua đã hoàn tất.              |
-   | onStartRestore()   | Tùy chọn. Callback có thể được gọi để thông báo cho AdaptyUI rằng quá trình khôi phục đã bắt đầu.  |
-   | onFinishRestore()  | Tùy chọn. Callback có thể được gọi để thông báo cho AdaptyUI rằng quá trình khôi phục đã hoàn tất. |
+   | Callback           | Mô tả                                                                                               |
+   | :----------------- |:----------------------------------------------------------------------------------------------------|
+   | onStartPurchase()  | Callback này cần được gọi để thông báo cho AdaptyUI rằng quá trình mua đã bắt đầu.                 |
+   | onFinishPurchase() | Callback này cần được gọi để thông báo cho AdaptyUI rằng quá trình mua đã hoàn tất.                |
+   | onStartRestore()   | Tùy chọn. Callback này có thể được gọi để thông báo cho AdaptyUI rằng quá trình khôi phục đã bắt đầu. |
+   | onFinishRestore()  | Tùy chọn. Callback này có thể được gọi để thông báo cho AdaptyUI rằng quá trình khôi phục đã hoàn tất. |
 
 2. Để hiển thị paywall trực quan trên màn hình thiết bị, bạn phải cấu hình nó trước.
 

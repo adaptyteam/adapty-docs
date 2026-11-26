@@ -1,0 +1,100 @@
+---
+title: "Gérer les demandes d'autorisation dans les flows - Android"
+description: "Demandez aux utilisateurs l'autorisation de notifications push depuis un flow dans votre application Android avec onShowRequestPermission, et renvoyez leur réponse au flow."
+metadataTitle: "Gérer les autorisations des flows - Android | Documentation Adapty"
+---
+
+Un [flow](adapty-flow-builder) peut demander aux utilisateurs l'autorisation d'envoyer des notifications push via l'action **Request permission**, par exemple sur un écran d'onboarding qui explique à quoi servent les notifications. Le SDK Adapty n'affiche pas lui-même la boîte de dialogue système. Il transmet la demande à la méthode `onShowRequestPermission` de votre écouteur d'événements de flow. Votre application affiche la boîte de dialogue et renvoie la réponse de l'utilisateur, puis le flow continue.
+
+## Avant de commencer \{#before-you-start\}
+
+Vous avez besoin :
+
+- **SDK Android Adapty 4.0.0 ou version ultérieure** : Les versions antérieures ne disposent pas de `onShowRequestPermission`.
+- **Un flow avec l'action Demande de permission** : Dans le Flow & Paywall Builder, ajoutez l'action **Request permission** au déclencheur **On Tap** ou **On Screen Appear** d'un élément. Dans sa section **After response**, ajoutez les actions à exécuter après que l'utilisateur a répondu, comme **Navigate Next**. Pour les paramètres de l'action, consultez [Request permission](onboarding-actions#request-permission).
+- **La permission `POST_NOTIFICATIONS` dans votre manifest Android, et `targetSdk` 33 ou supérieur** : Android 13 et versions ultérieures n'affichent la boîte de dialogue de permission de notification qu'aux applications qui déclarent la permission et ciblent Android 13 ou version ultérieure :
+
+  ```xml title="AndroidManifest.xml"
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  ```
+
+## Comment le flow demande une autorisation \{#how-the-flow-requests-a-permission\}
+
+1. Le flow atteint l'action **Request permission** : l'utilisateur appuie sur l'élément, ou l'écran apparaît.
+2. Le SDK Adapty appelle `onShowRequestPermission` sur le listener d'événements de la vue du flow, avec `permission` défini sur `"push"`.
+3. Votre application demande l'autorisation à Android et invoque `callback` avec la réponse.
+4. Le flow exécute les actions **After response**. Elles sont identiques pour les deux réponses.
+
+Le flow reste à l'écran jusqu'à ce que votre application appelle `callback`. Si votre application ne l'appelle jamais, le flow reste à l'écran. Si Android n'affiche pas la boîte de dialogue, votre application reçoit la réponse immédiatement et le flow exécute les actions **After response** sans attendre. Si ces actions quittent l'écran, l'utilisateur ne voit l'écran de demande de permission qu'un bref instant. Android n'affiche pas la boîte de dialogue dans ces cas :
+
+- **Android 12 et versions antérieures** : Les notifications ne nécessitent aucune permission à l'exécution, donc aucune boîte de dialogue ne s'affiche.
+- **L'utilisateur a autorisé les notifications auparavant** : La permission est déjà accordée.
+- **L'utilisateur a refusé la boîte de dialogue deux fois** : Android cesse d'afficher la boîte de dialogue pour l'application et refuse chaque nouvelle demande.
+
+Avec **On Screen Appear**, le flow ne renvoie pas la demande lorsque l'utilisateur revient à l'écran via une action **Navigate back**. Avec **On Tap**, chaque appui envoie une nouvelle demande, sauf les appuis effectués pendant qu'une demande attend votre réponse.
+
+## Remplacer onShowRequestPermission \{#override-onshowrequestpermission\}
+
+:::warning
+**Le listener par défaut ne demande jamais rien à l'utilisateur.** `AdaptyFlowDefaultEventListener` répond à chaque demande de permission avec `false` et n'affiche aucune boîte de dialogue. Si votre listener étend `AdaptyFlowDefaultEventListener` sans remplacer `onShowRequestPermission`, le flow exécute immédiatement les actions **After response**.
+:::
+
+Pour répondre aux demandes de permission, remplacez `onShowRequestPermission` dans votre event listener. Dans cet exemple, l'activité qui affiche le flow enregistre un launcher pour la boîte de dialogue de permission :
+
+```kotlin showLineNumbers title="Kotlin"
+
+class FlowActivity : ComponentActivity() {
+
+    // The flow waits for this callback while the system dialog is open.
+    private var pendingPermissionCallback: AdaptyFlowEventListener.PermissionCallback? = null
+
+    private val notificationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            pendingPermissionCallback?.invoke(granted, null)
+            pendingPermissionCallback = null
+        }
+
+    private val eventListener = object : AdaptyFlowDefaultEventListener() {
+        override fun onShowRequestPermission(
+            permission: String?,
+            customArgs: Map<String, String>?,
+            callback: AdaptyFlowEventListener.PermissionCallback,
+            context: Context,
+        ) {
+            if (permission != "push") {
+                callback(false, null)
+                return
+            }
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                // Android 12 and earlier: return whether notifications are turned on for the app.
+                callback(NotificationManagerCompat.from(context).areNotificationsEnabled(), null)
+                return
+            }
+            pendingPermissionCallback = callback
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    // Pass eventListener to the flow view.
+}
+```
+
+`onShowRequestPermission` reçoit :
+
+- **`permission`** : La permission que le flow demande. L'action **Request permission** envoie `"push"`.
+- **`customArgs`** : Les arguments personnalisés de la demande. L'action **Request permission** n'en envoie aucun, donc la valeur est `null`.
+- **`callback`** : Le callback qui retourne la réponse au flow. Son premier argument, `granted`, vaut `true` si l'utilisateur a accordé la permission, et `false` sinon. Son second argument, `detailResult`, est une chaîne optionnelle avec des détails sur la réponse. Passez `null` si vous n'en avez pas.
+
+Invoquez `callback` une seule fois pour chaque requête. Répondez `false` pour les autorisations que votre application ne demande pas. Le SDK Adapty n'intercepte pas les exceptions lancées depuis `onShowRequestPermission`, donc interceptez-les dans votre surcharge et invoquez `callback(false, null)`.
+
+Dans Jetpack Compose, enregistrez le launcher avec `rememberLauncherForActivityResult` plutôt que `registerForActivityResult`. Si l'activité peut être recréée pendant que la boîte de dialogue est ouverte, par exemple lors d'une rotation, conservez le callback en attente dans un `ViewModel` afin que la nouvelle activité puisse l'invoquer.
+
+Une permission accordée permet à votre application d'afficher des notifications. Pour recevoir des notifications push, enregistrez l'appareil auprès de votre fournisseur de notifications push, comme Firebase Cloud Messaging, comme votre application le fait en dehors des flows.
+
+## Passer le listener au flow \{#pass-the-listener-to-the-flow\}
+
+Le SDK Adapty envoie les demandes d'autorisation au listener d'événements de la vue du flow. Passez le listener avec votre override en tant que `eventListener` lors de la création de la vue : à `AdaptyUI.getFlowView()`, `AdaptyFlowView.showFlow()`, ou `AdaptyFlowScreen()`. Consultez [Afficher les flows et paywalls](android-present-paywalls) pour ces appels, et [Gérer les événements des flows et paywalls](android-handling-events) pour les autres méthodes du listener.
+
+## Testez la demande d'autorisation \{#test-the-permission-request\}
+
+Testez sur un appareil sous Android 13 ou version ultérieure : les versions antérieures n'affichent aucune boîte de dialogue de notification. Android cesse d'afficher la boîte de dialogue une fois que l'utilisateur a autorisé les notifications ou les a refusées deux fois. Pour revoir la boîte de dialogue pendant vos tests du flow, désinstallez l'application de l'appareil puis réinstallez-la. Ouvrez ensuite le flow et atteignez l'action **Request permission**. Si le flow avance sans afficher de boîte de dialogue, vérifiez que votre listener surcharge bien `onShowRequestPermission`, que l'application déclare `POST_NOTIFICATIONS` et qu'elle cible Android 13 ou version ultérieure.

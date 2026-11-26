@@ -1,0 +1,82 @@
+---
+title: "Gérer les demandes d'autorisation dans les flows - iOS"
+description: "Demandez aux utilisateurs l'autorisation de recevoir des notifications push depuis un flow dans votre application iOS avec AdaptySystemRequestsHandler, et renvoyez leur réponse au flow."
+metadataTitle: "Gérer les autorisations de flow - iOS | Documentation Adapty"
+---
+
+Un [flow](adapty-flow-builder) peut demander aux utilisateurs l'autorisation d'envoyer des notifications push grâce à l'action **Request permission**, par exemple sur un écran d'onboarding qui explique à quoi servent ces notifications. Le SDK Adapty n'affiche pas lui-même la boîte de dialogue système. Il transmet la demande à un `AdaptySystemRequestsHandler` dans votre application. Votre application affiche la boîte de dialogue et renvoie la réponse de l'utilisateur, puis le flow continue.
+
+## Avant de commencer \{#before-you-start\}
+
+Vous aurez besoin de :
+
+- **Adapty iOS SDK 4.0.0 ou version ultérieure** : les versions antérieures ne disposent pas de `AdaptySystemRequestsHandler`.
+- **Un flow avec l'action Request permission** : dans le Flow & Paywall Builder, ajoutez l'action **Request permission** au déclencheur **On Tap** ou **On Screen Appear** d'un élément. Dans la section **After response**, ajoutez les actions à exécuter après que l'utilisateur a répondu, par exemple **Navigate Next**. Pour les paramètres de l'action, consultez [Request permission](onboarding-actions#request-permission).
+
+## Comment le flow demande une autorisation \{#how-the-flow-requests-a-permission\}
+
+1. Le flow atteint l'action **Request permission** : l'utilisateur appuie sur l'élément, ou l'écran s'affiche.
+2. Le SDK Adapty appelle `handlePermission(_:withCustomArgs:)` sur votre gestionnaire avec `.push`.
+3. Votre application demande l'autorisation à iOS et retourne `.granted` ou `.denied`.
+4. Le flow exécute les actions **After response**. Elles sont identiques quelle que soit la réponse.
+
+Le flow reste sur l'écran tant que votre application n'a pas renvoyé de réponse. Si votre application ne répond jamais, le flow reste affiché. Si iOS n'affiche pas la boîte de dialogue, par exemple parce que l'utilisateur a déjà répondu, votre application reçoit la réponse immédiatement et le flow exécute les actions **After response** sans attendre. Si ces actions font quitter l'écran, l'utilisateur ne voit l'écran de demande de permission qu'un bref instant.
+
+Avec **On Screen Appear**, le flow ne renvoie pas la requête lorsque l'utilisateur revient à l'écran via une action **Navigate back**. Avec **On Tap**, chaque appui envoie une nouvelle requête, sauf les appuis effectués pendant qu'une requête attend votre réponse.
+
+## Implémenter le gestionnaire \{#implement-the-handler\}
+
+Pour répondre aux demandes de permissions, créez une classe conforme à `AdaptySystemRequestsHandler` et implémentez `handlePermission(_:withCustomArgs:)`. Retournez `.denied` pour les permissions que votre application ne demande pas.
+
+```swift showLineNumbers title="Swift"
+
+@MainActor
+final class PushPermissionHandler: AdaptySystemRequestsHandler {
+    func handlePermission(
+        _ permission: AdaptyPermission,
+        withCustomArgs customArgs: [String: String]?
+    ) async -> AdaptyPermissionResult {
+        guard permission == .push else { return .denied(nil) }
+
+        do {
+            let granted = try await UNUserNotificationCenter.current()
+                .requestAuthorization(options: [.alert, .badge, .sound])
+            return granted ? .granted(nil) : .denied(nil)
+        } catch {
+            return .denied(error.localizedDescription)
+        }
+    }
+}
+```
+
+`handlePermission(_:withCustomArgs:)` reçoit :
+
+- **`permission`** : La permission demandée par le flow. L'action **Request permission** envoie `.push`.
+- **`customArgs`** : Les arguments personnalisés de la requête. L'action **Request permission** n'en envoie aucun, donc la valeur est `nil`.
+
+`.granted` et `.denied` acceptent une chaîne optionnelle avec des détails. Vous pouvez passer `nil`.
+
+Une permission accordée permet à votre application d'afficher des notifications. Pour recevoir des notifications push, enregistrez l'appareil auprès d'APNs et envoyez le token de l'appareil à votre fournisseur de push, comme votre application le fait en dehors des flows.
+
+`AdaptySystemRequestsHandler` déclare également `handleAppReviewRequest()`. Son implémentation par défaut affiche l'invite d'évaluation de l'App Store, donc vous n'avez pas besoin de l'implémenter.
+
+## Passer le gestionnaire à la configuration du flow \{#pass-the-handler-to-the-flow-configuration\}
+
+:::warning
+**Sans gestionnaire, le flow s'arrête à la demande de permission.** Si vous ne passez pas `systemRequestsHandler`, iOS n'affiche aucune boîte de dialogue. Le flow reste sur l'écran qui a envoyé la demande et n'exécute pas les actions **After response**.
+:::
+
+Pour transmettre les demandes de permission du flow à votre gestionnaire, passez-le dans le paramètre `systemRequestsHandler` de `AdaptyUI.getFlowConfiguration` :
+
+```swift showLineNumbers title="Swift"
+let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+    forFlow: flow,
+    systemRequestsHandler: PushPermissionHandler()
+)
+```
+
+La configuration du flow conserve une référence forte vers le handler, vous n'avez donc pas besoin de le stocker. SwiftUI et UIKit présentent le flow à partir de cette configuration, donc le handler fonctionne avec l'un ou l'autre. Pour plus de détails, consultez [Afficher les flows et paywalls](ios-present-paywalls).
+
+## Tester la demande de permission \{#test-the-permission-request\}
+
+iOS n'affiche la boîte de dialogue de notification qu'une seule fois par installation d'application. Pour la voir à nouveau lors de vos tests du flow, désinstallez l'application de l'appareil et réinstallez-la. Ensuite, ouvrez le flow et atteignez l'action **Request permission**. Si l'écran reste affiché sans qu'aucune boîte de dialogue n'apparaisse, le flow n'a reçu aucune réponse : assurez-vous de bien passer `systemRequestsHandler` à `AdaptyUI.getFlowConfiguration`.
