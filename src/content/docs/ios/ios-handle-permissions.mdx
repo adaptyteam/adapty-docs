@@ -1135,8 +1135,15 @@ private final class HomeKitRequest: NSObject, @preconcurrency HMHomeManagerDeleg
                 manager.delegate = self
                 self.manager = manager
             }
+            // In a later launch, the new manager already has the decided status,
+            // and after a refusal iOS calls no delegate method. So check the status
+            // every 0.25 seconds too, and stop waiting after 50 seconds.
             Task { @MainActor [weak self] in
-                try? await Task.sleep(nanoseconds: 50 * NSEC_PER_SEC)
+                for _ in 0..<200 {
+                    guard let self, let manager = self.manager, self.continuation != nil else { return }
+                    self.finishIfDetermined(manager)
+                    try? await Task.sleep(nanoseconds: 250_000_000)
+                }
                 self?.finish()
             }
         }
@@ -1151,13 +1158,8 @@ private final class HomeKitRequest: NSObject, @preconcurrency HMHomeManagerDeleg
         return .denied(answeredBefore ? "permanently_denied" : "denied")
     }
 
+    // iOS calls this method when the user answers the alert.
     func homeManager(_ manager: HMHomeManager, didUpdate status: HMHomeManagerAuthorizationStatus) {
-        finishIfDetermined(manager)
-    }
-
-    // In a later launch, the status can be decided before the manager exists,
-    // and the first load of the homes reports it.
-    func homeManagerDidUpdateHomes(_ manager: HMHomeManager) {
         finishIfDetermined(manager)
     }
 

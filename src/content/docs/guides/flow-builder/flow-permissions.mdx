@@ -44,7 +44,7 @@ In the tables on this page, an answer is written as "Granted" or "Not granted", 
 - **Read the status at every request**: Some grants expire. **Allow Once** on iOS and **Only this time** on Android last while the app is in use. Temporary full accuracy on iOS expires on its own. For apps that target Android 11 or higher, Android resets the permissions of an app that the user hasn't used for a few months. Don't store an answer for a later request.
 - **Explain the permission before the dialog**: Put the request on the **On Tap** trigger of a button on a screen that explains the permission. Apple's [Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/privacy) recommend one button on such a screen, such as **Continue**, that opens the system alert.
 - **Let the user go on after a refusal**: [App Review Guideline 5.1.2(i)](https://developer.apple.com/app-store/review/guidelines/#data-use-and-sharing) doesn't allow an app to require push notifications, location services, tracking, or other system functionality to use the app or its content. Add a way forward to **When denied**, such as **Navigate Next**. A **When denied** section that leaves the user without a way forward risks rejection. Guideline 5.1.1(iv) also asks apps to respect the user's permission settings and not to manipulate, trick, or force users to consent.
-- **Reset the answers when you test**: To see a dialog again on iOS, delete the app, or open **Settings > General > Transfer or Reset iPhone > Reset > Reset Location & Privacy**, which resets every app. On Android, delete the app, or run `adb shell pm revoke <package> <permission>` and `adb shell pm clear-permission-flags <package> <permission> user-set user-fixed`. Don't install the test build with `adb install -g`: it grants every runtime permission, so no dialog appears.
+- **Reset the answers when you test**: To see a dialog again on iOS, delete the app, or open **Settings > General > Transfer or Reset iPhone > Reset > Reset Location & Privacy**, which resets every app. On Android, delete the app, or clear its data with `adb shell pm clear <package>`. Clearing the data also resets the flags that your app keeps for earlier requests. `adb shell pm revoke` and `pm clear-permission-flags` reset only the permission, so the app's flags then report an earlier request. Don't install the test build with `adb install -g`: it grants every runtime permission, so no dialog appears.
 
 ## Notifications and tracking
 
@@ -149,7 +149,8 @@ Answer the request from the location authorization status:
 
 | OS | Native result | Answer | Section | `outcome` |
 |:---|:--------------|:-------|:--------|:----------|
-| iOS | `.notDetermined`, then **Allow While Using App** or **Allow Once** in the first alert | Granted, `provisional` | **When allowed** | `provisional` |
+| iOS | `.notDetermined`, then **Allow While Using App** in the first alert: `.authorizedAlways`, provisional Always access | Granted, `provisional` | **When allowed** | `provisional` |
+| iOS | `.notDetermined`, then **Allow Once** in the first alert: `.authorizedWhenInUse`, temporary access | Granted, `provisional` | **When allowed** | `provisional` |
 | iOS | `.notDetermined`, then **Don't Allow** | Not granted, `denied` | **When denied** | `denied` |
 | iOS | Still `.notDetermined` after the request, or no answer before the app's timeout | Not granted, no status | **After response** | `no_status` |
 | iOS | `.authorizedWhenInUse`, the upgrade alert appears, then **Change to Always Allow** | Granted, `granted` | **When allowed** | `granted` |
@@ -166,13 +167,13 @@ Answer the request from the location authorization status:
 - **Limitations**:
   - iOS may show no alert, so don't wait for the app to become active. After the request, wait a short time for the alert. If no alert appears, answer from the status at once. If the alert appears, answer when the app becomes active again: **Keep Only While Using** doesn't call the delegate, because the status doesn't change. Never wait longer than 60 seconds.
   - iOS accepts one Always request per install: later calls have no effect. iOS has no API that tells whether the app asked before, so the app saves its own flag after the first request.
-  - **Allow While Using App** and **Allow Once** in the first alert report the same status, `.authorizedWhenInUse`, so the app can't tell them apart, and both answer `provisional`. After **Allow Once**, the access is temporary, and iOS ignores later Always requests. With provisional Always access, the user can choose **Keep Only While Using** later, outside the flow.
+  - In the first alert, **Allow While Using App** reports `.authorizedAlways` for provisional Always access, and **Allow Once** reports `.authorizedWhenInUse`. Both answer `provisional`. On a later request, provisional Always access reads as `.authorizedAlways` and answers `granted`. After **Allow Once**, the access is temporary, and iOS ignores later Always requests, so a later request answers `permanently_denied`. With provisional Always access, the user can choose **Keep Only While Using** later, outside the flow.
   - On Android 11 and later, the user leaves the app for the settings page. Read the permission state when the user comes back to the app, and answer then.
 - **Cross-platform notes**: Android needs foreground location first, so request **Location while using the app** on an earlier screen. On iOS, the request can also start from `.notDetermined`.
 
 ### Precise location \{#location_full_accuracy\}
 
-- **What the user sees**: On iOS, after the user turned off **Precise** in the location alert, an alert that asks for precise location once, with the text of your purpose key. On Android 12 and later, after the user chose approximate location, a dialog with **Change to precise location**, **Only this time**, and **Deny**. If the user chose **Only this time** with approximate location, the Android dialog has only **Only this time** and **Deny**.
+- **What the user sees**: On iOS, after the user turned off **Precise** in the location alert, an alert that asks for precise location once, with the text of your purpose key. On Android 12 and later, after the user chose approximate location, a dialog that offers to change to precise location, to allow it only this time, or to keep approximate location. If the user chose **Only this time** with approximate location, the Android dialog offers only this time or keeping approximate location.
 - **Platforms**: iOS and Android. On Android 11 and earlier, the dialog has no choice of approximate location: an app that requests `ACCESS_FINE_LOCATION` gets precise location.
 - **iOS setup**: `NSLocationWhenInUseUsageDescription` and `NSLocationTemporaryUsageDescriptionDictionary`. Each key of the dictionary is a purpose key, and its value is the text of the alert. Request the permission with `CLLocationManager.requestTemporaryFullAccuracyAuthorization(withPurposeKey:)`. The flow sends no purpose key, so the app code passes one of its own keys.
 - **Android setup**: `ACCESS_COARSE_LOCATION` and `ACCESS_FINE_LOCATION`. When only approximate location is granted, request both permissions again.
@@ -259,7 +260,7 @@ Answer the request from the microphone authorization status:
 
 ### Photos \{#photos\}
 
-- **What the user sees**: On iOS, an alert that offers limited access, full access, or no access. On Android 14 and later, a dialog with **Select photos and videos**, **Allow all**, and **Don't allow**. **Select photos and videos** opens a system picker. On Android 13, the dialog has no selection option.
+- **What the user sees**: On iOS, an alert that offers limited access, full access, or no access. On Android 14 and later, a dialog that offers limited access, full access, or no access. Limited access opens a system picker where the user selects photos and videos. On Android 13, the dialog has no selection option.
 - **Platforms**: iOS and Android.
 - **iOS setup**: `NSPhotoLibraryUsageDescription`, and request the permission with `PHPhotoLibrary.requestAuthorization(for: .readWrite)`. If the app only adds photos, declare `NSPhotoLibraryAddUsageDescription` and request `PHPhotoLibrary.requestAuthorization(for: .addOnly)` instead: add-only access has no limited state. Without a valid purpose string, the app crashes when it accesses the photo library. The older `requestAuthorization(_:)` reports limited access as `.authorized`.
 - **Android setup**: Request `READ_MEDIA_IMAGES` and `READ_MEDIA_VIDEO` together on Android 13 and later, with `READ_MEDIA_VISUAL_USER_SELECTED` on Android 14 and later. On Android 12 and earlier, request `READ_EXTERNAL_STORAGE`. Declare all four permissions:
@@ -315,7 +316,7 @@ Answer the request from the media library authorization status:
 | Android | Denied, and Android showed no dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
 
 - **Limitations**: Android has no partial access to audio files: `READ_MEDIA_VISUAL_USER_SELECTED` covers photos and videos only.
-- **Cross-platform notes**: On iOS, **Media library** and **Apple Music** show the same purpose string, `NSAppleMusicUsageDescription`.
+- **Cross-platform notes**: On iOS, **Media library** and **Apple Music** show the same purpose string, `NSAppleMusicUsageDescription`, and share one authorization status. After the user answers one of them, a request for the other one returns that answer without an alert.
 
 ### Apple Music \{#music\}
 
@@ -335,7 +336,9 @@ Answer the request from the MusicKit authorization status:
 | iOS | `.authorized` | Granted, `granted` | **When allowed** | `granted` |
 | Android | Any request | Not granted, `unsupported` | **After response** | `unsupported` |
 
-- **Limitations**: The permission covers the user's Apple Music data. Playback of catalog content also needs an active Apple Music subscription, which MusicKit's `MusicSubscription` reports separately.
+- **Limitations**:
+  - The permission covers the user's Apple Music data. Playback of catalog content also needs an active Apple Music subscription, which MusicKit's `MusicSubscription` reports separately.
+  - **Apple Music** and **Media library** share one authorization status on iOS. After the user answers one of them, a request for the other one returns that answer without an alert, for example `permanently_denied` after a refusal.
 
 ### Speech recognition \{#speech\}
 
@@ -395,7 +398,10 @@ Answer the request from the contacts authorization status:
 | Android | Denied in the dialog | Not granted, `denied` | **When denied** | `denied` |
 | Android | Denied, and Android showed no dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
 
-- **Limitations**: With limited access on iOS, the app adds contacts to the selection later with `ContactAccessButton` or `contactAccessPicker`. [App Review Guideline 5.1.1](https://developer.apple.com/app-store/review/guidelines/#data-collection-and-storage) asks apps to use a system picker instead of full access to contacts where they can.
+- **Limitations**:
+  - Limited access on iOS 18 and later takes four steps: the alert, a sheet that asks how to share, the contact picker, and a confirmation. A user can take more than 60 seconds, so the flow can send `flow_permission_unanswered` with `on_screen` before your app answers. The late answer still runs its section.
+  - With limited access on iOS, the app adds contacts to the selection later with `ContactAccessButton` or `contactAccessPicker`.
+  - [App Review Guideline 5.1.1](https://developer.apple.com/app-store/review/guidelines/#data-collection-and-storage) asks apps to use a system picker instead of full access to contacts where they can.
 - **Cross-platform notes**: The `limited` status exists only on iOS 18 and later.
 
 ### Calendar \{#calendar\}
@@ -596,7 +602,7 @@ The HomeKit status is a set of flags. Answer the request from them:
 | iOS | `.determined` isn't set when the timeout ends | Not granted, no status | **After response** | `no_status` |
 | Android | Any request | Not granted, `unsupported` | **After response** | `unsupported` |
 
-- **Limitations**: Wait for `homeManager(_:didUpdate:)` with a timeout, then answer from `authorizationStatus`. Apple defines the `.restricted` flag as "The app doesn't have access to home data", not as a device policy, so don't pass `restricted` for it.
+- **Limitations**: A refusal from an earlier launch calls no delegate method: a new `HMHomeManager` already has the decided status. Read `authorizationStatus` right after you create the manager, and again while you wait for the answer, with a timeout. Apple defines the `.restricted` flag as "The app doesn't have access to home data", not as a device policy, so don't pass `restricted` for it.
 
 ### Focus status \{#focus_status\}
 
