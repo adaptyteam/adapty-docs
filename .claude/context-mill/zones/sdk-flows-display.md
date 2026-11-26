@@ -545,8 +545,10 @@ named; builder and transformer behavior from dashboard code and transformer code
   `onShowRequestPermission`. iOS `handlePermission` can't throw.
 - **Minimum versions stated in the articles:** iOS, Android, React Native, Flutter 4.0.0; KMP and
   Capacitor 4.1.0 (their 4.0 line shipped only as betas); Unity 4.1.0 (4.0.0-beta.1 had a different
-  signature), and 4.3.0 on Android: Unity's CHANGELOG `[4.3.0-beta.1]` says a `respond` made off Unity's
-  thread waited until the flow closed, and 4.3.0 requires Unity 6.
+  signature). Corrected 2026-11-26: the Unity guide no longer requires "4.3.0 on Android", because no
+  stable 4.3.0 exists (tags 4.0.0-beta.1, 4.1.0–4.1.2, 4.3.0-beta.1; `git ls-remote --tags`). It states
+  the two Android fixes that Unity's CHANGELOG `[4.3.0-beta.1]` lists (GameActivity gets no events; a
+  `respond` made off Unity's thread waits until the flow closes) and that 4.3.0-beta.1 requires Unity 6.
 - **The flow sends the permission selected in the builder with no custom arguments** (corrected
   2026-11-24: until the builder's Permission select shipped, the only value was `push`; dashboard code,
   2026-11-24), and never sends an app review request (no such action in the builder). Flutter's base
@@ -615,6 +617,9 @@ and transformer code, 2026-11-24):
   - Still open: the Android modal-activity question above (Flutter, Unity) — no Android device check yet.
   - The Unity guide requires 4.3.0 on Android, but the newest Unity tag read on 2026-11-24 was
     `4.3.0-beta.1`. Since 4.3.0 requires Unity 6, the Unity sample no longer has a pre-Unity-6 branch.
+    Corrected 2026-11-26: the requirement is gone (see the minimum-versions bullet), and the sample
+    guards `PermissionRequestDismissed` with `#if UNITY_6000_0_OR_NEWER`: the Unity 2022.3 scripting
+    reference has no such event, and Unity 4.1.x supports 2022.3.
 
 ### Per-kind permission reference — 2026-11-26
 
@@ -675,3 +680,62 @@ builder labels and groups from dashboard code, 2026-11-26.
     EventKit, Speech, MediaPlayer, Intents, HomeKit and HealthKit; Capacitor's Android state after a
     dismissed dialog and for approximate location; community Capacitor plugins; cleanup of pending
     permission callbacks in the closed-source Android `crossplatform` module.
+
+### Independent review of the permission reference — 2026-11-26
+
+Four reviewers checked the reference and the seven guides against developer.apple.com,
+developer.android.com, the SDK repos at tags and the plugin sources. What the review changed, with the
+evidence:
+
+- **Android refusal rule (corrected).** `shouldShowRequestPermissionRationale()` is also `false` after a
+  dialog closed without a choice (developer.android.com, notification-permission: "User swipes away from
+  dialog" leaves the state unchanged). The reference and the Android sample now read the rationale before
+  the request and keep a per-permission "requested before" flag: no rationale before a repeated request →
+  `permanently_denied`; a rationale before or after → `denied`; no rationale before or after a first
+  request → no status. The Android background-location row no longer claims `permanently_denied`: the
+  settings-page flow has no documented rationale semantics.
+- **Location always after Allow Once (added).** Apple, `requestAlwaysAuthorization()`: "If the user
+  responded to `requestWhenInUseAuthorization()` with Allow Once, then Core Location ignores further
+  calls". The handler must not wait for the app to become active; it waits briefly for an alert and never
+  past 60 s.
+- **CoreLocation delegate (added).** Apple, `locationManagerDidChangeAuthorization(_:)`: called when the
+  app creates the manager and when the status changes. The docs say to ignore `.notDetermined` and answer
+  after a change that follows the request. "Never calls back" now cites
+  `requestWhenInUseAuthorization()` ("does nothing and doesn't call") and `requestAlwaysAuthorization()`
+  ("further calls have no effect").
+- **ATT (added).** Apple, `requestTrackingAuthorization(completionHandler:)`: full-page sheet in France,
+  Germany, Italy, Poland and Romania; in the EU the app can ask again a year after the answer. The
+  active-state wait is conditional on `applicationState != .active`.
+- **Other corrections:** photos add-only apps request `.addOnly`; Google Play limits
+  `READ_MEDIA_IMAGES`/`VIDEO`; compatibility mode applies to target SDK 34+ and is revoked "eventually";
+  `NSRemindersUsageDescription` is a fallback on iOS 17+, not an auto-deny (Apple, accessing the event
+  store); `CAMERA` implies only `android.hardware.camera` and `.autofocus`; Health write types map
+  all / some / none to `granted` / `limited` / `denied` (`permanently_denied` when
+  `getRequestStatusForAuthorization` said `.unnecessary`), plus `errorHealthDataRestricted` →
+  `restricted`; Health Connect needs Android 9+; HomeKit's `.restricted` flag means "doesn't have access to
+  home data", so it no longer maps to `restricted`; Focus status also needs notification authorization;
+  local network rows are keyed on target SDK and device version; `music` on Android is `unsupported`
+  everywhere; precise location on Android can be one-time.
+- **Wrapper guides:** Flutter now requires permission_handler `^13.0.2` with permission_handler_apple
+  9.6.4+ (CHANGELOGs 9.5.1, 9.6.3, 9.6.4; android 14.1.0); React Native adds
+  `PERMISSIONS.IOS.STOREKIT` for `music`, `requestMultiple` reduction rules and the iOS "BLOCKED = every
+  refusal" note; Capacitor reads `coarseLocation`, answers `photos` as `unsupported` on Android
+  (`@capacitor/camera` reports it granted with no permission); KMP reads the state below Android 13 for
+  push, and moko `GALLERY` reports limited as granted; Unity requests fine with coarse location.
+- **Softened or removed as unsourced (2026-11-26), kept only here:**
+  - iOS reports provisional Always and full Always as the same `.authorizedAlways` (forum posts only).
+    The docs no longer say so; they answer `provisional` for any allow in the first alert.
+  - An `INPreferences` status read crashes without the Siri capability (observed once on the Simulator;
+    Apple only says the capability is needed "for authorization to succeed").
+  - A crash without `NSFocusStatusUsageDescription` (observed on the Simulator; Apple only says to add the
+    key before using `INFocusStatusCenter`).
+  - The iOS Simulator reports Bluetooth as allowed and has no motion data (Simulator observations).
+  - Calendar auto-deny "without a crash", and location with a missing key failing "without a callback and
+    without a crash": Apple says only "automatically denies" and "fail immediately".
+  - The iOS Photos and iOS 18 Contacts button labels.
+- **Still unverified (2026-11-26):** whether HomeKit sets `.restricted` when the user declines; whether
+  Android stops showing the precise-location upgrade or the background-location settings request after
+  repeated refusals; whether moko-permissions bound to the app's main activity gets results while the
+  flow's `AdaptyUiActivity` covers it (the KMP guide only says to bind the controller to the activity that
+  shows the flow); whether Media library and Apple Music share one privacy setting on iOS; whether
+  `RecognizerIntent` needs no `RECORD_AUDIO`.
