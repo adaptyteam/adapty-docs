@@ -4,7 +4,7 @@ description: "Adapty CLI commands that create flows, read and write their builde
 metadataTitle: "Flows CLI Commands | Adapty Docs"
 ---
 
-[Flows](adapty-flow-builder) are the paywalls and onboardings you build in the Flow & Paywall Builder. The CLI manages the flow record, its builder config, publication, and the [version history](flow-version-history). A builder config is a large JSON document that the Flow & Paywall Builder normally produces, and the CLI doesn't generate one. To author or edit a config from the terminal, use the [flow-generator skill](flow-generator-skill), which drives these commands for you. Before publishing, the [flow-audit skill](flow-audit-skill) checks whether the flow is ready for production. The [`fonts` commands](#custom-fonts) upload and manage the custom fonts that flows use. The `flows metrics` commands read the numbers of the [flow metrics](flow-metrics) page and need CLI version 0.15.0 or later. The `flows funnel` commands read the [flow funnel](flow-funnel) and need CLI version 0.19.0 or later. The commands are listed here as a reference.
+[Flows](adapty-flow-builder) are the paywalls and onboardings you build in the Flow & Paywall Builder. The CLI manages the flow record, its builder config, publication, and the [version history](flow-version-history). A builder config is a large JSON document that the Flow & Paywall Builder normally produces, and the CLI doesn't generate one. To author or edit a config from the terminal, use the [flow-generator skill](flow-generator-skill), which drives these commands for you. Before publishing, the [flow-audit skill](flow-audit-skill) checks whether the flow is ready for production. The [`fonts` commands](#custom-fonts) upload and manage the custom fonts that flows use, and need CLI version 0.33.0 or later. The `flows metrics` commands read the numbers of the [flow metrics](flow-metrics) page and need CLI version 0.15.0 or later. The `flows funnel` commands read the [flow funnel](flow-funnel) and need CLI version 0.19.0 or later. The commands are listed here as a reference.
 
 ## adapty flows list
 
@@ -96,7 +96,7 @@ adapty flows publish --app <app-id> <flow-id>
 
 Because publishing changes what your users see, the command prints the flow name and asks for confirmation. Any answer other than `y` cancels the command with exit code 1. Under `--json` or in a pipe, the command refuses with exit code 2 instead of waiting for an answer, so pass `--yes` in scripts and agent sessions.
 
-When the config uses a [custom font](#custom-fonts), the command reads the app's current fonts. If the copy in the config is out of date, the command saves the config with the current fonts, then publishes. The save keeps the remote configs and fails if someone changed the config after the command read it. If the save succeeds and publication starts, the human-readable output includes `Fonts refreshed`.
+In CLI version 0.33.0 or later, when the config uses a [custom font](#custom-fonts), the command reads the app's current fonts. If the copy in the config is out of date, the command saves the config with the current fonts, then publishes. The save keeps the remote configs and fails if someone changed the config after the command read it. If the save succeeds and publication starts, the human-readable output includes `Fonts refreshed`.
 
 The command stops before any write if it can't read the fonts. It exits with code 2 if a font family name in the config matches several families. To resolve the match, rename a family or use the family ID in the config.
 
@@ -104,23 +104,9 @@ The config response must contain a `config` object and an integer `updated_at`, 
 
 A failed or uncertain save stops the command before it sends the publish request. If the CLI can't read the save response or the connection fails during the save, the save may have gone through. Read the stored config with [`flows config get`](#adapty-flows-config-get) before you publish again. If publication fails after a successful save, the saved config stays.
 
-If you publish through the Developer API instead of the CLI, follow the same steps after a font change:
-
-1. Read the stored config, its `remote_configs`, and its `updated_at`, and read the app's current custom fonts.
-2. Rebuild the config's `_meta.fonts`: one entry for each font family the config refers to, in the order the config first refers to them. A reference is a family ID, or a family name that exactly one family of the app has, compared trimmed and in any case. Each entry has:
-   - `id` and `name` of the family;
-   - `url`, `iosName`, and `androidName` of the family's default face: its file URL, or an empty string when it has none, and its two font names;
-   - `faces`: one object for each face, with `id`, `weight`, `italic`, `isDefault`, `iosName`, `androidName`, and `url`. A face without its own file URL takes the family's `url`.
-
-   Leave out every field whose value is `null`. When no family of the app matches a reference and the stored entry for it is a font your app bundles (an `id` that starts with `user-font-` and no URL in the entry or its faces), keep that entry as it is. Drop every other entry.
-3. Only if `_meta.fonts` changed, save the config with the same `remote_configs` and with `expected_updated_at` set to the `updated_at` you read. The save then fails if someone changed the config in the meantime.
-4. Publish the flow, then poll the flow until its status is `published` or `publication_failed`.
-
-Stop at the first read or save that fails, before you publish.
-
 Publication is asynchronous: the response reports `status: publishing`, and the flow isn't live yet. Poll [`flows get`](#adapty-flows-get) until the status becomes `published` or `publication_failed`. On `publication_failed`, [`flows config get`](#adapty-flows-config-get) reports why.
 
-Publishing fails with HTTP 400 when the flow has no config, when the config isn't publishable, or when the current version is already live. To verify a config before publishing, use [`flows config validate`](#adapty-flows-config-validate). If the flow doesn't exist, the command exits with code 4. Before the release that added the `fonts` commands, it exited with code 1.
+Publishing fails with HTTP 400 when the flow has no config, when the config isn't publishable, or when the current version is already live. To verify a config before publishing, use [`flows config validate`](#adapty-flows-config-validate). If the flow doesn't exist, the command exits with code 4. Before CLI version 0.33.0, it exited with code 1.
 
 ## adapty flows config get
 
@@ -264,7 +250,7 @@ The response contains the video URL (an HLS playlist), the preview image URL, an
 
 ## Custom fonts
 
-The `adapty fonts` commands upload and manage the [custom fonts](using-custom-fonts-in-flow-builder) of an app. All flows of the app use the same fonts, the same as fonts you upload in the Flow & Paywall Builder. A font family has one or more faces. A face is one weight and style of a `.ttf` or `.otf` file.
+The `adapty fonts` commands upload and manage the [custom fonts](using-custom-fonts-in-flow-builder) of an app. All flows of the app use the same fonts, the same as fonts you upload in the Flow & Paywall Builder. A font family has one or more faces. A face is one weight and style of a `.ttf` or `.otf` file. The `fonts` commands need CLI version 0.33.0 or later. To see your version, run `adapty --version`.
 
 :::warning
 Adapty doesn't send the font files to users' devices. To show a custom font in your app, [add the same font files to your app's bundle](using-custom-fonts-in-flow-builder#add-the-font-files-to-your-apps-bundle), with the iOS and Android font names that the faces have in Adapty.
