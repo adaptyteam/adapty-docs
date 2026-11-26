@@ -468,15 +468,17 @@ or developer can see and click.
   for navigation placed after the request (dashboard code, 2026-11-20). The trigger table above it still
   says **On screen appear** / **On tap** while the builder labels are **On Screen Appear** / **On Tap**.
 - **Request permission's per-kind facts live in `flow-permissions` (2026-11-24, updated 2026-11-26).** The
-  builder's warning callout names the main `Info.plist` key and Android manifest permission of the
-  selected kind (dashboard code, 2026-11-24). Since 2026-11-26 the owner of every per-kind fact (dialog,
+  builder's warning callout lists every `Info.plist` key and Android manifest permission the app declares
+  for the selected kind, from the same table as `FlowPermissionDeclarations`, with Health Connect as a
+  note for health on Android (dashboard code, corrected 2026-11-27; until then it named one main key).
+  Since 2026-11-26 the owner of every per-kind fact (dialog,
   all keys and capabilities, API levels, native result → answer → section → `outcome`) is the shared
   article `flow-permissions` in `sdk-flows-display`, whose summary table is the `FlowPermissionDeclarations`
   reusable; the iOS and Android guides carry inline copies. `onboarding-actions#request-permission` links
   `flow-permissions` once, after the sentence that lists example permissions. A new permission kind or a
   changed declaration moves those together, along with the routing list in
-  `onboarding-actions#request-permission`; the builder callout lists only the main keys, the reference
-  lists all of them.
+  `onboarding-actions#request-permission` and the builder's setup line, which must stay equal to
+  `FlowPermissionDeclarations`.
 
 ## Boundaries
 
@@ -695,8 +697,8 @@ needed in place.
   now names the `Info.plist` key and Android manifest permission for the selected kind; that table is
   mirrored in the `sdk-flows-display` reusable `FlowPermissionDeclarations`, so the two must change
   together.
-- **Permission analytics report the answer, not the section (product contract, 2026-11-25; not yet
-  checked against released code).** `flow_permission_answered.outcome` is the answer category, computed
+- **Permission analytics report the answer, not the section (product contract, 2026-11-25; checked on
+  devices against the branch build, 2026-11-26, with the iOS and Android SDKs).** `flow_permission_answered.outcome` is the answer category, computed
   from `result` and `detail_result` whatever sections the author filled: `granted`, `limited`,
   `provisional` for a granted answer; `denied`, `restricted`, `permanently_denied`, `unsupported`,
   `other` (any other status), `no_status` for a refusal. Bare requests get the same values (the earlier

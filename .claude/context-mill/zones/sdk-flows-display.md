@@ -437,6 +437,9 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
   - **Changed declaration (key, manifest permission, API level, capability):** the kind's section in
     `flow-permissions`, `FlowPermissionDeclarations`, the iOS or Android inline table, the builder
     callout.
+  - **The builder's setup line must stay equal to `FlowPermissionDeclarations`** (2026-11-27): the
+    callout prints every declaration of the selected kind from the same table, so a changed row is a
+    dashboard change too, and the reverse.
   - **Changed routing or a new status string:** `FlowPermissionAnswers`, the Section column of the 21
     per-kind tables, `onboarding-actions#request-permission`, the status-mapping tables of the five
     wrapper guides, and the handler samples if a status they send changes.
@@ -601,10 +604,13 @@ named; builder and transformer behavior from dashboard code and transformer code
   bridges always forward the request to the wrapper (AdaptySDK-iOS `Sources.AdaptyPlugin/HostRequest/PluginSystemRequestsHandler.swift`),
   so the wrapper decides. The flow stays on the screen with native iOS
   (`Sources.UIBuilder/UIBuilder/Logic/AdaptyUIStateActionHandler.swift`, `guard let handler … else { return }`),
-  Flutter, Unity (logs `System requests handler is not set`) and KMP. It moves on with `denied` and no
+  Flutter before 4.4.1, Unity (logs `System requests handler is not set`) and KMP. Corrected 2026-11-27:
+  Flutter 4.4.1 and later answer `denied` without a status, so the flow runs **After response**; the
+  Flutter guide, its `handling-events` and `handle-paywall-actions` pages, and
+  `onboarding-actions#request-permission` say so. It moves on with `denied` and no
   dialog with native Android (`AdaptyFlowDefaultEventListener` answers `false`), React Native and
   Capacitor (default handler logs a warning and answers `denied`, on both OSes).
-- **A throwing handler:** React Native and Capacitor answer `denied`; Flutter and Unity send no answer
+- **A throwing handler:** React Native and Capacitor answer `denied`; Flutter before 4.4.1 and Unity send no answer
   (the flow stays); KMP crashes the app (`AdaptyUIImpl.kt`, `MainScope().launch` with no exception
   handler, 4.1.0 and 4.3.0-beta.1); native Android doesn't catch exceptions from
   `onShowRequestPermission`. iOS `handlePermission` can't throw.
@@ -662,9 +668,9 @@ and transformer code, 2026-11-24):
   4.1.0 (the minimum versions the articles state): only the current tags were read.
 - **Review findings, 2026-11-24 (multi-role review of this change):**
   - The builder's warning callout prints one key per platform, so it is less complete than the docs
-    tables: for Location always it omits `NSLocationWhenInUseUsageDescription` and the foreground Android
-    permission, for Health data `NSHealthUpdateUsageDescription` (dashboard code, 2026-11-24). The docs
-    say the callout names the *main* key.
+    tables (dashboard code, 2026-11-24). Corrected 2026-11-27 (dashboard code): the callout now lists
+    every key and permission the app declares, from the same table as `FlowPermissionDeclarations`, with
+    Health Connect as a note for health on Android. `onboarding-actions` says it "lists" them.
   - Platform caveats the builder table doesn't carry and the docs now state: the pre-iOS 17 calendar and
     reminders keys (`NSCalendarsUsageDescription`, `NSRemindersUsageDescription`; the SDK supports iOS 15),
     the HealthKit / HomeKit / Siri capabilities, the Android API levels of `ACTIVITY_RECOGNITION` (10),
@@ -694,9 +700,9 @@ builder labels and groups from dashboard code, 2026-11-26.
 
 - **Builder labels and groups** (dashboard code, 2026-11-26): five groups in the select, in order
   Notifications and tracking / Location / Camera and media / Personal data / Device and home; the 21
-  labels are the H3s of `flow-permissions`, in the same order. The builder callout prints one key per
-  platform and says Android has none for `music` and `health`; the reference gives Health Connect for
-  `health` on Android and `READ_MEDIA_AUDIO` as an option for `music`.
+  labels are the H3s of `flow-permissions`, in the same order. Corrected 2026-11-27: the builder callout
+  lists every declaration from the same table as `FlowPermissionDeclarations` and notes Health Connect for
+  `health` on Android; `music` is `unsupported` on Android in both.
 - **No analytics floor above the handler minimum.** AdaptySDK-iOS sends `isBackendEvent` flow events,
   `flow_permission_*` included, from 4.0.0 (`Sources.UIBuilder/UIState/AdaptyUIActionHandler.swift`,
   `Sources/Events/AdaptyUI+Events.swift`); `session_id` and `flow_layout_id` join the payload in 4.1.0.
