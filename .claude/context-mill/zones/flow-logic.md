@@ -39,6 +39,32 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
   other. No flow-logic article uses or shows a **Does not equal** operator; take that operator's exact
   wording from the builder UI directly rather than from any article in this zone, since it isn't
   independently confirmed here.
+- **Conditions on the Adapty SDK version** (the picker's **System** tab, `sdk.version`; product
+  decision and builder and transformer code, 2026-11-26, before release). Owner article:
+  `flow-sdk-version-branching` (screen pattern, paired-element pattern, limitations); the System
+  tab line in `onboarding-element-visibility`, the rule sentences in `onboarding-actions` and
+  `onboarding-navigation-branching`, and `onboarding-variables`, `paywall-device-compatibility-preview`
+  and `builder-ui` link to it.
+  - Offered only in a conditional action and in a visibility condition, not in conditional text or
+    element-state conditions. Two comparisons: **This version and above** (≥) and **Below this
+    version** (<). The value is a list (newest marked **Latest**) or free entry `major.minor[.patch]`;
+    a missing patch counts as 0; an empty value is an incomplete rule; an invalid value makes the
+    publication fail with the error at the condition, and the last published version stays.
+  - The device compares the native iOS or Android Adapty SDK version, also inside the cross-platform
+    SDKs, numerically (4.10 > 4.9). On Android it is the core library `io.adapty:android-sdk`
+    version, not the BOM version (2026-11-26, device run: BOM 4.4.2 reports 4.4.0, BOM 4.3.3 reports
+    4.3.2, React Native 4.4.1 reports 4.4.0 on Android). An unknown version counts as the oldest, so
+    **Below this version** matches.
+  - The canvas and the dashboard preview evaluate a visibility condition as the **Latest** list
+    version with any patch; they never run conditional actions. The Adapty mobile app preview offers no version choice.
+  - Hiding is not decode protection: an earlier SDK still loads hidden elements. A visibility
+    condition on a custom element also hides its fallback. A declared custom variable with the id
+    `sdk.version` keeps its meaning, and that flow's System tab doesn't offer the SDK version.
+  - Unconfirmed (2026-11-26): on iOS SDK 4.0 and 4.1 a first-screen element hidden by a visibility
+    condition can show for one frame. Source: public `AdaptySDK-iOS`
+    `Sources.UIBuilder/UIBuilder/Rendering/Elements/AdaptyUISectionView.swift` at 4.0.0 and 4.1.3,
+    where the section state starts at slot 0 and updates on appearance. A device run on 2026-11-26 saw
+    no flash in the first sample after launch (not a frame-by-frame capture); the docs keep the limit.
 - **The SDK repos are explicitly not this zone's ground truth.** Articles here reference SDK-side shapes
   loosely (`AdaptyRemoteConfig`, the `remoteConfigs` array on `AdaptyFlow`, `getFlow`) only to hand the
   reader off to the platform SDK docs. Treat those shapes as owned by `sdk-flows-display` /
@@ -130,6 +156,7 @@ or developer can see and click.
 | flow-builder-recipes | entry | marketer, dev | 0 | tutorial |
 | flow-common-issues | reference | marketer, dev | 13 | tutorial |
 | flow-metrics | — | marketer, dev | 25 | tutorial |
+| flow-sdk-version-branching | how-to | marketer, dev | 5 | tutorial |
 | flows-and-paywalls | entry | marketer, dev | 0 | tutorial |
 | import-from-figma | how-to | marketer, dev | 12 | tutorial |
 | migrate-to-flows | migration | marketer, dev | 7 | tutorial |
