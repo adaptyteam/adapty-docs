@@ -1,0 +1,136 @@
+---
+title: "Refund Saver için agent skill"
+description: "Refund Saver skill'ini yükleyerek AI aracınızın Adapty Refund Saver'ı etkinleştirmesini, her mağaza ve belirli bir kullanıcının geri ödeme tercihini ayarlamasını ve Refund Saver'ın neden açılmadığını veya isteklere yanıt vermediğini bulmasını sağlayın."
+metadataTitle: "Refund Saver Agent Skill | Adapty Dokümanları"
+---
+
+[Refund Saver](refund-saver), App Store iade taleplerini ve Google Play iade incelemelerini sizin adınıza yanıtlar; böylece mağaza haksız talepleri reddedebilir. Refund-saver skill'i, AI aracınızdan Refund Saver'ı çalıştırır. Ajanınız, Refund Saver'ın ihtiyaç duyduğu anahtarlara hangi mağazaların sahip olduğunu okur ve Refund Saver'ı etkinleştirir. Her mağaza için iade tercihini, App Store onay politikasını ve belirli bir kullanıcının tercihini ayarlar. Refund Saver açılmadığında veya hiçbir isteği yanıtlamadığında, ajan olası nedenleri belirtir. Skill, [`adapty refund-saver` CLI komutları](developer-cli-refund-saver) veya [Adapty MCP sunucusu](adapty-mcp) aracılığıyla çalışır.
+
+:::note
+Skill, Refund Saver'ı açmadan veya kapatmadan ya da bir tercih veya onay ayarını değiştirmeden önce, değişikliğin ne anlama geldiğini sade bir dille açıklar. Değişikliği yalnızca onayınızın ardından gerçekleştirir.
+:::
+
+## Neler sorabilirsiniz \{#what-you-can-ask\}
+
+Bir meslektaşınıza brifing verir gibi sorun. Skill adını belirtmenize gerek yok:
+
+```
+Turn on Refund Saver for my app.
+
+Is Refund Saver on, and is anything missing?
+
+Ask the App Store for a prorated refund instead of declining.
+
+Grant every refund request from the user with profile ID <profile-id>.
+
+Refund Saver won't turn on. Why?
+
+Refund Saver is on, but it answers no requests.
+
+Turn on Refund Saver for all my apps.
+```
+
+<AgentChat title="refund-saver" caption="Örnek bir uygulama ile örnek konuşma. Uygulamanız ve ayarlarınız farklılık gösterebilir.">
+<ChatTurn role="user">Uygulamamda Refund Saver'ı aç.</ChatTurn>
+<ChatTurn role="tool" summary="Durumu ve mağaza anahtarlarını oku">
+
+- `adapty refund-saver get`
+- `adapty refund-saver readiness`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+Refund Saver kapalı. App Store, Refund Saver'ın ihtiyaç duyduğu anahtarlara sahip. Google Play'de ise yok: paket adını ve hizmet hesabı anahtar dosyasını **App settings** > **Android SDK** bölümüne ekleyin. Bu yapılana kadar Refund Saver, Google Play isteklerine yanıt vermez.
+
+Mağaza bildirimlerinizi okuyamıyorum. Lütfen App Store Server Notifications V2 ve Google Play gerçek zamanlı geliştirici bildirimlerinin Adapty'ye ulaştığını doğrulayın. Bunlar olmadan, Refund Saver o mağazadan gelen hiçbir isteği yanıtlayamaz.
+
+Onay politikanız Opt-out: Adapty, kayıtlı onayı bulunmayan kullanıcıların tüketim verilerini Apple'a gönderir. Uygulamanız kullanıcılara önce onay soruyor mu? Soruyorsa, Refund Saver etkinleştirildikten sonra Opt-in'e geçeceğim.
+
+</ChatTurn>
+<ChatTurn role="confirm" summary="Refund Saver'ı aç">
+
+Uygulamanız için Refund Saver'ı açın.
+
+- App Store: İlk para iadesi isteğini reddet, bir sonrakini onayla. Onay politikası: Vazgeçme (Opt-out); Adapty, kayıtlı onayı olmayan kullanıcıların tüketim verilerini Apple'a gönderir.
+- Google Play: İlk ters ibraz incelemesini reddet, bir sonrakini onayla. Anahtarlar eklenene kadar yanıt verilmez.
+- **Gizlilik politikanızda, para iadesi istekleri için Apple ile tüketim verisi paylaştığınızı belirtmeniz gerekir.**
+
+Açılsın mı?
+
+1. Evet
+2. Hayır
+
+</ChatTurn>
+</AgentChat>
+
+## Başlamadan önce \{#before-you-start\}
+
+- **Refund Saver eklentisi**: Hesabınız için Refund Saver eklentisi etkin değilse, Adapty Refund Saver'ı açmayı reddeder. Eklentiyi hesap ayarlarınızın [**Subscription & Billing**](account#subscription--billing) sekmesinden etkinleştirin.
+- **Mağaza bağlantısı**: Satış yaptığınız her mağaza Adapty'e bağlı olmalıdır: [App Store](app-store-connection-configuration) veya [Google Play](google-play-store-connection-configuration).
+- **Mağaza bildirimleri**: Mağaza, her iade talebini bir bildirimle Adapty'e gönderir. [App Store Server Notifications V2](enable-app-store-server-notifications) ve [Google Play gerçek zamanlı geliştirici bildirimlerini](enable-real-time-developer-notifications-rtdn) ayarlayın.
+- **App Store'da gizlilik politikası ve onay**: Kullanıcı onayını nasıl alacağınızı seçin; katılım (opt-in) istemi veya vazgeçme (opt-out) koşulları ile Apple'a tüketim verisi paylaştığınızı gizlilik politikanızda açıklayın. Bkz. [Kullanıcı onayı alma](refund-saver#obtain-user-consent).
+- **Adapty hesabınıza bağlı bir AI aracı**: Skill, [Adapty MCP sunucusu](adapty-mcp) veya [Adapty CLI](developer-cli) aracılığıyla çalışır. Claude Code ve Codex'te eklenti MCP sunucusunu ekler; yalnızca giriş yapmanız yeterlidir. Hiçbiri kurulu değilse skill, hangisini kullanmak istediğinizi sorar ve kurulumu yapar.
+
+## Skill'i yükleyin \{#install-the-skill\}
+
+Refund-saver skill'i, [Adapty eklentisinin](manage-adapty-with-ai) bir parçasıdır.
+
+<AdaptySkillsInstall />
+
+## Skill, Refund Saver'ı nasıl kurar \{#how-the-skill-sets-up-refund-saver\}
+
+1. **Durumu okur**: Skill, uygulama için Refund Saver'ın açık olup olmadığını ve her mağazanın Refund Saver'ın ihtiyaç duyduğu anahtarlara sahip olup olmadığını okur: App Store için [Uygulama İçi Satın Alma anahtarı](generate-in-app-purchase-key) ve Google Play için hizmet hesabı anahtarı. Anahtarı eksik mağazalar için skill, **App settings** > **iOS SDK** veya **Android SDK** bölümüne nelerin eklenmesi gerektiğini belirtir.
+2. **Okuyamadıklarını belirtir**: Hiçbir komut mağaza bildirimlerini, gizlilik politikanızı veya uygulamanızın onay isteme şeklini göstermez. Skill, mağaza bildirimlerinin Adapty'ye ulaştığını doğrulamanızı ister ve gizlilik politikası ile onay için [mağaza ön koşulları](refund-saver#store-specific-prerequisites) bağlantısını paylaşır.
+3. **Refund Saver'ı açar**: Satış yaptığınız mağazalardan en az birinde anahtarlar mevcutsa skill onayınızı ister, ardından Refund Saver'ı her iki mağaza için de açar. Adapty'nin Refund Saver eklentisine ilişkin notunu gösterir. Anahtarları eksik bir mağaza, bunları ekleyene kadar yanıt almaz. Hiçbir mağaza hazır değilse skill hiçbir şeyi açmaz ve nelerin eklenmesi gerektiğini belirtir.
+4. **Seçtiğiniz tercihleri ayarlar**: Çoğu uygulama için skill varsayılan iade tercihini önerir: **Decline first refund request, grant all next**. Bir mağazanın tercihinde, onay politikasında veya tek bir kullanıcının ayarlarında yapılan her değişiklik için ayrı bir onay gerekir.
+
+Refund Saver, yanıtlanan istekler [Refund Saver](https://app.adapty.io/refund-saver) bölümünde göründüğünde veya skill bunları isteğiniz üzerine listelediğinde çalışır. Adapty, bir sonraki para iadesi isteği geldiğinde ilkini yanıtlar; bu, az sayıda satın alma olan bir uygulamada haftalar alabilir.
+
+Rıza politikası, Refund Saver'ın kayıtlı rızası olmayan bir kullanıcının verilerini Apple'a gönderip göndermeyeceğini belirler. Politikayı, uygulamanızın rıza isteğiyle eşleştirin. Skill uygulamanızın rıza isteğini göremez, bu nedenle hangi politikanın uygun olduğunu sizden sorar. Her seçeneğin ne yaptığını öğrenmek için bkz. [Varsayılan rıza politikasını ayarlama](refund-saver#set-the-default-consent-policy).
+
+Bir kullanıcının ayarlarını değiştirmek için skill'e kullanıcının uygulamanızdaki müşteri kullanıcı kimliğini değil, **Adapty profil kimliğini** verin. Bu kimliği kontrol panelindeki kullanıcı [profilinde](profiles-crm) bulabilirsiniz. Skill, bu kimliği aynı zamanda Refund Saver'ın yanıtladığı bir iade talebinden de okuyabilir.
+
+Refund Saver'ı birden fazla uygulama için etkinleştirmek istiyorsanız hepsini tek seferde isteyin. Skill her uygulamayı okur, ardından değiştireceği tüm uygulamaları içeren tek bir onay gösterir.
+
+## Skill her değişiklikten önce ne sorar \{#what-the-skill-asks-before-each-change\}
+
+Yalnızca skill'in sorusuna verdiğiniz yanıt geçerlidir. Skill değişikliği göstermeden önce söylediğiniz genel bir "devam et" ifadesi geçersizdir. Hayır derseniz skill hiçbir şeyi değiştirmez.
+
+| Değişiklik | Skill size ne söyler |
+|---|---|
+| Refund Saver'ı aç | Artık Adapty, bu uygulamanın App Store iade taleplerini ve Google Play iade incelemelerini her mağazanın tercihine göre yanıtlar. Skill, App Store onay politikasını belirtir. **Opt-out** seçeneğiyle Adapty, kayıtlı onayı bulunmayan kullanıcıların tüketim verilerini de Apple'a iletir. Her iki politikada da gizlilik politikanızın, iade talepleri için tüketim verilerini Apple ile paylaştığınızı belirtmesi gerekir. |
+| Refund Saver'ı kapat | Adapty, bu uygulamanın App Store iade taleplerini ve Google Play iade incelemelerini yanıtlamayı durdurur. Refund Saver eklentisi, **Subscription & Billing** sekmesinden iptal edene kadar aktif kalmaya devam eder. |
+| Bir mağazanın tercihini veya onay politikasını değiştir | Mevcut değer ve yeni değer. Yeni değer, o mağazadan gelen tüm yeni taleplere uygulanır. |
+| Bir kullanıcının ayarlarını değiştir | O kullanıcının mevcut ve yeni tercihi ya da onayı. Kullanıcı bazında verilen onay veya red, her iki mağazada da mağaza tercihinin önüne geçer. |
+
+Zamanlanmış bir çalıştırmada veya bir betik içinde, cevaplayacak kimse olmadığında skill yalnızca okur. Bir değişiklik için, değişikliğin ne yaptığını ve çalıştırmanız gereken komutu raporlar.
+
+## Refund Saver beklendiği gibi çalışmadığında \{#when-refund-saver-doesnt-work-as-expected\}
+
+- **Adapty, Refund Saver'ı açmayı reddediyor**: Skill, Adapty'nin döndürdüğü nedeni ve kimin düzeltmesi gerektiğini size bildirir:
+  - Refund Saver eklentisi hesabınız için etkin değil. **Subscription & Billing** sekmesinden etkinleştirin.
+  - Hesabınızın Apple kimlik bilgileri çalışmıyor. **App settings** bölümünden düzeltin.
+  - Refund Saver hesabınız için açılamıyor. Adapty desteğiyle iletişime geçin.
+
+  - Bir düzeltmeden sonra, skill'den tekrar denemesini isteyin. Skill kendi kendine yeniden denemez.
+- **Adapty her değişikliği reddediyor**: Adapty hesabınız uygulamayı görebilir, ancak şirketinde düzenleme yetkisi yok. Bir şirket sahibinden veya yöneticiden düzenleme yetkisi isteyin.
+- **Refund Saver açık, ancak hiçbir isteğe yanıt vermiyor**: Skill, Refund Saver'ın yanıtladığı istekleri ve her mağazanın anahtarlarını okur. Ardından olası nedenleri listeler:
+  - Bir mağazanın anahtarı yok ya da mağaza bu anahtarları kabul etmiyor. **App settings** bölümünden doğrulayın.
+  - Mağaza bildirimleri Adapty'ye ulaşmıyor.
+  - Onay politikası **Opt-in** olarak ayarlanmış ve uygulamanız hiçbir zaman Adapty'ye kullanıcı onayı göndermemiş. Adapty de Apple'a tüketim verisi göndermiyor.
+  - Google Play'de Refund Saver yalnızca chargeback'lere yanıt verir. Google, olağan iade isteklerini Adapty'den bağımsız olarak karara bağlar. Bkz. [Mağazalar arasındaki farklar](refund-saver#how-the-stores-differ).
+  - Az sayıda satın alma yapılan bir uygulamada haftalarca iade isteği gelmeyebilir.
+- **Google Play sonuçları geç görünüyor**: Google, bir chargeback'i reddettiğinde Adapty'yi bilgilendirmez; bu nedenle Adapty, inceleme sonuçlanana kadar sipariş durumunu periyodik olarak sorgular. Google Play sonuçları, istek listesine ve tasarruflara App Store sonuçlarına kıyasla daha geç yansır.
+
+## Diğer skill'lerle \{#with-other-skills\}
+
+- **Refund Saver'ın ne kadar tasarruf sağladığını görün**: [growth-advisor skill](export-analytics-with-ai), Refund Saver'ın koruduğu tutarı ve kazanma oranını okur; her ikisini de iadelerinizle karşılaştırır. İadeleriniz yüksek olup Refund Saver kapalıysa, Refund Saver'ı açmanızı önerir. Refund Saver bir uygulamada para tasarrufu sağladıysa, diğer uygulamalarınızı okur ve Refund Saver'ın kapalı olduğu yerlerde açmanızı önerir. Onayınız üzerine değişikliği refund-saver skill'e devreder.
+- **Adapty SDK'yı entegre edin**: [adapty-integration skill](adapty-sdk-integration-skill) tamamlandığında, Refund Saver'ı kurmanızı önerir.
+
+## Sınırlamalar \{#limits\}
+
+- **Eklenti değişikliği yapılamaz**: Skill, Refund Saver eklentisini etkinleştiremez veya iptal edemez. Bunu hesap ayarlarınızın **Subscription & Billing** sekmesinden yapın.
+- **Uygulama kodu yazılamaz**: Skill, Adapty'ye kullanıcı tercihini veya onayını gönderen uygulama kodunu yazmaz. Bu kodu eklemek için bkz. [Refund Saver'ı uygulama kodunuzdan yönetme](refund-saver#manage-refund-saver-from-your-app-code).
+- **İade tasarrufu tahmini yapılamaz**: Her isteğe mağaza karar verdiğinden, skill Refund Saver'ın ne kadar tasarruf sağlayacağını tahmin etmez.
+
+Komutu skill olmadan kendiniz çalıştırmak için bkz. [Refund Saver komutları](developer-cli-refund-saver).

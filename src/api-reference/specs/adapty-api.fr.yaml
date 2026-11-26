@@ -1614,7 +1614,7 @@ paths:
     get:
       summary: Lister les soldes de monnaie virtuelle
       description: |
-        Retourne le solde actuel de chaque monnaie virtuelle pour un profil. Si l'application n'a pas de monnaies virtuelles, `data` est un tableau vide.
+        Retourne le solde actuel de chaque monnaie virtuelle pour un profil. Si l'application ne possède aucune monnaie virtuelle, `data` est un tableau vide.
       operationId: listVirtualCurrencyBalances
       tags:
         - Virtual Currency
@@ -1626,13 +1626,13 @@ paths:
           required: false
           schema:
             type: string
-          description: L'identifiant unique du client dans votre système. `adapty-customer-user-id` ou `adapty-profile-id` est requis.
+          description: L'identifiant unique du client dans votre système. L'un ou l'autre des paramètres `adapty-customer-user-id` ou `adapty-profile-id` est requis.
         - name: adapty-profile-id
           in: header
           required: false
           schema:
             type: string
-          description: L'identifiant unique du profil dans votre système. Meilleure option si vous travaillez avec des profils anonymes. `adapty-customer-user-id` ou `adapty-profile-id` est requis.
+          description: L'identifiant unique du profil dans votre système. Votre meilleure option si vous travaillez avec des profils anonymes. L'un ou l'autre des paramètres `adapty-customer-user-id` ou `adapty-profile-id` est requis.
       responses:
         '200':
           description: Soldes retournés avec succès
@@ -1648,30 +1648,47 @@ paths:
                     balance: 12450
                     held: 0
                     available: 12450
+                    expiry:
+                      non_expiring: 12450
+                      expiring: []
+                      expiring_later: 0
+                      expired: 0
                   - code: GEMS
                     name: Gems
                     balance: 3280
                     held: 0
                     available: 3280
+                    expiry:
+                      non_expiring: 280
+                      expiring:
+                        - amount: 3000
+                          expires_at: 2026-12-24T10:00:00.000000+0000
+                      expiring_later: 0
+                      expired: 0
                   - code: ENERGY
                     name: Energy
                     balance: 840
                     held: 0
                     available: 840
+                    expiry:
+                      non_expiring: 840
+                      expiring: []
+                      expiring_later: 0
+                      expired: 0
         '400':
-          description: Requête incorrecte. Ni `adapty-profile-id` ni `adapty-customer-user-id` n'est envoyé (`error_code` est `validation_error`).
+          description: Requête invalide. Ni `adapty-profile-id` ni `adapty-customer-user-id` n'est envoyé (le `error_code` est `validation_error`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
-          description: Non autorisé. La clé API est manquante ou invalide (`error_code` est `not_authenticated`).
+          description: Non autorisé. La clé API est manquante ou invalide (le `error_code` est `not_authenticated`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Profil introuvable (`error_code` est `profile_does_not_exist`).
+          description: Profil introuvable (le `error_code` est `profile_does_not_exist`).
           content:
             application/json:
               schema:
@@ -3342,15 +3359,15 @@ components:
       properties:
         code:
           type: string
-          description: Code de la monnaie virtuelle.
+          description: Code de la devise virtuelle.
         name:
           type: string
-          description: Nom d'affichage de la monnaie virtuelle.
+          description: Nom d'affichage de la devise virtuelle.
         balance:
           type: integer
           format: int32
           minimum: 0
-          description: Solde total, incluant les montants actuellement retenus.
+          description: Solde total, y compris les montants actuellement retenus.
         held:
           type: integer
           format: int32
@@ -3359,7 +3376,7 @@ components:
         available:
           type: integer
           format: int32
-          description: Solde disponible à dépenser, calculé comme `balance - held`.
+          description: Solde disponible à dépenser, calculé comme `balance` moins `held` moins les crédits expirés qu'Adapty n'a pas encore supprimés.
       required:
         - code
         - name
@@ -3368,7 +3385,7 @@ components:
         - available
     VirtualCurrencyBalanceListResponse:
       type: object
-      description: Soldes actuels de toutes les devises virtuelles d'un profil.
+      description: Soldes actuels d'un profil pour chaque devise virtuelle de l'application, y compris les devises dont le solde est de 0.
       properties:
         response_created_at:
           type: integer
@@ -3386,7 +3403,7 @@ components:
       properties:
         code:
           type: string
-          description: Code unique de la devise virtuelle au sein de l'application. Lettres ASCII, chiffres et underscore.
+          description: Code unique de la devise virtuelle dans l'application. Lettres ASCII, chiffres et underscore.
         name:
           type: string
           description: Nom d'affichage de la devise virtuelle.
@@ -3394,22 +3411,70 @@ components:
           type: integer
           format: int32
           minimum: 0
-          description: Solde total, incluant les montants actuellement retenus.
+          description: Solde total, y compris les montants actuellement retenus.
         held:
           type: integer
           format: int32
           minimum: 0
-          description: Somme de toutes les retenues actives (montants réservés). Toujours 0 actuellement.
+          description: Somme de toutes les retenues actives (montants réservés). Actuellement toujours 0.
         available:
           type: integer
           format: int32
-          description: Solde disponible à dépenser, calculé comme `balance - held`.
+          minimum: 0
+          description: Solde disponible à dépenser, calculé comme `balance` moins `held` moins `expiry.expired`.
+        expiry:
+          $ref: '#/components/schemas/VirtualCurrencyBalanceExpiry'
       required:
         - code
         - name
         - balance
         - held
         - available
+        - expiry
+    VirtualCurrencyBalanceExpiry:
+      type: object
+      description: Le solde, réparti par date d'expiration au moment de la réponse. `non_expiring`, la somme de `expiring[].amount`, `expiring_later` et `expired` sont égaux à `balance`.
+      properties:
+        non_expiring:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Crédits qui n'expirent jamais.
+        expiring:
+          type: array
+          description: Crédits qui expirent, regroupés par date d'expiration, les plus proches en premier. Liste jusqu'à 10 dates d'expiration. Les crédits avec des dates d'expiration ultérieures sont additionnés dans `expiring_later`.
+          items:
+            $ref: '#/components/schemas/VirtualCurrencyExpiringAmount'
+        expiring_later:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Crédits expirant au-delà des 10 dates d'expiration figurant dans `expiring`. Vaut 0 sauf si `expiring` contient 10 entrées.
+        expired:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Crédits dont la date d'expiration est dépassée mais qui sont encore comptabilisés dans `balance`. Les utilisateurs ne peuvent pas les dépenser, et Adapty les retire de `balance` en quelques minutes, donc la valeur est généralement 0.
+      required:
+        - non_expiring
+        - expiring
+        - expiring_later
+        - expired
+    VirtualCurrencyExpiringAmount:
+      type: object
+      properties:
+        amount:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Le nombre de crédits qui expirent à `expires_at`, sauf si l'utilisateur les dépense avant.
+        expires_at:
+          type: string
+          description: La date limite d'expiration de ces crédits, en UTC. Un renouvellement d'abonnement avant la fin de la période, ou un remboursement, peut les supprimer plus tôt.
+          example: 2026-12-24T10:00:00.000000+0000
+      required:
+        - amount
+        - expires_at
     VirtualCurrencyTransactionsHistoryResponse:
       type: object
       description: Liste paginée des transactions de monnaie virtuelle pour un profil.

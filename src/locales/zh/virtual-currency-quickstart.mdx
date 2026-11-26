@@ -1,6 +1,6 @@
 ---
 title: "虚拟货币快速入门"
-description: "端到端配置虚拟货币：创建代币货币、通过订阅授予代币，并通过服务端 API 进行消耗。"
+description: "端到端配置虚拟货币：创建代币货币、通过订阅授予代币，并通过服务端 API 消耗代币。"
 metadataTitle: "虚拟货币快速入门 | Adapty 文档"
 ---
 
@@ -8,13 +8,13 @@ metadataTitle: "虚拟货币快速入门 | Adapty 文档"
 主要文章：[虚拟货币](virtual-currencies)
 :::
 
-本快速入门将端到端配置代币货币：订阅每月为用户授予 1000 个代币，应用内的付费操作消耗代币。Adapty 负责维护所有余额，你的后端只需读取和消耗代币即可。
+本快速入门将端到端配置一套代币货币：用户每个计费周期通过月度订阅获得 1000 个代币，应用内的付费操作消耗代币。Adapty 管理所有余额，你的后端只需读取和消耗它们即可。
 
-1. 按照[创建虚拟货币](create-virtual-currency)指南创建一个 `TOKENS` 货币。将其与您的 Pro 订阅关联，并将 **Credit per cycle** 设置为 1000。如需出售额外的代币，也可以关联一次性代币包产品。
+1. 参考[创建虚拟货币](create-virtual-currency)指南创建一个 `TOKENS` 货币。将其关联到你的 Pro 订阅，并将 **Credit per cycle** 设置为 1000。Adapty 会在每个计费周期发放一次 **Credit per cycle**：月订阅每月发放一次，周订阅每周发放一次。如需出售额外代币，也可以关联一次性代币包产品。
 
    <ZoomImage id="new-currency-combined.webp" width="700px" alt="New virtual currency creation screens" />
 
-2. 在开始生成之前，调用[列出虚拟货币余额](api-adapty/operations/listVirtualCurrencyBalances)接口读取用户余额，示例如下：
+2. 调用 [List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances) 读取用户余额，例如在开始生成之前：
 
    ```bash title="Read balances"
    curl https://api.adapty.io/api/v2/server-side-api/vc/balances/ \
@@ -22,12 +22,20 @@ metadataTitle: "虚拟货币快速入门 | Adapty 文档"
      -H "adapty-customer-user-id: user-42"
    ```
 
-   响应中列出了该用户拥有的所有货币，例如 1000 个 `TOKENS`：
+   响应中列出了您应用中的所有货币，包括余额为 0 的货币。例如，1000 个 `TOKENS`：
 
    ```json title="Response"
    {
+     "response_created_at": 1794477600123,
      "data": [
-       { "code": "TOKENS", "name": "Tokens", "balance": 1000, "held": 0, "available": 1000 }
+       {
+         "code": "TOKENS",
+         "name": "Tokens",
+         "balance": 1000,
+         "held": 0,
+         "available": 1000,
+         "expiry": { "non_expiring": 1000, "expiring": [], "expiring_later": 0, "expired": 0 }
+       }
      ]
    }
    ```
@@ -45,6 +53,6 @@ metadataTitle: "虚拟货币快速入门 | Adapty 文档"
          }'
    ```
 
-   该事务具有原子性，并返回更新后的余额。如果用户余额不足，请求将返回 `insufficient_balance`，且不会发生任何变化。请在请求头中添加 `Idempotency-Key` 以安全地重试请求。
-4. 要运行赢回优惠活动，可通过相同的接口传入正数 `amount` 来为用户添加代币。以这种方式赠予的积分永不过期。如需在用户首次购买前为其设置初始余额，请参阅[赋予初始余额](grant-initial-balance)。
-5. 在用户的[用户画像](virtual-currency-balance)或[交易记录](api-adapty/operations/listVirtualCurrencyTransactions)中查看每一笔变更，以便随时审计经济系统。
+   该事务是原子性的，并返回更新后的余额。一个事务最多可以更改 20 种货币，每种货币在 `items` 中列出一次。如果用户余额不足以支付费用，请求将返回 `insufficient_balance` 且不会发生任何更改。请在请求中包含 `Idempotency-Key` 请求头以安全地重试请求。若余额不足以完成消费时需要打开充值流程，请参阅 [iOS](ios-virtual-currency-top-up) 的相关指南。
+4. 若要运行赢回优惠，可通过同一端点以正 `amount` 值为用户发放代币。以此方式发放的积分永不过期。若要在用户首次购买前赋予初始余额，请参阅[授予初始余额](grant-initial-balance)。
+5. 在用户的[用户画像](virtual-currency-balance)或[交易记录](api-adapty/operations/listVirtualCurrencyTransactions)中查看每一次变更，以便随时审计经济系统。

@@ -146,17 +146,22 @@ Adapty がカスタムストアのトランザクションをプロダクトと�
 
 <ZoomImage id="store-product-id.webp" width="500px" />
 
-## ステップ 3. API 経由でトランザクションを同期する \{#step-3-sync-transactions-via-api\}
+## ステップ3：APIを使ってトランザクションを同期する \{#step-3-sync-transactions-via-api\}
 
-カスタムストアで購入が完了したら、サーバーサイド API を使って Adapty にその情報を同期する必要があります。
+カスタムストアで購入が完了したら、サーバーサイドAPIを使ってAdaptyにトランザクションを同期する必要があります。
 
-この API 呼び出しによって以下が実行されます。
-- Adapty にトランザクションを記録する
+このAPIコールによって、以下が実行されます：
+- Adaptyにトランザクションを記録する
 - 対応するアクセスレベルをユーザーに付与する
-- 設定済みのインテグレーションやウェブフックをトリガーする
+- 設定済みのインテグレーションやWebhookをトリガーする
 - アナリティクスにトランザクションを表示する
 
-メソッドの完全なリファレンスは[こちら](api-adapty/operations/setTransaction)をご覧ください。
+メソッドの詳細なリファレンスは[こちら](api-adapty/operations/setTransaction)をご覧ください。
+
+リクエストボディは購入タイプによって異なります。ご利用のプロダクトに合ったタブを選択してください：
+
+<Tabs groupId="purchase-type">
+<TabItem value="subscription" label="サブスクリプション" default>
 
 ```bash
 curl --request POST \
@@ -166,28 +171,63 @@ curl --request POST \
   --header 'Content-Type: application/json' \
   --header 'adapty-customer-user-id: YOUR_CUSTOMER_USER_ID' \
   --data '{
-  "purchase_type": "PRODUCT_PERIOD",
+  "purchase_type": "subscription",
   "store": "YOUR_CUSTOM_STORE",
-  "environment": "production",
+  "environment": "Production",
   "store_product_id": "YOUR_STORE_PRODUCT_ID",
   "store_transaction_id": "STORE_TRANSACTION_ID",
   "store_original_transaction_id": "ORIGINAL_TRANSACTION_ID",
   "price": {
-    "country": "COUNTRY_CODE",
-    "currency": "CURRENCY_CODE",
-    "value": "YOUR_PRICE"
+    "country": "US",
+    "currency": "USD",
+    "value": 9.99
+  },
+  "purchased_at": "2024-01-15T10:30:00Z",
+  "originally_purchased_at": "2024-01-15T10:30:00Z",
+  "expires_at": "2024-02-15T10:30:00Z",
+  "renew_status": true
+}'
+```
+
+</TabItem>
+<TabItem value="one-time" label="買い切り購入">
+
+```bash
+curl --request POST \
+  --url https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/ \
+  --header 'Accept: application/json' \
+  --header 'Authorization: Api-Key YOUR_SECRET_API_KEY' \
+  --header 'Content-Type: application/json' \
+  --header 'adapty-customer-user-id: YOUR_CUSTOMER_USER_ID' \
+  --data '{
+  "purchase_type": "one_time_purchase",
+  "store": "YOUR_CUSTOM_STORE",
+  "environment": "Production",
+  "store_product_id": "YOUR_STORE_PRODUCT_ID",
+  "store_transaction_id": "STORE_TRANSACTION_ID",
+  "store_original_transaction_id": "ORIGINAL_TRANSACTION_ID",
+  "price": {
+    "country": "US",
+    "currency": "USD",
+    "value": 9.99
   },
   "purchased_at": "2024-01-15T10:30:00Z"
 }'
 ```
 
+</TabItem>
+</Tabs>
+
 :::important
-重要なパラメーター:
-- **store**: ステップ 2 で設定したカスタムストアの ID
-- **store_product_id**: ステップ 2 で設定したストアプロダクト ID
-- **store_transaction_id**: このトランザクションの一意の識別子
-- **purchased_at**: 購入が発生した ISO 8601 形式のタイムスタンプ
-- **price**: ユーザーが支払った金額
+重要なパラメータ:
+- **purchase_type**: `subscription` または `one_time_purchase`。それ以外の値はHTTP 400エラーになります。
+- **environment**: `Production` または `Sandbox`（先頭は大文字）。デフォルトは `Production`。テスト購入には `Sandbox` を送信してください。
+- **store**: ステップ2で設定したカスタムストアのID
+- **store_product_id**: ステップ2で設定したストアのプロダクトID
+- **store_transaction_id**: このトランザクションの一意の識別子（最大50文字）
+- **purchased_at**: 購入が発生した日時（ISO 8601形式）
+- **price**: ユーザーが支払った金額。`country` はISO 3166-1 alpha-2コード、`currency` はISO 4217コード、`value` は数値です。
+- **expires_at**: サブスクリプションの場合、ユーザーがアクセスレベルを維持する期限のISO 8601タイムスタンプ。サブスクリプションには `originally_purchased_at` と `renew_status` も必須です。
 :::
 
 ## ステップ 4. アプリでアクセスを確認する \{#step-4-verify-access-in-the-app\}

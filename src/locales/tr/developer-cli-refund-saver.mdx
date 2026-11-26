@@ -1,0 +1,182 @@
+---
+title: "Refund Saver komutları"
+description: "Adapty CLI komutları; Refund Saver'ı açıp kapatır, her mağazanın ve bir profilin iade tercihini ayarlar, her mağazanın anahtarlarını doğrular, iade taleplerini ve tasarrufları okur."
+metadataTitle: "Refund Saver CLI Komutları | Adapty Dokümanları"
+---
+
+Bir uygulamanın [Refund Saver](refund-saver) özelliğini terminalden yönetin: açıp kapatın, her mağaza için geri ödeme tercihini ayarlayın, belirli bir profil için bu tercihi geçersiz kılın, her mağazanın Refund Saver'ın ihtiyaç duyduğu anahtarlara sahip olduğunu doğrulayın ve Refund Saver'ın ne yönettiğini ve ne tasarruf ettiğini okuyun. Bu komutlar CLI 0.31.0 veya sonraki bir sürümü gerektirir.
+
+CLI'yı henüz kurulmadıysa, [hızlı başlangıç kılavuzunun](developer-cli-quickstart) 1. ve 2. adımlarını takip edin. Sürümünüzü görmek için `adapty --version` komutunu çalıştırın.
+
+Refund Saver eklentisi hesabınız için aktif değilse, Adapty `on` komutunu reddeder. Eklentiyi CLI ile değil, hesap ayarlarınızın [**Subscription & Billing**](account#subscription--billing) sekmesinden yönetirsiniz.
+
+Her komut, `adapty apps list` komutundan alınan uygulama ID'sini (UUID) belirtmek için `--app` parametresini alır ve API yanıtını `--json` ile yazdırır.
+
+`on`, `off`, `update` ve `profile update` komutları uygulamayı anında değiştirir. Onay istemez ve `--yes` parametresi almaz.
+
+## adapty refund-saver get \{#adapty-refund-saver-get\}
+
+Bir uygulama için Refund Saver'ın açık olup olmadığını ve her mağazanın iade tercihini gösterir.
+
+```bash
+adapty refund-saver get --app <app-id>
+```
+
+| Flag | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+
+`--json` ile, `enabled` değeri Refund Saver herhangi bir mağazada açıksa `true` olur. `stores` ise her mağazanın iade tercihini içerir; App Store için ek olarak `refund_saver_needs_consent` alanı da bulunur: `true` değeri **Opt-in** onay politikasına karşılık gelir.
+
+## adapty refund-saver on
+
+Bir uygulama için Refund Saver'ı her iki mağazada da açar.
+
+```bash
+adapty refund-saver on --app <app-id>
+```
+
+| Flag | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+
+Komut, uygulamanın durumunu ve Refund Saver eklentisine ilişkin bir notu (`--json` çıktısında `billing_note`) yazdırır. Refund Saver her iki mağazada da zaten açıksa komut hiçbir şeyi değiştirmez ve aynı durum ile notu yazdırır.
+
+Adapty Refund Saver'ı açmayı reddederse komut 4 koduyla çıkar ve hiçbir şeyi değiştirmez. Nedeni görmek için `--json` çıktısındaki `error.code` değerini okuyun:
+
+| `error.code` | Ne yapmalı |
+|---|---|
+| `refund_saver_addon_inactive` | Bu hesap için Refund Saver eklentisi etkin değil. **Subscription & Billing** sekmesinden etkinleştirin, ardından komutu tekrar çalıştırın. |
+| `refund_saver_apple_credentials_invalid` | Bu hesabın Apple kimlik bilgileri çalışmıyor. **App settings** bölümünden düzeltin, ardından komutu tekrar çalıştırın. |
+| `refund_saver_addon_unavailable` | Bu hesap için Refund Saver etkinleştirilemiyor. Tekrar denemeyin; Adapty desteğiyle iletişime geçin. |
+
+## adapty refund-saver off
+
+Bir uygulama için Refund Saver'ı her iki mağazada da kapatır.
+
+```bash
+adapty refund-saver off --app <app-id>
+```
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+
+Refund Saver'ı kapatmak, Refund Saver eklentisini iptal etmez. İptal etmek için hesap ayarlarınızın **Subscription & Billing** sekmesini kullanın.
+
+## adapty refund-saver update
+
+Her mağazanın [geri ödeme tercihini](refund-saver#set-a-default-refund-preference) ve [varsayılan onay politikasını](refund-saver#set-the-default-consent-policy) değiştirin. Belirtmediğiniz ayar mevcut değerini korur. `--app` dışında en az bir bayrak geçirin. Bu komut Refund Saver'ı açıp kapatmaz; bunun için `adapty refund-saver on` ve `adapty refund-saver off` komutlarını kullanın.
+
+```bash
+adapty refund-saver update --app <app-id> --app-store-preference always_prorated
+```
+
+| Bayrak | Gerekli | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+| `--app-store-preference` | Hayır | App Store iade talepleri için iade tercihi: `no_preference`, `always_decline`, `always_refund`, `decline_first_grant_next` veya `always_prorated` |
+| `--play-store-preference` | Hayır | Google Play iade talepleri için iade tercihi: `no_preference`, `always_decline`, `always_refund` veya `decline_first_grant_next`. Google Play'de `always_prorated` seçeneği yoktur. |
+| `--needs-consent` / `--no-needs-consent` | Hayır | Refund Saver'ın App Store kullanıcısının verilerini yalnızca kullanıcı onay verdikten sonra gönderip göndermeyeceğini belirtir. `--needs-consent`, **Opt-in** onay politikasıdır: Adapty, uygulamanız [o kullanıcının onayını gönderene](refund-saver#update-a-users-consent) kadar Apple'a herhangi bir kullanıcı verisi göndermez. `--no-needs-consent` ise varsayılan olan **Opt-out** seçeneğidir. |
+
+Komut, her iki mağazanın tercihlerini yazdırır.
+
+## adapty refund-saver readiness \{#adapty-refund-saver-readiness\}
+
+Her mağazanın Refund Saver için gereken anahtarlara sahip olup olmadığını gösterir.
+
+```bash
+adapty refund-saver readiness --app <app-id>
+```
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama kimliği (UUID) |
+
+App Store'un **Bundle ID**'ye ve [Uygulama İçi Satın Alma anahtarına](generate-in-app-purchase-key) ihtiyacı vardır: Issuer ID, Key ID ve özel anahtar (`.p8` dosyası); bunlar **App settings** > **iOS SDK** kısmında yer alır. Google Play'in **Package name**'e ve **Service account key file**'a ihtiyacı vardır; bunlar **App settings** > **Android SDK** kısmındadır. `--json` ile `app_store` ve `play_store`, bu değerler ayarlandığında `true` olur. Komut, mağazanın bunları kabul edip etmediğini veya mağaza bildirimlerinin Adapty'ye ulaşıp ulaşmadığını doğrulamaz. `--json` olmadan, komut hazır olmayan her mağaza için eksik kurulum adımlarını listeler.
+
+## adapty refund-saver profile get \{#adapty-refund-saver-profile-get\}
+
+Bir profilin Refund Saver ayarlarını görüntüler: özel tercih ve onay bilgileri.
+
+```bash
+adapty refund-saver profile get --app <app-id> <profile-id>
+```
+
+| Argüman veya flag | Zorunlu | Açıklama |
+|---|---|---|
+| `<profile-id>` | Evet | Adapty profil ID'si (UUID); müşteri kullanıcı ID'si değil |
+| `--app` | Evet | Uygulama ID'si (UUID) |
+
+`--json` ile `custom_preference` ve `consent`, ayarlanmamışlarsa `null` döner. Uygulamada bulunmayan bir profil ID'si için komut 4 koduyla çıkar ve `error.code` değeri `profile_not_found` olur.
+
+## adapty refund-saver profile update \{#adapty-refund-saver-profile-update\}
+
+Bir profilin Refund Saver ayarlarını değiştirin. Geçirmediğiniz bir ayar mevcut değerini korur. `--app` dışında en az bir bayrak geçirin.
+
+```bash
+adapty refund-saver profile update --app <app-id> <profile-id> --custom-preference decline
+```
+
+| Argüman veya bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `<profile-id>` | Evet | Adapty profil kimliği (UUID), müşteri kullanıcı kimliği değil |
+| `--app` | Evet | Uygulama kimliği (UUID) |
+| `--custom-preference` | Hayır | Bu profil için her iki mağazadaki iade tercihi: `grant`, `decline`, `grant_prorated` veya `no_preference`. `grant` ve `decline`, mağazanın tercihini geçersiz kılar. `grant_prorated` App Store'da uygulanır; Google Play'de tercih belirtilmez. `no_preference`, profili mağazanın tercihine döndürür. |
+| `--consent` / `--no-consent` | Hayır | Kullanıcının Refund Saver'ın verilerini Apple'a göndermesine izin verip vermediği. Bu, kullanıcının profilindeki **Allow data sharing** ayarıdır. `--consent`, her iki onay politikası altında da gönderir; `--no-consent` hiçbir zaman göndermez. Bir kez ayarlandıktan sonra onay, ayarlanmamış duruma geri döndürülemez. Google Play için onay gerekmez. |
+
+Profil başına tercih ve onay değerleri, Adapty Kontrol Paneli'ndeki [belirli bir kullanıcı için iade tercihi](refund-saver#set-refund-behavior-for-a-specific-user-in-the-dashboard) ile uygulamanızın [Adapty SDK](refund-saver#manage-refund-saver-from-your-app-code) aracılığıyla gönderdiği değerlerle aynıdır. Son yazma işlemi geçerli olur; yani uygulamanızdan yapılan daha sonraki bir çağrı, burada belirlediğiniz değerin üzerine yazar.
+
+## adapty refund-saver requests \{#adapty-refund-saver-requests\}
+
+Belirli bir dönemde Refund Saver'ın işlediği iade taleplerini, en yeniden en eskiye doğru listeler.
+
+```bash
+adapty refund-saver requests --app <app-id> --date-from 2026-10-01 --date-to 2026-10-31 --store app_store
+```
+
+| Flag | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID (UUID) |
+| `--date-from` | Evet | Dönemin ilk günü, dahil (`YYYY-MM-DD`, UTC) |
+| `--date-to` | Evet | Dönemin son günü, dahil (`YYYY-MM-DD`, UTC) |
+| `--store` | Hayır | Yalnızca bu mağazanın istekleri: `app_store` veya `play_store` |
+| `--page` | Hayır | Sayfa numarası. Varsayılan: 1 |
+| `--page-size` | Hayır | Sayfa başına istek sayısı, en fazla 100. Varsayılan: 20 |
+
+Her istek, Refund Saver'ın işlediği UTC gününe göre sayılır. Ters sıralı bir aralık, hata değil boş liste döndürür. Son sayfanın ötesindeki bir sayfa boş döner.
+
+`--json` ile her istek; `status`, `store_transaction_id`, `store_product_id`, `profile_id`, `customer_user_id`, `country_name`, `amount_usd`, `refund_reason`, `received_at` ve `updated_at` alanlarını içerir. `status` değeri `consumption_request_handled` (yanıtlandı, henüz sonuçlanmadı), `refunded` veya `refund_declined` olabilir. Tutar bilinmiyorsa `amount_usd` değeri `0` olur. Çıktıda ayrıca sayım, sayfa ve toplam sayfa sayısını içeren `meta.pagination` alanı da bulunur.
+
+## adapty refund-saver metrics \{#adapty-refund-saver-metrics\}
+
+Belirli bir dönemde Refund Saver'ın kurtardıklarını gösterir.
+
+```bash
+adapty refund-saver metrics --app <app-id> --date-from 2026-10-01 --date-to 2026-10-31 --store play_store
+```
+
+| Flag | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+| `--date-from` | Evet | Dönemin ilk günü, dahil (`YYYY-MM-DD`, UTC) |
+| `--date-to` | Evet | Dönemin son günü, dahil (`YYYY-MM-DD`, UTC) |
+| `--store` | Hayır | Yalnızca bu mağazanın isteklerini gösterir: `app_store` veya `play_store` |
+
+`--json` ile çıktıda şu alanlar yer alır: `saved_amount_usd` ve `saved_count` (mağazanın reddettiği iadeler), `requested_amount_usd` ve `requested_count` (Refund Saver'ın yanıtladığı her istek) ve `win_rate` (mağazanın sonuçlandırdığı istekler içindeki reddedilme oranı). Tutarlar tam ABD doları cinsindendir. `win_rate`, bir ondalık basamaklı yüzde değerini metin olarak verir. Adapty, Google Play sonuçlarını gecikmeli aldığından yakın tarihli dönemler bu değerleri olduğundan düşük gösterebilir. Bunlar, [Refund Saver](refund-saver#track-savings-from-refund-requests) bölümündeki sayılardır.
+
+## Düzenleme hakları \{#edit-rights\}
+
+`on`, `off`, `update` ve `profile update` komutları, uygulamaya sahip olan şirkette düzenleme hakları gerektirir. Uygulamayı görüntüleyebilen ancak değiştiremeyecek bir hesap, `edit_rights_required` hatasını 3 çıkış koduyla alır ve hiçbir şey değişmez. Tekrar denemeden önce bir şirket sahibinden veya yöneticisinden düzenleme hakları vermesini isteyin. Başka bir şirkete ait bir uygulama ise `permission_denied` döndürür; bu da 3 çıkış koduyla gelir.
+
+## Çıkış kodları \{#exit-codes\}
+
+| Çıkış kodu | Anlamı |
+|---|---|
+| `0` | Başarılı |
+| `2` | İstek gönderilmeden önce geçersiz girdi: UUID formatında olmayan bir uygulama veya profil kimliği, `YYYY-MM-DD` formatında olmayan bir tarih, bilinmeyen bir tercih veya mağaza ya da ayar belirtilmemiş `update` veya `profile update` komutu |
+| `3` | Token yok, tokenın erişemediği bir uygulama veya düzenleme yetkisi yok |
+| `4` | API isteği reddetti. `--json` çıktısındaki `error.code` alanı nedeni belirtir. |
+| `5` | CLI, Adapty'ye ulaşamadı. Bağlantıyı kontrol edip tekrar deneyin. |
+
+Bu komutları bir yapay zeka aracına çalıştırtmak için bkz. [Refund Saver için Agent skill](refund-saver-skill).

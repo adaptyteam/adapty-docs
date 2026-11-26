@@ -1,0 +1,182 @@
+---
+title: "Refund Saver 命令"
+description: "Adapty CLI 命令，用于开启和关闭 Refund Saver、设置各商店及单个用户画像的退款偏好、验证各商店密钥，以及读取退款请求和节省金额。"
+metadataTitle: "Refund Saver CLI 命令 | Adapty 文档"
+---
+
+从终端管理某个应用的 [Refund Saver](refund-saver)：开启或关闭它、为每个应用商店设置退款偏好、为单个用户画像覆盖设置、验证各应用商店是否具备 Refund Saver 所需的密钥，以及查看 Refund Saver 的处理记录和节省金额。这些命令需要 CLI 0.31.0 或更高版本。
+
+如果你还没有配置 CLI，请参照[快速入门指南](developer-cli-quickstart)的第 1 步和第 2 步进行操作。如需查看当前版本，请运行 `adapty --version`。
+
+当您的账户未启用 Refund Saver 附加功能时，Adapty 会拒绝 `on` 命令。该附加功能需在账户设置的 [**Subscription & Billing**](account#subscription--billing) 标签页中管理，无法通过 CLI 操作。
+
+每条命令都需要传入 `--app`（即 `adapty apps list` 返回的应用 UUID），并可通过 `--json` 打印 API 返回结果。
+
+`on`、`off`、`update` 和 `profile update` 会立即生效。这些命令不需要确认，也不支持 `--yes` 参数。
+
+## adapty refund-saver get \{#adapty-refund-saver-get\}
+
+查看某个应用的 Refund Saver 是否已开启，以及各应用商店的退款偏好设置。
+
+```bash
+adapty refund-saver get --app <app-id>
+```
+
+| 参数 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+
+使用 `--json` 时，若 Refund Saver 在任一应用商店中已开启，则 `enabled` 为 `true`。`stores` 包含每个应用商店的退款偏好，以及 App Store 专属的 `refund_saver_needs_consent` 字段：`true` 表示采用 **Opt-in** 同意策略。
+
+## adapty refund-saver on \{#adapty-refund-saver-on\}
+
+为某个应用在两个应用商店中开启 Refund Saver。
+
+```bash
+adapty refund-saver on --app <app-id>
+```
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | App ID（UUID） |
+
+该命令会输出应用的当前状态，以及关于 Refund Saver 附加功能的说明（在 `--json` 模式下显示为 `billing_note`）。如果两个应用商店中的 Refund Saver 均已开启，该命令不会做任何更改，仍会输出相同的状态和说明。
+
+如果 Adapty 拒绝开启 Refund Saver，命令将以退出码 4 退出，且不做任何更改。如需查看原因，请读取 `--json` 输出中的 `error.code`：
+
+| `error.code` | 处理方式 |
+|---|---|
+| `refund_saver_addon_inactive` | 此账户的 Refund Saver 附加组件未激活。请在 **Subscription & Billing** 标签页中激活，然后重新运行命令。 |
+| `refund_saver_apple_credentials_invalid` | 此账户的 Apple 凭据无效。请在 **App settings** 中修复，然后重新运行命令。 |
+| `refund_saver_addon_unavailable` | 此账户无法开启 Refund Saver。请勿重试，联系 Adapty 支持团队。 |
+
+## adapty refund-saver off
+
+为应用关闭 Refund Saver，同时适用于两个应用商店。
+
+```bash
+adapty refund-saver off --app <app-id>
+```
+
+| 参数 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+
+关闭 Refund Saver 并不会取消 Refund Saver 附加功能。如需取消，请前往账户设置的 **Subscription & Billing** 标签页进行操作。
+
+## adapty refund-saver update \{#adapty-refund-saver-update\}
+
+更改[每个商店的退款偏好设置](refund-saver#set-a-default-refund-preference)和[默认同意策略](refund-saver#set-the-default-consent-policy)。未传入的设置将保留当前值。除 `--app` 外，至少需传入一个标志。此命令不会开启或关闭 Refund Saver；请使用 `adapty refund-saver on` 和 `adapty refund-saver off` 来执行相应操作。
+
+```bash
+adapty refund-saver update --app <app-id> --app-store-preference always_prorated
+```
+
+| 参数 | 必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+| `--app-store-preference` | 否 | App Store 退款请求的退款偏好：`no_preference`、`always_decline`、`always_refund`、`decline_first_grant_next` 或 `always_prorated` |
+| `--play-store-preference` | 否 | Google Play 退款请求的退款偏好：`no_preference`、`always_decline`、`always_refund` 或 `decline_first_grant_next`。Google Play 不支持 `always_prorated`。 |
+| `--needs-consent` / `--no-needs-consent` | 否 | 是否要求 Refund Saver 仅在 App Store 用户同意后才发送其数据。`--needs-consent` 为**选择加入**同意策略：在您的应用[发送该用户的同意](refund-saver#update-a-users-consent)之前，Adapty 不会向 Apple 发送任何用户数据。`--no-needs-consent` 为**选择退出**策略，即默认设置。 |
+
+该命令会打印两个应用商店的偏好设置。
+
+## adapty refund-saver readiness \{#adapty-refund-saver-readiness\}
+
+显示各应用商店是否已配置 Refund Saver 所需的密钥。
+
+```bash
+adapty refund-saver readiness --app <app-id>
+```
+
+| 标志 | 是否必填 | 说明 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+
+App Store 需要 **Bundle ID** 和 [In-App Purchase 密钥](generate-in-app-purchase-key)：包括其 Issuer ID、Key ID 和私钥（`.p8` 文件），在 **App settings** > **iOS SDK** 中配置。Google Play 需要 **Package name** 和 **Service account key file**，在 **App settings** > **Android SDK** 中配置。使用 `--json` 时，当这些值已设置，`app_store` 和 `play_store` 会显示为 `true`。该命令不会验证应用商店是否接受这些配置，也不会验证商店通知是否能到达 Adapty。不使用 `--json` 时，命令会列出每个尚未就绪的应用商店缺少的配置项。
+
+## adapty refund-saver profile get \{#adapty-refund-saver-profile-get\}
+
+查看单个用户画像的 Refund Saver 设置：自定义偏好及其授权状态。
+
+```bash
+adapty refund-saver profile get --app <app-id> <profile-id>
+```
+
+| 参数或标志 | 是否必填 | 说明 |
+|---|---|---|
+| `<profile-id>` | 是 | Adapty 用户画像 ID（UUID），非 customer user ID |
+| `--app` | 是 | 应用 ID（UUID） |
+
+使用 `--json` 时，若未设置相应值，`custom_preference` 和 `consent` 将为 `null`。若该用户画像 ID 不属于当前应用，命令将以退出码 4 退出，且 `error.code` 为 `profile_not_found`。
+
+## adapty refund-saver profile update
+
+更改单个用户画像的 Refund Saver 设置。未传入的设置将保留当前值。除 `--app` 外，至少需要传入一个标志。
+
+```bash
+adapty refund-saver profile update --app <app-id> <profile-id> --custom-preference decline
+```
+
+| 参数或标志 | 必填 | 描述 |
+|---|---|---|
+| `<profile-id>` | 是 | Adapty 用户画像 ID（UUID），非客户用户 ID |
+| `--app` | 是 | 应用 ID（UUID） |
+| `--custom-preference` | 否 | 该用户画像在两个应用商店的退款偏好设置：`grant`、`decline`、`grant_prorated` 或 `no_preference`。`grant` 和 `decline` 优先于应用商店的偏好设置。`grant_prorated` 仅适用于 App Store；Google Play 不设置偏好。`no_preference` 将用户画像恢复为应用商店的偏好设置。 |
+| `--consent` / `--no-consent` | 否 | 用户是否同意 Refund Saver 将其数据发送给 Apple。这对应用户画像中的 **Allow data sharing** 设置。`--consent` 表示在任一同意策略下均发送数据；`--no-consent` 表示从不发送。一旦设置，同意状态便无法恢复为未设置状态。Google Play 无需同意。 |
+
+每个用户画像的偏好和同意设置与 Adapty 看板中[特定用户的退款偏好](refund-saver#set-refund-behavior-for-a-specific-user-in-the-dashboard)以及应用通过 [Adapty SDK](refund-saver#manage-refund-saver-from-your-app-code) 发送的值保持一致。以最后写入为准，因此应用的后续调用会覆盖此处的设置。
+
+## adapty refund-saver requests \{#adapty-refund-saver-requests\}
+
+列出 Refund Saver 在指定时间段内处理的退款请求，按最新时间排序。
+
+```bash
+adapty refund-saver requests --app <app-id> --date-from 2026-10-01 --date-to 2026-10-31 --store app_store
+```
+
+| 参数 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+| `--date-from` | 是 | 时间段起始日期（含当天，格式 `YYYY-MM-DD`，UTC） |
+| `--date-to` | 是 | 时间段结束日期（含当天，格式 `YYYY-MM-DD`，UTC） |
+| `--store` | 否 | 仅返回指定应用商店的请求：`app_store` 或 `play_store` |
+| `--page` | 否 | 页码，默认值：1 |
+| `--page-size` | 否 | 每页请求数，最多 100，默认值：20 |
+
+每条请求按 Refund Saver 处理当天的 UTC 日期计算。若起止日期范围颠倒，返回空列表而非报错。超出最后一页的请求同样返回空列表。
+
+使用 `--json` 时，每条请求包含以下字段：`status`、`store_transaction_id`、`store_product_id`、`profile_id`、`customer_user_id`、`country_name`、`amount_usd`、`refund_reason`、`received_at` 和 `updated_at`。`status` 的值为 `consumption_request_handled`（已响应，尚未结算）、`refunded` 或 `refund_declined`。当金额未知时，`amount_usd` 为 `0`。输出还包含 `meta.pagination`，其中含有总数、当前页码和总页数。
+
+## adapty refund-saver metrics \{#adapty-refund-saver-metrics\}
+
+显示 Refund Saver 在某段时间内的节省情况。
+
+```bash
+adapty refund-saver metrics --app <app-id> --date-from 2026-10-01 --date-to 2026-10-31 --store play_store
+```
+
+| 参数 | 是否必填 | 说明 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+| `--date-from` | 是 | 时间段的起始日期（含当天），格式为 `YYYY-MM-DD`（UTC） |
+| `--date-to` | 是 | 时间段的结束日期（含当天），格式为 `YYYY-MM-DD`（UTC） |
+| `--store` | 否 | 仅显示指定商店的请求：`app_store` 或 `play_store` |
+
+使用 `--json` 时，输出包含以下字段：`saved_amount_usd` 和 `saved_count`（商店拒绝的退款）、`requested_amount_usd` 和 `requested_count`（Refund Saver 处理的所有请求），以及 `win_rate`（商店已处理请求中被拒绝的比例）。金额以整数美元表示。`win_rate` 以文本形式表示百分比，保留一位小数。由于 Adapty 接收 Google Play 结果存在延迟，近期数据可能偏低。这些数据与 [Refund Saver](refund-saver#track-savings-from-refund-requests) 部分中的数字一致。
+
+## 编辑权限 \{#edit-rights\}
+
+`on`、`off`、`update` 和 `profile update` 需要在拥有该应用的公司中具备编辑权限。如果账户只能查看应用而无法修改，则会返回 `edit_rights_required`，退出码为 3，且不会进行任何更改。请在重试前联系公司所有者或管理员授予编辑权限。若应用属于其他公司，则会返回 `permission_denied`，退出码同样为 3。
+
+## 退出码 \{#exit-codes\}
+
+| 退出码 | 含义 |
+|---|---|
+| `0` | 成功 |
+| `2` | 无效输入，在发出任何请求之前返回：应用或用户画像 ID 不是 UUID、日期格式不是 `YYYY-MM-DD`、未知的偏好设置或商店，或者 `update` / `profile update` 未指定任何设置 |
+| `3` | 无令牌、令牌无法访问该应用，或无编辑权限 |
+| `4` | API 拒绝了请求。`--json` 模式下 `error.code` 字段会说明原因。 |
+| `5` | CLI 无法连接到 Adapty。请检查网络连接后重试。 |
+
+如需让 AI 工具替您运行这些命令，请参阅 [Refund Saver 的 Agent 技能](refund-saver-skill)。

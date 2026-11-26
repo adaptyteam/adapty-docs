@@ -1614,7 +1614,7 @@ paths:
     get:
       summary: 列出虚拟货币余额
       description: |
-        返回某个用户画像中每种虚拟货币的当前余额。如果应用没有虚拟货币，`data` 为空数组。
+        返回某个用户画像中所有虚拟货币的当前余额。如果应用没有虚拟货币，则 `data` 为空数组。
       operationId: listVirtualCurrencyBalances
       tags:
         - Virtual Currency
@@ -1626,13 +1626,13 @@ paths:
           required: false
           schema:
             type: string
-          description: 您系统中客户的唯一 ID。`adapty-customer-user-id` 和 `adapty-profile-id` 二者必填其一。
+          description: 您系统中客户的唯一 ID。`adapty-customer-user-id` 或 `adapty-profile-id` 二者必填其一。
         - name: adapty-profile-id
           in: header
           required: false
           schema:
             type: string
-          description: 您系统中用户画像的唯一 ID。如果您正在处理匿名用户画像，这是最佳选择。`adapty-customer-user-id` 和 `adapty-profile-id` 二者必填其一。
+          description: 您系统中用户画像的唯一 ID。如果您正在处理匿名用户画像，这是最佳选择。`adapty-customer-user-id` 或 `adapty-profile-id` 二者必填其一。
       responses:
         '200':
           description: 余额返回成功
@@ -1648,16 +1648,33 @@ paths:
                     balance: 12450
                     held: 0
                     available: 12450
+                    expiry:
+                      non_expiring: 12450
+                      expiring: []
+                      expiring_later: 0
+                      expired: 0
                   - code: GEMS
                     name: Gems
                     balance: 3280
                     held: 0
                     available: 3280
+                    expiry:
+                      non_expiring: 280
+                      expiring:
+                        - amount: 3000
+                          expires_at: 2026-12-24T10:00:00.000000+0000
+                      expiring_later: 0
+                      expired: 0
                   - code: ENERGY
                     name: Energy
                     balance: 840
                     held: 0
                     available: 840
+                    expiry:
+                      non_expiring: 840
+                      expiring: []
+                      expiring_later: 0
+                      expired: 0
         '400':
           description: 请求无效。未发送 `adapty-profile-id` 或 `adapty-customer-user-id`（`error_code` 为 `validation_error`）。
           content:
@@ -1671,7 +1688,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: 用户画像未找到（`error_code` 为 `profile_does_not_exist`）。
+          description: 未找到用户画像（`error_code` 为 `profile_does_not_exist`）。
           content:
             application/json:
               schema:
@@ -3348,16 +3365,16 @@ components:
           type: integer
           format: int32
           minimum: 0
-          description: 总余额，包含当前持有的金额。
+          description: 总余额，包含当前处于冻结状态的金额。
         held:
           type: integer
           format: int32
           minimum: 0
-          description: 所有有效持有金额的总和（已预留金额）。当前始终为 0。
+          description: 所有有效冻结金额的总和（即已预留金额）。目前始终为 0。
         available:
           type: integer
           format: int32
-          description: 可用于消费的余额，计算方式为 `balance - held`。
+          description: 可用于消费的余额，计算方式为 `balance` 减去 `held`，再减去 Adapty 尚未移除的已过期积分。
       required:
         - code
         - name
@@ -3366,7 +3383,7 @@ components:
         - available
     VirtualCurrencyBalanceListResponse:
       type: object
-      description: 用户画像所有虚拟货币的当前余额。
+      description: 应用中每种虚拟货币的用户画像当前余额，包括余额为 0 的货币。
       properties:
         response_created_at:
           type: integer
@@ -3392,22 +3409,70 @@ components:
           type: integer
           format: int32
           minimum: 0
-          description: 总余额，包含当前被冻结的金额。
+          description: 总余额，包含当前持有中的金额。
         held:
           type: integer
           format: int32
           minimum: 0
-          description: 所有有效冻结金额的总和（已预留金额）。当前始终为 0。
+          description: 所有有效持有的总和（预留金额）。当前始终为 0。
         available:
           type: integer
           format: int32
-          description: 可用于消费的余额，计算方式为 `balance - held`。
+          minimum: 0
+          description: 可用于消费的余额，计算方式为 `balance` 减去 `held` 再减去 `expiry.expired`。
+        expiry:
+          $ref: '#/components/schemas/VirtualCurrencyBalanceExpiry'
       required:
         - code
         - name
         - balance
         - held
         - available
+        - expiry
+    VirtualCurrencyBalanceExpiry:
+      type: object
+      description: 余额按响应时刻的到期时间拆分。`non_expiring`、`expiring[].amount` 的总和、`expiring_later` 以及 `expired` 之和等于 `balance`。
+      properties:
+        non_expiring:
+          type: integer
+          format: int32
+          minimum: 0
+          description: 永不过期的积分。
+        expiring:
+          type: array
+          description: 即将到期的积分，按到期时间分组，最早到期的排在最前。最多列出 10 个到期时间。超出 10 个到期时间的积分汇总至 `expiring_later`。
+          items:
+            $ref: '#/components/schemas/VirtualCurrencyExpiringAmount'
+        expiring_later:
+          type: integer
+          format: int32
+          minimum: 0
+          description: 超出 `expiring` 中 10 个到期时间范围的即将到期积分。除非 `expiring` 已有 10 条记录，否则值为 0。
+        expired:
+          type: integer
+          format: int32
+          minimum: 0
+          description: 已超过到期时间但仍计入 `balance` 的积分。用户无法使用这些积分，Adapty 会在数分钟内将其从 `balance` 中移除，因此该值通常为 0。
+      required:
+        - non_expiring
+        - expiring
+        - expiring_later
+        - expired
+    VirtualCurrencyExpiringAmount:
+      type: object
+      properties:
+        amount:
+          type: integer
+          format: int32
+          minimum: 1
+          description: 在 `expires_at` 时到期的积分数量（除非用户在此之前将其消费）。
+        expires_at:
+          type: string
+          description: 这些积分到期的最晚时间，以 UTC 表示。在该时间段结束之前续订订阅，或发生退款，均可能导致积分提前被移除。
+          example: 2026-12-24T10:00:00.000000+0000
+      required:
+        - amount
+        - expires_at
     VirtualCurrencyTransactionsHistoryResponse:
       type: object
       description: 用户画像的虚拟货币交易记录分页列表。
