@@ -17,6 +17,7 @@ You need:
   The fixes ship in 4.3.0-beta.1, a pre-release that requires Unity 6.
 - **A flow with the Request permission action**: In the Flow & Paywall Builder, add the **Request permission** action to an element's **On Tap** or **On Screen Appear** trigger. In the action, select the permission in the **Permission** field, and add the actions to run after the user answers to its outcome sections, such as **Navigate Next** in **After response**. For the action settings, see [Request permission](onboarding-actions#request-permission).
 - **For notifications on iOS**: The [Mobile Notifications](https://docs.unity3d.com/Packages/com.unity.mobile.notifications@latest) package, which the handler in this guide uses to show the iOS dialog. In **Project Settings > Mobile Notifications > iOS**, turn off **Request Authorization on App Launch**, so that the dialog appears when the flow asks for it.
+- **For tracking on iOS**: The `com.unity.ads.ios-support` package, which the code in this guide uses to show the App Tracking Transparency alert.
 - **The declarations of the permissions that your handler requests**: A purpose string in `Info.plist` on iOS, and a permission in the Android manifest. See [Declare the permissions](#declare-the-permissions).
 - **For notifications on Android**: A target API level of 33 or higher in **Player Settings**. Only apps that target Android 13 or later choose when the notification permission dialog appears.
 
@@ -39,22 +40,15 @@ With **On Screen Appear**, the flow doesn't send the request again when the user
 **Request only the permissions that your app declares, and answer `respond(false, "unsupported")` for any other permission.** For most permissions, iOS terminates the app when the app requests a permission whose purpose string is missing from `Info.plist`. A flow author can add a request for any permission at any time, and the flow also reaches app versions released before the request was added.
 :::
 
-To answer permission requests, implement the `IAdaptyUISystemRequestsHandler` interface. In this example, the handler requests push notifications and camera access, and answers every other permission as unsupported without a dialog:
+To answer permission requests, implement the `IAdaptyUISystemRequestsHandler` interface. The handler below passes each permission to its own method, such as `RequestPush()` or `RequestCamera()`, and answers any other value as unsupported without a dialog:
 
-```csharp showLineNumbers title="Unity"
+```csharp showLineNumbers title="FlowSystemRequestsHandler.cs"
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using AdaptySDK;
 using UnityEngine;
-#if UNITY_ANDROID
-using UnityEngine.Android;
-#endif
-#if UNITY_IOS
-using Unity.Notifications.iOS;
-#endif
 
-public class FlowSystemRequestsHandler : MonoBehaviour, IAdaptyUISystemRequestsHandler
+public partial class FlowSystemRequestsHandler : MonoBehaviour, IAdaptyUISystemRequestsHandler
 {
     public void FlowViewDidAskPermission(
         AdaptyUIFlowView view,
@@ -62,26 +56,42 @@ public class FlowSystemRequestsHandler : MonoBehaviour, IAdaptyUISystemRequestsH
         IReadOnlyDictionary<string, string> customArgs,
         Action<bool, string> respond
     ) {
-        switch (permission) {
-#if UNITY_IOS
-            case "push":
-                StartCoroutine(RequestPushOnIOS(respond));
-                return;
-            case "camera":
-                StartCoroutine(RequestCameraOnIOS(respond));
-                return;
-#elif UNITY_ANDROID
-            case "push":
-                RequestPushOnAndroid(respond);
-                return;
-            case "camera":
-                RequestOnAndroid(Permission.Camera, respond);
-                return;
-#endif
-            default:
-                // A permission this app version doesn't request: answer without a dialog.
-                respond(false, "unsupported");
-                return;
+        try
+        {
+            switch (permission)
+            {
+                case "push": RequestPush(respond); return;
+                case "tracking": RequestTracking(respond); return;
+                case "location_when_use": RequestLocationWhenInUse(respond); return;
+                case "location_always": RequestLocationAlways(respond); return;
+                case "location_full_accuracy": RequestLocationFullAccuracy(respond); return;
+                case "camera": RequestCamera(respond); return;
+                case "microphone": RequestMicrophone(respond); return;
+                case "photos": RequestPhotos(respond); return;
+                case "media_library": RequestMediaLibrary(respond); return;
+                case "music": RequestMusic(respond); return;
+                case "speech": RequestSpeech(respond); return;
+                case "contacts": RequestContacts(respond); return;
+                case "calendar": RequestCalendar(respond); return;
+                case "reminders": RequestReminders(respond); return;
+                case "health": RequestHealth(respond); return;
+                case "motion": RequestMotion(respond); return;
+                case "bluetooth": RequestBluetooth(respond); return;
+                case "local_network": RequestLocalNetwork(respond); return;
+                case "homekit": RequestHomeKit(respond); return;
+                case "focus_status": RequestFocusStatus(respond); return;
+                case "siri": RequestSiri(respond); return;
+                default:
+                    // A permission this app version doesn't request: answer without a dialog.
+                    respond(false, "unsupported");
+                    return;
+            }
+        }
+        catch (Exception e)
+        {
+            // Without an answer, the flow stays on the screen.
+            Debug.LogException(e);
+            respond(false, null);
         }
     }
 
@@ -90,70 +100,10 @@ public class FlowSystemRequestsHandler : MonoBehaviour, IAdaptyUISystemRequestsH
         // Shows the native store review prompt, as the SDK does without a handler.
         AdaptyUI.RequestAppReview(null);
     }
-
-#if UNITY_IOS
-    private IEnumerator RequestPushOnIOS(Action<bool, string> respond)
-    {
-        var options = AuthorizationOption.Alert | AuthorizationOption.Badge | AuthorizationOption.Sound;
-
-        using (var request = new AuthorizationRequest(options, false))
-        {
-            while (!request.IsFinished) {
-                yield return null;
-            }
-            respond(request.Granted, request.Granted ? "granted" : "denied");
-        }
-    }
-
-    private IEnumerator RequestCameraOnIOS(Action<bool, string> respond)
-    {
-        yield return Application.RequestUserAuthorization(UserAuthorization.WebCam);
-        var granted = Application.HasUserAuthorization(UserAuthorization.WebCam);
-        respond(granted, granted ? "granted" : "denied");
-    }
-#endif
-
-#if UNITY_ANDROID
-    private void RequestPushOnAndroid(Action<bool, string> respond)
-    {
-        using (var version = new AndroidJavaClass("android.os.Build$VERSION"))
-        {
-            if (version.GetStatic<int>("SDK_INT") < 33) {
-                // Android 12 and earlier: no dialog; answer whether notifications are on.
-                using (var player = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
-                using (var activity = player.GetStatic<AndroidJavaObject>("currentActivity"))
-                using (var managerClass = new AndroidJavaClass("androidx.core.app.NotificationManagerCompat"))
-                using (var manager = managerClass.CallStatic<AndroidJavaObject>("from", activity))
-                {
-                    var enabled = manager.Call<bool>("areNotificationsEnabled");
-                    respond(enabled, enabled ? "granted" : "denied");
-                }
-                return;
-            }
-        }
-
-        RequestOnAndroid("android.permission.POST_NOTIFICATIONS", respond);
-    }
-
-    private void RequestOnAndroid(string androidPermission, Action<bool, string> respond)
-    {
-        if (Permission.HasUserAuthorizedPermission(androidPermission)) {
-            respond(true, "granted");
-            return;
-        }
-
-        var callbacks = new PermissionCallbacks();
-        callbacks.PermissionGranted += _ => respond(true, "granted");
-        callbacks.PermissionDenied += _ => respond(false, "denied");
-        // The user closed the dialog without choosing: the flow runs After response.
-#if UNITY_6000_0_OR_NEWER
-        callbacks.PermissionRequestDismissed += _ => respond(false, null);
-#endif
-        Permission.RequestUserPermission(androidPermission, callbacks);
-    }
-#endif
 }
 ```
+
+Copy the code only for the permissions that your app requests from [Code for each permission](#code-for-each-permission), and delete the other cases from the `switch`, so that the handler answers them `unsupported`. Your app then doesn't need the frameworks and purpose strings of those permissions. The class is `partial`, so the code of each permission is a separate file.
 
 `FlowViewDidAskPermission` receives:
 
@@ -164,48 +114,1756 @@ public class FlowSystemRequestsHandler : MonoBehaviour, IAdaptyUISystemRequestsH
 
 Call `respond` exactly once for each request. The Adapty SDK ignores a second call and prints a warning to the Unity console. `respond` is safe to call from any thread. On Android in 4.1.x, call it on Unity's main thread: an answer from another thread reaches the flow only after the flow closes.
 
-If `FlowViewDidAskPermission` throws before it calls `respond`, the Adapty SDK logs the exception and sends no answer, so the flow stays on the screen. Catch exceptions and call `respond(false, null)`.
+If `FlowViewDidAskPermission` throws before it calls `respond`, the Adapty SDK logs the exception and sends no answer, so the flow stays on the screen. Catch exceptions and call `respond(false, null)`, as the handler above does.
 
 A granted notification permission lets your app show notifications. To receive push notifications, register the device with your push provider, as your app does outside flows.
 
 `IAdaptyUISystemRequestsHandler` also requires `FlowViewDidRequestAppReview`. With a handler registered, the Adapty SDK doesn't request a store review on its own, so call `AdaptyUI.RequestAppReview(null)` in it to keep the native review prompt, as in the example.
 
+The code of each permission uses shared methods. Add them once:
+
+- **On Android**: `RequestAndroid()` requests runtime permissions with a small Java plugin. When the user doesn't allow access, it decides the status with the [rules for every permission](flow-permissions#rules-for-every-permission): it reads `shouldShowRequestPermissionRationale()` before and after the request, and keeps a flag in `SharedPreferences` for each permission that the app requested before.
+- **On iOS**: Unity has no API for most permissions, so a [native plugin](https://docs.unity.com/en-us/engine/current/manual/platform-specific/iphone/ios-developing/plugins-for-ios/ios-native-plugin-call) requests them. The plugin of each permission is an Objective-C or Swift file in `Assets/Plugins/iOS`, which Unity adds to the Xcode project. Its C# code calls the plugin with `[DllImport("__Internal")]`, and `RequestNative()` passes the status from the plugin's callback to the flow. The plugins use iOS 15 APIs: set **Target minimum iOS Version** in **Player Settings > iOS > Other Settings** to 15.0 or later.
+
+```csharp showLineNumbers title="FlowSystemRequestsHandler.Helpers.cs"
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+#if UNITY_ANDROID
+using UnityEngine.Android;
+#endif
+
+public partial class FlowSystemRequestsHandler
+{
+#if UNITY_IOS
+    // The callback of every native function in Assets/Plugins/iOS.
+    public delegate void NativePermissionCallback(int requestId, string status);
+
+    static readonly Dictionary<int, Action<bool, string>> nativeRequests = new Dictionary<int, Action<bool, string>>();
+    static int lastNativeRequestId;
+
+    // Calls a native request function and passes its status to the flow.
+    static void RequestNative(Action<int, NativePermissionCallback> nativeRequest, Action<bool, string> respond)
+    {
+        int requestId;
+        lock (nativeRequests)
+        {
+            requestId = ++lastNativeRequestId;
+            nativeRequests[requestId] = respond;
+        }
+        nativeRequest(requestId, OnNativeAnswer);
+    }
+
+    [AOT.MonoPInvokeCallback(typeof(NativePermissionCallback))]
+    static void OnNativeAnswer(int requestId, string status)
+    {
+        Action<bool, string> respond;
+        lock (nativeRequests)
+        {
+            if (!nativeRequests.TryGetValue(requestId, out respond)) return;
+            nativeRequests.Remove(requestId);
+        }
+        respond(status == "granted" || status == "limited" || status == "provisional", status);
+    }
+
+    // Runs a coroutine that answers a request, and answers without a status if it throws.
+    static IEnumerator AnswerOnException(IEnumerator routine, Action<bool, string> respond)
+    {
+        while (true)
+        {
+            object current;
+            try
+            {
+                if (!routine.MoveNext()) yield break;
+                current = routine.Current;
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                respond(false, null);
+                yield break;
+            }
+            yield return current;
+        }
+    }
+#endif
+
+#if UNITY_ANDROID
+    // The Java plugin in Assets/Plugins/Android/FlowPermissions.androidlib.
+    const string FlowPermissionsPlugin = "com.example.flowpermissions.FlowPermissions";
+
+    // Starts tracking the activity on screen, so that a request goes to the flow's activity.
+    [RuntimeInitializeOnLoadMethod]
+    static void StartFlowPermissionsPlugin()
+    {
+        if (Application.platform != RuntimePlatform.Android) return;
+        using (var plugin = new AndroidJavaClass(FlowPermissionsPlugin))
+        using (var activity = AndroidActivity())
+            plugin.CallStatic("start", activity);
+    }
+
+    static int AndroidSdkInt()
+    {
+        using (var version = new AndroidJavaClass("android.os.Build$VERSION"))
+            return version.GetStatic<int>("SDK_INT");
+    }
+
+    static AndroidJavaObject AndroidActivity()
+    {
+        using (var player = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+            return player.GetStatic<AndroidJavaObject>("currentActivity");
+    }
+
+    static int AndroidTargetSdk()
+    {
+        using (var activity = AndroidActivity())
+        using (var info = activity.Call<AndroidJavaObject>("getApplicationInfo"))
+            return info.Get<int>("targetSdkVersion");
+    }
+
+    static bool AndroidHasFeature(string feature)
+    {
+        using (var activity = AndroidActivity())
+        using (var packageManager = activity.Call<AndroidJavaObject>("getPackageManager"))
+            return packageManager.Call<bool>("hasSystemFeature", feature);
+    }
+
+    // Requests one permission: granted when the user allows it.
+    static void RequestAndroid(string permission, Action<bool, string> respond)
+    {
+        RequestAndroid(
+            new[] { permission },
+            () => Permission.HasUserAuthorizedPermission(permission) ? "granted" : null,
+            respond);
+    }
+
+    // Requests several permissions in one dialog. currentStatus returns "granted" or "limited"
+    // for access, "denied" for a refusal, or null for no access: then the rationale rules decide.
+    static void RequestAndroid(string[] permissions, Func<string> currentStatus, Action<bool, string> respond)
+    {
+        if (currentStatus() == "granted")
+        {
+            respond(true, "granted");
+            return;
+        }
+        var rationaleBefore = ShouldShowRationale(permissions);
+        var requestedBefore = MarkRequested(permissions);
+        var callback = new PermissionResultCallback(outcome =>
+        {
+            try
+            {
+                var status = currentStatus();
+                if (status == "granted" || status == "limited") respond(true, status);
+                else if (status != null) respond(false, status);
+                // No activity on screen could show the dialog.
+                else if (outcome == "failed") respond(false, null);
+                // A rationale before or after the request: the user declined the dialog.
+                else if (rationaleBefore || ShouldShowRationale(permissions)) respond(false, "denied");
+                // Android returned no result: the user closed the dialog without a choice.
+                else if (outcome == "dismissed") respond(false, null);
+                // No rationale before or after a repeated request: Android showed no dialog.
+                else if (requestedBefore) respond(false, "permanently_denied");
+                // No rationale before or after the first request: the user closed the dialog.
+                else respond(false, null);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                respond(false, null);
+            }
+        });
+        using (var plugin = new AndroidJavaClass(FlowPermissionsPlugin))
+            plugin.CallStatic("request", permissions, callback);
+    }
+
+    static bool ShouldShowRationale(string[] permissions)
+    {
+        using (var plugin = new AndroidJavaClass(FlowPermissionsPlugin))
+            return plugin.CallStatic<bool>("shouldShowRationale", new object[] { permissions });
+    }
+
+    // The plugin calls it on Unity's thread when a request ends.
+    class PermissionResultCallback : AndroidJavaProxy
+    {
+        readonly Action<string> onOutcome;
+
+        public PermissionResultCallback(Action<string> onOutcome)
+            : base(FlowPermissionsPlugin + "$Callback")
+        {
+            this.onOutcome = onOutcome;
+        }
+
+        [UnityEngine.Scripting.Preserve]
+        public void onResult(string outcome) => onOutcome(outcome);
+    }
+
+    // Returns whether the app requested any of the permissions before, and remembers this request.
+    static bool MarkRequested(string[] permissions)
+    {
+        using (var activity = AndroidActivity())
+        using (var preferences = activity.Call<AndroidJavaObject>("getSharedPreferences", "flow_permissions", 0))
+        using (var editor = preferences.Call<AndroidJavaObject>("edit"))
+        {
+            var requestedBefore = false;
+            foreach (var permission in permissions)
+            {
+                requestedBefore |= preferences.Call<bool>("getBoolean", permission, false);
+                editor.Call<AndroidJavaObject>("putBoolean", permission, true).Dispose();
+            }
+            editor.Call("apply");
+            return requestedBefore;
+        }
+    }
+#endif
+}
+```
+
+:::warning
+**On Android, request permissions with the Java plugin below, not with `Permission.RequestUserPermissions()`.** In Adapty Unity SDK 4.1.x, a flow on Android is a separate activity. `Permission.RequestUserPermissions()` requests from the Unity activity behind the flow, so the answer reaches your handler only after the flow closes, and the flow stays on the screen. The plugin requests from the activity on screen and returns the answer on Unity's thread.
+:::
+
+Create the folder `Assets/Plugins/Android/FlowPermissions.androidlib`, which Unity builds as an Android library. Put three files in it:
+
+- **`AndroidManifest.xml`**: An empty manifest, `<manifest xmlns:android="http://schemas.android.com/apk/res/android" />`.
+- **`project.properties`**: One line, `android.library=true`.
+- **`build.gradle`**:
+
+```groovy showLineNumbers title="Assets/Plugins/Android/FlowPermissions.androidlib/build.gradle"
+apply plugin: 'com.android.library'
+
+def unityLibraryAndroid = project(':unityLibrary').android
+
+dependencies {
+    implementation 'androidx.activity:activity:1.8.2'
+}
+
+android {
+    namespace "com.example.flowpermissions"
+
+    compileSdk unityLibraryAndroid.compileSdk
+    buildToolsVersion = unityLibraryAndroid.buildToolsVersion
+
+    defaultConfig {
+        minSdk unityLibraryAndroid.defaultConfig.minSdk
+        targetSdk unityLibraryAndroid.defaultConfig.targetSdk
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+```
+
+Then add the plugin class in `src/main/java/com/example/flowpermissions` of the same folder. If you change its package, change `FlowPermissionsPlugin` in the C# code too.
+
+```java showLineNumbers title="Assets/Plugins/Android/FlowPermissions.androidlib/src/main/java/com/example/flowpermissions/FlowPermissions.java"
+package com.example.flowpermissions;
+
+import android.app.Activity;
+import android.app.Application;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+
+import androidx.activity.ComponentActivity;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
+// Requests runtime permissions from the activity on screen. With a flow on screen,
+// that is the flow's activity, not the Unity activity behind it.
+public final class FlowPermissions {
+    public interface Callback {
+        // "answered", "dismissed" when the user closed the dialog without a choice,
+        // or "failed" when no activity on screen can request permissions.
+        void onResult(String outcome);
+    }
+
+    private static final AtomicInteger lastRequestId = new AtomicInteger();
+    private static volatile Activity resumedActivity;
+    private static boolean started;
+
+    // Call once, from Unity's thread, before a flow opens.
+    public static synchronized void start(Activity activity) {
+        if (started) return;
+        started = true;
+        resumedActivity = activity;
+        activity.getApplication().registerActivityLifecycleCallbacks(new Application.ActivityLifecycleCallbacks() {
+            @Override public void onActivityResumed(Activity a) { resumedActivity = a; }
+            @Override public void onActivityDestroyed(Activity a) { if (resumedActivity == a) resumedActivity = null; }
+            @Override public void onActivityCreated(Activity a, Bundle state) {}
+            @Override public void onActivityStarted(Activity a) {}
+            @Override public void onActivityPaused(Activity a) {}
+            @Override public void onActivityStopped(Activity a) {}
+            @Override public void onActivitySaveInstanceState(Activity a, Bundle state) {}
+        });
+    }
+
+    public static boolean shouldShowRationale(String[] permissions) {
+        Activity activity = resumedActivity;
+        if (activity == null) return false;
+        for (String permission : permissions) {
+            if (activity.shouldShowRequestPermissionRationale(permission)) return true;
+        }
+        return false;
+    }
+
+    // Calls back on the calling thread: Unity's thread, where respond reaches the flow at once.
+    public static void request(String[] permissions, Callback callback) {
+        Looper callerLooper = Looper.myLooper();
+        Handler caller = new Handler(callerLooper != null ? callerLooper : Looper.getMainLooper());
+        new Handler(Looper.getMainLooper()).post(() -> {
+            Activity activity = resumedActivity;
+            if (!(activity instanceof ComponentActivity)) {
+                caller.post(() -> callback.onResult("failed"));
+                return;
+            }
+            String key = "flow_permissions_" + lastRequestId.incrementAndGet();
+            AtomicReference<ActivityResultLauncher<String[]>> launcher = new AtomicReference<>();
+            launcher.set(((ComponentActivity) activity).getActivityResultRegistry().register(
+                key,
+                new ActivityResultContracts.RequestMultiplePermissions(),
+                (Map<String, Boolean> result) -> {
+                    launcher.get().unregister();
+                    // Android returns no results for a dialog closed without a choice.
+                    String outcome = result.isEmpty() ? "dismissed" : "answered";
+                    caller.post(() -> callback.onResult(outcome));
+                }));
+            launcher.get().launch(permissions);
+        });
+    }
+}
+```
+
+The Objective-C files of the plugins import this header:
+
+```objectivec showLineNumbers title="Assets/Plugins/iOS/FlowPermissions.h"
+#import <Foundation/Foundation.h>
+
+// The C# callback: the request ID and the status of the answer, or NULL for no status.
+typedef void (*FlowPermissionCallback)(int requestId, const char *status);
+
+// Answers on the main thread, where Unity runs C# scripts on iOS.
+static inline void FlowPermissionAnswer(FlowPermissionCallback callback, int requestId, const char *status) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        callback(requestId, status);
+    });
+}
+```
+
+If the Xcode build fails with undefined symbols of a system framework, such as `Photos`, select that framework in the Inspector of the plugin file, under **Framework dependencies**.
+
+## Code for each permission
+
+Each section has the C# file of one permission and, where iOS needs it, the native plugin file. A file answers `unsupported` on the OS that has no such permission.
+
+### Push notifications \{#push\}
+
+Declare `POST_NOTIFICATIONS` on Android. iOS needs no `Info.plist` key. See [System permissions](flow-permissions#push).
+
+```csharp showLineNumbers title="FlowSystemRequestsHandler.Push.cs"
+using System;
+using System.Collections;
+using UnityEngine;
+#if UNITY_IOS
+using Unity.Notifications.iOS;
+#endif
+
+public partial class FlowSystemRequestsHandler
+{
+    void RequestPush(Action<bool, string> respond)
+    {
+#if UNITY_IOS
+        StartCoroutine(AnswerOnException(RequestPushOnIOS(respond), respond));
+#elif UNITY_ANDROID
+        if (AndroidSdkInt() < 33)
+        {
+            // Android 12 and earlier show no dialog: answer whether notifications are on.
+            using (var activity = AndroidActivity())
+            using (var compat = new AndroidJavaClass("androidx.core.app.NotificationManagerCompat"))
+            using (var manager = compat.CallStatic<AndroidJavaObject>("from", activity))
+            {
+                var enabled = manager.Call<bool>("areNotificationsEnabled");
+                respond(enabled, enabled ? "granted" : "permanently_denied");
+            }
+            return;
+        }
+        RequestAndroid("android.permission.POST_NOTIFICATIONS", respond);
+#else
+        respond(false, "unsupported");
+#endif
+    }
+
+#if UNITY_IOS
+    IEnumerator RequestPushOnIOS(Action<bool, string> respond)
+    {
+        switch (iOSNotificationCenter.GetNotificationSettings().AuthorizationStatus)
+        {
+            case AuthorizationStatus.Authorized:
+            case AuthorizationStatus.Ephemeral:
+                respond(true, "granted");
+                yield break;
+            case AuthorizationStatus.Provisional:
+                respond(true, "provisional");
+                yield break;
+            case AuthorizationStatus.Denied:
+                // The user declined earlier: iOS shows no alert.
+                respond(false, "permanently_denied");
+                yield break;
+        }
+
+        var options = AuthorizationOption.Alert | AuthorizationOption.Badge | AuthorizationOption.Sound;
+        using (var request = new AuthorizationRequest(options, false))
+        {
+            while (!request.IsFinished)
+            {
+                yield return null;
+            }
+            if (!string.IsNullOrEmpty(request.Error)) respond(false, null);
+            else respond(request.Granted, request.Granted ? "granted" : "denied");
+        }
+    }
+#endif
+}
+```
+
+- On iOS, the code uses the [Mobile Notifications](https://docs.unity3d.com/Packages/com.unity.mobile.notifications@latest) package. Turn off **Request Authorization on App Launch** in **Project Settings > Mobile Notifications > iOS**. The package reads the notification settings when the app becomes active, and `GetNotificationSettings()` returns that copy. If the user changed the setting in Settings just before the request, the copy can be stale: an earlier refusal then arrives as `denied`.
+- On Android, the code requests `POST_NOTIFICATIONS` without Mobile Notifications. Its `PermissionRequest` waits for the answer in a coroutine and saves it with `PlayerPrefs`, which run only on Unity's main thread, and on Android Unity pauses its player loop while a flow is on screen.
+
+### App tracking (ATT) \{#tracking\}
+
+Declare `NSUserTrackingUsageDescription` on iOS. Android has no such permission. See [System permissions](flow-permissions#tracking).
+
+```csharp showLineNumbers title="FlowSystemRequestsHandler.Tracking.cs"
+using System;
+using System.Collections;
+using UnityEngine;
+#if UNITY_IOS
+using Unity.Advertisement.IosSupport;
+#endif
+
+public partial class FlowSystemRequestsHandler
+{
+    void RequestTracking(Action<bool, string> respond)
+    {
+#if UNITY_IOS
+        StartCoroutine(AnswerOnException(RequestTrackingOnIOS(respond), respond));
+#else
+        // Android has no tracking permission.
+        respond(false, "unsupported");
+#endif
+    }
+
+#if UNITY_IOS
+    IEnumerator RequestTrackingOnIOS(Action<bool, string> respond)
+    {
+        switch (ATTrackingStatusBinding.GetAuthorizationTrackingStatus())
+        {
+            case ATTrackingStatusBinding.AuthorizationTrackingStatus.AUTHORIZED:
+                respond(true, "granted");
+                yield break;
+            case ATTrackingStatusBinding.AuthorizationTrackingStatus.DENIED:
+                respond(false, "permanently_denied");
+                yield break;
+            case ATTrackingStatusBinding.AuthorizationTrackingStatus.RESTRICTED:
+                respond(false, "restricted");
+                yield break;
+        }
+
+        // iOS shows the alert only while the app is active.
+        yield return new WaitUntil(() => Application.isFocused);
+        try
+        {
+            ATTrackingStatusBinding.RequestAuthorizationTracking(status =>
+            {
+                switch ((ATTrackingStatusBinding.AuthorizationTrackingStatus)status)
+                {
+                    case ATTrackingStatusBinding.AuthorizationTrackingStatus.AUTHORIZED: respond(true, "granted"); break;
+                    case ATTrackingStatusBinding.AuthorizationTrackingStatus.DENIED: respond(false, "denied"); break;
+                    case ATTrackingStatusBinding.AuthorizationTrackingStatus.RESTRICTED: respond(false, "restricted"); break;
+                    // iOS closed the prompt without a decision.
+                    default: respond(false, null); break;
+                }
+            });
+        }
+        catch (InvalidOperationException)
+        {
+            // Another tracking request waits for an answer.
+            respond(false, null);
+        }
+    }
+#endif
+}
+```
+
+- The code uses the `com.unity.ads.ios-support` package. After the user answers, send the ATT status to Adapty: see [Deal with ATT](unity-deal-with-att).
+- In the EU, iOS lets the app ask again a year after the user's answer. For how to handle it, see [System permissions](flow-permissions#tracking).
+
+### Location while using the app \{#location_when_use\}
+
+Declare `NSLocationWhenInUseUsageDescription` on iOS, and `ACCESS_COARSE_LOCATION` and `ACCESS_FINE_LOCATION` on Android. See [System permissions](flow-permissions#location_when_use).
+
+```csharp showLineNumbers title="FlowSystemRequestsHandler.LocationWhenInUse.cs"
+using System;
+using System.Runtime.InteropServices;
+#if UNITY_ANDROID
+using UnityEngine.Android;
+#endif
+
+public partial class FlowSystemRequestsHandler
+{
+#if UNITY_IOS
+    [DllImport("__Internal")]
+    static extern void FlowPermissions_requestLocationWhenInUse(int requestId, NativePermissionCallback callback);
+#endif
+
+    void RequestLocationWhenInUse(Action<bool, string> respond)
+    {
+#if UNITY_IOS
+        RequestNative(FlowPermissions_requestLocationWhenInUse, respond);
+#elif UNITY_ANDROID
+        // Request both: some Android 12 releases ignore a request for precise location alone.
+        RequestAndroid(
+            new[] { Permission.FineLocation, Permission.CoarseLocation },
+            () => Permission.HasUserAuthorizedPermission(Permission.FineLocation)
+                || Permission.HasUserAuthorizedPermission(Permission.CoarseLocation) ? "granted" : null,
+            respond);
+#else
+        respond(false, "unsupported");
+#endif
+    }
+}
+```
+
+```objectivec showLineNumbers title="Assets/Plugins/iOS/FlowPermissionLocationWhenInUse.m"
+#import <CoreLocation/CoreLocation.h>
+#import "FlowPermissions.h"
+
+@interface FlowLocationWhenInUseRequest : NSObject <CLLocationManagerDelegate>
+@property (nonatomic) CLLocationManager *manager;
+@property (nonatomic) FlowPermissionCallback callback;
+@property (nonatomic) int requestId;
+@end
+
+static FlowLocationWhenInUseRequest *activeRequest; // keeps the manager alive until the answer
+
+@implementation FlowLocationWhenInUseRequest
+- (void)locationManagerDidChangeAuthorization:(CLLocationManager *)manager {
+    switch (manager.authorizationStatus) {
+        case kCLAuthorizationStatusNotDetermined: return; // iOS also calls this when it creates the manager
+        case kCLAuthorizationStatusAuthorizedWhenInUse:
+        case kCLAuthorizationStatusAuthorizedAlways: [self finish:"granted"]; return;
+        case kCLAuthorizationStatusRestricted: [self finish:"restricted"]; return;
+        case kCLAuthorizationStatusDenied: [self finish:"denied"]; return;
+    }
+}
+
+- (void)finish:(const char *)status {
+    if (activeRequest != self) return;
+    activeRequest = nil;
+    self.manager.delegate = nil;
+    FlowPermissionAnswer(self.callback, self.requestId, status);
+}
+@end
+
+void FlowPermissions_requestLocationWhenInUse(int requestId, FlowPermissionCallback callback) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        FlowLocationWhenInUseRequest *request = [FlowLocationWhenInUseRequest new];
+        request.manager = [CLLocationManager new];
+        switch (request.manager.authorizationStatus) {
+            case kCLAuthorizationStatusAuthorizedWhenInUse:
+            case kCLAuthorizationStatusAuthorizedAlways: FlowPermissionAnswer(callback, requestId, "granted"); return;
+            // Includes Location Services turned off: iOS shows no alert.
+            case kCLAuthorizationStatusDenied: FlowPermissionAnswer(callback, requestId, "permanently_denied"); return;
+            case kCLAuthorizationStatusRestricted: FlowPermissionAnswer(callback, requestId, "restricted"); return;
+            case kCLAuthorizationStatusNotDetermined: break;
+        }
+        request.callback = callback;
+        request.requestId = requestId;
+        request.manager.delegate = request;
+        activeRequest = request;
+        [request.manager requestWhenInUseAuthorization];
+        // Without NSLocationWhenInUseUsageDescription, iOS never calls the delegate.
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 50 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+            [request finish:NULL];
+        });
+    });
+}
+```
+
+### Location always \{#location_always\}
+
+Declare `NSLocationWhenInUseUsageDescription` and `NSLocationAlwaysAndWhenInUseUsageDescription` on iOS, and `ACCESS_BACKGROUND_LOCATION` with the foreground location permissions on Android. See [System permissions](flow-permissions#location_always).
+
+```csharp showLineNumbers title="FlowSystemRequestsHandler.LocationAlways.cs"
+using System;
+#if UNITY_ANDROID
+using UnityEngine.Android;
+#endif
+
+public partial class FlowSystemRequestsHandler
+{
+    void RequestLocationAlways(Action<bool, string> respond)
+    {
+#if UNITY_ANDROID
+        var foreground = new[] { Permission.FineLocation, Permission.CoarseLocation };
+        Func<string> foregroundStatus = () =>
+            Permission.HasUserAuthorizedPermission(Permission.FineLocation)
+            || Permission.HasUserAuthorizedPermission(Permission.CoarseLocation) ? "granted" : null;
+        if (AndroidSdkInt() < 29)
+        {
+            // Android 9 and earlier grant background location with foreground location.
+            RequestAndroid(foreground, foregroundStatus, respond);
+            return;
+        }
+        // Background location needs foreground location first, in a separate request.
+        RequestAndroid(foreground, foregroundStatus, (granted, status) =>
+        {
+            if (!granted)
+            {
+                respond(false, status);
+                return;
+            }
+            const string background = "android.permission.ACCESS_BACKGROUND_LOCATION";
+            // On Android 11 and later, the user allows it on a settings page.
+            RequestAndroid(
+                new[] { background },
+                () => Permission.HasUserAuthorizedPermission(background) ? "granted" : "denied",
+                respond);
+        });
+#else
+        // iOS needs a native plugin that handles the two alerts and the upgrade request.
+        respond(false, "unsupported");
+#endif
+    }
+}
+```
+
+- **Differs from System permissions**: On iOS, the code answers `unsupported`. The request needs a native plugin that waits for two alerts, or for an upgrade alert that can appear later: see [System permissions](flow-permissions#location_always) for when to answer.
+
+### Precise location \{#location_full_accuracy\}
+
+Declare `NSLocationWhenInUseUsageDescription` and `NSLocationTemporaryUsageDescriptionDictionary` on iOS, and `ACCESS_FINE_LOCATION` and `ACCESS_COARSE_LOCATION` on Android. See [System permissions](flow-permissions#location_full_accuracy).
+
+```csharp showLineNumbers title="FlowSystemRequestsHandler.LocationFullAccuracy.cs"
+using System;
+using System.Runtime.InteropServices;
+#if UNITY_ANDROID
+using UnityEngine.Android;
+#endif
+
+public partial class FlowSystemRequestsHandler
+{
+#if UNITY_IOS
+    [DllImport("__Internal")]
+    static extern void FlowPermissions_requestLocationFullAccuracy(int requestId, NativePermissionCallback callback);
+#endif
+
+    void RequestLocationFullAccuracy(Action<bool, string> respond)
+    {
+#if UNITY_IOS
+        RequestNative(FlowPermissions_requestLocationFullAccuracy, respond);
+#elif UNITY_ANDROID
+        RequestAndroid(
+            new[] { Permission.FineLocation, Permission.CoarseLocation },
+            () => Permission.HasUserAuthorizedPermission(Permission.FineLocation) ? "granted"
+                // The user kept approximate location.
+                : Permission.HasUserAuthorizedPermission(Permission.CoarseLocation) ? "denied"
+                : null,
+            respond);
+#else
+        respond(false, "unsupported");
+#endif
+    }
+}
+```
+
+```objectivec showLineNumbers title="Assets/Plugins/iOS/FlowPermissionLocationFullAccuracy.m"
+#import <CoreLocation/CoreLocation.h>
+#import "FlowPermissions.h"
+
+// A key of NSLocationTemporaryUsageDescriptionDictionary in Info.plist.
+static NSString *const FlowPreciseLocationPurposeKey = @"FlowPreciseLocation";
+
+@interface FlowLocationAccuracyRequest : NSObject <CLLocationManagerDelegate>
+@property (nonatomic) CLLocationManager *manager;
+@property (nonatomic) FlowPermissionCallback callback;
+@property (nonatomic) int requestId;
+@end
+
+static FlowLocationAccuracyRequest *activeRequest; // keeps the manager alive until the answer
+
+@implementation FlowLocationAccuracyRequest
+- (void)start {
+    switch (self.manager.authorizationStatus) {
+        case kCLAuthorizationStatusDenied: [self finish:"permanently_denied"]; return;
+        case kCLAuthorizationStatusRestricted: [self finish:"restricted"]; return;
+        case kCLAuthorizationStatusNotDetermined: break;
+        default: [self requestFullAccuracy]; return;
+    }
+    // Ask for location while using the app first: its alert has a Precise switch.
+    self.manager.delegate = self;
+    [self.manager requestWhenInUseAuthorization];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 50 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+        [self finish:NULL];
+    });
+}
+
+- (void)locationManagerDidChangeAuthorization:(CLLocationManager *)manager {
+    switch (manager.authorizationStatus) {
+        case kCLAuthorizationStatusNotDetermined: return; // iOS also calls this when it creates the manager
+        case kCLAuthorizationStatusDenied: [self finish:"denied"]; return;
+        case kCLAuthorizationStatusRestricted: [self finish:"restricted"]; return;
+        default: manager.delegate = nil; [self requestFullAccuracy]; return;
+    }
+}
+
+- (void)requestFullAccuracy {
+    if (self.manager.accuracyAuthorization == CLAccuracyAuthorizationFullAccuracy) {
+        [self finish:"granted"];
+        return;
+    }
+    [self.manager requestTemporaryFullAccuracyAuthorizationWithPurposeKey:FlowPreciseLocationPurposeKey
+                                                               completion:^(NSError *error) {
+        BOOL full = self.manager.accuracyAuthorization == CLAccuracyAuthorizationFullAccuracy;
+        [self finish:full ? "granted" : "denied"];
+    }];
+}
+
+- (void)finish:(const char *)status {
+    if (activeRequest != self) return;
+    activeRequest = nil;
+    self.manager.delegate = nil;
+    FlowPermissionAnswer(self.callback, self.requestId, status);
+}
+@end
+
+void FlowPermissions_requestLocationFullAccuracy(int requestId, FlowPermissionCallback callback) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        FlowLocationAccuracyRequest *request = [FlowLocationAccuracyRequest new];
+        request.manager = [CLLocationManager new];
+        request.callback = callback;
+        request.requestId = requestId;
+        activeRequest = request;
+        [request start];
+    });
+}
+```
+
+- Replace `FlowPreciseLocation` with a key of your `NSLocationTemporaryUsageDescriptionDictionary`.
+
+### Camera \{#camera\}
+
+Declare `NSCameraUsageDescription` on iOS in **Player Settings > iOS > Other Settings > Camera Usage Description**, and `CAMERA` on Android. See [System permissions](flow-permissions#camera).
+
+```csharp showLineNumbers title="FlowSystemRequestsHandler.Camera.cs"
+using System;
+using System.Collections;
+using UnityEngine;
+#if UNITY_ANDROID
+using UnityEngine.Android;
+#endif
+
+public partial class FlowSystemRequestsHandler
+{
+    void RequestCamera(Action<bool, string> respond)
+    {
+#if UNITY_IOS
+        StartCoroutine(AnswerOnException(RequestCameraOnIOS(respond), respond));
+#elif UNITY_ANDROID
+        if (!AndroidHasFeature("android.hardware.camera.any"))
+        {
+            respond(false, "unsupported");
+            return;
+        }
+        RequestAndroid(Permission.Camera, respond);
+#else
+        respond(false, "unsupported");
+#endif
+    }
+
+#if UNITY_IOS
+    IEnumerator RequestCameraOnIOS(Action<bool, string> respond)
+    {
+        if (Application.HasUserAuthorization(UserAuthorization.WebCam))
+        {
+            respond(true, "granted");
+            yield break;
+        }
+        yield return Application.RequestUserAuthorization(UserAuthorization.WebCam);
+        // Unity reports only yes or no: an earlier refusal and a restriction also arrive as "denied".
+        var granted = Application.HasUserAuthorization(UserAuthorization.WebCam);
+        respond(granted, granted ? "granted" : "denied");
+    }
+#endif
+}
+```
+
+- **Differs from System permissions**: On iOS, `Application.HasUserAuthorization()` reports only whether the user allowed access, so the code never answers `permanently_denied` or `restricted` there. To pass them, read `AVCaptureDevice.authorizationStatus(for:)` in a native plugin, as the other permissions on this page do.
+
+### Microphone \{#microphone\}
+
+Declare `NSMicrophoneUsageDescription` on iOS in **Player Settings > iOS > Other Settings > Microphone Usage Description**, and `RECORD_AUDIO` on Android. See [System permissions](flow-permissions#microphone).
+
+```csharp showLineNumbers title="FlowSystemRequestsHandler.Microphone.cs"
+using System;
+using System.Collections;
+using UnityEngine;
+#if UNITY_ANDROID
+using UnityEngine.Android;
+#endif
+
+public partial class FlowSystemRequestsHandler
+{
+    void RequestMicrophone(Action<bool, string> respond)
+    {
+#if UNITY_IOS
+        StartCoroutine(AnswerOnException(RequestMicrophoneOnIOS(respond), respond));
+#elif UNITY_ANDROID
+        RequestAndroid(Permission.Microphone, respond);
+#else
+        respond(false, "unsupported");
+#endif
+    }
+
+#if UNITY_IOS
+    IEnumerator RequestMicrophoneOnIOS(Action<bool, string> respond)
+    {
+        if (Application.HasUserAuthorization(UserAuthorization.Microphone))
+        {
+            respond(true, "granted");
+            yield break;
+        }
+        yield return Application.RequestUserAuthorization(UserAuthorization.Microphone);
+        // Unity reports only yes or no: an earlier refusal and a restriction also arrive as "denied".
+        var granted = Application.HasUserAuthorization(UserAuthorization.Microphone);
+        respond(granted, granted ? "granted" : "denied");
+    }
+#endif
+}
+```
+
+- **Differs from System permissions**: On iOS, `Application.HasUserAuthorization()` reports only whether the user allowed access, so the code never answers `permanently_denied` or `restricted` there.
+
+### Photos \{#photos\}
+
+Declare `NSPhotoLibraryUsageDescription` on iOS. On Android, declare `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_VISUAL_USER_SELECTED`, and `READ_EXTERNAL_STORAGE` with `android:maxSdkVersion="32"`. See [System permissions](flow-permissions#photos).
+
+```csharp showLineNumbers title="FlowSystemRequestsHandler.Photos.cs"
+using System;
+using System.Runtime.InteropServices;
+#if UNITY_ANDROID
+using UnityEngine.Android;
+#endif
+
+public partial class FlowSystemRequestsHandler
+{
+#if UNITY_IOS
+    [DllImport("__Internal")]
+    static extern void FlowPermissions_requestPhotos(int requestId, NativePermissionCallback callback);
+#endif
+
+    void RequestPhotos(Action<bool, string> respond)
+    {
+#if UNITY_IOS
+        RequestNative(FlowPermissions_requestPhotos, respond);
+#elif UNITY_ANDROID
+        if (AndroidSdkInt() < 33)
+        {
+            RequestAndroid(Permission.ExternalStorageRead, respond);
+            return;
+        }
+        const string images = "android.permission.READ_MEDIA_IMAGES";
+        const string video = "android.permission.READ_MEDIA_VIDEO";
+        const string selected = "android.permission.READ_MEDIA_VISUAL_USER_SELECTED";
+        RequestAndroid(
+            AndroidSdkInt() >= 34 ? new[] { images, video, selected } : new[] { images, video },
+            () => Permission.HasUserAuthorizedPermission(images)
+                || Permission.HasUserAuthorizedPermission(video) ? "granted"
+                // Android 14 and later: the user selected some photos and videos.
+                : Permission.HasUserAuthorizedPermission(selected) ? "limited"
+                : null,
+            respond);
+#else
+        respond(false, "unsupported");
+#endif
+    }
+}
+```
+
+```objectivec showLineNumbers title="Assets/Plugins/iOS/FlowPermissionPhotos.m"
+#import <Photos/Photos.h>
+#import "FlowPermissions.h"
+
+static const char *FlowPhotosStatus(PHAuthorizationStatus status, const char *denied) {
+    switch (status) {
+        case PHAuthorizationStatusAuthorized: return "granted";
+        case PHAuthorizationStatusLimited: return "limited";
+        case PHAuthorizationStatusRestricted: return "restricted";
+        case PHAuthorizationStatusDenied: return denied;
+        default: return NULL;
+    }
+}
+
+void FlowPermissions_requestPhotos(int requestId, FlowPermissionCallback callback) {
+    PHAuthorizationStatus before = [PHPhotoLibrary authorizationStatusForAccessLevel:PHAccessLevelReadWrite];
+    if (before != PHAuthorizationStatusNotDetermined) {
+        // Decided earlier: iOS shows no alert.
+        FlowPermissionAnswer(callback, requestId, FlowPhotosStatus(before, "permanently_denied"));
+        return;
+    }
+    [PHPhotoLibrary requestAuthorizationForAccessLevel:PHAccessLevelReadWrite handler:^(PHAuthorizationStatus status) {
+        FlowPermissionAnswer(callback, requestId, FlowPhotosStatus(status, "denied"));
+    }];
+}
+```
+
+### Media library \{#media_library\}
+
+Declare `NSAppleMusicUsageDescription` on iOS, and `READ_MEDIA_AUDIO` and `READ_EXTERNAL_STORAGE` with `android:maxSdkVersion="32"` on Android. See [System permissions](flow-permissions#media_library).
+
+```csharp showLineNumbers title="FlowSystemRequestsHandler.MediaLibrary.cs"
+using System;
+using System.Runtime.InteropServices;
+#if UNITY_ANDROID
+using UnityEngine.Android;
+#endif
+
+public partial class FlowSystemRequestsHandler
+{
+#if UNITY_IOS
+    [DllImport("__Internal")]
+    static extern void FlowPermissions_requestMediaLibrary(int requestId, NativePermissionCallback callback);
+#endif
+
+    void RequestMediaLibrary(Action<bool, string> respond)
+    {
+#if UNITY_IOS
+        RequestNative(FlowPermissions_requestMediaLibrary, respond);
+#elif UNITY_ANDROID
+        RequestAndroid(
+            AndroidSdkInt() >= 33 ? "android.permission.READ_MEDIA_AUDIO" : Permission.ExternalStorageRead,
+            respond);
+#else
+        respond(false, "unsupported");
+#endif
+    }
+}
+```
+
+```objectivec showLineNumbers title="Assets/Plugins/iOS/FlowPermissionMediaLibrary.m"
+#import <MediaPlayer/MediaPlayer.h>
+#import "FlowPermissions.h"
+
+static const char *FlowMediaLibraryStatus(MPMediaLibraryAuthorizationStatus status, const char *denied) {
+    switch (status) {
+        case MPMediaLibraryAuthorizationStatusAuthorized: return "granted";
+        case MPMediaLibraryAuthorizationStatusRestricted: return "restricted";
+        case MPMediaLibraryAuthorizationStatusDenied: return denied;
+        default: return NULL;
+    }
+}
+
+void FlowPermissions_requestMediaLibrary(int requestId, FlowPermissionCallback callback) {
+    MPMediaLibraryAuthorizationStatus before = [MPMediaLibrary authorizationStatus];
+    if (before != MPMediaLibraryAuthorizationStatusNotDetermined) {
+        FlowPermissionAnswer(callback, requestId, FlowMediaLibraryStatus(before, "permanently_denied"));
+        return;
+    }
+    [MPMediaLibrary requestAuthorization:^(MPMediaLibraryAuthorizationStatus status) {
+        FlowPermissionAnswer(callback, requestId, FlowMediaLibraryStatus(status, "denied"));
+    }];
+}
+```
+
+### Apple Music \{#music\}
+
+Declare `NSAppleMusicUsageDescription` on iOS. Android has no such permission. See [System permissions](flow-permissions#music).
+
+```csharp showLineNumbers title="FlowSystemRequestsHandler.Music.cs"
+using System;
+using System.Runtime.InteropServices;
+
+public partial class FlowSystemRequestsHandler
+{
+#if UNITY_IOS
+    [DllImport("__Internal")]
+    static extern void FlowPermissions_requestMusic(int requestId, NativePermissionCallback callback);
+#endif
+
+    void RequestMusic(Action<bool, string> respond)
+    {
+#if UNITY_IOS
+        RequestNative(FlowPermissions_requestMusic, respond);
+#else
+        // Android has no Apple Music permission.
+        respond(false, "unsupported");
+#endif
+    }
+}
+```
+
+```swift showLineNumbers title="Assets/Plugins/iOS/FlowPermissionMusic.swift"
+import Foundation
+import MusicKit
+
+@_cdecl("FlowPermissions_requestMusic")
+public func FlowPermissions_requestMusic(
+    _ requestId: Int32,
+    _ callback: @escaping @convention(c) (Int32, UnsafePointer<CChar>?) -> Void
+) {
+    // Answers on the main thread, where Unity runs C# scripts on iOS.
+    func answer(_ status: MusicAuthorization.Status, denied: String) {
+        let detail: String?
+        switch status {
+        case .authorized: detail = "granted"
+        case .restricted: detail = "restricted"
+        case .denied: detail = denied
+        default: detail = nil
+        }
+        DispatchQueue.main.async {
+            guard let detail else { return callback(requestId, nil) }
+            detail.withCString { callback(requestId, $0) }
+        }
+    }
+
+    let before = MusicAuthorization.currentStatus
+    guard before == .notDetermined else {
+        return answer(before, denied: "permanently_denied")
+    }
+    Task {
+        answer(await MusicAuthorization.request(), denied: "denied")
+    }
+}
+```
+
+- MusicKit has a Swift API only, so this plugin is a Swift file. `@_cdecl` gives its function the C name that `[DllImport]` calls.
+
+### Speech recognition \{#speech\}
+
+Declare `NSSpeechRecognitionUsageDescription` on iOS, and `RECORD_AUDIO` with a `<queries>` element for the speech recognition service on Android. See [System permissions](flow-permissions#speech).
+
+```csharp showLineNumbers title="FlowSystemRequestsHandler.Speech.cs"
+using System;
+using System.Runtime.InteropServices;
+using UnityEngine;
+#if UNITY_ANDROID
+using UnityEngine.Android;
+#endif
+
+public partial class FlowSystemRequestsHandler
+{
+#if UNITY_IOS
+    [DllImport("__Internal")]
+    static extern void FlowPermissions_requestSpeech(int requestId, NativePermissionCallback callback);
+#endif
+
+    void RequestSpeech(Action<bool, string> respond)
+    {
+#if UNITY_IOS
+        RequestNative(FlowPermissions_requestSpeech, respond);
+#elif UNITY_ANDROID
+        using (var activity = AndroidActivity())
+        using (var recognizer = new AndroidJavaClass("android.speech.SpeechRecognizer"))
+        {
+            if (!recognizer.CallStatic<bool>("isRecognitionAvailable", activity))
+            {
+                respond(false, "unsupported");
+                return;
+            }
+        }
+        // The same permission as Microphone.
+        RequestAndroid(Permission.Microphone, respond);
+#else
+        respond(false, "unsupported");
+#endif
+    }
+}
+```
+
+```objectivec showLineNumbers title="Assets/Plugins/iOS/FlowPermissionSpeech.m"
+#import <Speech/Speech.h>
+#import "FlowPermissions.h"
+
+static const char *FlowSpeechStatus(SFSpeechRecognizerAuthorizationStatus status, const char *denied) {
+    switch (status) {
+        case SFSpeechRecognizerAuthorizationStatusAuthorized: return "granted";
+        case SFSpeechRecognizerAuthorizationStatusRestricted: return "restricted";
+        case SFSpeechRecognizerAuthorizationStatusDenied: return denied;
+        default: return NULL;
+    }
+}
+
+void FlowPermissions_requestSpeech(int requestId, FlowPermissionCallback callback) {
+    SFSpeechRecognizerAuthorizationStatus before = [SFSpeechRecognizer authorizationStatus];
+    if (before != SFSpeechRecognizerAuthorizationStatusNotDetermined) {
+        FlowPermissionAnswer(callback, requestId, FlowSpeechStatus(before, "permanently_denied"));
+        return;
+    }
+    [SFSpeechRecognizer requestAuthorization:^(SFSpeechRecognizerAuthorizationStatus status) {
+        FlowPermissionAnswer(callback, requestId, FlowSpeechStatus(status, "denied"));
+    }];
+}
+```
+
+### Contacts \{#contacts\}
+
+Declare `NSContactsUsageDescription` on iOS, and `READ_CONTACTS` on Android. See [System permissions](flow-permissions#contacts).
+
+```csharp showLineNumbers title="FlowSystemRequestsHandler.Contacts.cs"
+using System;
+using System.Runtime.InteropServices;
+
+public partial class FlowSystemRequestsHandler
+{
+#if UNITY_IOS
+    [DllImport("__Internal")]
+    static extern void FlowPermissions_requestContacts(int requestId, NativePermissionCallback callback);
+#endif
+
+    void RequestContacts(Action<bool, string> respond)
+    {
+#if UNITY_IOS
+        RequestNative(FlowPermissions_requestContacts, respond);
+#elif UNITY_ANDROID
+        RequestAndroid("android.permission.READ_CONTACTS", respond);
+#else
+        respond(false, "unsupported");
+#endif
+    }
+}
+```
+
+```objectivec showLineNumbers title="Assets/Plugins/iOS/FlowPermissionContacts.m"
+#import <Contacts/Contacts.h>
+#import "FlowPermissions.h"
+
+static const char *FlowContactsStatus(CNAuthorizationStatus status, const char *denied) {
+    if (@available(iOS 18.0, *)) {
+        if (status == CNAuthorizationStatusLimited) return "limited";
+    }
+    switch (status) {
+        case CNAuthorizationStatusAuthorized: return "granted";
+        case CNAuthorizationStatusRestricted: return "restricted";
+        case CNAuthorizationStatusDenied: return denied;
+        default: return NULL;
+    }
+}
+
+void FlowPermissions_requestContacts(int requestId, FlowPermissionCallback callback) {
+    CNAuthorizationStatus before = [CNContactStore authorizationStatusForEntityType:CNEntityTypeContacts];
+    if (before != CNAuthorizationStatusNotDetermined) {
+        FlowPermissionAnswer(callback, requestId, FlowContactsStatus(before, "permanently_denied"));
+        return;
+    }
+    CNContactStore *store = [CNContactStore new];
+    [store requestAccessForEntityType:CNEntityTypeContacts completionHandler:^(BOOL granted, NSError *error) {
+        // The request tells only yes or no: read the status, also after an error.
+        CNAuthorizationStatus status = [CNContactStore authorizationStatusForEntityType:CNEntityTypeContacts];
+        FlowPermissionAnswer(callback, requestId, FlowContactsStatus(status, "denied"));
+    }];
+}
+```
+
+### Calendar \{#calendar\}
+
+Declare `NSCalendarsFullAccessUsageDescription` and `NSCalendarsUsageDescription` on iOS, and `READ_CALENDAR` and `WRITE_CALENDAR` on Android. See [System permissions](flow-permissions#calendar).
+
+```csharp showLineNumbers title="FlowSystemRequestsHandler.Calendar.cs"
+using System;
+using System.Runtime.InteropServices;
+#if UNITY_ANDROID
+using UnityEngine.Android;
+#endif
+
+public partial class FlowSystemRequestsHandler
+{
+#if UNITY_IOS
+    [DllImport("__Internal")]
+    static extern void FlowPermissions_requestCalendar(int requestId, NativePermissionCallback callback);
+#endif
+
+    void RequestCalendar(Action<bool, string> respond)
+    {
+#if UNITY_IOS
+        RequestNative(FlowPermissions_requestCalendar, respond);
+#elif UNITY_ANDROID
+        const string read = "android.permission.READ_CALENDAR";
+        const string write = "android.permission.WRITE_CALENDAR";
+        RequestAndroid(
+            new[] { read, write },
+            () => Permission.HasUserAuthorizedPermission(read)
+                && Permission.HasUserAuthorizedPermission(write) ? "granted" : null,
+            respond);
+#else
+        respond(false, "unsupported");
+#endif
+    }
+}
+```
+
+```objectivec showLineNumbers title="Assets/Plugins/iOS/FlowPermissionCalendar.m"
+#import <EventKit/EventKit.h>
+#import "FlowPermissions.h"
+
+static const char *FlowCalendarStatus(EKAuthorizationStatus status, const char *denied) {
+    if (@available(iOS 17.0, *)) {
+        if (status == EKAuthorizationStatusFullAccess) return "granted";
+        // The app requested full access, and the user allowed only adding events.
+        if (status == EKAuthorizationStatusWriteOnly) return "limited";
+    }
+    switch (status) {
+        case EKAuthorizationStatusRestricted: return "restricted";
+        case EKAuthorizationStatusDenied: return denied;
+        case EKAuthorizationStatusNotDetermined: return NULL;
+        default: return "granted"; // EKAuthorizationStatusAuthorized on iOS 16 and earlier
+    }
+}
+
+void FlowPermissions_requestCalendar(int requestId, FlowPermissionCallback callback) {
+    EKAuthorizationStatus before = [EKEventStore authorizationStatusForEntityType:EKEntityTypeEvent];
+    if (before != EKAuthorizationStatusNotDetermined) {
+        FlowPermissionAnswer(callback, requestId, FlowCalendarStatus(before, "permanently_denied"));
+        return;
+    }
+    static EKEventStore *store;
+    store = [EKEventStore new];
+    void (^completion)(BOOL, NSError *) = ^(BOOL granted, NSError *error) {
+        EKAuthorizationStatus status = [EKEventStore authorizationStatusForEntityType:EKEntityTypeEvent];
+        FlowPermissionAnswer(callback, requestId, error != nil ? NULL : FlowCalendarStatus(status, "denied"));
+    };
+    if (@available(iOS 17.0, *)) {
+        [store requestFullAccessToEventsWithCompletion:completion];
+    } else {
+        [store requestAccessToEntityType:EKEntityTypeEvent completion:completion];
+    }
+}
+```
+
+- The code requests full access on iOS. To only add events, request `requestWriteOnlyAccessToEventsWithCompletion:` and answer `granted` for `EKAuthorizationStatusWriteOnly`.
+
+### Reminders \{#reminders\}
+
+Declare `NSRemindersFullAccessUsageDescription` and `NSRemindersUsageDescription` on iOS. Android has no such permission. See [System permissions](flow-permissions#reminders).
+
+```csharp showLineNumbers title="FlowSystemRequestsHandler.Reminders.cs"
+using System;
+using System.Runtime.InteropServices;
+
+public partial class FlowSystemRequestsHandler
+{
+#if UNITY_IOS
+    [DllImport("__Internal")]
+    static extern void FlowPermissions_requestReminders(int requestId, NativePermissionCallback callback);
+#endif
+
+    void RequestReminders(Action<bool, string> respond)
+    {
+#if UNITY_IOS
+        RequestNative(FlowPermissions_requestReminders, respond);
+#else
+        // Android has no system reminders store.
+        respond(false, "unsupported");
+#endif
+    }
+}
+```
+
+```objectivec showLineNumbers title="Assets/Plugins/iOS/FlowPermissionReminders.m"
+#import <EventKit/EventKit.h>
+#import "FlowPermissions.h"
+
+static const char *FlowRemindersStatus(EKAuthorizationStatus status, const char *denied) {
+    switch (status) {
+        case EKAuthorizationStatusRestricted: return "restricted";
+        case EKAuthorizationStatusDenied: return denied;
+        case EKAuthorizationStatusNotDetermined: return NULL;
+        default: return "granted"; // full access, or EKAuthorizationStatusAuthorized on iOS 16 and earlier
+    }
+}
+
+void FlowPermissions_requestReminders(int requestId, FlowPermissionCallback callback) {
+    EKAuthorizationStatus before = [EKEventStore authorizationStatusForEntityType:EKEntityTypeReminder];
+    if (before != EKAuthorizationStatusNotDetermined) {
+        FlowPermissionAnswer(callback, requestId, FlowRemindersStatus(before, "permanently_denied"));
+        return;
+    }
+    static EKEventStore *store;
+    store = [EKEventStore new];
+    void (^completion)(BOOL, NSError *) = ^(BOOL granted, NSError *error) {
+        EKAuthorizationStatus status = [EKEventStore authorizationStatusForEntityType:EKEntityTypeReminder];
+        FlowPermissionAnswer(callback, requestId, error != nil ? NULL : FlowRemindersStatus(status, "denied"));
+    };
+    if (@available(iOS 17.0, *)) {
+        [store requestFullAccessToRemindersWithCompletion:completion];
+    } else {
+        [store requestAccessToEntityType:EKEntityTypeReminder completion:completion];
+    }
+}
+```
+
+### Health data \{#health\}
+
+Health data needs the HealthKit capability and its purpose strings on iOS, and Health Connect on Android. See [System permissions](flow-permissions#health).
+
+```csharp showLineNumbers title="FlowSystemRequestsHandler.Health.cs"
+using System;
+
+public partial class FlowSystemRequestsHandler
+{
+    void RequestHealth(Action<bool, string> respond)
+    {
+        // Unity has no HealthKit or Health Connect API: a native plugin on each OS
+        // requests the app's own data types.
+        respond(false, "unsupported");
+    }
+}
+```
+
+- **Differs from System permissions**: The code answers `unsupported` on both OSes. The request depends on the data types that your app reads and writes, and iOS doesn't tell whether the user allowed reading. A native plugin on each OS answers with the rules in [System permissions](flow-permissions#health).
+
+### Motion & Fitness \{#motion\}
+
+Declare `NSMotionUsageDescription` on iOS, and `ACTIVITY_RECOGNITION` on Android. See [System permissions](flow-permissions#motion).
+
+```csharp showLineNumbers title="FlowSystemRequestsHandler.Motion.cs"
+using System;
+using System.Runtime.InteropServices;
+
+public partial class FlowSystemRequestsHandler
+{
+#if UNITY_IOS
+    [DllImport("__Internal")]
+    static extern void FlowPermissions_requestMotion(int requestId, NativePermissionCallback callback);
+#endif
+
+    void RequestMotion(Action<bool, string> respond)
+    {
+#if UNITY_IOS
+        RequestNative(FlowPermissions_requestMotion, respond);
+#elif UNITY_ANDROID
+        if (AndroidSdkInt() < 29)
+        {
+            // Android 9 and earlier have no runtime permission for physical activity.
+            respond(true, "granted");
+            return;
+        }
+        RequestAndroid("android.permission.ACTIVITY_RECOGNITION", respond);
+#else
+        respond(false, "unsupported");
+#endif
+    }
+}
+```
+
+```objectivec showLineNumbers title="Assets/Plugins/iOS/FlowPermissionMotion.m"
+#import <CoreMotion/CoreMotion.h>
+#import "FlowPermissions.h"
+
+static CMMotionActivityManager *motionManager; // keeps the query alive until the answer
+
+static const char *FlowMotionStatus(CMAuthorizationStatus status, const char *denied) {
+    switch (status) {
+        case CMAuthorizationStatusAuthorized: return "granted";
+        case CMAuthorizationStatusRestricted: return "restricted";
+        case CMAuthorizationStatusDenied: return denied;
+        default: return NULL; // still not determined when the timeout ends
+    }
+}
+
+void FlowPermissions_requestMotion(int requestId, FlowPermissionCallback callback) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (![CMMotionActivityManager isActivityAvailable]) {
+            FlowPermissionAnswer(callback, requestId, "unsupported");
+            return;
+        }
+        CMAuthorizationStatus before = [CMMotionActivityManager authorizationStatus];
+        if (before != CMAuthorizationStatusNotDetermined) {
+            FlowPermissionAnswer(callback, requestId, FlowMotionStatus(before, "permanently_denied"));
+            return;
+        }
+        // iOS has no request method: the first query shows the alert and calls back after the answer.
+        __block BOOL answered = NO;
+        void (^finish)(void) = ^{
+            if (answered) return;
+            answered = YES;
+            FlowPermissionAnswer(callback, requestId, FlowMotionStatus([CMMotionActivityManager authorizationStatus], "denied"));
+        };
+        motionManager = [CMMotionActivityManager new];
+        NSDate *now = [NSDate date];
+        [motionManager queryActivityStartingFromDate:[now dateByAddingTimeInterval:-60] toDate:now
+                                             toQueue:NSOperationQueue.mainQueue
+                                   withHandler:^(NSArray<CMMotionActivity *> *activities, NSError *error) { finish(); }];
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 50 * NSEC_PER_SEC), dispatch_get_main_queue(), finish);
+    });
+}
+```
+
+### Bluetooth \{#bluetooth\}
+
+Declare `NSBluetoothAlwaysUsageDescription` on iOS. On Android, declare `BLUETOOTH_SCAN` and `BLUETOOTH_CONNECT`, and the permissions for Android 11 and earlier. See [System permissions](flow-permissions#bluetooth).
+
+```csharp showLineNumbers title="FlowSystemRequestsHandler.Bluetooth.cs"
+using System;
+using System.Runtime.InteropServices;
+#if UNITY_ANDROID
+using UnityEngine.Android;
+#endif
+
+public partial class FlowSystemRequestsHandler
+{
+#if UNITY_IOS
+    [DllImport("__Internal")]
+    static extern void FlowPermissions_requestBluetooth(int requestId, NativePermissionCallback callback);
+#endif
+
+    void RequestBluetooth(Action<bool, string> respond)
+    {
+#if UNITY_IOS
+        RequestNative(FlowPermissions_requestBluetooth, respond);
+#elif UNITY_ANDROID
+        if (!AndroidHasFeature("android.hardware.bluetooth"))
+        {
+            respond(false, "unsupported");
+            return;
+        }
+        if (AndroidSdkInt() < 31 || AndroidTargetSdk() < 31)
+        {
+            // Bluetooth scans need precise location here: answer from it.
+            RequestAndroid(
+                new[] { Permission.FineLocation, Permission.CoarseLocation },
+                () => Permission.HasUserAuthorizedPermission(Permission.FineLocation) ? "granted"
+                    : Permission.HasUserAuthorizedPermission(Permission.CoarseLocation) ? "denied"
+                    : null,
+                respond);
+            return;
+        }
+        const string scan = "android.permission.BLUETOOTH_SCAN";
+        const string connect = "android.permission.BLUETOOTH_CONNECT";
+        RequestAndroid(
+            new[] { scan, connect },
+            () => Permission.HasUserAuthorizedPermission(scan)
+                && Permission.HasUserAuthorizedPermission(connect) ? "granted" : null,
+            respond);
+#else
+        respond(false, "unsupported");
+#endif
+    }
+}
+```
+
+```objectivec showLineNumbers title="Assets/Plugins/iOS/FlowPermissionBluetooth.m"
+#import <CoreBluetooth/CoreBluetooth.h>
+#import "FlowPermissions.h"
+
+@interface FlowBluetoothRequest : NSObject <CBCentralManagerDelegate>
+@property (nonatomic) CBCentralManager *manager;
+@property (nonatomic) FlowPermissionCallback callback;
+@property (nonatomic) int requestId;
+@end
+
+static FlowBluetoothRequest *activeRequest; // keeps the manager alive until the answer
+
+static const char *FlowBluetoothStatus(CBManagerAuthorization status, const char *denied) {
+    switch (status) {
+        case CBManagerAuthorizationAllowedAlways: return "granted";
+        case CBManagerAuthorizationRestricted: return "restricted";
+        case CBManagerAuthorizationDenied: return denied;
+        default: return NULL; // still not determined when the timeout ends
+    }
+}
+
+@implementation FlowBluetoothRequest
+- (void)centralManagerDidUpdateState:(CBCentralManager *)central {
+    // A Bluetooth adapter that is turned off isn't a refusal: answer from the permission only.
+    if (CBManager.authorization == CBManagerAuthorizationNotDetermined) return;
+    [self finish];
+}
+
+- (void)finish {
+    if (activeRequest != self) return;
+    activeRequest = nil;
+    self.manager.delegate = nil;
+    FlowPermissionAnswer(self.callback, self.requestId, FlowBluetoothStatus(CBManager.authorization, "denied"));
+}
+@end
+
+void FlowPermissions_requestBluetooth(int requestId, FlowPermissionCallback callback) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        CBManagerAuthorization before = CBManager.authorization;
+        if (before != CBManagerAuthorizationNotDetermined) {
+            FlowPermissionAnswer(callback, requestId, FlowBluetoothStatus(before, "permanently_denied"));
+            return;
+        }
+        FlowBluetoothRequest *request = [FlowBluetoothRequest new];
+        request.callback = callback;
+        request.requestId = requestId;
+        activeRequest = request;
+        // iOS has no request method: creating the manager shows the alert.
+        request.manager = [[CBCentralManager alloc] initWithDelegate:request queue:dispatch_get_main_queue()
+                                                             options:@{CBCentralManagerOptionShowPowerAlertKey: @NO}];
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 50 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+            [request finish];
+        });
+    });
+}
+```
+
+### Local network \{#local_network\}
+
+Declare `ACCESS_LOCAL_NETWORK` on Android only if the app targets Android 17 or higher. See [System permissions](flow-permissions#local_network).
+
+```csharp showLineNumbers title="FlowSystemRequestsHandler.LocalNetwork.cs"
+using System;
+
+public partial class FlowSystemRequestsHandler
+{
+    void RequestLocalNetwork(Action<bool, string> respond)
+    {
+#if UNITY_ANDROID
+        if (AndroidSdkInt() < 37 || AndroidTargetSdk() < 37)
+        {
+            // Before Android 17, access comes with the INTERNET permission.
+            respond(true, "granted");
+            return;
+        }
+        RequestAndroid("android.permission.ACCESS_LOCAL_NETWORK", respond);
+#else
+        // iOS has no request method and no status for the local network.
+        respond(false, "unsupported");
+#endif
+    }
+}
+```
+
+- **Differs from System permissions**: On iOS, the code answers `unsupported`: iOS shows the alert at the first local network operation and reports no status. If your app has a local network feature, answer from the result of that operation, as [System permissions](flow-permissions#local_network) describes.
+
+### HomeKit \{#homekit\}
+
+Add the HomeKit capability and declare `NSHomeKitUsageDescription` on iOS. Android has no such permission. See [System permissions](flow-permissions#homekit).
+
+```csharp showLineNumbers title="FlowSystemRequestsHandler.HomeKit.cs"
+using System;
+using System.Runtime.InteropServices;
+
+public partial class FlowSystemRequestsHandler
+{
+#if UNITY_IOS
+    [DllImport("__Internal")]
+    static extern void FlowPermissions_requestHomeKit(int requestId, NativePermissionCallback callback);
+#endif
+
+    void RequestHomeKit(Action<bool, string> respond)
+    {
+#if UNITY_IOS
+        RequestNative(FlowPermissions_requestHomeKit, respond);
+#else
+        // Android has no HomeKit permission.
+        respond(false, "unsupported");
+#endif
+    }
+}
+```
+
+```objectivec showLineNumbers title="Assets/Plugins/iOS/FlowPermissionHomeKit.m"
+#import <HomeKit/HomeKit.h>
+#import "FlowPermissions.h"
+
+@interface FlowHomeKitRequest : NSObject <HMHomeManagerDelegate>
+@property (nonatomic) FlowPermissionCallback callback;
+@property (nonatomic) int requestId;
+@property (nonatomic) const char *refusal;
+@end
+
+// iOS reports the HomeKit status only after the app creates a manager, so the app keeps a flag.
+static NSString *const FlowHomeKitRequestedKey = @"FlowHomeKitRequested";
+
+static HMHomeManager *homeManager; // one manager for the life of the app
+static FlowHomeKitRequest *activeRequest;
+
+static const char *FlowHomeKitStatus(HMHomeManagerAuthorizationStatus status, const char *denied) {
+    if (status & HMHomeManagerAuthorizationStatusAuthorized) return "granted";
+    if (status & HMHomeManagerAuthorizationStatusDetermined) return denied;
+    return NULL; // not determined when the timeout ends
+}
+
+@implementation FlowHomeKitRequest
+- (void)homeManager:(HMHomeManager *)manager didUpdateAuthorizationStatus:(HMHomeManagerAuthorizationStatus)status {
+    if (status & HMHomeManagerAuthorizationStatusDetermined) [self finish];
+}
+
+- (void)finish {
+    if (activeRequest != self) return;
+    activeRequest = nil;
+    homeManager.delegate = nil;
+    FlowPermissionAnswer(self.callback, self.requestId, FlowHomeKitStatus(homeManager.authorizationStatus, self.refusal));
+}
+@end
+
+void FlowPermissions_requestHomeKit(int requestId, FlowPermissionCallback callback) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        // iOS has no request method: creating the manager shows the alert.
+        if (homeManager == nil) homeManager = [HMHomeManager new];
+        if (homeManager.authorizationStatus & HMHomeManagerAuthorizationStatusDetermined) {
+            FlowPermissionAnswer(callback, requestId, FlowHomeKitStatus(homeManager.authorizationStatus, "permanently_denied"));
+            return;
+        }
+        NSUserDefaults *defaults = NSUserDefaults.standardUserDefaults;
+        FlowHomeKitRequest *request = [FlowHomeKitRequest new];
+        request.callback = callback;
+        request.requestId = requestId;
+        // Requested in an earlier session: a refusal now is the earlier one, without an alert.
+        request.refusal = [defaults boolForKey:FlowHomeKitRequestedKey] ? "permanently_denied" : "denied";
+        [defaults setBool:YES forKey:FlowHomeKitRequestedKey];
+        activeRequest = request;
+        homeManager.delegate = request;
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 50 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+            [request finish];
+        });
+    });
+}
+```
+
+### Focus status \{#focus_status\}
+
+Declare `NSFocusStatusUsageDescription` on iOS. Android has no such permission. See [System permissions](flow-permissions#focus_status).
+
+```csharp showLineNumbers title="FlowSystemRequestsHandler.FocusStatus.cs"
+using System;
+using System.Runtime.InteropServices;
+
+public partial class FlowSystemRequestsHandler
+{
+#if UNITY_IOS
+    [DllImport("__Internal")]
+    static extern void FlowPermissions_requestFocusStatus(int requestId, NativePermissionCallback callback);
+#endif
+
+    void RequestFocusStatus(Action<bool, string> respond)
+    {
+#if UNITY_IOS
+        RequestNative(FlowPermissions_requestFocusStatus, respond);
+#else
+        // Android has no Focus status permission.
+        respond(false, "unsupported");
+#endif
+    }
+}
+```
+
+```objectivec showLineNumbers title="Assets/Plugins/iOS/FlowPermissionFocusStatus.m"
+#import <Intents/Intents.h>
+#import "FlowPermissions.h"
+
+static const char *FlowFocusStatus(INFocusStatusAuthorizationStatus status, const char *denied) {
+    switch (status) {
+        case INFocusStatusAuthorizationStatusAuthorized: return "granted";
+        case INFocusStatusAuthorizationStatusRestricted: return "restricted";
+        case INFocusStatusAuthorizationStatusDenied: return denied;
+        default: return NULL; // the user chose neither option
+    }
+}
+
+void FlowPermissions_requestFocusStatus(int requestId, FlowPermissionCallback callback) {
+    INFocusStatusCenter *center = INFocusStatusCenter.defaultCenter;
+    if (center.authorizationStatus != INFocusStatusAuthorizationStatusNotDetermined) {
+        FlowPermissionAnswer(callback, requestId, FlowFocusStatus(center.authorizationStatus, "permanently_denied"));
+        return;
+    }
+    [center requestAuthorizationWithCompletionHandler:^(INFocusStatusAuthorizationStatus status) {
+        FlowPermissionAnswer(callback, requestId, FlowFocusStatus(status, "denied"));
+    }];
+}
+```
+
+### Siri \{#siri\}
+
+Add the Siri capability and declare `NSSiriUsageDescription` on iOS. Android has no such permission. See [System permissions](flow-permissions#siri).
+
+```csharp showLineNumbers title="FlowSystemRequestsHandler.Siri.cs"
+using System;
+using System.Runtime.InteropServices;
+
+public partial class FlowSystemRequestsHandler
+{
+#if UNITY_IOS
+    [DllImport("__Internal")]
+    static extern void FlowPermissions_requestSiri(int requestId, NativePermissionCallback callback);
+#endif
+
+    void RequestSiri(Action<bool, string> respond)
+    {
+#if UNITY_IOS
+        RequestNative(FlowPermissions_requestSiri, respond);
+#else
+        // Android has no Siri permission.
+        respond(false, "unsupported");
+#endif
+    }
+}
+```
+
+```objectivec showLineNumbers title="Assets/Plugins/iOS/FlowPermissionSiri.m"
+#import <Intents/Intents.h>
+#import "FlowPermissions.h"
+
+static const char *FlowSiriStatus(INSiriAuthorizationStatus status, const char *denied) {
+    switch (status) {
+        case INSiriAuthorizationStatusAuthorized: return "granted";
+        case INSiriAuthorizationStatusRestricted: return "restricted";
+        case INSiriAuthorizationStatusDenied: return denied;
+        default: return NULL;
+    }
+}
+
+void FlowPermissions_requestSiri(int requestId, FlowPermissionCallback callback) {
+    INSiriAuthorizationStatus before = [INPreferences siriAuthorizationStatus];
+    if (before != INSiriAuthorizationStatusNotDetermined) {
+        FlowPermissionAnswer(callback, requestId, FlowSiriStatus(before, "permanently_denied"));
+        return;
+    }
+    [INPreferences requestSiriAuthorization:^(INSiriAuthorizationStatus status) {
+        FlowPermissionAnswer(callback, requestId, FlowSiriStatus(status, "denied"));
+    }];
+}
+```
+
+- In an app without the Siri capability, delete the `siri` case from the handler, so that it answers `unsupported`.
+
 ## Request each permission
 
-Unity requests only a few permissions on iOS: camera and microphone access with `Application.RequestUserAuthorization`, notifications with the Mobile Notifications package, and tracking with the `com.unity.ads.ios-support` package. For the other permissions on iOS, write a [native plugin](https://docs.unity.com/en-us/engine/current/manual/platform-specific/iphone/ios-developing/plugins-for-ios/ios-native-plugin-call) in Objective-C or Swift that calls the iOS API, and call it from C# with `[DllImport("__Internal")]`. On Android, request each permission with `Permission.RequestUserPermission()` and its manifest name.
+Unity requests only a few permissions on iOS: camera and microphone access with `Application.RequestUserAuthorization`, notifications with the Mobile Notifications package, and tracking with the `com.unity.ads.ios-support` package. The code on this page requests the other permissions on iOS with a native plugin. On Android, it requests each permission by its manifest name, with the Java plugin from [Implement the handler](#implement-the-handler).
 
 | Value | iOS | Android |
 |:------|:----|:--------|
-| `push` | Mobile Notifications: `AuthorizationRequest` | `"android.permission.POST_NOTIFICATIONS"`, or Mobile Notifications: `PermissionRequest` |
+| `push` | Mobile Notifications: `AuthorizationRequest` | `"android.permission.POST_NOTIFICATIONS"` on Android 13 and later. `NotificationManagerCompat.areNotificationsEnabled()` on Android 12 and earlier |
 | `tracking` | `com.unity.ads.ios-support`: `ATTrackingStatusBinding.RequestAuthorizationTracking()` | — |
-| `location_when_use` | Native plugin | `Permission.FineLocation` and `Permission.CoarseLocation`, together with `Permission.RequestUserPermissions()` |
-| `location_always` | Native plugin | `"android.permission.ACCESS_BACKGROUND_LOCATION"`, after foreground location is granted |
-| `location_full_accuracy` | Native plugin | `Permission.FineLocation` and `Permission.CoarseLocation`, together with `Permission.RequestUserPermissions()`. Full accuracy is `Permission.FineLocation` granted |
+| `location_when_use` | Native plugin | `Permission.FineLocation` and `Permission.CoarseLocation`, together |
+| `location_always` | — (answers `unsupported`) | `"android.permission.ACCESS_BACKGROUND_LOCATION"`, after foreground location is granted |
+| `location_full_accuracy` | Native plugin | `Permission.FineLocation` and `Permission.CoarseLocation`, together. Full accuracy is `Permission.FineLocation` granted |
 | `camera` | `Application.RequestUserAuthorization(UserAuthorization.WebCam)` | `Permission.Camera` |
 | `microphone` | `Application.RequestUserAuthorization(UserAuthorization.Microphone)` | `Permission.Microphone` |
-| `photos` | Native plugin | `"android.permission.READ_MEDIA_IMAGES"` on Android 13 and later, `Permission.ExternalStorageRead` on Android 12 and earlier |
+| `photos` | Native plugin | `"android.permission.READ_MEDIA_IMAGES"` and `"android.permission.READ_MEDIA_VIDEO"` on Android 13 and later, with `"android.permission.READ_MEDIA_VISUAL_USER_SELECTED"` on Android 14 and later. `Permission.ExternalStorageRead` on Android 12 and earlier |
 | `media_library` | Native plugin | `"android.permission.READ_MEDIA_AUDIO"` on Android 13 and later, `Permission.ExternalStorageRead` on Android 12 and earlier |
 | `music` | Native plugin | — |
 | `speech` | Native plugin | `Permission.Microphone` |
 | `contacts` | Native plugin | `"android.permission.READ_CONTACTS"` |
-| `calendar` | Native plugin | `"android.permission.READ_CALENDAR"`, and `"android.permission.WRITE_CALENDAR"` to add events |
+| `calendar` | Native plugin | `"android.permission.READ_CALENDAR"` and `"android.permission.WRITE_CALENDAR"`, together |
 | `reminders` | Native plugin | — |
-| `health` | Native plugin | Health Connect, in a native plugin |
+| `health` | — (answers `unsupported`) | — (answers `unsupported`) |
 | `motion` | Native plugin | `"android.permission.ACTIVITY_RECOGNITION"`, on Android 10 and later |
 | `bluetooth` | Native plugin | `"android.permission.BLUETOOTH_SCAN"` and `"android.permission.BLUETOOTH_CONNECT"`, on Android 12 and later |
-| `local_network` | Native plugin | `"android.permission.ACCESS_LOCAL_NETWORK"`, on Android 17 and later |
+| `local_network` | — (answers `unsupported`) | `"android.permission.ACCESS_LOCAL_NETWORK"`, on Android 17 and later |
 | `homekit` | Native plugin | — |
 | `focus_status` | Native plugin | — |
 | `siri` | Native plugin | — |
 
-A dash means that Android has no such permission: call `respond(false, "unsupported")`.
-
-Pass the status from the result of the Unity API:
-
-- **`Application.HasUserAuthorization`**: Returns only whether the user allowed access. Pass `granted` or `denied`. To pass `restricted` or `permanently_denied` on iOS, read the authorization status in a native plugin, such as `AVCaptureDevice.authorizationStatus(for:)`.
-- **Mobile Notifications on iOS**: Read `iOSNotificationCenter.GetNotificationSettings().AuthorizationStatus`. Pass `granted` for `Authorized` and `provisional` for `Provisional`. For `Denied`, pass `denied` after the dialog, or `permanently_denied` if the status was `Denied` before the request.
-- **Mobile Notifications on Android**: Pass `granted` for `PermissionStatus.Allowed`, `denied` for `PermissionStatus.Denied`, and `permanently_denied` for `PermissionStatus.NotificationsBlockedForApp`.
-- **`PermissionCallbacks` on Android**: Pass `granted` from `PermissionGranted`, and `denied` from `PermissionDenied`, as the example does. On Unity 6, `PermissionRequestDismissed` reports a dialog closed without a choice: answer without a status. To pass `permanently_denied`, follow the [rules for a refusal without a dialog](flow-permissions#rules-for-every-permission).
+A dash means that Android has no such permission: call `respond(false, "unsupported")`. "Answers `unsupported`" means that the OS has the permission, but the code on this page doesn't request it: see the section of the permission.
 
 The iOS purpose strings for camera, microphone, and location have fields in **Player Settings > iOS > Other Settings**. Add the other `Info.plist` keys in a `[PostProcessBuild]` editor script with [`PlistDocument`](https://docs.unity.com/en-us/engine/6000.0/script-reference/unityeditor/ios/xcode/plistdocument), because Unity creates the Xcode project again on a clean build and drops manual changes. Add the HealthKit, HomeKit, Siri, and Push Notifications capabilities in the same script with [`ProjectCapabilityManager`](https://docs.unity.com/en-us/engine/6000.0/script-reference/unityeditor/ios/xcode/projectcapabilitymanager).
 
@@ -215,7 +1873,7 @@ The OS shows a permission dialog only to an app that declares the permission: in
 
 <FlowPermissionDeclarations />
 
-The handler in this guide requests notifications and camera access. On iOS, enter the camera purpose string in **Player Settings > iOS > Other Settings > Camera Usage Description**, which Unity writes to `Info.plist` as `NSCameraUsageDescription`. On Android, the app declares `android.permission.POST_NOTIFICATIONS` and `android.permission.CAMERA` in its manifest.
+Declare only the permissions whose code your handler keeps. For example, for camera access on iOS, enter the purpose string in **Player Settings > iOS > Other Settings > Camera Usage Description**, which Unity writes to `Info.plist` as `NSCameraUsageDescription`. On Android, the app declares `android.permission.CAMERA` in its manifest.
 
 For what each permission shows users, the OS versions it needs, and the status to pass for each result, see [System permissions](flow-permissions).
 
