@@ -146,17 +146,22 @@ try {
 
 <ZoomImage id="store-product-id.webp" width="500px" />
 
-## 步骤 3. 通过 API 同步交易 \{#step-3-sync-transactions-via-api\}
+## 第三步：通过 API 同步交易 \{#step-3-sync-transactions-via-api\}
 
-当自定义商店中完成购买时，您需要使用服务端 API 将其同步到 Adapty。
+在您的自定义商店完成购买后，需要使用服务端 API 将其同步到 Adapty。
 
-此 API 调用将：
+该 API 调用将：
 - 在 Adapty 中记录交易
 - 向用户授予相应的访问等级
-- 触发您已配置的任何集成和 Webhook
-- 使交易出现在您的分析中
+- 触发您已配置的所有集成和 Webhook
+- 使交易出现在您的分析数据中
 
-完整方法参考请参见[此处](api-adapty/operations/setTransaction)。
+完整的方法参考请见[此处](api-adapty/operations/setTransaction)。
+
+请求体取决于购买类型，请选择与您的产品匹配的标签：
+
+<Tabs groupId="purchase-type">
+<TabItem value="subscription" label="订阅" default>
 
 ```bash
 curl --request POST \
@@ -166,29 +171,65 @@ curl --request POST \
   --header 'Content-Type: application/json' \
   --header 'adapty-customer-user-id: YOUR_CUSTOMER_USER_ID' \
   --data '{
-  "purchase_type": "PRODUCT_PERIOD",
+  "purchase_type": "subscription",
   "store": "YOUR_CUSTOM_STORE",
-  "environment": "production",
+  "environment": "Production",
   "store_product_id": "YOUR_STORE_PRODUCT_ID",
   "store_transaction_id": "STORE_TRANSACTION_ID",
   "store_original_transaction_id": "ORIGINAL_TRANSACTION_ID",
   "price": {
-    "country": "COUNTRY_CODE",
-    "currency": "CURRENCY_CODE",
-    "value": "YOUR_PRICE"
+    "country": "US",
+    "currency": "USD",
+    "value": 9.99
+  },
+  "purchased_at": "2024-01-15T10:30:00Z",
+  "originally_purchased_at": "2024-01-15T10:30:00Z",
+  "expires_at": "2024-02-15T10:30:00Z",
+  "renew_status": true
+}'
+```
+
+</TabItem>
+<TabItem value="one-time" label="一次性购买">
+
+```bash
+curl --request POST \
+  --url https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/ \
+  --header 'Accept: application/json' \
+  --header 'Authorization: Api-Key YOUR_SECRET_API_KEY' \
+  --header 'Content-Type: application/json' \
+  --header 'adapty-customer-user-id: YOUR_CUSTOMER_USER_ID' \
+  --data '{
+  "purchase_type": "one_time_purchase",
+  "store": "YOUR_CUSTOM_STORE",
+  "environment": "Production",
+  "store_product_id": "YOUR_STORE_PRODUCT_ID",
+  "store_transaction_id": "STORE_TRANSACTION_ID",
+  "store_original_transaction_id": "ORIGINAL_TRANSACTION_ID",
+  "price": {
+    "country": "US",
+    "currency": "USD",
+    "value": 9.99
   },
   "purchased_at": "2024-01-15T10:30:00Z"
 }'
 ```
 
+</TabItem>
+</Tabs>
+
 :::important
-重要参数：
+重要参数说明：
+- **purchase_type**：`subscription` 或 `one_time_purchase`。其他值将返回 HTTP 400 错误。
+- **environment**：`Production` 或 `Sandbox`，首字母大写。默认为 `Production`。测试购买请传 `Sandbox`。
 - **store**：步骤 2 中自定义商店的 ID
 - **store_product_id**：步骤 2 中的商店产品 ID
-- **store_transaction_id**：此交易的唯一标识符
-- **purchased_at**：购买发生时的 ISO 8601 时间戳
-- **price**：用户实际支付的金额
+- **store_transaction_id**：本次交易的唯一标识符，最多 50 个字符
+- **purchased_at**：购买发生时间，格式为 ISO 8601 时间戳
+- **price**：用户实际支付金额。`country` 为 ISO 3166-1 alpha-2 国家代码，`currency` 为 ISO 4217 货币代码，`value` 为数值。
+- **expires_at**：针对订阅类型，表示用户保留访问等级的截止时间，格式为 ISO 8601 时间戳。订阅还需要提供 `originally_purchased_at` 和 `renew_status`。
 :::
+
 ## 步骤 4. 在应用中验证访问权限 \{#step-4-verify-access-in-the-app\}
 
 交易同步后，用户的用户画像将自动更新为新的访问等级。
