@@ -1,46 +1,58 @@
 ---
-title: "Быстрый старт: виртуальная валюта"
-description: "Настройка виртуальной валюты с нуля: создайте токен-валюту, начисляйте токены с подпиской и списывайте их через серверный API."
-metadataTitle: "Быстрый старт: виртуальная валюта | Документация Adapty"
+title: "Быстрый старт с виртуальной валютой"
+description: "Настройте виртуальную валюту от начала до конца: создайте токен-валюту, начисляйте токены через подписку и расходуйте их через серверный API."
+metadataTitle: "Быстрый старт с виртуальной валютой | Документация Adapty"
 ---
 
 :::link
 Основная статья: [Виртуальные валюты](virtual-currencies)
 :::
 
-Это руководство поможет настроить токен-валюту с нуля: подписка начисляет пользователям 1000 токенов в месяц, а платные действия в приложении списывают токены. Adapty хранит все балансы — вашему бэкенду остаётся только читать и тратить их.
+Это руководство по быстрому старту поможет настроить токен-валюту от начала до конца: ежемесячная подписка начисляет пользователям 1000 токенов за каждый расчётный период, а платные действия в приложении списывают токены. Adapty хранит все балансы, поэтому вашему бэкенду остаётся только читать и расходовать их.
 
-1. Следуйте [гайду по созданию виртуальной валюты](create-virtual-currency), чтобы создать валюту `TOKENS`. Привяжите её к подписке Pro и установите **Credit per cycle** равным 1000. Для продажи дополнительных токенов также привяжите разовые продукты с наборами токенов.
+1. Следуйте гайду [Создание виртуальной валюты](create-virtual-currency), чтобы создать валюту `TOKENS`. Привяжите её к подписке Pro и установите **Credit per cycle** равным 1000. Adapty начисляет **Credit per cycle** один раз за каждый расчётный период подписки: каждый месяц для ежемесячной подписки, каждую неделю — для еженедельной. Чтобы продавать дополнительные токены, добавьте также продукты с разовыми наборами токенов.
 
-   <ZoomImage id="new-currency-combined.webp" width="700px" alt="New virtual currency creation screens" />
+   <ZoomImage id="new-currency-combined.webp" width="700px" alt="Экраны создания новой виртуальной валюты" />
 
-2. Вызовите [List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances), чтобы получить баланс пользователя, например, перед запуском генерации:
+2. Вызовите [List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances), чтобы получить баланс пользователя — например, перед началом генерации:
 
-```bash title="Read balances"
+   ```bash title="Read balances"
    curl https://api.adapty.io/api/v2/server-side-api/vc/balances/ \
      -H "Authorization: Api-Key {your secret key}" \
      -H "adapty-customer-user-id: user-42"
    ```
 
-   В ответе перечислены все валюты пользователя, например 1000 `TOKENS`:
+   В ответе перечислены все валюты вашего приложения, включая валюты с нулевым балансом. Например, 1000 `TOKENS`:
 
-```json title="Response"
+   ```json title="Response"
    {
+     "response_created_at": 1794477600123,
      "data": [
-       { "code": "TOKENS", "name": "Tokens", "balance": 1000, "held": 0, "available": 1000 }
+       {
+         "code": "TOKENS",
+         "name": "Tokens",
+         "balance": 1000,
+         "held": 0,
+         "available": 1000,
+         "expiry": { "non_expiring": 1000, "expiring": [], "expiring_later": 0, "expired": 0 }
+       }
      ]
    }
    ```
-3. Когда пользователь запускает генерацию, спишите токены, вызвав [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction) с отрицательным `amount`. В этом примере одна генерация изображения стоит 100 токенов:
+3. Когда пользователь запускает генерацию, спишите токены, вызвав [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction) с отрицательным значением `amount`. В этом примере одна генерация изображения стоит 100 токенов. Чтобы указать, на что были потрачены токены, запрос также задаёт `operation` со значением `spend` и `feature` со значением `image_generation` (см. [Метки транзакций](virtual-currencies#label-transactions)):
 
    ```bash title="Spend tokens"
    curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
      -H "Authorization: Api-Key {your secret key}" \
      -H "adapty-customer-user-id: user-42" \
      -H "Content-Type: application/json" \
-     -d '{"items": [{"currency_code": "TOKENS", "amount": -100}]}'
+     -d '{
+           "items": [{"currency_code": "TOKENS", "amount": -100}],
+           "operation": "spend",
+           "feature": "image_generation"
+         }'
    ```
 
-Транзакция является атомарной и возвращает обновлённый баланс. Если у пользователя недостаточно средств, запрос возвращает `insufficient_balance` и ничего не меняется. Добавьте заголовок `Idempotency-Key`, чтобы безопасно повторять запросы.
-4. Для проведения win-back-промо начисляйте токены через тот же эндпоинт с положительным значением `amount`. Кредиты, выданные таким образом, не имеют срока действия. Чтобы задать начальный баланс до первой покупки, см. [Выдать начальный баланс](grant-initial-balance).
-5. Отслеживайте все изменения в [профиле](virtual-currency-balance) пользователя или в [истории транзакций](api-adapty/operations/listVirtualCurrencyTransactions) — это позволит в любой момент провести аудит экономики.
+   Транзакция атомарна и возвращает обновлённый баланс. Одна транзакция может изменить до 20 валют, каждая из которых указана в `items` один раз. Если у пользователя недостаточно средств, запрос возвращает `insufficient_balance` и ничего не меняет. Добавьте заголовок `Idempotency-Key`, чтобы безопасно повторять запросы. Чтобы открыть флоу пополнения баланса, когда средств не хватает, воспользуйтесь рецептом для [iOS](ios-virtual-currency-top-up).
+4. Для проведения win-back promo начислите токены через тот же эндпоинт с положительным значением `amount`. Начисленные таким образом кредиты не истекают. Чтобы выдать пользователям баланс до первой покупки, см. [Начисление начального баланса](grant-initial-balance).
+5. Отслеживайте все изменения в [профиле](virtual-currency-balance) пользователя или в [истории транзакций](api-adapty/operations/listVirtualCurrencyTransactions) — это позволит аудировать экономику в любой момент.

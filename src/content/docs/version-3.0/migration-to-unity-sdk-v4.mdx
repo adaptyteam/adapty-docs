@@ -53,10 +53,11 @@ https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unit
 
 If you install via the Unity package, download `adapty-unity-plugin-4.1.0.unitypackage` from the [4.1.0 release](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.1.0). See [Install Adapty SDK](sdk-installation-unity#install-adapty-sdk) for the full setup.
 
-Two build-setup changes come with 4.x:
+Three build-setup changes come with 4.x:
 
 - **iOS dependencies switch to Swift Package Manager.** The native Adapty iOS SDK is declared as a remote Swift package instead of a CocoaPods pod. Update the [External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver#getting-started) to **1.2.188 or later** — earlier versions don't support Swift Package Manager dependencies. The CocoaPods steps (`iOS Resolver -> Install Cocoapods`, opening `Unity-iPhone.xcworkspace`) no longer apply. Building for iOS now requires **Xcode 26** or later, since the Swift package is built with Swift tools 6.2.
 - **The iOS deployment target must be 15.0 or later.** A new build validator in the Unity Editor stops the iOS build if the target is lower.
+- **The Android build must compile against API level 35 or later.** The Adapty UI library uses Jetpack Compose 1.8, which requires it.
 
 The underlying native Adapty SDKs are bumped to 4.x on both platforms and are resolved automatically — no other build changes are needed.
 
@@ -64,7 +65,7 @@ The underlying native Adapty SDKs are bumped to 4.x on both platforms and are re
 
 ### GetPaywall → GetFlow
 
-The returned type changes from `AdaptyPaywall` to `AdaptyFlow`, and the `locale` parameter is removed — when you render a flow, the locale is resolved automatically; for custom paywalls, all locales are returned in `flow.RemoteConfigs`:
+The returned type changes from `AdaptyPaywall` to `AdaptyFlow`, and the `locale` parameter moves to the flow view parameters (`AdaptyUICreateFlowViewParameters.SetLocale`) — see [Locale matching is exact](#locale-matching-is-exact); for custom paywalls, all locales are returned in `flow.RemoteConfigs`:
 
 ```diff showLineNumbers
 - Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
@@ -84,6 +85,19 @@ The returned type changes from `AdaptyPaywall` to `AdaptyFlow`, and the `locale`
 - Adapty.GetPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", (paywall, error) => { /* ... */ });
 + Adapty.GetFlowForDefaultAudience("YOUR_PLACEMENT_ID", (flow, error) => { /* ... */ });
 ```
+
+### Locale matching is exact
+
+:::warning
+In v3, the Adapty server picked the localization and fell back to the language: a `pt-br` request got the `pt` localization when the paywall had no `pt-br`. In v4, the SDK picks the localization on the device and uses only an exact match. A code that matches no localization renders the flow in its default localization, without an error or a warning.
+:::
+
+Before you upgrade, check the locale codes your app passes:
+
+- For each regional code you pass, add a localization with that code — for example, `pt-BR` in addition to `pt` — or map the code to one that the flow has.
+- Pass codes exactly as the published flow has them: `pt-BR`, not `pt-br` from the **Select languages** field. For paywalls from the old Paywall Builder, pass lowercase codes, such as `pt-br`. Don't pass a system locale identifier as is: on a device set to English (United States), `CultureInfo.CurrentCulture.Name` returns `en-US`, which misses a flow that has only `en`.
+
+See [Localizations and locale codes](unity-localizations-and-locale-codes#flows-and-paywalls).
 
 ### GetPaywallProducts(paywall) → GetPaywallProducts(flow)
 
@@ -241,8 +255,8 @@ The method is for App Store promoted in-app purchases and is never called on And
 ### New APIs
 
 - `Adapty.SetObserverModeResolver(...)` with an `IAdaptyUIObserverModeResolver` — drive purchases and restores initiated from flows while the SDK runs in [Observer mode](implement-observer-mode-unity). Previously this was available only in the native iOS and Android SDKs. See [Present flows in Observer mode](unity-present-flows-in-observer-mode).
-- `Adapty.SetSystemRequestsHandler(...)` with an `IAdaptyUISystemRequestsHandler` — reserved for system requests from a flow: OS permission prompts (`FlowViewDidAskPermission`) and app review requests (`FlowViewDidRequestAppReview`). Flows don't trigger these requests yet, so you don't need to register a handler.
-- `AdaptyUICreateFlowViewParameters.Locale` (set it with `SetLocale`) — render a flow or paywall with a specific [Builder localization](add-paywall-locale-in-adapty-paywall-builder) instead of the flow's default one. A flow is localized when its view is created, so this is the only place to choose its localization, and the created view reports the localization it was built with in `view.Locale`. See [Use localizations and locale codes](unity-localizations-and-locale-codes).
+- `Adapty.SetSystemRequestsHandler(...)` with an `IAdaptyUISystemRequestsHandler` — answers system requests from a flow: OS permission prompts (`FlowViewDidAskPermission`) and app review requests (`FlowViewDidRequestAppReview`). Register one if your flows use the **Request permission** action: see [Handle permission requests in flows](unity-handle-permissions).
+- `AdaptyUICreateFlowViewParameters.Locale` (set it with `SetLocale`) — render a flow or paywall with a specific [Builder localization](add-paywall-locale-in-adapty-paywall-builder). When you create the view, the SDK loads all localizations of the flow, and `Locale` selects the one to show. Without `Locale`, the view renders in `en`, or in the default localization when the flow has no `en`. The created view reports the localization it was built with in `view.Locale`. See [Use localizations and locale codes](unity-localizations-and-locale-codes).
 - The new `FlowViewDidReceiveAnalyticEvent` callback on `IAdaptyFlowsEventsListener` reports analytics events from a flow, starting with a screen view for every screen a user opens. See [Track flow screen views](unity-flow-screen-views).
 - `AdaptyUI.OpenUrl(url, openIn, ...)` and `AdaptyUI.RequestAppReview(...)` — the native handling behind `open_url` actions and app review requests. Call `OpenUrl` from `FlowViewDidPerformAction` to keep the default URL behavior; `RequestAppReview` backs the default app-review prompt, which flows don't trigger yet.
 
@@ -309,6 +323,7 @@ This step produces no compile error. If you skip it, `SetFallback` reports `Deco
 
 These changes do not cause compile errors, so test them at runtime:
 
+- **Flow localization**: A regional locale code no longer falls back to its language — `pt-br` doesn't get the `pt` localization. A code with no exact match renders the flow in its default localization. See [Locale matching is exact](#locale-matching-is-exact).
 - **Purchase completion**: In v3, the view was dismissed automatically after a successful purchase. In v4, **a flow stays open after a purchase or an error until you dismiss it** — the SDK applies no default behavior. Call `view.Dismiss(...)` yourself in `FlowViewDidFinishPurchase` once the user gets access.
 - **Android system back**: The system back button (or back gesture) is delivered to `FlowViewDidPerformAction` as a `SystemBack` action and no longer closes a flow on its own — matching iOS, where a flow can't be dismissed by a system gesture. Give users an explicit way out (a **Close** button or an `on_device_back` action), or dismiss the view yourself when handling the action.
 - **Views are single-use**: After `Dismiss`, the view is destroyed. Call `CreateFlowView` again to present the flow once more.

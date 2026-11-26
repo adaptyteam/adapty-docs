@@ -1,0 +1,100 @@
+---
+title: "Xử lý yêu cầu quyền trong flows - Flutter"
+description: "Yêu cầu người dùng cấp quyền thông báo đẩy từ một flow trong ứng dụng Flutter của bạn với AdaptyUISystemRequestsHandler, và trả lại câu trả lời của họ cho flow."
+metadataTitle: "Xử lý Quyền trong Flow - Flutter | Tài liệu Adapty"
+---
+
+Một [flow](adapty-flow-builder) có thể yêu cầu người dùng cấp quyền nhận thông báo đẩy thông qua hành động **Request permission**, ví dụ trên màn hình onboarding giải thích mục đích của thông báo. Adapty SDK không tự hiển thị hộp thoại cấp quyền hệ thống. Thay vào đó, SDK chuyển yêu cầu này đến `AdaptyUISystemRequestsHandler` trong ứng dụng của bạn. Ứng dụng của bạn hiển thị hộp thoại và trả về câu trả lời của người dùng, sau đó flow tiếp tục.
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+Bạn cần:
+
+- **Adapty Flutter SDK 4.0.0 trở lên**: Các phiên bản cũ hơn không có `AdaptyUISystemRequestsHandler`. Xem [Cài đặt & cấu hình SDK](sdk-installation-flutter).
+- **Một flow có action Request permission**: Trong Flow & Paywall Builder, thêm action **Request permission** vào trigger **On Tap** hoặc **On Screen Appear** của một element. Trong phần **After response**, thêm các action sẽ chạy sau khi người dùng trả lời, chẳng hạn như **Navigate Next**. Để xem cài đặt action, xem [Request permission](onboarding-actions#request-permission).
+- **Một thư viện hiển thị dialog thông báo quyền**: Ví dụ sử dụng [permission_handler](https://pub.dev/packages/permission_handler). Bất kỳ package nào khác hoặc code platform tự viết đều hoạt động tương tự.
+- **Quyền `POST_NOTIFICATIONS` trong Android manifest và `targetSdk` 33 trở lên**: Android 13 và các phiên bản mới hơn chỉ hiển thị dialog quyền thông báo cho các ứng dụng khai báo quyền này và nhắm mục tiêu Android 13 trở lên:
+
+  ```xml showLineNumbers title="android/app/src/main/AndroidManifest.xml"
+  <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+      <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+      <!-- ... -->
+  </manifest>
+  ```
+
+- **Với iOS dùng CocoaPods**: Thêm `PERMISSION_NOTIFICATIONS=1` vào `GCC_PREPROCESSOR_DEFINITIONS` trong `Podfile` của bạn, như hướng dẫn trong [permission_handler setup](https://pub.dev/packages/permission_handler). Nếu không có cài đặt này, `Permission.notification.request()` sẽ trả về denied và iOS sẽ không hiển thị hộp thoại xin quyền. Với Swift Package Manager, permission_handler đã bao gồm quyền thông báo theo mặc định.
+
+## Flow yêu cầu quyền như thế nào \{#how-the-flow-requests-a-permission\}
+
+1. Flow đến hành động **Request permission**: người dùng nhấn vào phần tử, hoặc màn hình xuất hiện.
+2. Adapty SDK gọi `handlePermission` trên handler của bạn với `AdaptyUIPermission.push`.
+3. Ứng dụng của bạn yêu cầu quyền từ hệ điều hành và trả về `AdaptyUIPermissionResult.granted()` hoặc `AdaptyUIPermissionResult.denied()`.
+4. Flow chạy các hành động **After response**. Chúng giống nhau cho cả hai câu trả lời.
+
+Flow sẽ chờ trên màn hình cho đến khi ứng dụng của bạn trả về kết quả. Nếu ứng dụng không bao giờ trả lời, flow sẽ tiếp tục hiển thị trên màn hình. Nếu hệ điều hành không hiển thị hộp thoại — ví dụ vì người dùng đã trả lời trước đó — thì `Permission.notification.request()` sẽ trả về câu trả lời trước đó ngay lập tức, và flow sẽ thực thi các hành động **After response** ngay lập tức. Nếu các hành động đó điều hướng khỏi màn hình, người dùng sẽ chỉ thấy màn hình yêu cầu quyền trong thoáng chốc.
+
+Với **On Screen Appear**, flow sẽ không gửi lại yêu cầu khi người dùng quay lại màn hình bằng hành động **Navigate back**. Với **On Tap**, mỗi lần nhấn đều gửi một yêu cầu mới, ngoại trừ các lần nhấn trong khi yêu cầu đang chờ phản hồi từ bạn.
+
+## Triển khai handler \{#implement-the-handler\}
+
+Để xử lý các yêu cầu quyền, hãy tạo một class kế thừa `AdaptyUISystemRequestsHandler` và triển khai `handlePermission`. Trả về denied cho các quyền mà ứng dụng của bạn không yêu cầu.
+
+```dart showLineNumbers title="Flutter"
+
+class FlowSystemRequestsHandler extends AdaptyUISystemRequestsHandler {
+  @override
+  Future<AdaptyUIPermissionResult> handlePermission(
+    AdaptyUIFlowView view,
+    AdaptyUIPermission permission,
+    Map<String, String>? customArgs,
+  ) async {
+    // Answer "denied" to every permission your app doesn't request
+    if (permission != AdaptyUIPermission.push) {
+      return const AdaptyUIPermissionResult.denied();
+    }
+
+    try {
+      final status = await Permission.notification.request();
+      return status.isGranted
+          ? const AdaptyUIPermissionResult.granted()
+          : const AdaptyUIPermissionResult.denied();
+    } catch (_) {
+      return const AdaptyUIPermissionResult.denied();
+    }
+  }
+
+  // The base method does nothing: this keeps the native review prompt.
+  @override
+  Future<void> handleAppReviewRequest(AdaptyUIFlowView view) {
+    return AdaptyUI().requestAppReview();
+  }
+}
+```
+
+`handlePermission` nhận vào:
+
+- **`view`**: View của flow đã gửi yêu cầu.
+- **`permission`**: Quyền mà flow yêu cầu. Hành động **Request permission** sẽ gửi `AdaptyUIPermission.push`.
+- **`customArgs`**: Tham số tùy chỉnh của yêu cầu. Hành động **Request permission** không gửi tham số nào, nên giá trị là `null`.
+
+Nếu `handlePermission` ném lỗi hoặc không bao giờ hoàn thành, flow sẽ không nhận được phản hồi và màn hình sẽ bị giữ nguyên. Ví dụ trên bắt lỗi vì lý do này.
+
+Một quyền được cấp cho phép ứng dụng hiển thị thông báo. Để nhận push notification, hãy đăng ký thiết bị với nhà cung cấp push của bạn, như ứng dụng vẫn làm bên ngoài các flow.
+
+Khi có handler được đăng ký, Adapty SDK sẽ chuyển các yêu cầu đánh giá ứng dụng đến `handleAppReviewRequest`, phương thức cơ sở của hàm này không làm gì cả. Ví dụ dưới đây giữ nguyên hộp thoại đánh giá gốc.
+
+## Đăng ký handler \{#register-the-handler\}
+
+:::warning
+**Nếu không có handler, flow sẽ dừng lại ở bước yêu cầu quyền.** Nếu ứng dụng của bạn không đăng ký handler nào, Adapty SDK sẽ không gửi phản hồi cho flow, trên cả iOS lẫn Android. Flow sẽ giữ nguyên màn hình đã gửi yêu cầu và không thực thi các hành động trong phần **After response**.
+:::
+
+Để chuyển tất cả yêu cầu quyền từ các flow đến handler của bạn, hãy gọi `AdaptyUI().setSystemRequestsHandler` một lần duy nhất, trước khi bạn hiển thị một flow. Ví dụ, gọi nó ngay sau khi bạn thiết lập trình quan sát sự kiện flow:
+
+```dart showLineNumbers title="Flutter"
+AdaptyUI().setSystemRequestsHandler(FlowSystemRequestsHandler());
+```
+
+## Kiểm tra yêu cầu quyền \{#test-the-permission-request\}
+
+iOS chỉ hiển thị hộp thoại thông báo một lần cho mỗi lần cài đặt ứng dụng. Android ngừng hiển thị sau khi người dùng cho phép thông báo hoặc từ chối hai lần. Để xem lại hộp thoại trong quá trình kiểm tra flow, hãy xóa ứng dụng khỏi thiết bị rồi cài đặt lại. Sau đó mở flow và đến bước hành động **Request permission**. Nếu màn hình vẫn hiển thị mà không có hộp thoại nào xuất hiện, nghĩa là flow chưa nhận được phản hồi: hãy đảm bảo ứng dụng của bạn đăng ký handler trước khi hiển thị flow. Nếu flow chuyển tiếp mà không có hộp thoại, hãy kiểm tra xem ứng dụng Android đã khai báo `POST_NOTIFICATIONS` và nhắm mục tiêu Android 13 trở lên hay chưa, đồng thời đảm bảo `Podfile` của iOS đã bật `PERMISSION_NOTIFICATIONS`.

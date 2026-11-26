@@ -1,0 +1,41 @@
+---
+title: "迁移 Adapty iOS SDK 至 v4.3"
+description: "迁移至 Adapty iOS SDK v4.3：更新价格和错误代码处理方式，并附带 App Store 签名上报交易。"
+metadataTitle: "迁移至 Adapty iOS SDK v4.3 | Adapty 文档"
+---
+
+如需将应用从 Adapty iOS SDK 4.1 或 4.2 升级至 4.3，请按照本指南完成所有变更。如果应用当前版本为 4.0，请先参阅 [v4.1 变更说明](migration-to-ios-sdk-41)。如需继续升级至 4.4，请参阅[迁移至 v4.4](migration-to-ios-sdk-44)。
+
+## 快速参考 \{#quick-reference\}
+
+| 变更前 | 变更后 |
+|---|---|
+| `localizedPrice` 和 `currencyCode` 可以为 `nil` | 两个属性始终返回字符串 |
+| 没有 `billingPlanUnavailable` 错误码 | `AdaptyError.ErrorCode` 包含 `billingPlanUnavailable` |
+| `Adapty.reportTransaction` 接受裸 `Transaction` | `Adapty.reportTransaction` 接受 `VerificationResult<Transaction>`；`Transaction` 重载已废弃 |
+
+## localizedPrice 和 currencyCode 不再是可选类型 \{#prices-are-no-longer-optional\}
+
+在 4.3 版本中，`AdaptyPaywallProduct` 和 `AdaptySubscriptionOffer` 的 `localizedPrice` 和 `currencyCode` 属性始终返回字符串，不再返回 `nil`。使用 `if let`、`guard let` 或 `?.` 对其进行 `nil` 检查的代码将无法编译，请移除这些检查：
+
+```diff showLineNumbers
+- if let price = product.localizedPrice {
+-     priceLabel.text = price
+- }
++ priceLabel.text = product.localizedPrice
+```
+
+同样移除这些属性上的 `??` 默认值：虽然可以编译，但会产生警告。
+
+## AdaptyError.ErrorCode 新增 billingPlanUnavailable \{#new-error-code\}
+
+4.3 新增了 `billingPlanUnavailable` [错误码](ios-sdk-error-handling#storekit-errors)。如果 `switch` 语句列举了所有错误码但没有 `default` 分支，编译将会失败。解决方法是添加 `case .billingPlanUnavailable` 分支或 `default` 分支。
+
+## reportTransaction 的 Transaction 重载已弃用 \{#reporttransaction-overload-is-deprecated\}
+
+在 4.3.2 版本中，接受裸 `Transaction`（不含 App Store 签名）的 `Adapty.reportTransaction(_:withVariationId:)` 重载会产生弃用警告。如需携带 App Store 签名上报交易，请传入 StoreKit 返回的 `VerificationResult<Transaction>`：
+
+```diff showLineNumbers
+- try await Adapty.reportTransaction(transaction, withVariationId: variationId)
++ try await Adapty.reportTransaction(verificationResult, withVariationId: variationId)
+```

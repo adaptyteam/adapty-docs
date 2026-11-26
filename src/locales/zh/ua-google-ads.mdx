@@ -1,225 +1,140 @@
 ---
 title: "将 Google Ads 与 Adapty 归因集成"
-description: "将 Google Ads 连接到 Adapty 归因，以获取您的广告系列支出数据，并将安装、试用和购买数据回传给 Google，用于广告系列优化。"
+description: "将 Google Ads 连接到 Adapty 归因，以查看每个广告系列的花费、收入和 ROAS，并让 Google 根据 Adapty 发送的试用和购买数据进行出价。"
 metadataTitle: "Google Ads 集成 | Adapty 归因 | Adapty 文档"
 keywords: ['adapty ua', '用户获取', 'google ads', '应用广告系列', 'uac', 'performance max', '归因']
 ---
 
-Adapty Attribution 与 Google Ads 的集成支持双向数据流。Adapty 从您的 Google Ads 账户拉取广告消耗、展示量和点击数据，并将安装量、试用量和购买数据回传给 Google，从而帮助 Google 基于真实收入数据优化您的广告系列。
+如果您通过 Google Ads 推广 Android 应用、iOS 应用或 Web 转化漏斗，请使用此集成。将 Google Ads 连接到 Adapty 归因后：
+
+- Google 会竞价投放给可能开始试用或购买订阅的用户。Adapty 将这些试用和购买数据发送给 Google。
+- Adapty 归因功能会展示每个广告系列的收入和 ROAS，以及 Adapty 从 Google Ads 拉取的广告支出数据。
+
+## 开始之前 \{#before-you-begin\}
+
+确保以下条件已满足：
+
+- 您的 Google Ads 账户处于正确的模式：
+  - ✅ **专家模式（Expert Mode）**：您可以创建 [Adapty 归因支持的所有推广系列类型](#supported-campaign-types)。
+  - ❌ **智能模式（Smart Mode）**：仅支持智能推广系列，与 Adapty 归因不兼容。如果您在注册时创建了智能推广系列，账户将默认进入智能模式。请通过 **Tools** 菜单切换至专家模式（此操作不可撤销）。
+- 您的 Google Ads 账户已绑定付款方式。
+- 您应用中的 Adapty SDK 已[启用 Adapty 归因](user-acquisition#step-1-enable-adapty-attribution-in-the-sdk)。
+
+## 设置集成 \{#set-up-the-integration\}
+
+1. 在 Adapty Attribution 中，[关联您的 Google 账户](ua-google-ads-settings#connect-your-google-account)。
+2. 要在 Adapty Attribution 中创建配置并在 Google Ads 中设置广告系列，请根据您推广的内容参考对应指南：
+   - Android 应用：[Android 应用广告系列](google-ads-app-campaigns)。
+   - iOS 应用或 Web 转化漏斗：[搜索广告与效果最大化广告系列](google-ads-search-pmax-campaigns)。
+
+每份指南中您需分别创建一个配置，同一个应用可以同时拥有两种配置。
+
+:::important
+您无需设置 SKAdNetwork（SKAN），这是 Apple 用于在不识别用户身份的情况下上报广告安装的框架。Adapty 归因不使用 SKAN。如果您将 SKAN 用于其他目的，请保留您的 SKAN 设置：它们不会影响 Adapty 归因。
+:::
+
+## 活动类型 \{#campaign-types\}
+
+### 支持的广告系列类型 \{#supported-campaign-types\}
+
+| 广告系列类型 | 广告投放位置 | Adapty 归因中的标签页 | 兼容的应用商店列表 | 是否兼容网页漏斗 |
+|---|---|---|---|---|
+| 应用安装广告系列（UAC） | Google 搜索、Google Play、YouTube 及展示广告网络 | **App Campaigns** | Google Play | ❌ |
+| 搜索广告 | 根据您添加的关键词投放于 Google 搜索结果页 | **Other Campaigns** | App Store, Google Play | ✅ |
+| 效果最大化广告 | 通过一个广告系列覆盖所有 Google 渠道：搜索、YouTube、展示、发现、Gmail 和地图 | **Other Campaigns** | ❌ | ✅ |
+| 需求开发广告 | 以图片和视频广告形式投放于 YouTube 信息流和 Shorts、发现和 Gmail | **Other Campaigns** | App Store, Google Play | ✅ |
+| 展示广告 | 在 Google 展示广告网络中的网站和应用上展示横幅广告 | **Other Campaigns** | App Store, Google Play | ✅ |
+| 视频广告 | 在 YouTube 上投放的视频广告 | **Other Campaigns** | App Store, Google Play | ✅ |
+
+### 不兼容的广告系列类型 \{#incompatible-campaign-types\}
+
+- **重新互动广告系列**：广告系列类型为"应用互动"的应用广告系列。它们会向已安装您应用的用户展示广告。Adapty 仅向 Google 发送新安装的事件。
+- **预注册广告系列**：广告系列类型为"应用预注册"的应用广告系列，适用于尚未在 Google Play 上发布的应用。
+- **智能广告系列**：Google Ads 智能模式账户唯一可创建的广告系列类型。
+- **购物广告系列**：展示 Google Merchant Center Feed 中商品的广告系列。每条广告均指向您网站上的商品页面，而非应用商店。Google 不允许针对包含周期性付款的订阅投放购物广告。
 
 ## 工作原理 \{#how-it-works\}
 
-Adapty 可以连接两种 Google Ads 广告系列。它们的安装归因方式不同，每种类型都有各自的标签页和配置方式。
+不同广告系列类型的归因机制有所不同：
 
-### 应用推广系列（Android）\{#app-campaigns-android\}
+- **应用安装广告系列（UAC）**：
+  - Adapty 将每次新安装信息发送给 Google。
+  - Google 验证用户在安装前是否点击过或以其他方式与应用安装广告互动过。
+  - 如果是，Google 会将广告系列、广告组和广告信息返回给 Adapty。
+- **其他所有广告系列类型**：
+  - Google Ads 将每次广告点击信息发送给 Adapty。
+  - Adapty 将安装和网页购买与这些点击进行匹配。
 
-Adapty 通过您应用的 **App Link ID** 作为第三方应用分析提供商接入 Google Ads。此类推广系列无需跟踪链接。
+如果用户在安装前点击了多个广告活动的广告，Adapty 会将此次安装归因到[最近一次点击](adapty-user-acquisition#channels)。
 
-1. 用户通过应用推广系列广告安装您的应用并首次打开。
-2. Adapty 向 Google 查询该安装是否由应用推广系列带来。
-3. Google 将该安装归因到对应的推广系列、广告组、广告及关键词。
-4. Adapty 通过同一 Link ID 将用户的试用和购买数据发送给 Google。
+### 应用推广活动 (Android) \{#app-campaigns-android\}
 
-### 其他广告系列（iOS 和 Android）\{#other-campaigns-ios-and-android\}
+Adapty 作为第三方应用分析提供商接入 Google Ads。你需要在 Google Ads 中使用 App Link ID 将 Adapty 归因关联到你的应用。此类推广活动无需跟踪模板。
 
-您需要将 Adapty 的跟踪模板添加到 Google Ads 广告系列中。
+1. 用户通过应用推广活动的广告安装你的应用并首次打开。
+2. Adapty 通过 Link ID 将安装事件上报给 Google。
+3. Google 将该安装匹配到对应的应用推广活动广告，并将推广活动、广告组和广告信息返回给 Adapty。
+4. Adapty 通过同一 Link ID 将用户的试用和购买事件上报给 Google。
 
-1. 用户点击广告后，Google 会为该点击附加一个点击 ID。
-2. 该点击在前往应用商店或您的网页漏斗的过程中经过 Adapty。
-3. Adapty 将安装或网页购买归因到对应的点击。
-4. Adapty 将转化数据发送到您选择的 Google Ads 账户，并通过点击 ID 进行匹配。
+### 其他广告活动（iOS 和 Android） \{#other-campaigns-ios-and-android\}
 
-对于不允许跟踪的 iOS 用户，Google 会使用隐私安全点击 ID（`gbraid` 或 `wbraid`）来代替 `gclid`。Adapty 三种格式均支持。
+你可以将 Adapty 归因中的跟踪模板添加到 Google Ads 的广告活动中。跟踪模板是一个链接，每当有人点击你的广告时，Google Ads 就会在后台加载该链接。
 
-### SKAdNetwork
+1. 用户点击广告后，Google 会为该点击添加点击 ID。对于不允许追踪的 iOS 用户，Google 会使用隐私安全的点击 ID（`gbraid` 或 `wbraid`）来替代 `gclid`。
+2. Google Ads 将用户引导至应用商店或您的网页漏斗，同时在后台加载追踪模板。通过该模板，Google Ads 将点击 ID 和广告系列详情传递给 Adapty。
+3. Adapty 将安装行为或网页购买行为与对应点击进行匹配：
+   - **iOS 安装**：Adapty 采用概率匹配，选取最可能促成本次安装的点击。
+   - **Android 安装**：Adapty 通过点击 ID 进行匹配。若 Google Play 未向您的应用传递点击 ID，Adapty 则改用概率匹配。
+   - **网页购买**：Adapty 读取您的网页漏斗在结账时传递的点击详情。
+4. Adapty 按点击 ID 匹配，将转化数据发送至您所选的 Google Ads 账户。
 
-这两种广告系列类型都不使用 SKAdNetwork（SKAN）——Apple 的一种在不识别用户身份的情况下上报广告安装数据的框架。因此，对于本集成：
+#### Adapty 如何将安装和购买与广告活动匹配 \{#how-adapty-matches-installs-and-purchases-to-campaigns\}
 
-- 无需设置 SKAN 或 SKAN 转化值。
-- 您在 Google Ads 中已使用的 SKAN 设置，不会影响 Adapty 发送给 Google 的事件，也不会影响 Adapty 归因中显示的数据。
+Adapty 将每笔应用内购买与其对应安装的广告活动进行匹配。为了将安装与点击关联起来，Adapty 使用以下两种方法之一：
 
-## 支持的广告系列类型 \{#supported-campaign-types\}
+| 方法 | Adapty 如何归因安装 | 点击与安装之间的时间限制 |
+|---|---|---|
+| 通过点击 ID 匹配 | 归因到 Google Play 传递给应用的对应点击 ID | 默认 168 小时（7 天），最长可达 720 小时 |
+| 概率匹配 | 归因到来自相同 IP 地址范围和操作系统的最近一次点击 | 默认 6 小时，最长可达 24 小时 |
 
-| 广告系列类型 | 广告投放位置 | Adapty 归因中的标签页 | 平台 |
+对于概率匹配，Adapty 会选取在点击时间、设备语言和国家等维度上得分最高的点击记录。由于 Adapty 不使用广告 ID（IDFA），概率匹配同样适用于未开启跟踪权限的 iOS 用户。
+
+Adapty 无法对设备在点击和安装之间切换网络的情况（例如从 Wi-Fi 切换到蜂窝网络）进行概率匹配。在多设备共享的网络（如移动运营商网络）上，Adapty 的概率匹配成功率较低。对于未匹配的安装，Adapty Attribution 会在不包含推广活动详情的情况下显示该安装：如果有点击 ID，则归入 **Google Play** 渠道；如果没有，则归入 **Organic**。
+
+#### 更改匹配的时间限制 \{#change-the-time-limits-for-matching\}
+
+时间限制不适用于应用推广活动（App campaigns），因为哪些安装来自这些活动由 Google 决定。
+
+1. 在 Adapty Attribution 页眉中，选择要推广的应用。
+2. 前往 **Integrations** > **Google Ads**。在 **Other Campaigns** 标签页中，打开您复制跟踪模板的配置。
+3. 选择 **Settings** 标签页。
+4. 在 **New user attribution** 部分，以小时为单位输入每个限制：
+   - **Deterministic Matching Window**：基于点击 ID 的匹配。
+   - **Probabilistic Matching Window**：概率匹配。若设置超过 6 小时，则安装前超过 6 小时的点击还必须与安装时的设备型号和操作系统版本相匹配。
+
+   保持这两个字段的开关都处于开启状态：若不启用概率匹配，Adapty 将无法匹配 iOS 安装记录。
+
+## 在 Adapty 归因中保持 Google Ads 数据的准确性 \{#keep-google-ads-data-accurate-in-adapty-attribution\}
+
+要在 [Adapty 归因分析](ua-analytics)中对 Google Ads 数据进行细分，请在 **Group by** 中选择以下选项之一：
+
+| 分组方式 | 在 Google Ads 中的含义 | 统计的花费范围 | 国家/地区细分 |
 |---|---|---|---|
-| 应用安装广告系列 (UAC) | Google 搜索、Google Play、YouTube 和展示广告网络，用于获取应用安装量 | **App Campaigns** | Android |
-| 搜索 | Google 搜索结果，基于您选择的关键词 | **Other Campaigns** | iOS, Android |
-| 效果最大化 | 通过一个广告系列覆盖所有 Google 渠道：搜索、YouTube、展示、Discover、Gmail 和地图 | **Other Campaigns** | iOS, Android |
-| 需求开拓 | YouTube 信息流和 Shorts、Discover 及 Gmail，以图片和视频广告形式展示 | **Other Campaigns** | iOS, Android |
-| 展示 | Google 展示广告网络中各网站和应用上的横幅广告 | **Other Campaigns** | iOS, Android |
-| 视频 | YouTube 上的视频广告 | **Other Campaigns** | iOS, Android |
-| 购物 | 来自 Google Merchant Center 商品目录的产品广告 | **Other Campaigns** | iOS, Android |
-
-若要推广 iOS 应用，请使用 Other campaigns。以应用安装为目标的 Performance Max 广告系列也会显示在 **Other Campaigns** 标签页中，因为 Adapty 通过跟踪模板（而非 App Link ID）来追踪这些广告系列。
-
-不支持应用互动推广系列：Adapty 只向 Google 发送由 App campaign 归因的安装事件，而互动推广系列针对的是已安装应用的用户。
-
-## 第 1 步：连接您的 Google 账号 \{#step-1-connect-your-google-account\}
-
-1. 在 Adapty Attribution 中，从左侧边栏进入 **Integrations**，然后选择 **Google Ads**。
-2. 点击 **Sign in with Google**。
-
-<ZoomImage id="ua-sign-in-google-ads.webp" width="700px" />
-
-3. 选择有权访问您 Google Ads 账号的 Google 账号，然后点击 **Continue**。
-4. 勾选所有所需权限，然后点击 **Continue**。
-
-之后，Adapty 会同步您的 Google 账号有权访问的所有 Google Ads 账户，包括管理员账户下的客户账户。如需添加其他 Google 账号有权访问的广告账户，请再次点击 **Sign in with Google**。
-
-## 第二步：添加广告系列 \{#step-2-add-campaigns\}
-
-设置您运行的广告系列类型。App 广告系列和其他广告系列配置方式不同，您可以在同一应用中同时使用两者。
-
-### 应用推广活动 \{#app-campaigns\}
-
-要将应用内事件发送到 Google 应用推广活动，请先在 Adapty Attribution 中创建配置，然后在 Google Ads 中通过 App Link ID 将其与你的 Android 应用关联。
-
-**在 Adapty Attribution 中创建配置：**
-
-1. 在 **Integrations > Google Ads** 中，切换到 **App Campaigns** 标签页，点击 **Create configuration**。Adapty 会为当前应用创建一个配置并自动打开。
-
-<ZoomImage id="google-ads-create-ad-campaign.webp" width="700px" />
-
-2. 复制 **Provider ID** 的值。创建 Google Ads 中的 App Link ID 时需要用到它。
-
-**在 Google Ads 中创建应用关联 ID：**
-
-1. 点击 **Tools** 图标，选择 **Data manager**。
-2. 点击 **+ Connect Product**，选择 **Third-party app analytics**，然后点击 **Continue**。
-3. 点击 **Create link ID**。
-4. 在提供商列表中选择 **Other provider**，并粘贴从 Adapty Attribution 中复制的 **Provider ID**。
-5. 选择 **Android** 作为平台，在 **Look up your app** 字段中找到您的应用。
-6. 点击 **Create link ID** 并复制生成的关联 ID。
-
-:::note
-在 Adapty 收到第一个事件之前，Google Ads 会将链接 ID 显示为 **Unverified**。
-:::
-
-**在 Adapty Attribution 中添加链接 ID：**
-
-1. 在配置中，将链接 ID 粘贴到 **Android App Link ID** 字段。每个链接 ID 只能属于一个配置。
-
-<ZoomImage id="app-link-id.webp" width="700px" />
-
-2. [映射事件](#step-3-map-events)，然后点击 **Save**。
-3. 要验证连接，点击 **Send test event**，选择一个事件并发送。Google 会将收到的每个事件添加到您应用在 Google Ads 中的转化操作中，以便您将其选为广告系列的优化目标。
-
-:::note
-Google Ads 大约需要 24 小时才能识别新的链接 ID，因此在此之前测试事件可能会失败。如遇此情况，请参阅[故障排查](#test-event-fails-for-a-new-link-id)。
-:::
-
-<ZoomImage id="google-ads-test-event.webp" width="700px" />
-
-:::note
-对于欧洲经济区和英国的用户，Adapty 会发送带有拒绝同意信号的事件。您无需在 Adapty 归因中配置同意设置。
-:::
-
-### 其他广告系列 \{#other-campaigns\}
-
-要跟踪 iOS 和 Android 上的搜索、展示、购物及其他基于点击的广告系列，请在 Adapty Attribution 中为其创建配置，并将跟踪模板添加到 Google Ads 中的广告系列。每个投放广告的 Google Ads 账户需要单独创建一个配置。
-
-:::important
-请确保在您的 Google Ads 账户设置中开启了自动标记功能。Adapty 通过自动标记添加的点击 ID 将转化与广告匹配，若点击中不包含点击 ID，则不会发送转化数据。
-:::
-
-1. 在 **Integrations > Google Ads** 中，切换到 **Other Campaigns** 标签页，然后点击 **Create configuration**。
-
-   <ZoomImage id="ua-google-ads-other-campaigns.webp" width="700px" alt="Other Campaigns tab of the Google Ads integration in Adapty Attribution with the Create configuration button" />
-
-2. 在 **Google Ads account** 下拉菜单中，选择投放广告的客户账户。Google 只接受投放了该广告的账户上报的转化事件。Manager 账户不会列出，因为它们无法持有转化数据。
-
-   <ZoomImage id="ua-google-ads-account-select.webp" width="700px" alt="Google Ads 账户下拉菜单位于其他广告系列配置中，下方显示跟踪模板" />
-
-3. 复制 **Tracking template** 的值。然后在 Google Ads 中打开广告系列设置，将其粘贴到 **Campaign URL options > Tracking template**。一个模板同时适用于 iOS 和 Android。
-4. 如果广告导向 Web 漏斗，请展开 **Web funnel** 部分：
-   - 复制 **Pixel snippet** 并[将其安装到您的漏斗中](ua-web-pixel)。
-   - 复制 **Ad URL parameters**，然后在 Google Ads 广告系列设置中，将其粘贴到 **Campaign URL options > Final URL suffix**。如果没有这些参数，Adapty 可以将购买归因到 Google Ads，但无法关联到具体的广告系列、广告组或广告。
-
-   <ZoomImage id="ua-google-ads-tracking-links.webp" width="700px" alt="Tracking links section of an Other campaigns configuration with the tracking template, pixel snippet, and ad URL parameters" />
-
-5. [映射事件](#step-3-map-events)，然后点击 **Save**。
-
-保存配置后，Adapty 会在所选 Google Ads 账户中为每个已启用的事件创建一个转化操作。如果 Google 拒绝请求，Adapty 将显示错误并取消保存。请选择一个您有编辑权限的客户账户，或在 Google 账户访问权限过期时重新连接。
-
-:::note
-如果您在 2026 年 9 月 11 日之前已连接 Google 账户，请在添加 Other campaigns 之前重新连接。该日期之前建立的连接缺少 Adapty 发送这些广告系列转化数据所需的权限。点击 **Sign in with Google** 并授予所有请求的权限。
-:::
-
-## 第三步：配置事件映射 \{#step-3-map-events\}
-
-要选择 Google 接收哪些事件，请在 **Events mapping** 部分中，逐一开启您想发送的事件，并在 Google Ads 中选择或输入其名称。事件名称不能包含逗号。
-
-<ZoomImage id="ua-google-ads-events.webp" width="700px" />
-
-两种广告系列类型的名称使用方式有所不同：
-
-- **App campaigns（应用广告系列）**：**Install** 始终开启，默认映射到 `first_open`。对于任何事件，你可以选择 Google 标准应用事件之一：`first_open`、`session_start`、`in_app_purchase`、`ecommerce_purchase`、`view_item`、`view_item_list`、`add_to_cart` 或 `view_search_results`。如果你输入其他名称，Adapty 会将其作为自定义应用事件发送。
-- **Other campaigns（其他广告系列）**：每个事件的默认名称是其 Adapty 事件名称，例如 `trial_started`。你选择或输入的名称将成为 Adapty 在 Google Ads 中创建的转化操作名称，与输入内容完全一致。
-
-点击 **Save**。
-
-## 额外配置 \{#additional-configuration\}
-
-### 收入覆盖 \{#revenue-override\}
-
-如果您追踪试用事件并希望 Google 将收入归因到这些事件，请使用 **Revenue override** 部分。该部分在启用 **Trial started** 事件后显示。覆盖规则仅适用于 **Trial started** — **Trial converted** 和 **Subscription started** 始终上报实际收入。
-
-针对每个试用事件目标，设置需要上报的订阅价格百分比作为收入。例如，设置为 30% 时，Adapty 会将订阅价格的 30% 作为试用事件的转化值发送给 Google。
-
-要添加覆盖规则：
-
-1. 在 **Events mapping** 部分启用 **Trial started**。
-2. 在 **Revenue override** 中，点击 **Add event**。
-3. 选择目标事件并输入收入百分比（0–100）。
-4. 点击 **Save**。
-
-<ZoomImage id="revenue-override.webp" width="500px" />
-
-### 合格试用 \{#qualified-trial\}
-
-:::warning
-Adapty Attribution 会将试用事件延迟最多 24 小时发送，且仅在用户未取消的情况下才发送。如果 MMP 也转发了 `trial_started` 或 [`trial_active`](events#synthetic-events) 事件，Google 将重复收到同一条试用记录。
-:::
-
-当试用在指定小时数内未被取消时，即视为合格试用。使用 **Qualified trial** 部分可以暂缓发送试用事件，直到确认合格后再发送，从而确保 Google 只收到用户实际保留的试用记录。该部分适用于 App 推广活动和其他推广活动。
-
-对于每个试用事件目标，设置需要等待的小时数。Adapty 从试用开始计时，当截止时间到达时发送事件。如果用户在截止时间前关闭了自动续订，Adapty 将不会发送该事件。如果用户在截止时间前重新开启了自动续订，Adapty 将按计划发送事件。
-
-要将试用事件保留至符合条件时再发送：
-
-1. 在 **Events mapping** 部分启用 **Trial started**。
-2. 在 **Qualified trial** 中，点击 **Add event**。
-3. 选择目标事件并输入等待小时数，范围为 1 到 24。
-4. 点击 **Save**。
-
-<ZoomImage id="qualified-trial-google-ads.webp" width="700px" alt="Qualified trial section with the in_app_purchase target event held for one hour in a Google Ads campaign configuration" />
-
-**Revenue override** 和 **Qualified trial** 相互独立，你可以同时将两者应用于同一个试用事件。Revenue override 改变 Google 收到的金额；Qualified trial 改变 Google 收到事件的时机。两者同时启用时，Adapty 会等到试用达到条件后再发送事件，并附上已覆盖的收入金额。
-
-## Adapty 归因分析中的 Google Ads 数据 \{#google-ads-data-in-adapty-attribution\}
-
-Adapty 每 4 小时刷新一次 Google Ads 的花费、展示量和点击数据。每次刷新还会重新拉取过去 3 天的数据，因为 Google 会持续调整近期数据。
-
-在 [Adapty 归因分析](ua-analytics)中，Google Ads 数据支持四个维度：广告系列、广告组、广告和关键词。关键词级别的花费数据仅适用于搜索广告系列，效果最大化广告系列仅支持广告系列级别的报告。国家/地区维度的数据范围取决于所选层级：
-
-- **广告系列和广告组**：精确数据，与 Google 报告一致。
-- **广告**：估算数据。由于 Google 不按国家/地区报告广告数据，Adapty 会按照广告组在各国家/地区的流量分布比例，对广告数据进行拆分。
-- **关键词**：不可用。
-
-如果某次安装携带的 Google Ads 点击 ID 与已连接 Google Ads 账户中的任何广告系列均不匹配，该安装将归入 **Google Play** 渠道。关于 Adapty 如何在 Google Ads 与其他来源之间进行归因判断，请参阅[渠道](adapty-user-acquisition#channels)。
-
-## 故障排除 \{#troubleshooting\}
-
-### 新链接 ID 的测试事件失败 \{#test-event-fails-for-a-new-link-id\}
-
-Google Ads 大约需要 24 小时才能识别新的链接 ID。在此期间，测试事件会失败，Google 不会将任何事件归因到您的广告系列。前 24 小时内测试事件失败并不意味着配置有误。
-
-等待 24 小时后再次发送测试事件。在此期间不要替换链接 ID，因为新链接 ID 会重新开始等待计时。
-
-如果 24 小时后测试事件仍然失败，请确认您粘贴的是在 **Data manager** 中创建的链接 ID，而不是其他 Google Ads 标识符。
-
-### Google 账号显示"Inactive" \{#google-account-shows-inactive\}
-
-当 Google 不再接受 Adapty 的访问权限时，Google 账号会显示 **Inactive**，例如你在 Google 账号设置中移除了 Adapty 的访问权限，或访问权限已过期。账号处于非活跃状态时，Adapty 不会刷新其广告账号的支出数据，也不会向 Google 发送转化数据。
-
-要恢复连接，请在 **Integrations** > **Google Ads** 中点击 **Sign in with Google**，然后选择同一个 Google 账号。
+| **Campaign** | 共享同一预算、竞价策略和定向设置的广告组集合 | 所有广告系列类型 | 精确，以 Google 报告的数据为准 |
+| **Adset** | 广告组：广告系列中的一组广告。在搜索广告系列中，广告组还包含关键词。效果最大化广告系列使用素材资源组代替广告组 | 除效果最大化广告系列外的所有广告系列类型 | 精确，以 Google 报告的数据为准 |
+| **Ad** | 用户看到的文字、图片或视频 | 除效果最大化广告系列外的所有广告系列类型 | 估算值：Google 不按国家/地区报告广告数据，因此 Adapty 按照广告组数据的国家/地区分布比例来拆分各广告的数据 |
+| **Keyword** | 添加到搜索广告系列广告组中的词语或短语。Google 会在与关键词匹配的搜索中展示该广告组的广告 | 仅限搜索广告系列 | 不可用 |
+
+Adapty 还会导入 Google 自有的转化数量、关键词出价估算值和广告系列状态。如需在数据分析表格中查看这些数据，请选择 [Google Ads 预设](ua-analytics#google-ads-preset)。每列数据的含义，请参阅 [Google Ads 数据图表](ua-metrics#google-ads-metrics)。
+
+为确保数据准确并正确读取：
+
+- **每个广告系列只推广一个应用**：Adapty 会将广告系列的全部花费计入该广告系列所推广的每个应用。对于导向 Web 漏斗的广告系列，这个应用就是你复制跟踪模板时所在的那个应用。
+- **将跟踪模板粘贴到所有广告系列中**：这是所有非 UAC 广告系列的必要操作。如果省略此步骤，Adapty Attribution 会显示安装量，但不显示广告系列详情：Android 安装归入 **Google Play** 渠道，iOS 安装归入 **Organic**。Adapty Attribution 仍可显示广告系列的花费，但无法显示其收入，因此 ROAS 看起来会偏低。
+- **从广告系列中移除其他跟踪模板**：如果广告组、广告或关键词[拥有自己的跟踪模板](google-ads-search-pmax-campaigns#add-the-tracking-template-to-an-existing-campaign)，Google Ads 将不会向 Adapty 发送该层级的点击数据。
+- **近期花费数据可能会变动**：Google 会持续调整近几天的花费、展示次数和点击数据。Adapty 每 4 小时刷新一次过去 3 天（含今天）的数据。
+- **每日花费与收入可能使用不同时区**：Adapty Attribution 按你的 Google Ads 账户时区显示每日花费，但按 UTC 显示每日安装量和收入。如果两个时区不同，每日花费和每日收入所涵盖的时间段就会不一致。如需按其他时区显示安装量和收入，请联系 [Adapty 支持](mailto:support@adapty.io)。
+- **使用 Adapty Attribution 查看收入和 ROAS**：Google Ads 中的转化价值与实际收入不符，原因如下：
+  - 退款不会降低转化价值：应用广告系列收到的退款事件不含金额，而其他广告系列则不会收到 Adapty 发送的退款事件。
+  - 在其他广告系列中，Google 仅统计广告点击后 30 天内发生的事件：Adapty 在创建转化操作时使用的就是这个点击归因转化窗口。如需统计点击后最长 90 天内的事件，请在 Google Ads 中各转化操作的设置里调高该窗口值。
+  - 在应用广告系列中，Adapty 仅向 Google 发送过去 90 天内发生的事件。由于 Adapty 会在事件发生后不久即发送，这一限制对安装后很久才续订的情况影响不大。

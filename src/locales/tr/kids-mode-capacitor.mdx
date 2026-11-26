@@ -52,15 +52,21 @@ try {
 }
 ```
 
-### Platforma Özgü Yapılandırmalar \{#platform-specific-configurations\}
+### Platforma özgü yapılandırmalar \{#platform-specific-configurations\}
 
 #### iOS \{#ios\}
 
 <SDKv4>
 
-IDFA koleksiyonu kodda devre dışı bırakılmış olsa bile (yukarıda), derlemeniz `AdSupport` ve `AppTrackingTransparency` framework'lerini hâlâ içerir. App Store Çocuklar Kategorisi bunlara izin vermez. v4 SDK, yerel iOS SDK'yı Swift Package Manager aracılığıyla yüklediğinden, bu framework'leri kaldırmak için bir Podfile adımı da yoktur.
+IDFA toplama kodda devre dışı bırakılmış olsa bile (yukarıda), derlemeniz hâlâ `AdSupport` ve `AppTrackingTransparency` framework'lerini içerir. App Store Çocuklar Kategorisi bunlara izin vermez.
 
-Apple'ın gereksinimlerine uymak için, SDK ile birlikte gelen `adapty-kids-mode` komutunu uygulamanızın `postinstall` betiğine ekleyin. Bu komut, SDK'nın `KidsMode` özelliğini etkinleştirerek söz konusu kodun derleme dışında bırakılmasını sağlar. Komut, her kurulumda yeniden uygulanır:
+Apple'ın gereksinimlerine uymak için yerel iOS SDK'yı Kids Mode'da derleyin; bu sayede tüm IDFA, AdSupport ve AppTrackingTransparency kodları derleme dışında bırakılır. Bunu nasıl etkinleştireceğiniz, iOS projenizin paket yöneticisine bağlıdır; ayrıntılar için [iOS projenizi ayarlama](sdk-installation-capacitor#set-up-your-ios-project) bölümüne bakın.
+
+<Tabs groupId="ios-package-manager" queryString>
+
+<TabItem value="spm" label="Swift Package Manager" default>
+
+SDK ile birlikte gelen `adapty-kids-mode` komutunu uygulamanızın `postinstall` betiğine ekleyin. Bu komut, SDK'nın `KidsMode` özelliğini etkinleştirir ve her kurulumda yeniden uygulanır:
 
 ```json showLineNumbers title="package.json"
 {
@@ -70,24 +76,64 @@ Apple'ın gereksinimlerine uymak için, SDK ile birlikte gelen `adapty-kids-mode
 }
 ```
 
-Ardından iOS paketlerini yeniden yükleyin ve çözümleyin, ardından **Xcode 26** veya sonraki bir sürümle derleyin:
+Ardından iOS paketlerini yeniden yükleyin ve çözümleyin, sonra **Xcode 26** veya daha yeni bir sürümle derleyin:
 
 ```sh showLineNumbers title="Shell"
 npm install
 npx cap sync ios
 ```
 
-Kids Mode'u kapatmak için `adapty-kids-mode disable` komutunu çalıştırın ve tekrar senkronize edin.
+Kids Mode'u kapatmak için `postinstall` bölümünden `adapty-kids-mode` satırını kaldırın ya da `adapty-kids-mode disable` olarak değiştirin, `npx adapty-kids-mode disable` komutunu çalıştırın ve tekrar sync yapın. Aksi takdirde bir sonraki `npm install` işleminde Kids Mode yeniden etkinleşir.
+
+:::note
+SDK 4.2.0 ve sonrasında, `adapty-kids-mode`, iOS projesini bulamadığında veya Podfile'ınız komutla eşleşmediğinde (Podfile'da `adapty_enable_kids_mode` çağrısı olmadan `enable`, ya da çağrı hâlâ oradayken `disable`) kurulumu başarısız kılmadan bir uyarı yazdırır. Uyarıları susturmak için `--no-warnings` seçeneğini geçin ya da `ADAPTY_KIDS_MODE_NO_WARNINGS=1` ayarlayın. Uygulamanız kurulum yaptığınız dizinin dışındaysa `--app-root=path/to/app` seçeneğini geçin.
+:::
+
+</TabItem>
+
+<TabItem value="cocoapods" label="CocoaPods">
+
+Bu seçenek SDK 4.2.0 veya sonraki bir sürümü ve [iOS projenizi kurun](sdk-installation-capacitor#set-up-your-ios-project) bölümündeki Adapty Podfile yardımcılarını gerektirir. `ios/App/Podfile` dosyasında, `post_install` bloğu içinde `adapty_enable_kids_mode` çağırın:
+
+```ruby showLineNumbers title="ios/App/Podfile" {3}
+post_install do |installer|
+  assertDeploymentTarget(installer)
+  adapty_enable_kids_mode(installer)
+end
+```
+
+Yardımcı araç, `KidsMode` derleme koşulunu `Adapty` pod'una ekler ve AdSupport framework bağlantısını kaldırır. Yalnızca `post_install` içinde çalışır: `post_integrate` içindeki değişiklikler hiçbir zaman kaydedilmez. Projenizdeki başka bir pod da AdSupport'u bağlıyorsa `pod install` başarısız olur; çünkü framework yapıda kalmaya devam eder.
+
+Ardından iOS projesini senkronize edin:
+
+```sh showLineNumbers title="Shell"
+npx cap sync ios
+```
+
+Kids Mode'u kapatmak için `adapty_enable_kids_mode` satırını kaldırın ve tekrar senkronize edin.
+
+</TabItem>
+
+</Tabs>
+
+Kids Mode'un etkin olduğunu doğrulamak için aktivasyon log satırını kontrol edin. Native SDK, `activate`'e ilettiğiniz `logLevel` uygulanmadan önce bunu `verbose` seviyesinde yazar; bu nedenle log seviyesini aktivasyondan önce ayarlayın:
+
+```typescript showLineNumbers
+await adapty.setLogLevel({ logLevel: 'verbose' });
+await adapty.activate({ apiKey: 'YOUR_PUBLIC_SDK_KEY' });
+```
+
+Xcode konsolunda, `Calling Adapty activate` satırı parametreleri arasında `"kids_mode_enabled": true` ifadesini listeler.
 
 </SDKv4>
 
 <SDKv3>
 
-iOS için CocoaPods kullanıyorsanız, Kids Mode'u native düzeyde de etkinleştirebilirsiniz:
+iOS için CocoaPods kullanıyorsanız, Kids Mode'u native seviyede de etkinleştirebilirsiniz:
 
-1. Podfile'ınızı güncelleyin:
+1. Podfile dosyanızı güncelleyin:
 
-- Eğer `post_install` bölümünüz **yoksa**, aşağıdaki kod bloğunun tamamını ekleyin.
+   - Eğer `post_install` bölümünüz **yoksa**, aşağıdaki kod bloğunun tamamını ekleyin.
    - Eğer `post_install` bölümünüz **varsa**, vurgulanan satırları mevcut bölümle birleştirin.
 
    ```ruby showLineNumbers title="Podfile"

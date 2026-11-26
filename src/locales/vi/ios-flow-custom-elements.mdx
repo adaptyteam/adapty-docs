@@ -1,0 +1,183 @@
+---
+title: "Hiển thị các phần tử tùy chỉnh với iOS SDK"
+description: "Hiển thị một SwiftUI view gốc trong mỗi phần tử tùy chỉnh của một flow, và kiểm tra flow trên thiết bị."
+metadataTitle: "Hiển thị phần tử tùy chỉnh | iOS SDK | Tài liệu Adapty"
+---
+
+<FlowCustomElementsIntro />
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+Bạn cần:
+
+- **Adapty iOS SDK 4.4 trở lên**: Các phiên bản cũ hơn sẽ hiển thị fallback cho mọi custom element.
+- **Ứng dụng iOS native**: Đối với ứng dụng React Native, hãy xem [Hiển thị custom element với React Native SDK](react-native-flow-custom-elements). Đối với ứng dụng Flutter, hãy xem [Hiển thị custom element với Flutter SDK](flutter-flow-custom-elements). Các Adapty SDK dành cho các framework đa nền tảng khác sẽ hiển thị fallback cho mọi custom element.
+- **Quy tắc đặt tên cho custom element**: Đặt cho mỗi native view một Type, chẳng hạn như `lottie_animation`. Chỉ sử dụng chữ thường, số và dấu gạch dưới trong Types. Để phân biệt các custom element cùng Type, đặt cho mỗi phần tử một ID, chẳng hạn như `welcome_wave`. Các Types và IDs trong code của bạn phải khớp với những gì đã cấu hình trong [Flow & Paywall Builder](flow-custom-elements#add-and-configure).
+
+## Tạo view cho các phần tử tùy chỉnh \{#create-views-for-custom-elements\}
+
+Với mỗi Type, hãy tạo một SwiftUI view native hoặc tái sử dụng view có sẵn trong ứng dụng của bạn. View sau đây thuộc Type `lottie_animation` dùng để phát hoạt ảnh Lottie:
+
+```swift showLineNumbers title="Swift"
+
+struct LottieElementView: View {
+    let animation: LottieAnimation?
+
+    var body: some View {
+        LottieView(animation: animation)
+            .resizable()
+            .looping()
+    }
+}
+```
+
+### Yêu cầu và các phương pháp tốt nhất \{#view-requirements-and-best-practices\}
+
+- **Kích thước**:
+  - **Padding và căn chỉnh**: Đảm bảo native view vừa khít với container bạn đã phân bổ trong Flow & Paywall Builder, trừ đi phần padding. Nếu view không chiếm toàn bộ diện tích, nó sẽ xuất hiện ở góc trên bên trái của khu vực đó theo mặc định. Để di chuyển nó, hãy thay đổi căn chỉnh trong phần **Layout** của custom element.
+  - **Hug height**: Nếu chiều cao của custom element được đặt thành **Hug**, một view kéo giãn để lấp đầy không gian có sẵn (như bản đồ) sẽ bị thu gọn lại. Thay vào đó, hãy đặt chiều cao [**Fixed**](flow-custom-elements#add-and-configure) cho custom element.
+- **Flow actions**: Native view không thể chạy các flow action, chẳng hạn như chuyển sang màn hình tiếp theo. Phương thức `sendMessage` của element context được dành cho các tính năng Flow & Paywall Builder trong tương lai. Hãy để các nút điều hướng, nút mua hàng và các nút có flow action khác ở bên ngoài custom element.
+- **Selectable elements**: Đặt custom element bên ngoài product card và các [selectable elements](flow-selectable-elements) khác. Khi lựa chọn thay đổi, native view có thể mất trạng thái của nó.
+- **Xử lý điều hướng**: Khi người dùng chuyển sang màn hình tiếp theo, SwiftUI chạy action `onDisappear` của native view. Trong action này, hãy dừng những gì view đã khởi động, chẳng hạn như camera session, player và cập nhật vị trí. Đối với công việc bất đồng bộ, hãy dùng `.task`: SwiftUI sẽ hủy nó khi view biến mất. Khi người dùng quay lại, SDK gọi resolver một lần nữa và SwiftUI đặt lại trạng thái của view.
+- **UIKit views**: Hãy bọc chúng trong `UIViewRepresentable`.
+
+## Viết resolver để khớp các phần tử và view tùy chỉnh \{#write-a-resolver-to-match-custom-elements-and-views\}
+
+Để viết một resolver, hãy cho một type conform với protocol `AdaptyUICustomElementsResolver` và implement phương thức `view(forType:id:context:)`.
+
+Với Type `lottie_animation`, resolver sau đây trả về `LottieElementView`. ID đặt tên file animation trong app bundle, chẳng hạn như `welcome_wave`:
+
+```swift showLineNumbers title="Swift"
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "lottie_animation":
+            // the ID names the animation file, such as welcome_wave.json
+            guard let animation = LottieAnimation.named(id) else {
+                return nil // no file for this ID: show the fallback
+            }
+            return AnyView(LottieElementView(animation: animation))
+        default:
+            return nil
+        }
+    }
+}
+```
+
+Trong trường hợp `default`, hãy trả về `nil`. Nếu bạn [thêm một phần tử tùy chỉnh với Type mới](flow-custom-elements#what-changes-require-an-app-release) sau khi phát hành ứng dụng, người dùng của phiên bản đã phát hành sẽ thấy fallback của nó.
+
+Resolver có các yêu cầu sau:
+
+- **Dữ liệu mạng và player**: Lưu dữ liệu mạng và player trong state của [native view](#create-views-for-custom-elements), không lưu trong resolver. SDK gọi resolver nhiều lần trong khi màn hình đang mở, chẳng hạn khi sản phẩm tải xong hoặc khi người dùng bắt đầu mua hàng. Code trong resolver chạy lại mỗi lần được gọi, khiến các network request lặp lại và player phát lại từ đầu. SwiftUI giữ nguyên state của native view giữa các lần gọi, nên dữ liệu chỉ tải một lần và player tiếp tục phát. Hãy tạo player, session và network request trong `.task` hoặc một `@StateObject`, không phải trong giá trị khởi tạo của property `@State`. Swift đánh giá lại giá trị khởi tạo đó mỗi khi resolver tạo view.
+- **Một native view cho mỗi custom element**: Một số native view thay đổi trong khi màn hình đang mở, ví dụ khi dữ liệu của chúng tải xong hoặc khi người dùng nhấn vào. Hãy triển khai logic này trong chính `body` của view, không phải trong resolver. Nếu resolver trả về một view khác cho cùng một custom element, SwiftUI sẽ reset state của view đó.
+- **Dữ liệu ứng dụng**: Lưu một đối tượng ứng dụng chứa dữ liệu, chẳng hạn như `ObservableObject` với [daily streak](custom-element-lottie-animation), trong một property của resolver. Truyền đối tượng đó vào native view và quan sát nó ở đó bằng `@ObservedObject`. Một giá trị được sao chép vào resolver, như số streak, sẽ giữ nguyên giá trị tại thời điểm bạn tạo resolver. Đừng dùng environment object cho dữ liệu này: với UIKit [flow controller](ios-present-paywalls#present-flows-and-paywalls-in-uikit), native view không nhận được SwiftUI environment của ứng dụng bạn.
+
+### Đặt điều kiện cho nội dung dự phòng \{#set-conditions-for-fallback-content\}
+
+<FlowCustomElementsFallbackConditions />
+
+Đối với một quyền, chỉ trả về `nil` khi người dùng đã từ chối quyền đó trước khi màn hình mở. Nếu người dùng chưa trả lời yêu cầu cấp quyền, hãy trả về native view thay vì `nil` và yêu cầu quyền bên trong đó. Ví dụ, trong [Hiển thị địa điểm lân cận trên bản đồ trong một flow](custom-element-map#3-match-the-map-to-the-custom-element), iOS hiển thị hộp thoại yêu cầu quyền truy cập vị trí khi bản đồ xuất hiện. Native view có thể hiển thị bản đồ ngay khi người dùng cấp quyền. Nếu bạn trả về `nil` và người dùng cấp quyền sau đó, họ vẫn thấy màn hình dự phòng. Việc thay đổi quyền không khiến SDK gọi lại resolver. Native view chỉ xuất hiện sau khi SDK gọi resolver lần tiếp theo, chẳng hạn khi người dùng quay lại màn hình.
+
+## Truyền resolver cho SDK \{#pass-the-resolver-to-the-sdk\}
+
+Bắt đầu với resolver phạm vi toàn ứng dụng. SDK sẽ gọi resolver này trong mọi flow không có resolver riêng. Người dùng thấy các native view của bạn trong các flow mới và A/B test mà không cần phát hành lại ứng dụng. Các view này vẫn hiển thị đúng dữ liệu của từng người dùng, chẳng hạn như [chuỗi ngày liên tiếp](custom-element-lottie-animation), vì chúng đọc dữ liệu đó trực tiếp từ ứng dụng của bạn.
+
+Đính kèm một resolver vào một flow khi flow đó cần dữ liệu mà ứng dụng của bạn chỉ có khi mở flow đó. Ví dụ: một paywall hiển thị [cân nặng mà người dùng đã nhập trong một flow trước đó](custom-element-interactive-chart), hoặc xem trước tài liệu mà người dùng muốn xuất. Bạn cũng có thể đính kèm một resolver vào một flow để hiển thị một view khác cho một Type trong flow đó.
+
+### Đặt resolver toàn ứng dụng \{#set-an-app-wide-resolver\}
+
+Để sử dụng resolver trong mọi flow, hãy gọi `AdaptyUI.setCustomElementsResolver(_:)` một lần, chẳng hạn khi khởi động ứng dụng:
+
+```swift showLineNumbers title="Swift"
+
+// keep this instance: a resolver for one flow can reuse it
+@MainActor let customElementsResolver = CustomElementsResolver()
+
+AdaptyUI.setCustomElementsResolver(customElementsResolver)
+```
+
+:::tip
+Cách đơn giản hơn, nhưng bị giới hạn so với resolver, là truyền vào một dictionary `[String: AdaptyUICustomElementBuilder]` với các khóa là Type. Với dictionary, bạn viết ít code hơn, nhưng không thể [đặt điều kiện cho nội dung dự phòng](#set-conditions-for-fallback-content).
+
+```swift showLineNumbers title="Swift"
+AdaptyUI.setCustomElementsResolver([
+    "lottie_animation": .init { _, id, _ in LottieElementView(animation: .named(id)) },
+])
+```
+:::
+
+### Gắn resolver vào một flow \{#attach-a-resolver-to-one-flow\}
+
+Resolver bạn gắn vào một flow sẽ thay thế resolver toàn ứng dụng trong flow đó. Các giá trị bạn truyền vào resolver này giữ nguyên như khi bạn tải cấu hình flow. Để hiển thị giá trị mới, hãy tải lại cấu hình.
+
+Để giữ lại các view toàn ứng dụng trong flow này, hãy truyền resolver toàn ứng dụng vào resolver này và gọi resolver toàn ứng dụng cho các Type và ID khác. Resolver sau đây xem trước tài liệu mà người dùng muốn xuất, và gọi resolver toàn ứng dụng cho mọi custom element khác:
+
+```swift showLineNumbers title="Swift"
+
+struct ExportPaywallResolver: AdaptyUICustomElementsResolver {
+    let document: Document // the document that the user wants to export
+    let appWideResolver: any AdaptyUICustomElementsResolver
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        if type == "document_preview" {
+            return AnyView(DocumentPreview(document: document))
+        }
+        // other Types: the views of the app-wide resolver
+        return appWideResolver.view(forType: type, id: id, context: context)
+    }
+}
+```
+
+Đính kèm resolver vào flow khi bạn fetch cấu hình của nó:
+
+```swift showLineNumbers title="Swift"
+func showExportPaywall(flow: AdaptyFlow, document: Document) async {
+    do {
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            customElementsResolver: ExportPaywallResolver(
+                document: document,
+                appWideResolver: customElementsResolver // the instance that you set app-wide
+            )
+        )
+        // present the flow
+    } catch {
+        // handle the error
+    }
+}
+```
+
+Nếu bạn dùng dictionary thay vì resolver, hãy gộp hai dictionary lại và gắn kết quả vào flow: `appWideViews.merging(flowViews) { _, flowView in flowView }`. Với một Type xuất hiện trong cả hai dictionary, đoạn code này sẽ ưu tiên giữ lại view của flow hiện tại.
+
+## Kiểm tra trên thiết bị \{#test-on-a-device\}
+
+Flow & Paywall Builder không thể chạy code ứng dụng của bạn, vì vậy canvas chỉ hiển thị fallback. Lỗi trong native view có thể làm crash ứng dụng. Trước khi phát hành ứng dụng, hãy kiểm tra mọi màn hình có custom element trên thiết bị thực:
+
+1. Để xem phiên bản mới nhất đã xuất bản của mỗi flow thay vì phiên bản được cache, hãy đăng ký thiết bị làm [thiết bị test](test-devices).
+2. Trên thiết bị, chạy bản build có chứa resolver. Mở từng màn hình có custom element và xác nhận rằng native view hiển thị đúng và vừa khít với custom element đó. Nếu view có thể cuộn hoặc phản hồi thao tác kéo, hãy kiểm tra các cử chỉ này.
+3. Nếu fallback hiện ra thay vì native view, hãy tìm cảnh báo sau trong Xcode console: `custom element <type>:<id> is not served by a resolver`. Sau đó kiểm tra:
+   - Type và ID trong cảnh báo khớp chính xác với những gì trong code của bạn, từng chữ cái một.
+   - Ứng dụng của bạn có file, dữ liệu hoặc quyền mà view cần.
+   - Ứng dụng của bạn thiết lập resolver toàn cục trước khi màn hình có custom element được mở.
+   - [Resolver cho flow này](#attach-a-resolver-to-one-flow), nếu bạn gắn một resolver, trả về view cho đúng Type và ID đó.
+
+   Nếu cảnh báo không xuất hiện, hãy kiểm tra xem ứng dụng có đang sử dụng Adapty iOS SDK 4.4 trở lên không, và [`Adapty.logLevel`](sdk-installation-ios#logging) không được đặt thành `.error`.
+4. Để xem trước paywall dự phòng, trả về `nil` cho Type và mở lại màn hình.
+
+## Ví dụ \{#examples\}
+
+Mỗi công thức đều trình bày cách thiết lập trong builder và mã nguồn cho ứng dụng của bạn:
+
+- [Hiển thị tiến trình người dùng bằng hoạt ảnh Lottie](custom-element-lottie-animation): Một vòng tròn tự động lấp đầy khi streak tăng lên.
+- [Hiển thị biểu đồ mục tiêu cân nặng tương tác trong paywall](custom-element-interactive-chart): Biểu đồ mục tiêu cân nặng, trong flow paywall tiếp nối sau flow onboarding.
+- [Hiển thị địa điểm lân cận trên bản đồ trong flow](custom-element-map): Bản đồ các trung tâm thể dục gần người dùng.
+- [Tiêu và bán tiền tệ ảo trong flow](ios-virtual-currency-top-up): Số dư kim cương và các nút để người chơi chạm vào nhằm tiêu kim cương đổi lấy năng lượng.

@@ -86,12 +86,14 @@ function MyFlow({ flow }) {
 }
 ```
 
+El controlador `onError` de `AdaptyFlowView` recibe un error cuando el componente no puede mostrar el flow. Esto ocurre cuando el flow no se puede cargar o cuando el dispositivo usa iOS 15, que no es compatible con flows. Deja de renderizar el componente y muestra tu propio contenido.
+
 ## Presentación modal \{#modal-presentation\}
 
-Para mostrar un flow como una pantalla independiente, usa el método `view.present()` sobre el `view` creado por el método [`createFlowView`](react-native-get-pb-paywalls#fetch-the-view-configuration). Cada `view` solo puede usarse una vez. Si necesitas mostrar el flow de nuevo, llama a `createFlowView` otra vez para crear una nueva instancia de `view`.
+Para mostrar un flow como pantalla independiente, usa el método `view.present()` sobre el `view` creado por el método [`createFlowView`](react-native-get-pb-paywalls#fetch-the-view-configuration). Si necesitas mostrar el flow de nuevo, llama a `createFlowView` otra vez para crear una nueva instancia de `view`, o [conserva la vista cerrada](#keep-a-closed-flow-for-later) para mostrarla más adelante.
 
 :::warning
-Reutilizar el mismo `view` sin recrearlo está prohibido. Esto resultará en un error `AdaptyUIError.viewAlreadyPresented`.
+Después de llamar a `view.dismiss()` con las opciones predeterminadas, la vista se libera y volver a llamar a `present()` sobre ella falla. Llamar a `present()` mientras ya hay un flow en pantalla también falla. En ambos casos, se obtiene un `AdaptyError` con código `3001` (`wrongParam`), y su mensaje indica la causa: `AdaptyUIError.viewNotFound` o `AdaptyUIError.viewAlreadyPresented`.
 :::
 
 ```typescript showLineNumbers title="React Native (TSX)"
@@ -124,16 +126,59 @@ try {
 }
 ```
 
-## Usar temporizadores definidos por el desarrollador \{#use-developer-defined-timer\}
+### Mantener un flow cerrado para usarlo más tarde \{#keep-a-closed-flow-for-later\}
 
-Para usar temporizadores definidos por el desarrollador en tu app, utiliza el `timerId`; en este ejemplo, `CUSTOM_TIMER_NY`, el **Timer ID** del temporizador definido por el desarrollador que configuraste en el Adapty Dashboard. Esto garantiza que tu app actualice el temporizador dinámicamente con el valor correcto, como `13d 09h 03m 34s` (calculado como la fecha de finalización del temporizador, por ejemplo, Año Nuevo, menos la hora actual).
+:::info
+La opción `destroy` y el método `destroy()` están disponibles a partir de la versión 4.3.0 del SDK.
+:::
+
+Por defecto, `view.dismiss()` cierra el flow y destruye su vista nativa, por lo que `view` no se puede mostrar de nuevo. Para volver a mostrar el mismo flow más adelante, pasa `destroy: false`. La siguiente llamada a `present()` abre el flow en la pantalla donde el usuario lo cerró, con el estado en que lo dejó, y los manejadores de eventos permanecen configurados:
+
+```typescript showLineNumbers
+// Close the flow and keep its native view in memory
+await view.dismiss({ destroy: false });
+
+// Later: open the flow again on the same screen
+await view.present();
+```
+
+La vista nativa permanece en memoria hasta que la liberes. Cuando ya no necesites el flow, llama a `destroy()`:
+
+```typescript showLineNumbers
+await view.dismiss({ destroy: false });
+// ...
+await view.destroy();
+```
+
+Llama a `destroy()` solo para una vista que hayas cerrado con `destroy: false`. Un `dismiss()` normal libera la vista por sí solo.
+
+Un controlador de eventos que devuelve `true` cierra el flow con un `dismiss()` normal, lo que destruye la vista nativa aunque la hayas conservado antes. Los controladores predeterminados `onCloseButtonPress` y `onError` devuelven `true`. Para conservar el flow cuando el usuario lo cierra, ciérralo tú mismo y devuelve `false`:
+
+```typescript showLineNumbers
+view.setEventHandlers({
+  onCloseButtonPress() {
+    view.dismiss({ destroy: false }).catch(error => {
+      // handle the error
+    });
+    return false;
+  },
+});
+```
+
+## Usar un temporizador definido por el desarrollador \{#use-developer-defined-timer\}
+
+Utiliza esta sección para un temporizador con el comportamiento **Developer defined** en el Flow & Paywall Builder. En el builder, cada temporizador de este tipo tiene un **Timer ID** (consulta [Deja que tu app establezca la fecha de fin](flow-timer#let-your-app-set-the-end-date)), y tu app establece la fecha de fin para él. Usa exactamente el mismo Timer ID en tu código que en el builder, carácter por carácter, incluidas mayúsculas, minúsculas y espacios. Si los IDs no coinciden, el temporizador no recibirá ninguna fecha de fin desde tu app.
+
+Para establecer las fechas de finalización, pasa el parámetro `customTimers`: un objeto que mapea cada ID de temporizador a una `Date`, la fecha de finalización del temporizador.
 
 <Tabs>
 <TabItem value="component" label="React component">
 ```typescript showLineNumbers title="React Native (TSX)"
-const flowParams = {
-  customTimers: { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
-};
+const flowParams = useMemo(() => ({
+  customTimers: {
+    CUSTOM_TIMER_NY: new Date(new Date().getFullYear() + 1, 0, 1), // next New Year's Day
+  },
+}), []);
 
 <AdaptyFlowView
   flow={flow}
@@ -144,13 +189,24 @@ const flowParams = {
 </TabItem>
 <TabItem value="modal" label="Modal presentation">
 ```typescript showLineNumbers title="React Native (TSX)"
-const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
 
-const view = await createFlowView(flow, { customTimers });
+const customTimers = {
+  CUSTOM_TIMER_NY: new Date(new Date().getFullYear() + 1, 0, 1), // next New Year's Day
+};
+
+try {
+  const view = await createFlowView(flow, { customTimers });
+  await view.present();
+} catch (error) {
+  // handle the error
+}
 ```
 </TabItem>
 </Tabs>
-En este ejemplo, `CUSTOM_TIMER_NY` es el **Timer ID** del temporizador definido por el desarrollador que configuraste en el Adapty Dashboard. El `timerResolver` garantiza que tu app actualice dinámicamente el temporizador con el valor correcto, como `13d 09h 03m 34s` (calculado como la hora de fin del temporizador, por ejemplo Año Nuevo, menos la hora actual).
+
+En este ejemplo, `CUSTOM_TIMER_NY` es el Timer ID de un temporizador **definido por el desarrollador** en el builder. El temporizador muestra el tiempo restante hasta el próximo Año Nuevo, por ejemplo `13d 09h 03m 34s`.
+
+El SDK lee `customTimers` una sola vez, cuando crea la vista, por lo que una fecha que calcules, como 6 horas a partir de ahora, empieza a contar desde ese momento. Si la fecha ya pasó, el temporizador muestra cero de inmediato y se ejecuta su trigger **On timer end**. Si `customTimers` no tiene ninguna clave para un Timer ID, el temporizador cuenta regresivamente una hora desde que se abre la pantalla.
 
 ## Mostrar diálogo \{#show-dialog\}
 
@@ -174,6 +230,10 @@ try {
   // handle error
 }
 ```
+
+## Enviar mensajes a un flow \{#send-messages-to-a-flow\}
+
+El método `sendAppMessage` de una vista de flow envía un mensaje al flow como objeto JSON. Este método está reservado para futuras capacidades del Flow & Paywall Builder. Los flows ignoran estos mensajes, por lo que no es necesario llamar al método.
 
 ## Reemplazar una suscripción por otra \{#replace-one-subscription-with-another\}
 
@@ -323,7 +383,7 @@ try {
 
 ## Usar temporizadores definidos por el desarrollador \{#use-developer-defined-timer\}
 
-Para usar temporizadores definidos por el desarrollador en tu app, utiliza el `timerId`; en este ejemplo, `CUSTOM_TIMER_NY` es el **Timer ID** del temporizador definido por el desarrollador que configuraste en el Adapty dashboard. Esto garantiza que tu app actualice el temporizador dinámicamente con el valor correcto, como `13d 09h 03m 34s` (calculado como la hora de finalización del temporizador, por ejemplo, Año Nuevo, menos la hora actual).
+Para usar temporizadores definidos por el desarrollador en tu app, utiliza el `timerId`; en este ejemplo, `CUSTOM_TIMER_NY`, el **Timer ID** del temporizador definido por el desarrollador que configuraste en el Adapty Dashboard. Esto garantiza que tu app actualice el temporizador dinámicamente con el valor correcto, como `13d 09h 03m 34s` (calculado como la fecha de finalización del temporizador, por ejemplo, Año Nuevo, menos la hora actual).
 
 <Tabs>
 <TabItem value="component" label="React component">
@@ -347,7 +407,7 @@ const view = await createPaywallView(paywall, { customTimers });
 ```
 </TabItem>
 </Tabs>
-En este ejemplo, `CUSTOM_TIMER_NY` es el **Timer ID** del temporizador definido por el desarrollador que configuraste en el Adapty dashboard. El `timerResolver` garantiza que tu app actualice dinámicamente el temporizador con el valor correcto, como `13d 09h 03m 34s` (calculado como el tiempo de finalización del temporizador, por ejemplo el Año Nuevo, menos la hora actual).
+En este ejemplo, `CUSTOM_TIMER_NY` es el **Timer ID** del temporizador definido por el desarrollador que configuraste en el Adapty Dashboard. El `timerResolver` garantiza que tu app actualice dinámicamente el temporizador con el valor correcto, como `13d 09h 03m 34s` (calculado como la hora de fin del temporizador, por ejemplo Año Nuevo, menos la hora actual).
 
 ## Mostrar diálogo \{#show-dialog\}
 

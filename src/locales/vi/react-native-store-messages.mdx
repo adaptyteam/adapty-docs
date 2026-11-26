@@ -1,0 +1,100 @@
+---
+title: "Kiểm soát thông báo cửa hàng trong React Native SDK"
+description: "Chọn thời điểm ứng dụng React Native của bạn hiển thị thông báo từ App Store và Google Play về tăng giá, vấn đề thanh toán và thanh toán bị từ chối, để chúng không làm gián đoạn flow hoặc onboarding."
+metadataTitle: "Kiểm soát thông báo cửa hàng | React Native SDK | Tài liệu Adapty"
+---
+
+App Store và Google Play đôi khi cần hiển thị thông báo cho người dùng về gói đăng ký của họ:
+
+- **App Store**: Yêu cầu đồng ý tăng giá, thông báo vấn đề thanh toán, hoặc ưu đãi thu hút khách hàng cũ. Theo mặc định, StoreKit tự hiển thị các thông báo này khi ứng dụng đang mở.
+- **Google Play**: Thông báo rằng thanh toán gói đăng ký bị từ chối và cần cập nhật phương thức thanh toán. Theo mặc định, Adapty SDK yêu cầu các thông báo này mỗi khi một `Activity` của ứng dụng khởi động.
+
+Dù trong trường hợp nào, một thông báo có thể xuất hiện trên một flow, một onboarding hoặc màn hình thanh toán. Để tự chọn thời điểm hiển thị, hãy chuyển Adapty SDK sang chế độ xử lý thông báo thủ công, và gọi `showStoreMessages` khi thông báo không làm gián đoạn người dùng.
+
+:::warning
+Ở chế độ thủ công, cửa hàng sẽ không tự hiển thị thông báo. Nếu ứng dụng của bạn không bao giờ gọi `showStoreMessages`, người dùng sẽ không bao giờ thấy yêu cầu đồng ý tăng giá, thông báo vấn đề thanh toán, hay thông báo thanh toán bị từ chối.
+:::
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+Bạn cần:
+
+- **Adapty React Native SDK 4.3.0 trở lên**: Các phiên bản cũ hơn không có API store messages.
+- **iOS 16 trở lên** để nhận App Store messages: StoreKit không gửi messages đến ứng dụng trên các phiên bản cũ hơn. Trên iOS 15, `getPendingStoreMessageTypes` và `showStoreMessages` sẽ báo lỗi, vì vậy nếu ứng dụng của bạn hỗ trợ iOS 15, hãy chỉ gọi chúng trên iOS 16 trở lên.
+
+## Bật xử lý thủ công \{#enable-manual-handling\}
+
+Để chỉ hiển thị thông báo từ cửa hàng khi ứng dụng của bạn gọi `showStoreMessages`, hãy đặt `storeMessagesHandling` thành `'manual'` khi bạn [kích hoạt SDK](sdk-installation-react-native-pure#activate-adapty-module-of-adapty-sdk):
+
+```typescript showLineNumbers title="App.tsx"
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+  storeMessagesHandling: 'manual', // 'auto' is the default
+});
+```
+
+Trên iOS, SDK sẽ thêm từng thông báo App Store vào danh sách chờ cho phiên ứng dụng hiện tại. Trên Android, SDK ngừng tự yêu cầu thông báo Google Play. Với giá trị mặc định `'auto'`, SDK không chặn thông báo App Store, do đó trên iOS, `getPendingStoreMessageTypes` và `showStoreMessages` sẽ không có gì để trả về hoặc hiển thị.
+
+## Lấy các loại tin nhắn đang chờ \{#get-pending-message-types\}
+
+Trên iOS, để kiểm tra xem có tin nhắn nào từ App Store đang chờ hay không, hãy gọi `getPendingStoreMessageTypes`. Hàm này trả về các loại tin nhắn đang chờ mà không hiển thị hay xóa chúng:
+
+```typescript showLineNumbers
+const pendingTypes = await adapty.getPendingStoreMessageTypes();
+
+if (pendingTypes === null) {
+  // Android: Google Play decides whether a message applies when you show it
+} else if (pendingTypes.includes('billing_issue')) {
+  // For example, skip the upsell and show the billing message first
+}
+```
+
+Trên Android, phương thức trả về `null`: Google Play không báo cáo các tin nhắn đang chờ xử lý, và chỉ quyết định xem tin nhắn có áp dụng hay không khi ứng dụng của bạn yêu cầu. Mảng rỗng có nghĩa là không có tin nhắn đang chờ xử lý trên iOS.
+
+Mỗi tin nhắn của App Store có một trong các loại sau:
+
+| Loại | Thông báo |
+|:-----|:--------|
+| `generic` | Thông báo chung từ App Store. |
+| `price_increase_consent` | Yêu cầu đồng ý tăng giá gói đăng ký. |
+| `billing_issue` | Thông báo về sự cố thanh toán gói đăng ký. Khả dụng trên iOS 16.4 trở lên. |
+| `win_back_offer` | [Ưu đãi thu hút khách hàng cũ](app-store-offers#win-back-offers) đủ điều kiện. Khả dụng trên iOS 18 trở lên. |
+
+Loại thông báo mà SDK không nhận dạng được sẽ có giá trị `storekit_<number>`.
+
+## Hiển thị thông báo \{#show-messages\}
+
+Khi ứng dụng của bạn đến một điểm mà thông báo từ cửa hàng sẽ không làm gián đoạn người dùng — ví dụ, sau khi người dùng đóng một flow hoặc hoàn tất onboarding — hãy gọi `showStoreMessages`:
+
+```typescript showLineNumbers
+try {
+  await adapty.showStoreMessages();
+} catch (error) {
+  // handle the error
+}
+```
+
+- **iOS**: SDK hiển thị các tin nhắn đang chờ lần lượt. Sau khi StoreKit hiển thị một tin nhắn, SDK sẽ xóa nó khỏi danh sách chờ. Nếu StoreKit không hiển thị được tin nhắn, SDK sẽ ghi lỗi vào log của Adapty, giữ lại tin nhắn đó cho lần gọi tiếp theo, và tiếp tục xử lý các tin nhắn còn lại.
+- **Android**: SDK yêu cầu Google Play hiển thị tin nhắn cho `Activity` hiện tại. Google Play tự quyết định xem tin nhắn có áp dụng cho người dùng hay không, vì vậy một yêu cầu không phải lúc nào cũng dẫn đến việc hiển thị tin nhắn. Nếu người dùng sửa phương thức thanh toán từ tin nhắn đó, SDK sẽ đồng bộ các giao dịch mua của người dùng với Adapty, và [trình lắng nghe hồ sơ người dùng](react-native-listen-subscription-changes) của bạn sẽ nhận được mức độ truy cập đã cập nhật.
+
+Trong chế độ `'auto'` mặc định, bạn cũng có thể gọi `showStoreMessages` trên Android — ví dụ, để yêu cầu lại một thông báo trên một `Activity` đang chạy.
+
+### Chỉ hiển thị một số loại thông báo \{#show-only-some-message-types\}
+
+Để chỉ hiển thị một số thông báo App Store đang chờ xử lý, hãy truyền các loại vào `ios.filter`. Các thông báo còn lại vẫn ở trạng thái chờ:
+
+```typescript showLineNumbers
+await adapty.showStoreMessages({
+  ios: { filter: ['billing_issue', 'price_increase_consent'] },
+});
+```
+
+Nếu không có `filter`, SDK sẽ hiển thị tất cả các thông báo đang chờ, kể cả những loại mà SDK không nhận ra. Android bỏ qua `filter` và yêu cầu tất cả thông báo Google Play.
+
+### Lỗi
+
+`showStoreMessages` ném ra một [`AdaptyError`](react-native-handle-errors) với một trong các mã sau:
+
+| Mã | Tên | Nguyên nhân |
+|:-----|:-----|:------|
+| 3201 | `operationInProgress` | Một lệnh gọi `showStoreMessages` khác vẫn đang hiển thị thông báo. Hãy chờ lệnh đó hoàn thành rồi thử lại. |
+| 3202 | `resolverFailure` | Chỉ trên iOS: SDK không tìm thấy window scene đang hoạt động ở foreground để hiển thị thông báo. Hãy gọi phương thức này khi ứng dụng của bạn đang ở foreground. |

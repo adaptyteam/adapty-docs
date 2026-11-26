@@ -55,7 +55,7 @@ adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp"
 
 El módulo `adapty-kmp-ui` solo es necesario si renderizas flows y paywalls con la capa de Compose Multiplatform (`view.present()`). Consulta [Instalar el SDK de Adapty](sdk-installation-kotlin-multiplatform) para la configuración completa.
 
-Los SDKs nativos de Adapty subyacentes se han actualizado a sus versiones 4.x en ambas plataformas y se resuelven automáticamente — no se necesitan cambios en la compilación. El target de despliegue de iOS sigue siendo **15.0**, sin cambios en esta versión.
+Los SDKs nativos de Adapty subyacentes se han actualizado a sus versiones 4.x en ambas plataformas y se resuelven automáticamente. En Android, establece `compileSdk` en 35 o superior en tu módulo de aplicación. La biblioteca Adapty UI utiliza Jetpack Compose 1.8, que lo requiere. El objetivo de despliegue de iOS se mantiene en **15.0**, sin cambios en esta versión.
 
 ## ⚠️ La atribución de Adapty está desactivada por defecto \{#adapty-attribution-is-disabled-by-default\}
 
@@ -105,6 +105,19 @@ El tipo devuelto cambia de `AdaptyPaywall` a `AdaptyFlow`, y el parámetro `loca
 - Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en")
 + Adapty.getFlowForDefaultAudience("YOUR_PLACEMENT_ID")
 ```
+
+### La coincidencia de localización es exacta \{#locale-matching-is-exact\}
+
+:::warning
+En v3, el servidor de Adapty seleccionaba la localización y hacía fallback al idioma: una solicitud `pt-br` obtenía la localización `pt` cuando el paywall no tenía `pt-br`. En v4, el SDK selecciona la localización en el dispositivo y solo usa coincidencias exactas. Un código que no coincide con ninguna localización renderiza el flow en su localización predeterminada, sin error ni advertencia.
+:::
+
+Antes de actualizar, comprueba los códigos de localización que pasa tu aplicación:
+
+- Para cada código regional que pases, añade una localización con ese código — por ejemplo, `pt-BR` además de `pt` — o mapea el código a uno que el flow tenga.
+- Pasa los códigos exactamente como los tiene el flow publicado: `pt-BR`, no `pt-br` del campo **Select languages**. Para paywalls del antiguo Paywall Builder, pasa los códigos en minúsculas, como `pt-br`. No pases un identificador de locale del sistema tal cual: `pt_BR` no coincide con ninguna localización, y `en-US` no encontrará un flow que solo tenga `en`.
+
+Consulta [Localizaciones y códigos de locale](kmp-localizations-and-locale-codes#flows-and-paywalls).
 
 ### getPaywallProducts(paywall) → getPaywallProducts(flow)
 
@@ -250,11 +263,11 @@ Al igual que en la v3, los callbacks que pasas aquí (y cualquier observador reg
 
 ### Nuevas APIs \{#new-apis\}
 
-- `AdaptyUI.setObserverModeResolver(...)` con un `AdaptyUIObserverModeResolver` — gestiona compras y restauraciones iniciadas desde flows mientras el SDK funciona en [modo Observer](implement-observer-mode-kmp). Antes esto solo estaba disponible en los SDKs nativos de iOS y Android. Consulta [Presentar flows en modo Observer](kmp-present-flows-in-observer-mode).
-- `AdaptyUI.setSystemRequestsHandler(...)` con un `AdaptyUISystemRequestsHandler` — reservado para solicitudes del sistema desde un flow (solicitudes de permisos del SO y peticiones de valoración de la app). Los flows aún no activan estas solicitudes, por lo que no es necesario registrar un handler.
-- El nuevo callback opcional `flowViewDidReceiveAnalyticEvent` reporta eventos de analítica desde un flow, comenzando con una vista de pantalla por cada pantalla que abre el usuario. Consulta [Rastrear vistas de pantalla de flows](kmp-flow-screen-views).
-- `AdaptyUI.openWebUrl(url, openIn)` y `AdaptyUI.requestAppReview()` — son la base del manejo predeterminado de `OpenUrlAction` y del `handleAppReviewRequest` predeterminado, por lo que las URLs y las solicitudes de valoración de la app se gestionan de forma nativa sin configuración adicional. Llámalos directamente solo si sobreescribes esos comportamientos predeterminados.
-- `AdaptyUIFlowView.locale` — informa la localización con la que se construyó la vista, para que puedas saber cuál ve realmente el usuario.
+- `AdaptyUI.setObserverModeResolver(...)` con un `AdaptyUIObserverModeResolver` — gestiona las compras y restauraciones iniciadas desde flows mientras el SDK funciona en [modo observador](implement-observer-mode-kmp). Antes esto solo estaba disponible en los SDKs nativos de iOS y Android. Consulta [Presentar flows en modo observador](kmp-present-flows-in-observer-mode).
+- `AdaptyUI.setSystemRequestsHandler(...)` con un `AdaptyUISystemRequestsHandler` — responde a las solicitudes del sistema desde un flow (permisos del SO y solicitudes de valoración de la app). Registra uno si tus flows usan la acción **Request permission**: consulta [Gestionar solicitudes de permisos en flows](kmp-handle-permissions).
+- El nuevo callback opcional `flowViewDidReceiveAnalyticEvent` reporta eventos de analítica desde un flow, comenzando con una vista de pantalla por cada pantalla que abre el usuario. Consulta [Rastrear vistas de pantalla en flows](kmp-flow-screen-views).
+- `AdaptyUI.openWebUrl(url, openIn)` y `AdaptyUI.requestAppReview()` — estos respaldan la gestión predeterminada de `OpenUrlAction` y el `handleAppReviewRequest` por defecto, de modo que las URLs y las solicitudes de valoración de la app se gestionan de forma nativa sin configuración adicional. Llámalos directamente solo si sobreescribes esos comportamientos predeterminados.
+- `AdaptyUIFlowView.locale` — reporta la localización con la que se construyó la vista, para que puedas saber cuál ve realmente el usuario.
 - `AdaptyConfig.ServerCluster.CN` — una nueva opción de clúster de servidor junto a `DEFAULT` y `EU`, para conectar tu app a los [servidores de Adapty en China](china-cluster).
 
 ## API de atribución externa renombradas \{#renamed-external-attribution-apis\}
@@ -326,10 +339,11 @@ Si ningún layout coincide con el ID, el flow se carga sin una configuración de
 
 Estos cambios no provocan errores de compilación, así que pruébalos en tiempo de ejecución:
 
-- **Finalización de compra**: En v3, el `paywallViewDidFinishPurchase` predeterminado cerraba la vista tras cualquier resultado de compra que no fuera `AdaptyPurchaseResult.UserCanceled`. En v4, el `flowViewDidFinishPurchase` predeterminado no hace nada, por lo que **un flow permanece abierto tras una compra hasta que lo cierres tú** — igual que en iOS. Si dependías de ese cierre automático, llama a `view.dismiss()` cuando finalice la compra.
-- **Botón atrás de Android**: En v3, el `paywallViewDidPerformAction` predeterminado cerraba la vista tanto con `CloseAction` como con `AndroidSystemBackAction`. En v4, el comportamiento predeterminado solo gestiona `CloseAction` — **el botón atrás del sistema ya no cierra un flow por sí solo**, igual que en iOS, donde un flow no puede cerrarse con un gesto del sistema. Ofrece a los usuarios una salida explícita (un botón **Close** o una acción `on_device_back`), o cierra la vista tú mismo en `flowViewDidPerformAction`.
-- **Errores de vista**: En v3, el `paywallViewDidFailRendering` predeterminado no hacía nada. En v4, el `flowViewDidReceiveError` predeterminado **cierra la vista** — sobreescríbelo si quieres mantenerla abierta o gestionar el error de otra manera.
-- **Las vistas son de un solo uso**: Tras llamar a `dismiss()`, la vista se destruye. Llama a `createFlowView` de nuevo para mostrar el flow otra vez.
+- **Localización del flow**: Un código de locale regional ya no utiliza como respaldo el idioma base — `pt-br` no obtiene la localización `pt`. Un código sin coincidencia exacta muestra el flow en su localización por defecto. Consulta [La coincidencia de locale es exacta](#locale-matching-is-exact).
+- **Finalización de compra**: En v3, el `paywallViewDidFinishPurchase` por defecto descartaba la vista tras cualquier resultado de compra distinto de `AdaptyPurchaseResult.UserCanceled`. En v4, el `flowViewDidFinishPurchase` por defecto no hace nada, por lo que **el flow permanece abierto tras una compra hasta que lo cierras explícitamente** — igual que en iOS. Si dependías de ese cierre automático, llama a `view.dismiss()` cuando finalice la compra.
+- **Botón Atrás de Android**: En v3, el `paywallViewDidPerformAction` por defecto descartaba la vista tanto en `CloseAction` como en `AndroidSystemBackAction`. En v4, el comportamiento por defecto solo gestiona `CloseAction` — **el botón Atrás del sistema ya no cierra un flow por sí solo**, igual que en iOS, donde un flow no puede cerrarse mediante un gesto del sistema. Ofrece a los usuarios una salida explícita (un botón **Close** o una acción `on_device_back`), o descarta la vista tú mismo en `flowViewDidPerformAction`.
+- **Errores de vista**: En v3, el `paywallViewDidFailRendering` por defecto no hacía nada. En v4, el `flowViewDidReceiveError` por defecto **descarta la vista** — sobrescríbelo si quieres mantenerla abierta o gestionar el error de otra manera.
+- **Las vistas son de un solo uso**: Tras llamar a `dismiss()`, la vista se destruye. Llama de nuevo a `createFlowView` para mostrar el flow otra vez.
 
 ## Desaprobación de la API de onboarding \{#onboarding-api-deprecation\}
 

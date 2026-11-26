@@ -94,12 +94,14 @@ function MyFlow({ flow }) {
 }
 ```
 
+The `onError` handler of `AdaptyFlowView` receives an error when the component can't show the flow. This happens when the flow fails to load, or when the device runs iOS 15, which flows don't support. Stop rendering the component, and show your own content.
+
 ## Modal presentation
 
-To display a flow as a standalone screen, use the `view.present()` method on the `view` created by the [`createFlowView`](react-native-get-pb-paywalls#fetch-the-view-configuration) method. Each `view` can only be used once. If you need to display the flow again, call `createFlowView` one more time to create a new `view` instance.
+To display a flow as a standalone screen, use the `view.present()` method on the `view` created by the [`createFlowView`](react-native-get-pb-paywalls#fetch-the-view-configuration) method. If you need to display the flow again, call `createFlowView` one more time to create a new `view` instance, or [keep the closed view](#keep-a-closed-flow-for-later) to present it again.
 
 :::warning
-Reusing the same `view` without recreating it is forbidden. It will result in an `AdaptyUIError.viewAlreadyPresented` error.
+After `view.dismiss()` with default options, the view is released, and calling `present()` on it again fails. Calling `present()` while a flow is already on the screen also fails. In both cases, you get an `AdaptyError` with code `3001` (`wrongParam`), and its message names the cause: `AdaptyUIError.viewNotFound` or `AdaptyUIError.viewAlreadyPresented`.
 :::
 
 ```typescript showLineNumbers title="React Native (TSX)"
@@ -133,16 +135,59 @@ try {
 }
 ```
 
+### Keep a closed flow for later
+
+:::info
+The `destroy` option and the `destroy()` method are available starting from SDK version 4.3.0.
+:::
+
+By default, `view.dismiss()` closes the flow and destroys its native view, so the `view` can't be presented again. To present the same flow again later, pass `destroy: false`. The next `present()` call opens the flow on the screen where the user closed it, with the state the user left it in, and your event handlers stay set:
+
+```typescript showLineNumbers
+// Close the flow and keep its native view in memory
+await view.dismiss({ destroy: false });
+
+// Later: open the flow again on the same screen
+await view.present();
+```
+
+The native view stays in memory until you release it. When you no longer need the flow, call `destroy()`:
+
+```typescript showLineNumbers
+await view.dismiss({ destroy: false });
+// ...
+await view.destroy();
+```
+
+Call `destroy()` only for a view that you closed with `destroy: false`. A regular `dismiss()` releases the view on its own.
+
+An event handler that returns `true` closes the flow with a regular `dismiss()`, which destroys the native view even if you kept it earlier. The default `onCloseButtonPress` and `onError` handlers return `true`. To keep the flow when the user closes it, close the flow yourself and return `false`:
+
+```typescript showLineNumbers
+view.setEventHandlers({
+  onCloseButtonPress() {
+    view.dismiss({ destroy: false }).catch(error => {
+      // handle the error
+    });
+    return false;
+  },
+});
+```
+
 ## Use developer-defined timer
 
-To use developer-defined timers in your mobile app, use the `timerId`, in this example, `CUSTOM_TIMER_NY`, the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. It ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer's end time, such as New Year's Day, minus the current time).
+Use this section for a timer with the **Developer defined** behavior in the Flow & Paywall Builder. In the builder, each such timer has a **Timer ID** (see [Let your app set the end date](flow-timer#let-your-app-set-the-end-date)), and your app sets the end date for it. Use the same Timer ID in your code as in the builder, character for character, including letter case and spaces. If the IDs differ, the timer gets no end date from your app.
+
+To set the end dates, pass the `customTimers` parameter: an object that maps each Timer ID to a `Date`, the end date of the timer.
 
 <Tabs>
 <TabItem value="component" label="React component">
 ```typescript showLineNumbers title="React Native (TSX)"
-const flowParams = {
-  customTimers: { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
-};
+const flowParams = useMemo(() => ({
+  customTimers: {
+    CUSTOM_TIMER_NY: new Date(new Date().getFullYear() + 1, 0, 1), // next New Year's Day
+  },
+}), []);
 
 <AdaptyFlowView
   flow={flow}
@@ -153,13 +198,25 @@ const flowParams = {
 </TabItem>
 <TabItem value="modal" label="Modal presentation">
 ```typescript showLineNumbers title="React Native (TSX)"
-const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
+import { createFlowView } from 'react-native-adapty';
 
-const view = await createFlowView(flow, { customTimers });
+const customTimers = {
+  CUSTOM_TIMER_NY: new Date(new Date().getFullYear() + 1, 0, 1), // next New Year's Day
+};
+
+try {
+  const view = await createFlowView(flow, { customTimers });
+  await view.present();
+} catch (error) {
+  // handle the error
+}
 ```
 </TabItem>
 </Tabs>
-In this example, `CUSTOM_TIMER_NY` is the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. The `timerResolver` ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer's end time, such as New Year's Day, minus the current time).
+
+In this example, `CUSTOM_TIMER_NY` is the Timer ID of a **Developer defined** timer in the builder. The timer shows the time left until the next New Year's Day, for example `13d 09h 03m 34s`.
+
+The SDK reads `customTimers` once, when it creates the view, so a date that you compute, such as 6 hours from now, counts from that moment. If the date is in the past, the timer shows zero at once and its **On timer end** trigger runs. If `customTimers` has no key for a Timer ID, the timer counts down one hour from the screen open.
 
 ## Show dialog
 
@@ -183,6 +240,10 @@ try {
   // handle error
 }
 ```
+
+## Send messages to a flow
+
+The `sendAppMessage` method of a flow view sends a message to the flow, as a JSON object. The method is reserved for future Flow & Paywall Builder capabilities. Flows ignore these messages, so you don't need to call the method.
 
 ## Replace one subscription with another
 

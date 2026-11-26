@@ -1,0 +1,51 @@
+---
+no_index: true
+---
+
+import Callout from '../../../components/Callout.astro';
+
+Khi người chơi nhấn vào một nút trong flow hết năng lượng, code ứng dụng của bạn gọi đến backend để tiêu kim cương cho tùy chọn của nút đó. Code ứng dụng không thể gửi lệnh tiêu trực tiếp đến Adapty, vì yêu cầu cần secret API key của bạn. Backend của bạn gọi [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction) với `amount` âm, như trong hướng dẫn [Virtual currency quickstart](virtual-currency-quickstart). Gửi lệnh tiêu mà không cần yêu cầu số dư trước: Adapty sẽ xác minh số dư như một phần của giao dịch tiêu.
+
+Lưu chi phí của mỗi tùy chọn trên backend của bạn: 10 kim cương để hồi phục năng lượng và 30 kim cương cho một giờ năng lượng không giới hạn. Code ứng dụng chỉ gửi tùy chọn đến backend, nên một phiên bản bị chỉnh sửa của ứng dụng không thể giảm chi phí.
+
+```bash title="Spend diamonds"
+curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
+  -H "Authorization: Api-Key {your secret key}" \
+  -H "adapty-customer-user-id: player-42" \
+  -H "Idempotency-Key: 5221577a-8b4c-419a-a0f5-028e4598b265" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "items": [{"currency_code": "DIAMONDS", "amount": -30}],
+        "operation": "spend",
+        "feature": "unlimited_energy",
+        "customer_placement_id": "out_of_energy",
+        "reference_id": "energy_order_7781"
+      }'
+```
+
+Yêu cầu xác định lệnh tiêu, người chơi và tùy chọn:
+
+- **`Idempotency-Key`**: Một UUID v4 mà code ứng dụng của bạn tạo cho mỗi lần tiêu mới, để bảo vệ người dùng khỏi bị trừ nhiều lần cho cùng một giao dịch. Nếu bạn cần thử lại giao dịch (ví dụ do lỗi mạng), hãy dùng lại key từ giao dịch gốc. Key có hiệu lực trong 1 giờ. Khi một giao dịch với key đó thành công, các yêu cầu sau với cùng key sẽ trả về giao dịch gốc và không thay đổi số dư.
+- **`adapty-customer-user-id`**: Customer user ID của người dùng đang đăng nhập. Trong backend của bạn, đọc nó từ phiên đăng nhập.
+- **`feature`**: Một [nhãn](virtual-currencies#feature) cho tùy chọn, chẳng hạn `unlimited_energy`. Với nhãn này, bạn có thể xem mỗi lần tiêu dùng để làm gì trong [lịch sử sự kiện](virtual-currency-balance#review-balance-changes-in-the-event-history) của người chơi.
+
+Hai trường tùy chọn giúp bạn truy vết lệnh tiêu sau này. Cả hai đều xuất hiện trong [chi tiết giao dịch](virtual-currency-balance#transaction-details) của lịch sử sự kiện:
+
+- **`customer_placement_id`**: ID của màn hình trong ứng dụng nơi lệnh tiêu xảy ra. Với nó, bạn có thể xem mỗi lệnh tiêu đến từ màn hình nào. Trong hướng dẫn này, sử dụng placement ID của flow hết năng lượng, `out_of_energy`.
+- **`reference_id`**: ID của bản ghi liên quan trong backend của bạn, chẳng hạn đơn hàng năng lượng mà lệnh tiêu này thanh toán. Với nó, đội hỗ trợ của bạn có thể khớp một lệnh tiêu với những gì người dùng nhận được.
+
+Nếu lệnh tiêu thành công, hãy cấp năng lượng cho người chơi từ backend của bạn: Adapty lưu số dư kim cương, không phải năng lượng. Cấp năng lượng một lần cho mỗi `transaction_id` trong response, vì một lần thử lại với cùng `Idempotency-Key` sẽ trả về giao dịch gốc. Mảng `balances` trong response bao gồm giá trị `available` của `DIAMONDS`: số kim cương mà người chơi có thể tiêu ngay bây giờ. Trả giá trị này về cho code ứng dụng.
+
+Nếu số dư không đủ để chi trả, yêu cầu sẽ thất bại với HTTP status 400 và không thay đổi số dư. Để phát hiện lỗi này, so sánh `error_code` với `insufficient_balance`. Sau đó tính số kim cương người chơi còn thiếu: đọc số dư bằng [List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances), rồi lấy chi phí trừ đi giá trị `available` của `DIAMONDS`. Trả kết quả và giá trị `available` về cho code ứng dụng.
+
+Nếu kết quả bằng 0 hoặc nhỏ hơn, Adapty đã cộng kim cương vào số dư sau khi lệnh tiêu thất bại, chẳng hạn khi gia hạn gói đăng ký. Trong trường hợp này, hãy thử lại yêu cầu với cùng `Idempotency-Key`, và trả về kết quả của lần thử lại. Adapty không lưu key của một lệnh tiêu thất bại, vì vậy nó chấp nhận yêu cầu lần hai.
+
+Khi yêu cầu đầu tiên với cùng `Idempotency-Key` vẫn đang xử lý, lần thử lại sẽ thất bại với HTTP status 409 và mã lỗi `idempotency_in_flight`. Hãy chờ số giây được chỉ định trong header `Retry-After` của response, rồi thử lại yêu cầu với cùng key.
+
+Các yêu cầu tiêu từ tất cả người dùng của bạn được tính vào một giới hạn chung: mặc định là 600 yêu cầu mỗi phút cho ứng dụng của bạn. Một yêu cầu vượt quá giới hạn sẽ thất bại với HTTP status 429 và mã lỗi `rate_limited`. Nếu bạn dự kiến nhiều yêu cầu tiêu hơn vào giờ cao điểm, hãy hỏi bộ phận hỗ trợ về [giới hạn tốc độ](ss-authorization#rate-limits) áp dụng cho ứng dụng của bạn.
+
+Trên backend của bạn, hãy thêm một endpoint cho số dư: gọi List virtual currency balances và trả về giá trị `available` của `DIAMONDS`. Code ứng dụng trong hướng dẫn này gọi endpoint này trước khi flow hết năng lượng mở, và sau khi mua hàng.
+
+<Callout type="tip">
+Khi bạn [bật tính năng hết hạn tín dụng](create-virtual-currency#link-products) cho gói đăng ký, hãy nhắc nhở người dùng tiêu hết tín dụng đúng hạn. Mảng `expiry.expiring` của [List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances) liệt kê số tín dụng sắp hết hạn và thời điểm hết hạn. Hiển thị số tiền sắp hết hạn sớm nhất trong một flow với [custom tag](flow-custom-tags), chẳng hạn "30 kim cương sẽ hết hạn sau 2 ngày".
+</Callout>

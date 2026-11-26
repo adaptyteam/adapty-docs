@@ -55,7 +55,7 @@ adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp"
 
 The `adapty-kmp-ui` module is only needed if you render flows and paywalls with the Compose Multiplatform layer (`view.present()`). See [Install Adapty SDK](sdk-installation-kotlin-multiplatform) for the full setup.
 
-The underlying native Adapty SDKs are bumped to their 4.x releases on both platforms and are resolved automatically — no build changes are needed. The iOS deployment target stays **15.0**, unchanged by this release.
+The underlying native Adapty SDKs are bumped to their 4.x releases on both platforms and are resolved automatically. On Android, set `compileSdk` to 35 or later in your app module. The Adapty UI library uses Jetpack Compose 1.8, which requires it. The iOS deployment target stays **15.0**, unchanged by this release.
 
 ## ⚠️ Adapty Attribution is disabled by default \{#adapty-attribution-is-disabled-by-default\}
 
@@ -105,6 +105,19 @@ The returned type changes from `AdaptyPaywall` to `AdaptyFlow`, and the `locale`
 - Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en")
 + Adapty.getFlowForDefaultAudience("YOUR_PLACEMENT_ID")
 ```
+
+### Locale matching is exact
+
+:::warning
+In v3, the Adapty server picked the localization and fell back to the language: a `pt-br` request got the `pt` localization when the paywall had no `pt-br`. In v4, the SDK picks the localization on the device and uses only an exact match. A code that matches no localization renders the flow in its default localization, without an error or a warning.
+:::
+
+Before you upgrade, check the locale codes your app passes:
+
+- For each regional code you pass, add a localization with that code — for example, `pt-BR` in addition to `pt` — or map the code to one that the flow has.
+- Pass codes exactly as the published flow has them: `pt-BR`, not `pt-br` from the **Select languages** field. For paywalls from the old Paywall Builder, pass lowercase codes, such as `pt-br`. Don't pass a system locale identifier as is: `pt_BR` matches no localization, and `en-US` misses a flow that has only `en`.
+
+See [Localizations and locale codes](kmp-localizations-and-locale-codes#flows-and-paywalls).
 
 ### getPaywallProducts(paywall) → getPaywallProducts(flow)
 
@@ -251,7 +264,7 @@ As in v3, the callbacks you pass here (and any observer registered via `register
 ### New APIs
 
 - `AdaptyUI.setObserverModeResolver(...)` with an `AdaptyUIObserverModeResolver` — drive purchases and restores initiated from flows while the SDK runs in [Observer mode](implement-observer-mode-kmp). Previously this was available only in the native iOS and Android SDKs. See [Present flows in Observer mode](kmp-present-flows-in-observer-mode).
-- `AdaptyUI.setSystemRequestsHandler(...)` with an `AdaptyUISystemRequestsHandler` — reserved for system requests from a flow (OS permission prompts and app review requests). Flows don't trigger these requests yet, so you don't need to register a handler.
+- `AdaptyUI.setSystemRequestsHandler(...)` with an `AdaptyUISystemRequestsHandler` — answers system requests from a flow (OS permission prompts and app review requests). Register one if your flows use the **Request permission** action: see [Handle permission requests in flows](kmp-handle-permissions).
 - The new optional `flowViewDidReceiveAnalyticEvent` callback reports analytics events from a flow, starting with a screen view for every screen a user opens. See [Track flow screen views](kmp-flow-screen-views).
 - `AdaptyUI.openWebUrl(url, openIn)` and `AdaptyUI.requestAppReview()` — these back the default `OpenUrlAction` handling and the default `handleAppReviewRequest`, so URLs and app-review prompts are handled natively out of the box. Call them directly only if you override those defaults.
 - `AdaptyUIFlowView.locale` — reports the localization the view was built with, so you can tell which one the user actually sees.
@@ -326,6 +339,7 @@ If no layout matches the ID, the flow loads without a view configuration. The pa
 
 These changes do not cause compile errors, so test them at runtime:
 
+- **Flow localization**: A regional locale code no longer falls back to its language — `pt-br` doesn't get the `pt` localization. A code with no exact match renders the flow in its default localization. See [Locale matching is exact](#locale-matching-is-exact).
 - **Purchase completion**: In v3, the default `paywallViewDidFinishPurchase` dismissed the view after any purchase result other than `AdaptyPurchaseResult.UserCanceled`. In v4, the default `flowViewDidFinishPurchase` is a no-op, so **a flow stays open after a purchase until you dismiss it** — matching iOS. If you relied on that auto-close, call `view.dismiss()` yourself once the purchase finishes.
 - **Android system back**: In v3, the default `paywallViewDidPerformAction` dismissed the view on both `CloseAction` and `AndroidSystemBackAction`. In v4, the default handles only `CloseAction` — **the system back button no longer closes a flow on its own**, matching iOS, where a flow can't be dismissed by a system gesture. Give users an explicit way out (a **Close** button or an `on_device_back` action), or dismiss the view yourself in `flowViewDidPerformAction`.
 - **View errors**: In v3, the default `paywallViewDidFailRendering` did nothing. In v4, the default `flowViewDidReceiveError` **dismisses the view** — override it if you want to keep the view open or handle the error differently.

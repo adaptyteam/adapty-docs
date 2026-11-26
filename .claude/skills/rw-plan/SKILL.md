@@ -13,9 +13,9 @@ only); a structural scan on request; a cost-36 fix in your own draft.
 - Runs as: main thread; the outline agents and the judge run `briefs/structure-pass.md`.
 - In (session folder): `facts.md`, `screen.md`, `reader-questions.md`, `scope.md`, `frame.md`, the
   sibling articles, and the sidebar.
-- Out (session folder): `outline-{a..c}.md` and `outline.md` (the heading tree, each section's
-  promise, and the `act` questions each section answers). The user's approval of the tree is gate 2,
-  which the manager records in `mode.md`.
+- Out (session folder): `outline-{a..c}.md` and `outline.md` (the heading tree, each section's path
+  line, and the `act` questions each section answers); on approval, the path lines in `frame.md`. The
+  user's approval of the tree is gate 2, which the manager records in `mode.md`.
 - Loads: lib/preamble.md and lib/pass1-shared.md for the briefs, and `checks-all.txt`, with these in
   particular: lib/checks/L4-article.md, L3-section.md (the section ladder), lists.md (the form
   ladder), headings.md, misconception.md, and definitions.md. Openers: L4-article.md (the article
@@ -26,29 +26,41 @@ only); a structural scan on request; a cost-36 fix in your own draft.
 
 1. **Structure and facts**: the stages run in mode F's order (recursive-writer/SKILL.md, "Modes");
    here, three outline agents and then a judge merge one heading tree (`briefs/structure-pass.md`). The
-   user approves the heading tree before pass 2, in the form below: each heading on its own line,
-   and under it, one line per reader question that the section answers. Under the title go the
-   questions the intro answers. The questions are the `act` questions in `reader-questions.md`, each
-   under the heading that is its home. Nothing else goes in the hand-off.
+   user approves the heading tree before pass 2, in the form below: each heading on its own line;
+   under it, the section's path line; then one line per reader question that the section answers. A
+   path line says what the reader does in the section, starting from where the previous section
+   leaves them; a branch's path line starts with its condition ("If …"). Under the title go the
+   article's path line (who arrives, with what goal, and where the article leaves them) and the
+   questions the intro answers. When readers arrive with different goals, the article's path line
+   names each goal, most common first. The sections for those goals come in the same order. Every
+   path line is one sentence of at most 20 words. The questions are the `act` questions in
+   `reader-questions.md`, each under the heading that is its home: they check coverage, and the path
+   lines decide the order. Nothing else goes in the hand-off.
 
    ```
    # Title
+   Path: {who arrives, with what goal, and where the article leaves them}
    {question the intro answers}
    ## H2
+   Path: {what the reader does here, starting from where the previous section leaves them}
    {question the section answers}
    {another question the section answers}
    ### H3
+   Path: {what the reader does here, within the path of its H2}
    {question the section answers}
    ```
 
-   Its headings pass the review loop (lib/loop.md) before the user sees them; lint alone isn't a
-   pass. A rejected tree gets the lowest-cost fix the objection names: a naming objection renames the
-   heading, and an order or grouping objection re-cuts the tree. Either way, remap every question to
-   the new tree, and show the whole tree again in the same form.
+   Its headings and path lines pass the review loop (lib/loop.md) before the user sees them; lint
+   alone isn't a pass. A rejected tree gets the lowest-cost fix the objection names: a naming
+   objection renames the heading, and an order or grouping objection re-cuts the tree. Either way,
+   rewrite the path lines, remap every question to the new tree, and show the whole tree again in the
+   same form.
 
    The gate holds when the user asks
    for a finished draft: a heading tree isn't a draft, and you never approve it yourself. Existing
    anchors are no reason to keep a heading: retargeting links is mechanical.
+2. **On approval**, write the path lines into `frame.md`, under "Section promises": the article's path
+   line first, then each section's, in the approved order. The draft starts only after they're there.
 
 ## Verbs and headings
 

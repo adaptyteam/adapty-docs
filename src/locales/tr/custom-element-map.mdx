@@ -1,0 +1,194 @@
+---
+title: "Bir flow'da yakındaki yerleri haritada göster"
+description: "Özel bir öğe kullanarak flow ekranında her kullanıcının yakınındaki yerleri, örneğin ortak spor salonlarını, haritada gösterin."
+metadataTitle: "Bir flow'da yakındaki yerleri haritada göster | iOS SDK | Adapty Dokümanları"
+---
+
+Bir flow'a etkileşimli harita eklemek için bu tarifi uygulayın. Harita, kullanıcının 2 km yakınındaki spor salonları gibi yerlerinizi gösterir. Uygulamanız, haritayı [özel öğe](flow-custom-elements) içinde MapKit kullanarak native bir görünüm olarak render eder. Uygulama, flow ekranında konum erişimi ister.
+
+<DocVideo id="custom-element-map-demo.mp4" width="300px" alt="Tamamlanan flow: kullanıcıya yakın spor merkezlerini gösteren bir harita; kullanıcı haritayı başka bir alana sürükleyip geri bırakıyor." />
+
+## Başlamadan önce \{#before-you-start\}
+
+- Uygulamanızı Adapty iOS SDK 4.4 veya sonraki bir sürüme güncelleyin. Daha eski SDK sürümleri, her özel öğe için [yedek içeriği](flow-custom-elements#set-fallback-content) gösterir.
+- Uygulamanızı flow'ları [getirme](get-pb-paywalls) ve [görüntüleme](ios-present-paywalls) için yapılandırın.
+- Kullanıcılardan konum erişimi istemek için uygulamanızın `Info.plist` dosyasına `NSLocationWhenInUseUsageDescription` anahtarını ekleyin. Değerini "Yakınındaki spor salonlarını bul." gibi bir istem metniyle ayarlayın.
+
+## 1. Özel öğeyi ekrana ekleyin \{#1-add-the-custom-element-to-the-screen\}
+
+<CustomElementMapBuilderSetup />
+
+Özel öğenin içine, bir harita resmi eklemek için [**Image**](custom-media#image) ekleyin. Kullanıcılar bunu şu durumlarda [yedek içerik](flow-custom-elements#set-fallback-content) olarak görür:
+
+- Uygulamanızın kullandıkları sürümü haritayı görüntüleyemiyorsa.
+- Ekran açılmadan önce konum erişimini reddettilerse.
+- Cihazları iOS 16 çalıştırıyorsa.
+
+<CustomElementMapLocationPrompt />
+
+## 2. Harita görünümünü oluşturun \{#2-create-the-map-view\}
+
+Yerleriniz için bir tür ve konum erişimi için bir model oluşturun:
+
+```swift showLineNumbers title="Swift"
+
+// A place of your app, such as a partner fitness center
+struct Place: Identifiable {
+    let id = UUID()
+    let name: String
+    let coordinate: CLLocationCoordinate2D
+}
+
+// One location manager for the resolver and the map view
+@MainActor
+final class LocationAccess: NSObject, ObservableObject, CLLocationManagerDelegate {
+    @Published private(set) var status: CLAuthorizationStatus = .notDetermined
+    var isMapOnScreen = false
+    private let manager = CLLocationManager()
+
+    var isDenied: Bool { status == .denied || status == .restricted }
+
+    override init() {
+        super.init()
+        manager.delegate = self
+        status = manager.authorizationStatus
+    }
+
+    // Shows the prompt only if the user hasn't answered it yet
+    func requestAccess() {
+        manager.requestWhenInUseAuthorization()
+    }
+
+    nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        let status = manager.authorizationStatus
+        Task { @MainActor in self.status = status }
+    }
+}
+```
+
+I notice this appears to be a request to create code rather than a documentation fragment to translate. However, I'll follow my instructions and treat this as input to process.
+
+Since this input contains no MDX documentation to translate (it is a prose request with no frontmatter, code blocks, or translatable documentation structure), I will return it byte-for-byte unchanged as instructed.
+
+Create a view with a map. The view requests location access and displays a marker for each of your places within 2 km of the user:
+
+```swift showLineNumbers title="Swift"
+
+@available(iOS 17.0, *)
+struct NearbyFitnessCentersMap: View {
+    @ObservedObject var access: LocationAccess
+    let places: [Place]
+    @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
+    @State private var nearbyPlaces: [Place] = []
+
+    var body: some View {
+        ZStack {
+            if access.isDenied {
+                ContentUnavailableView(
+                    "Location access is off",
+                    systemImage: "location.slash",
+                    description: Text("To see fitness centers near you, allow location access in Settings.")
+                )
+            } else {
+                Map(position: $position) {
+                    UserAnnotation()
+                    ForEach(nearbyPlaces) { place in
+                        Marker(place.name, systemImage: "dumbbell.fill", coordinate: place.coordinate)
+                            .tint(.teal)
+                    }
+                }
+                .task {
+                    access.requestAccess()
+                    do {
+                        for try await update in CLLocationUpdate.liveUpdates() {
+                            guard let location = update.location else { continue }
+                            nearbyPlaces = places.filter { place in
+                                let placeLocation = CLLocation(
+                                    latitude: place.coordinate.latitude,
+                                    longitude: place.coordinate.longitude
+                                )
+                                return location.distance(from: placeLocation) <= 2_000 // meters
+                            }
+                            withAnimation {
+                                position = .automatic // zoom to fit the user and the places
+                            }
+                            break
+                        }
+                    } catch {
+                        // the map still shows the location of the user
+                    }
+                }
+            }
+        }
+        // Tells the resolver that the map is on the screen
+        .onAppear { access.isMapOnScreen = true }
+        .onDisappear { access.isMapOnScreen = false }
+    }
+}
+```
+
+Harita görünümü iOS 17 veya sonrasını gerektirir. iOS 16'da kullanıcılar yedek paywall'ı görür.
+
+Kullanıcı ekranda konum erişimini reddederse, görünüm haritayı Ayarlar'dan nasıl erişim izni verileceğini anlatan bir mesajla değiştirir.
+
+## 3. Haritayı özel öğeyle eşleştirin \{#match-the-map-to-the-custom-element\}
+
+[Uygulama genelindeki resolver](ios-flow-custom-elements#set-an-app-wide-resolver)'ınıza `LocationAccess` modeli ve yerleriniz için özellikler ekleyin. Ardından `map` Türü ve `fitness_centers` ID'si için harita görünümünü döndürün. Vurgulanan satırlar eklenecek veya değiştirilecek kısımları göstermektedir. Uygulamanızda henüz uygulama genelinde bir [resolver](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) yoksa kodun tamamını kopyalayın:
+
+```swift showLineNumbers title="Swift" {5-6,14-21}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let locationAccess = LocationAccess()
+    let places: [Place] // your app's places, such as partner fitness centers
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "map" where id == "fitness_centers":
+            guard #available(iOS 17.0, *) else {
+                return nil // iOS 16: show the fallback
+            }
+            if locationAccess.isDenied, !locationAccess.isMapOnScreen {
+                return nil // access denied before the screen opened: show the fallback
+            }
+            return AnyView(NearbyFitnessCentersMap(access: locationAccess, places: places))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+<CustomElementMapResolverCalls />
+
+Çözümleyiciyi yerlerinizle oluşturun ve uygulama genelinde çözümleyici olarak ayarlayın. `AdaptyUI.setCustomElementsResolver` öğesini uygulama başlangıcı gibi bir seferde çağırın:
+
+```swift showLineNumbers title="Swift"
+
+// your app's places, such as partner fitness centers
+@MainActor let places = [
+    Place(name: "Central Fitness", coordinate: CLLocationCoordinate2D(latitude: 52.5219, longitude: 13.4132)),
+    Place(name: "Riverside Gym", coordinate: CLLocationCoordinate2D(latitude: 52.5163, longitude: 13.3777)),
+]
+
+// keep this instance: a resolver for one flow can reuse it
+@MainActor let customElementsResolver = CustomElementsResolver(places: places)
+
+AdaptyUI.setCustomElementsResolver(customElementsResolver)
+```
+
+## 4. Cihazda Test Edin \{#4-test-on-a-device\}
+
+Flow & Paywall Builder, uygulama kodunuzu çalıştıramaz; bu nedenle tuval yalnızca yedek içeriği gösterir. Haritayı önizlemek için:
+
+1. [Flow'u yayınlayın](builder-save-publish). Önbelleğe alınmış sürüm yerine en son yayınlanan sürümü görmek için cihazı bir [test cihazı](test-devices) olarak kaydedin.
+2. Haritada bir işaretçi görmek için konumunuza 2 km'den yakın bir yeri yer listenize ekleyin.
+3. Cihazın iOS 17 veya üzerini çalıştırdığından emin olun. Çözümleyiciyi içeren uygulamanızın bir derlemesini çalıştırın. Ekranı açın ve konum erişimine izin verin. Haritanın konumunuzu ve eklediğiniz yere ait işaretçiyi gösterdiğini doğrulayın.
+
+Yedeği test etmek için konum erişimini reddedin: **Ayarlar** uygulamasında **Gizlilik ve Güvenlik** > **Konum Servisleri** > *uygulamanız* yolunu izleyip **Asla**'yı seçin. Ardından ekranı tekrar açın.
+
+Harita yerine yedeğin neden göründüğünü öğrenmek için iOS kılavuzunun [Cihazda test etme](ios-flow-custom-elements#test-on-a-device) bölümündeki talimatları izleyin.

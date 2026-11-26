@@ -70,12 +70,31 @@ const toPascalCase = (str) => {
     return str.replace(/(^\w|-\w)/g, clear => clear.replace('-', '').toUpperCase());
 };
 
+// Drops MDX import statements. They sit outside code fences; an `import` line inside a fence
+// is sample code (Swift, Kotlin, Java) and stays.
+function stripMdxImports(content) {
+    let fence = null; // the opening fence of the code block being read, such as ``` or ````
+    return content
+        .split('\n')
+        .filter((line) => {
+            if (!fence) {
+                const open = line.match(/^\s*(`{3,}|~{3,})/);
+                if (open) fence = open[1];
+                return open !== null || !/^import\s/.test(line);
+            }
+            const close = line.match(/^\s*(`{3,}|~{3,})\s*$/);
+            if (close && close[1][0] === fence[0] && close[1].length >= fence.length) fence = null;
+            return true;
+        })
+        .join('\n');
+}
+
 // Reusable snippets may be .mdx with frontmatter, import lines, and <Callout>
 // JSX wrappers — normalize to plain markdown before inlining into .md exports.
 function cleanReusableContent(content) {
     let cleaned = content.replace(/<!---.*?--->\s*\n?/gs, '');
     cleaned = cleaned.replace(/^\s*---\n[\s\S]*?\n---\s*\n?/, '');
-    cleaned = cleaned.replace(/^import\s+.*?;?\s*$/gm, '');
+    cleaned = stripMdxImports(cleaned);
     cleaned = cleaned.replace(
         /<Callout\s+type="([\w-]+)"[^>]*>\s*([\s\S]*?)\s*<\/Callout>/g,
         (_, type, body) => `:::${type}\n${body}\n:::`
@@ -104,7 +123,7 @@ function stripContent(content, reusableComponents) {
     let processed = content;
 
     // 1. Remove imports
-    processed = processed.replace(/^import\s+.*?;?\s*$/gm, '');
+    processed = stripMdxImports(processed);
 
     // 2. Remove Zoom and ZoomImage tags
     // Remove self-closing ZoomImage: <ZoomImage ... />
@@ -117,6 +136,10 @@ function stripContent(content, reusableComponents) {
     // div-wrapped and bare iframes that predate it, which src/locales still
     // carries until each file is retranslated from its English source.
     processed = processed.replace(/<YouTube\b[^>]*\/>/g, '');
+    // A narrated walkthrough is a video player; like a YouTube embed, it carries nothing for a text reader.
+    processed = processed.replace(/<NarratedVideo\b[^>]*\/>/g, '');
+    // Demo loops are dropped like screenshots: the surrounding prose already states what they show.
+    processed = processed.replace(/<DocVideo\b[^>]*\/>/g, '');
     processed = processed.replace(/<div[^>]*>\s*<iframe\b[^>]*youtube\.com\/embed[\s\S]*?<\/div>/g, '');
     processed = processed.replace(/<iframe\b[^>]*youtube\.com\/embed[\s\S]*?(?:<\/iframe>|\/>)/g, '');
 
@@ -363,7 +386,7 @@ async function processLocaleFiles(locale, baseComponents, englishFiles) {
 
         let content = cleanFrontmatter(rawContent);
         content = stripContent(content, components);
-        content = withSkillNote(content);
+        content = withSkillNote(content, locale);
 
         const rawBasename = entry.name.replace(/\.(md|mdx)$/, '');
         const basename = MD_BASENAME_OVERRIDES.get(rawBasename) ?? rawBasename;

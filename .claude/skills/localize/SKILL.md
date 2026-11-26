@@ -228,7 +228,21 @@ The ecosystem overview's product map (`src/components/ProductMap.astro`) reads i
 
 Until this file exists, the product map renders in English on that locale's pages.
 
-> **General rule:** any component with its own hardcoded `T` locale table — currently `Homepage.tsx` (1f), `SkillPromo.astro` (1j), and `MethodPromo.astro` (1k) — is invisible to `translate.mjs` and must get a new locale key by hand. `ProductMap.astro` (1l) is the same story but keeps its strings in a per-locale JSON data file rather than a `const T`. Before finishing, `grep -rl "const T" src/components` **and** check for `src/data/product-map.*.json` to catch anything added since this skill was written.
+### 1m. `src/components/NarratedVideo.astro`
+
+The narrated video player carries its own `T` table for its control labels (play, pause, replay, mute, unmute, playback speed, normal, full screen, exit full screen, seek). `translate.mjs` does not touch it; the `label` prop written in MDX *is* translated with the article. Detection reuses `SUPPORTED_LOCALES` (1a), like SkillPromo. Add a new locale key with all ten fields:
+
+```ts
+const T = {
+  en: { play: 'Play', pause: 'Pause', replay: 'Replay', mute: 'Mute', unmute: 'Unmute', speed: 'Playback speed', normal: 'Normal', fullscreen: 'Full screen', exitFullscreen: 'Exit full screen', seek: 'Seek' },
+  // ...
+  '{LOCALE}': { play: '...', pause: '...', replay: '...', mute: '...', unmute: '...', speed: '...', normal: '...', fullscreen: '...', exitFullscreen: '...', seek: '...' },
+} as const;
+```
+
+Until the key exists, the controls fall back to English on that locale's pages.
+
+> **General rule:** any component with its own hardcoded `T` locale table — currently `Homepage.tsx` (1f), `SkillPromo.astro` (1j), `MethodPromo.astro` (1k), and `NarratedVideo.astro` (1m) — is invisible to `translate.mjs` and must get a new locale key by hand. `ProductMap.astro` (1l) is the same story but keeps its strings in a per-locale JSON data file rather than a `const T`. Before finishing, `grep -rl "const T" src/components` **and** check for `src/data/product-map.*.json` to catch anything added since this skill was written.
 
 ---
 
@@ -583,6 +597,7 @@ strategy:
 | 1j | Add locale key to `T` object (label, desc, linkText) — like 1f; detection reuses `SUPPORTED_LOCALES` | `src/components/SkillPromo.astro` |
 | 1k | Add locale key to `T` object (label, items, note, noteLinkText) — like 1j; keep `{method}` placeholder | `src/components/MethodPromo.astro` |
 | 1l | Create translated copy of the product map — strings only, keep hrefs/structure | `src/data/product-map.{LOCALE}.json` |
+| 1m | Add locale key to `T` object (10 control labels) — like 1j | `src/components/NarratedVideo.astro` |
 | 2 | Add env vars | `.env` + deployment config |
 | 3 | Create sitemap files + update astro.config.mjs | `src/pages/sitemap-{LOCALE}*.xml.ts`, `astro.config.mjs` |
 | 4 | Add npm scripts (optional) | `package.json` |

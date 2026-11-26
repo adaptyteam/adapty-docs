@@ -59,15 +59,73 @@ npm install @adapty/capacitor
 npx cap sync
 ```
 
-Trên iOS, Adapty SDK tích hợp các native Adapty SDK thông qua **Swift Package Manager** — podspec CocoaPods đã bị loại bỏ ([kho spec của CocoaPods sẽ chuyển sang chỉ đọc vào tháng 12 năm 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/)). Dự án iOS trong app của bạn phải sử dụng tích hợp SPM của Capacitor:
+### Thiết lập dự án iOS của bạn \{#set-up-your-ios-project\}
 
-- Đối với ứng dụng mới, thêm nền tảng iOS với package manager SPM:
+Trên iOS, SDK cài đặt các Adapty SDK gốc (`Adapty`, `AdaptyUI`, `AdaptyPlugin`) thông qua trình quản lý gói của dự án iOS trong ứng dụng của bạn:
+
+- **Swift Package Manager (khuyến nghị)**: Capacitor 8 tạo các dự án iOS mới với SPM theo mặc định, và SDK không cần thiết lập thêm.
+- **CocoaPods (SDK 4.2.0 trở lên)**: `Podfile` của bạn cài đặt các native SDK dưới dạng pod từ [repo spec của Adapty](https://github.com/adaptyteam/AdaptySDK-CocoaPods-Specs), không phải từ repo spec CocoaPods công khai, vốn [sẽ chỉ đọc vào tháng 12 năm 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/). SDK 4.0 và 4.1 không hỗ trợ CocoaPods.
+
+<Tabs groupId="ios-package-manager" queryString>
+
+<TabItem value="spm" label="Swift Package Manager (recommended)" default>
+
+- Đối với ứng dụng mới, thêm nền tảng iOS với trình quản lý gói SPM:
 
   ```sh
   npx cap add ios --packagemanager SPM
   ```
 
-- Đối với ứng dụng hiện có, migrate iOS project từ CocoaPods sang SPM bằng cách làm theo [hướng dẫn của Capacitor về cách dùng SPM trong dự án hiện có](https://capacitorjs.com/docs/ios/spm#using-spm-in-an-existing-capacitor-project).
+- Đối với ứng dụng hiện có đang dùng CocoaPods, hãy migrate dự án iOS sang SPM theo [hướng dẫn của Capacitor về việc sử dụng SPM trong dự án hiện có](https://capacitorjs.com/docs/ios/spm#using-spm-in-an-existing-capacitor-project), hoặc tiếp tục dùng CocoaPods và làm theo tab **CocoaPods**.
+
+</TabItem>
+
+<TabItem value="cocoapods" label="CocoaPods">
+
+Esta opción requiere SDK 4.2.0 o posterior. Para una nueva aplicación, agrega la plataforma iOS con el gestor de paquetes CocoaPods:
+
+Tùy chọn này yêu cầu SDK 4.2.0 trở lên. Để thêm nền tảng iOS với trình quản lý gói CocoaPods cho ứng dụng mới:
+
+```sh
+npx cap add ios --packagemanager CocoaPods
+```
+
+Trong `ios/App/Podfile`, thêm lệnh require cho Adapty Podfile helpers **bên dưới** dòng `require_relative` của `pods_helpers` Capacitor. Sau đó, trong target `App`, gọi `adapty_pods!` **sau** `capacitor_pods`:
+
+```ruby showLineNumbers title="ios/App/Podfile" {2-6,10}
+require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+require Pod::Executable.execute_command('node', ['-p',
+  'require.resolve(
+    "@adapty/capacitor/ios/adapty_podfile.rb",
+    {paths: [process.argv[1]]},
+  )', __dir__]).strip
+
+target 'App' do
+  capacitor_pods
+  adapty_pods!
+  # Add your Pods here
+end
+```
+
+`npx cap sync` tự động tạo lại `Podfile` từ dòng `require_relative` đầu tiên đến dòng `pods_helpers`, cùng toàn bộ phương thức `def capacitor_pods`. Bất kỳ lệnh `require` hay `adapty_pods!` nào được đặt bên trong hai phần đó sẽ bị mất sau lần sync tiếp theo.
+
+`adapty_pods!` khai báo các pod `Adapty`, `AdaptyUI`, và `AdaptyPlugin` đồng thời ghim chúng vào spec repo của Adapty, vì vậy bạn không cần thêm dòng `source` cho repo đó. Hãy xóa các dòng `pod 'Adapty'`, `pod 'AdaptyUI'`, hoặc `pod 'AdaptyPlugin'` tường minh khỏi `Podfile`.
+
+Sau đó sync dự án iOS:
+
+```sh
+npx cap sync ios
+```
+
+Khi bạn cập nhật `@adapty/capacitor` sau này, `pod install` sẽ không tự làm mới spec repo của Adapty. Để cài đặt phiên bản native SDK mà bản phát hành mới yêu cầu, hãy chạy:
+
+```sh
+cd ios/App && pod install --repo-update
+```
+
+</TabItem>
+
+</Tabs>
 
 Đang nâng cấp từ v3? Xem [Migrate Adapty Capacitor SDK lên v4.1](migration-to-capacitor-sdk-v4) để biết danh sách đầy đủ các thay đổi API.
 
@@ -126,10 +184,11 @@ Adapty ghi lại các lỗi và thông tin quan trọng để giúp bạn hiểu
 
 | Level      | Description                                                  |
 | ---------- | ------------------------------------------------------------ |
-| `error`    | Chỉ ghi lại các lỗi                                    |
-| `warn`     | Ghi lại các lỗi và thông báo từ SDK không gây ra lỗi nghiêm trọng nhưng đáng chú ý |
-| `info`     | Ghi lại các lỗi, cảnh báo và các thông báo thông tin đa dạng |
-| `verbose`  | Ghi lại mọi thông tin bổ sung có thể hữu ích trong quá trình debug, chẳng hạn như các lệnh gọi hàm, truy vấn API, v.v. |
+| `error`    | Chỉ ghi log các lỗi                                    |
+| `warn`     | Ghi log các lỗi và các thông báo từ SDK không gây ra lỗi nghiêm trọng nhưng đáng chú ý |
+| `info`     | Ghi log các lỗi, cảnh báo và các thông báo thông tin |
+| `verbose`  | Ghi log mọi thông tin bổ sung có thể hữu ích trong quá trình debug, chẳng hạn như lời gọi hàm, truy vấn API, v.v. |
+| `debug`    | Tất cả những mục trên, cộng thêm các chi tiết nội bộ cấp thấp của native SDK. Android không có cấp độ riêng cho mục này và ghi log ở mức `verbose`. Khả dụng từ SDK phiên bản 4.3.0 |
 
 Bạn có thể đặt mức log trong ứng dụng trước hoặc trong quá trình cấu hình Adapty:
 
@@ -244,6 +303,25 @@ await adapty.activate({
 });
 ```
 
+### Xử lý thông báo cửa hàng \{#store-messages-handling\}
+
+:::info
+Tham số này khả dụng từ SDK phiên bản 4.3.0 trở lên.
+:::
+
+Theo mặc định, StoreKit hiển thị các thông báo từ App Store — yêu cầu đồng ý tăng giá, thông báo sự cố thanh toán và ưu đãi thu hút khách hàng cũ — tự động khi ứng dụng đang mở, còn SDK sẽ yêu cầu các thông báo từ Google Play, chẳng hạn như thông báo thanh toán bị từ chối, mỗi khi một `Activity` của ứng dụng khởi động sau lệnh `activate`. Để chủ động chọn thời điểm hiển thị các thông báo này, hãy đặt `storeMessagesHandling` thành `'manual'`. Giá trị mặc định là `'auto'`.
+
+```typescript showLineNumbers
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    storeMessagesHandling: 'manual',
+  }
+});
+```
+
+Trong chế độ thủ công, các cửa hàng sẽ không tự hiển thị thông báo, vì vậy ứng dụng của bạn phải gọi `showStoreMessages`. Xem hướng dẫn tại [Kiểm soát thông báo cửa hàng](capacitor-store-messages).
+
 ### Kích hoạt Adapty Attribution \{#enable-adapty-attribution\}
 
 :::info
@@ -288,22 +366,22 @@ try {
 Khi bật tùy chọn này, SDK sẽ bỏ qua toàn bộ lệnh kích hoạt nếu nó đã được kích hoạt trước đó, do đó các thay đổi về tham số kích hoạt sẽ không có hiệu lực khi tải lại trực tiếp (live reload). Để áp dụng các tham số kích hoạt mới, hãy đóng hoàn toàn ứng dụng và khởi động lại.
 :::
 
-## Xử lý sự cố \{#troubleshooting\}
+## Khắc phục sự cố \{#troubleshooting\}
 
 #### Lỗi phiên bản iOS tối thiểu \{#minimum-ios-version-error\}
 
 :::note
-Điều này áp dụng cho các dự án sử dụng CocoaPods trên **SDK 3.x**. SDK 4 cài đặt trên iOS thông qua Swift Package Manager (không có `Podfile`) và yêu cầu iOS 15.0 — hãy đặt deployment target là 15.0 trong Xcode.
+Điều này áp dụng cho các dự án dùng CocoaPods: trên **SDK 3.x**, và trên SDK 4.2.0 trở lên với tùy chọn [CocoaPods](#set-up-your-ios-project). Với Swift Package Manager thì không có `Podfile` — thay vào đó hãy đặt deployment target thành 15.0 trong Xcode.
 :::
 
-Nếu bạn gặp lỗi phiên bản iOS tối thiểu trên SDK 3.x, hãy cập nhật Podfile của bạn:
+Nếu bạn gặp lỗi phiên bản iOS tối thiểu, hãy cập nhật Podfile của bạn:
 
 ```diff
--platform :ios, min_ios_version_supported
+-platform :ios, '14.0'
 +platform :ios, '15.0'
 ```
 
-####  Quy tắc sao lưu Android (Cấu hình Auto Backup) \{#android-backup-rules-auto-backup-configuration\}
+#### Quy tắc sao lưu Android (Cấu hình Auto Backup) \{#android-backup-rules-auto-backup-configuration\}
 
 <AndroidBackupRules />
 
@@ -328,14 +406,14 @@ Trong `AndroidManifest.xml`, đảm bảo Activity bắt đầu luồng mua hàn
 #### Lỗi build Swift 6 do Podfile ghi đè SWIFT_VERSION \{#swift-6-build-errors-caused-by-podfile-swift_version-override\}
 
 :::note
-Lưu ý này áp dụng cho các dự án sử dụng CocoaPods với **SDK 3.x**. SDK 4 cài đặt các native SDK thông qua Swift Package Manager, do đó không có `Podfile` nào cần điều chỉnh.
+Điều này áp dụng khi các native iOS SDK được cài đặt dưới dạng CocoaPods pods: trong **SDK 3.x**, và trong SDK 4.2.0 trở lên với tùy chọn [CocoaPods](#set-up-your-ios-project). Khi chúng được cài đặt dưới dạng Swift packages, lệnh ghi đè `SWIFT_VERSION` trong `post_install` sẽ không có tác dụng với chúng.
 :::
 
-Khi build ứng dụng Capacitor cho iOS, bạn có thể gặp các lỗi biên dịch Swift 6 trên các Adapty pod target. Các triệu chứng thường gặp bao gồm lỗi `@Sendable` không khớp trong `AdaptyUIBuilderLogic`, thiếu conformance `Sendable` trên các kiểu Adapty, hoặc lỗi actor isolation.
+Khi build ứng dụng Capacitor cho iOS, bạn có thể gặp lỗi biên dịch Swift 6 trên các Adapty pod target. Các biểu hiện thường gặp bao gồm lỗi không khớp `@Sendable` trong `AdaptyUIBuilderLogic`, thiếu conformance `Sendable` trên các kiểu Adapty, hoặc lỗi actor isolation.
 
-Các pod Adapty khai báo `s.swift_version = '6.0'` và yêu cầu Swift 6 để build. Code của ứng dụng bạn vẫn có thể dùng Swift 5 — chỉ có các pod target của Adapty (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`, `AdaptyLogger`, `AdaptyPlugin`) mới cần build với Swift 6.
+Các pod Adapty khai báo `s.swift_version = '6.0'` và yêu cầu Swift 6 để build. Code app của bạn vẫn có thể dùng Swift 5 — chỉ các pod target của Adapty (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`, `AdaptyLogger`, `AdaptyPlugin`, và từ SDK 4.2.0 trở đi là `AdaptyCodable`) mới cần build với Swift 6.
 
-Nguyên nhân phổ biến nhất là hook `post_install` trong `ios/App/Podfile` ghi đè `SWIFT_VERSION` cho mọi pod target:
+Nguyên nhân phổ biến nhất là một `post_install` hook trong `ios/App/Podfile` ghi đè `SWIFT_VERSION` cho mọi pod target:
 
 ```ruby showLineNumbers title="ios/App/Podfile"
 post_install do |installer|
@@ -352,7 +430,7 @@ end
 ```ruby showLineNumbers title="ios/App/Podfile"
 post_install do |installer|
   installer.pods_project.targets.each do |target|
-    next if %w[Adapty AdaptyUI AdaptyUIBuilder AdaptyLogger AdaptyPlugin].include?(target.name)
+    next if %w[Adapty AdaptyUI AdaptyUIBuilder AdaptyLogger AdaptyPlugin AdaptyCodable].include?(target.name)
     target.build_configurations.each do |config|
       config.build_settings['SWIFT_VERSION'] = '5.9'
     end

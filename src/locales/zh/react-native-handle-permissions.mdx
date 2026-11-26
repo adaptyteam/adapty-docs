@@ -1,0 +1,112 @@
+---
+title: "在流程中处理权限请求 - React Native"
+description: "在 React Native 应用中，通过 onRequestPermission 处理器从流程中请求推送通知权限，并将用户的回答返回给流程。"
+metadataTitle: "处理流程权限 - React Native | Adapty 文档"
+---
+
+[流程](adapty-flow-builder)可以通过 **Request permission** 动作请求用户授权发送推送通知，例如在用户引导界面上解释通知的用途。Adapty SDK 本身不会显示系统权限对话框，而是将请求传递给应用中的 `onRequestPermission` 处理器。由应用弹出对话框并返回用户的选择，流程随后继续执行。
+
+## 开始之前 \{#before-you-start\}
+
+您需要：
+
+- **Adapty React Native SDK 4.0.0 或更高版本**：早期版本不支持 `onRequestPermission` 处理程序。
+- **包含"请求权限"操作的流程**：在流程与付费墙编辑工具中，将 **Request permission** 操作添加到某个元素的 **On Tap** 或 **On Screen Appear** 触发器。在其 **After response** 部分，添加用户响应后要执行的操作，例如 **Navigate Next**。有关操作设置，请参阅[请求权限](onboarding-actions#request-permission)。
+- **用于显示通知对话框的库**：示例使用 [react-native-permissions](https://github.com/zoontek/react-native-permissions)。要进行设置，请按照其[安装指南](https://github.com/zoontek/react-native-permissions#setup)操作，并将 `Notifications` 添加到其设置的 iOS 权限中。其他任何能够显示该对话框的库同样适用，例如 Expo 应用中的 `expo-notifications`。
+- **Android 清单中的 `POST_NOTIFICATIONS` 权限，以及 `targetSdk` 33 或更高版本**：Android 13 及更高版本仅对声明了该权限且目标版本为 Android 13 或更高版本的应用显示通知权限对话框：
+
+  ```xml title="android/app/src/main/AndroidManifest.xml"
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  ```
+
+## 流程如何请求权限 \{#how-the-flow-requests-a-permission\}
+
+1. 流程触发 **Request permission** 操作：用户点击相应元素，或屏幕出现时自动触发。
+2. Adapty SDK 以 `push` 权限类型调用您的 `onRequestPermission` 处理函数。
+3. 您的应用展示系统对话框，并将处理函数的 Promise 解析为 `{ status: 'granted' }` 或 `{ status: 'denied' }`。
+4. 流程执行 **After response** 操作，两种回答的后续操作相同。
+
+流程会在当前屏幕上等待，直到处理函数的 Promise 完成。如果 Promise 始终未完成，流程将停留在该屏幕上。如果操作系统没有弹出对话框（例如用户之前已经回答过），`requestNotifications` 会立即返回之前的答案，流程随即执行 **After response** 操作。如果这些操作导致屏幕跳转，用户只会短暂看到请求权限的屏幕。
+
+使用 **On Screen Appear** 时，用户通过 **Navigate back** 操作返回该页面后，流程不会再次发送请求。使用 **On Tap** 时，每次点击都会发送新请求，但在等待回复的请求进行中时的点击除外。
+
+## 实现处理器 \{#implement-the-handler\}
+
+`onRequestPermission` 处理器是异步的，与其他流程处理器不同。它返回一个 Promise，该 Promise 解析为包含用户答案的对象：
+
+```typescript showLineNumbers title="permissions.ts"
+
+export const onRequestPermission: FlowEventHandlers['onRequestPermission'] = async (permission) => {
+  if (permission !== 'push') {
+    // Answer every request: the flow waits on the screen until it gets the answer.
+    return { status: 'denied' };
+  }
+
+  // Shows the system dialog, or returns the earlier answer without showing it.
+  const { status } = await requestNotifications(['alert', 'badge', 'sound']);
+  return { status: status === 'granted' ? 'granted' : 'denied' };
+};
+```
+
+`onRequestPermission` 接收以下参数：
+
+- **`permission`**：流程请求的权限。**Request permission** 操作发送 `push`。
+- **`customArgs`**：请求的自定义参数。**Request permission** 操作不发送任何内容，因此该对象为空。
+
+Promise 解析为一个包含以下属性的对象：
+
+- **`status`**：用户的回应：若用户允许该权限则为 `granted`，否则为 `denied`。
+- **`detail`**：可选。包含更多回应信息的字符串，例如库返回的状态。
+
+当处理程序抛出错误或其 Promise 被拒绝时，Adapty SDK 会返回 `denied`。
+
+获得授权后，你的应用即可显示通知。若要接收推送通知，请像在流程外一样向推送服务提供商注册设备。
+
+## 注册处理器 \{#register-the-handler\}
+
+:::warning
+**如果没有 `onRequestPermission` 处理器，系统将不会向用户发起请求。** 在未设置处理器的流程视图中，Adapty SDK 会直接返回 `denied`，不弹出任何对话框，并在日志中记录一条警告，同时流程会立即执行 **After response** 后续动作。
+:::
+
+请在应用创建的每个流程视图上都设置该处理器。流程作者之后可以随时在流程中添加 **Request permission** 动作，无需更新应用。而没有设置处理器的流程视图会直接返回 `denied`，不向用户发出任何询问。
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+将处理器传递给 `AdaptyFlowView` 的 `onRequestPermission` prop：
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyFlow({ flow }: { flow: AdaptyFlow }) {
+  return (
+    <AdaptyFlowView
+      flow={flow}
+      style={StyleSheet.absoluteFill}
+      onRequestPermission={onRequestPermission}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+在展示视图之前，使用 `setEventHandlers` 注册处理程序：
+
+```typescript showLineNumbers title="React Native"
+
+const view = await createFlowView(flow);
+
+view.setEventHandlers({
+  onRequestPermission,
+});
+
+await view.present();
+```
+
+</TabItem>
+</Tabs>
+
+## 测试权限请求 \{#test-the-permission-request\}
+
+iOS 每次安装只会显示一次通知对话框。Android 在用户允许通知或两次拒绝后就不再显示。若要在测试流程时再次看到该对话框，请从设备上删除应用并重新安装。然后打开流程，进入 **Request permission** 操作。如果流程在没有弹出对话框的情况下继续执行，请确认流程视图已设置 `onRequestPermission` 处理程序，以及 Android 应用已声明 `POST_NOTIFICATIONS` 权限并以 Android 13 或更高版本为目标。

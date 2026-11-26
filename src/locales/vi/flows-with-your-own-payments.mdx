@@ -1,0 +1,474 @@
+---
+title: "Sử dụng Adapty flow với hệ thống thanh toán của bạn"
+description: "Chạy Adapty flow trên nền code xử lý thanh toán hiện có mà không cần migrate hạ tầng thanh toán."
+metadataTitle: "Adapty flow với hệ thống thanh toán của bạn | Tài liệu Adapty"
+---
+
+Bạn không cần chuyển hệ thống thanh toán sang Adapty để sử dụng flow. Trong [chế độ Observer](observer-vs-full-mode), code của bạn vẫn xử lý toàn bộ giao dịch mua, trong khi Adapty hiển thị paywall hoặc onboarding, quyết định ai được xem, A/B test và báo cáo kết quả.
+
+Hướng dẫn này trình bày những gì thay đổi, những gì không thay đổi, và các bước thiết lập cần thực hiện.
+
+:::tip
+Bạn mới làm quen với flow? [Flow & Paywall Builder](adapty-flow-builder) sẽ giới thiệu những gì bạn có thể xây dựng trước khi kết nối bất kỳ thứ gì.
+:::
+
+## Những gì bạn giữ lại, những gì Adapty đảm nhận \{#what-stays-yours-what-adapty-takes-over\}
+
+Code của bạn vẫn xử lý:
+
+- Lệnh gọi mua hàng
+- Hoàn tất và xác nhận giao dịch
+- Cấp và thu hồi quyền truy cập
+- Gia hạn và thử lại thanh toán
+
+Adapty đảm nhận:
+
+- Hiển thị flow
+- Targeting theo [placement](placements) và [đối tượng](audience)
+- [A/B test](ab-tests)
+- [Analytics](analytics) và [tích hợp](configuration)
+
+Không có gì thay đổi trong quy trình thanh toán của bạn. Adapty hiển thị flow và chuyển thao tác mua hàng về code của bạn để thực hiện giao dịch.
+
+## Tạo sản phẩm trong Adapty \{#create-your-products-in-adapty\}
+
+Bỏ qua phần này nếu flow của bạn không hiển thị giá hay thực hiện giao dịch mua nào — một flow chỉ gồm các màn hình onboarding thì không cần sản phẩm trong Adapty.
+
+Ngay khi một màn hình hiển thị sản phẩm, hãy tạo một sản phẩm trong Adapty cho mỗi gói đăng ký hoặc sản phẩm mua một lần mà màn hình đó cung cấp. Flow đọc giá hiển thị trên thẻ từ sản phẩm, do đó thẻ luôn hiển thị giá hiện tại từ cửa hàng, bạn có thể A/B test mức giá đó, và Adapty sẽ phân nhóm doanh thu theo sản phẩm trong phần analytics.
+
+Một sản phẩm trong Adapty trỏ đến sản phẩm trong cửa hàng mà bạn đã bán, vì vậy việc tạo sản phẩm không ảnh hưởng đến thanh toán: code của bạn vẫn xử lý mọi giao dịch. Mỗi sản phẩm cần gắn với một mức độ truy cập, và trong Observer mode Adapty không tự cấp quyền — code của bạn vẫn quản lý quyền truy cập — nhưng sản phẩm vẫn cần có một mức độ truy cập.
+
+[Adapty CLI](developer-cli) cho phép tạo sản phẩm mà không cần mở dashboard. Cài đặt (yêu cầu Node.js 18 trở lên) và đăng nhập:
+
+```bash
+npm install -g adapty
+```
+
+```bash
+adapty auth login
+```
+
+Lấy app ID, sau đó xem mức độ truy cập cần gắn — mỗi app mới đều có sẵn mức `premium`:
+
+```bash
+adapty apps list
+```
+
+```bash
+adapty access-levels list --app <app-id>
+```
+
+Sau đó tạo một sản phẩm Adapty cho mỗi sản phẩm bạn bán trên cửa hàng, sử dụng ID sản phẩm từ App Store Connect và Google Play Console:
+
+```bash
+adapty products create --app <app-id> --title "Monthly" --access-level-id <access-level-id> --period monthly --ios-product-id com.example.monthly --android-product-id com.example.monthly --android-base-plan-id monthly
+```
+
+Truyền `--period lifetime` cho sản phẩm mua một lần, và `--stripe-product-id` cùng `--stripe-price-id` (hoặc cặp Paddle tương ứng) cho sản phẩm bán trên web. [`products create`](developer-cli-products#adapty-products-create) liệt kê đầy đủ các flag. ID sản phẩm của cửa hàng không thể thay đổi sau khi tạo, vì vậy nếu muốn gắn một sản phẩm với ID cửa hàng khác, bạn cần tạo một sản phẩm mới.
+
+:::warning
+Một phần tử sản phẩm chưa được gán sẽ chặn việc lưu và xuất bản, vì vậy bạn sẽ phát hiện ra ngay trong builder. Một hành động **Purchase** chưa được gán sản phẩm thì vẫn lưu được nhưng sẽ không hoạt động trên thiết bị — nút đó sẽ không làm gì cả. Hãy gán sản phẩm cho mọi hành động Purchase.
+:::
+
+<Details summary="Hoặc bỏ qua sản phẩm và viết giá dưới dạng văn bản tĩnh">
+
+Một flow không có phần tử sản phẩm vẫn lưu và xuất bản được, vì vậy bạn có thể gõ giá trực tiếp vào văn bản và để code của bạn quyết định nút nhấn sẽ mua gì. Điều này đánh đổi:
+
+- Bạn phải cập nhật giá ở hai nơi — cửa hàng và văn bản trong flow — và chúng sẽ lệch nhau ngay khi bạn thay đổi một trong hai.
+- Không có A/B test giá, trong khi đó lại là mục đích chính của flow.
+- Biểu đồ và các tích hợp nhóm doanh thu kém gọn hơn, vì Adapty chỉ biết sản phẩm từ giao dịch bạn báo cáo.
+- Code của bạn ánh xạ từng phần tử được nhấn vào một sản phẩm, thay vì nhận sản phẩm từ flow.
+
+</Details>
+
+## Thiết lập \{#set-it-up\}
+
+1. **Kích hoạt SDK ở chế độ Observer.** Bật `observerMode` khi cấu hình SDK: [iOS](implement-observer-mode), [Android](implement-observer-mode-android), [React Native](implement-observer-mode-react-native), [Flutter](implement-observer-mode-flutter), [Unity](implement-observer-mode-unity), [Kotlin Multiplatform](implement-observer-mode-kmp), [Capacitor](implement-observer-mode-capacitor).
+2. **Tạo sản phẩm của bạn trong Adapty**, trừ khi không có màn hình nào trong flow hiển thị giá. Mỗi sản phẩm tương ứng một lệnh CLI — xem [Tạo sản phẩm của bạn trong Adapty](#create-your-products-in-adapty).
+3. **Xây dựng flow.** Xem [Flow & Paywall Builder](adapty-flow-builder) để thiết kế màn hình, [thiết lập giao dịch mua](paywall-product-block) cho sản phẩm trên màn hình paywall, và [tạo placement](create-placement) để quyết định flow xuất hiện ở đâu trong ứng dụng của bạn.
+4. **Hiển thị flow và thực hiện giao dịch mua trong code của bạn.** Adapty chuyển thao tác nhấn mua hàng đến một handler mà bạn đăng ký.
+5. **Báo cáo giao dịch** kèm theo paywall variation ID của sản phẩm đã mua, để giao dịch mua được ghi nhận vào analytics với attribution từ paywall đã bán sản phẩm đó.
+
+Bước 4 và 5 khác nhau tùy theo nền tảng. Trong mọi đoạn code, `flow` là `AdaptyFlow` bạn đã lấy cho placement, `product` là `AdaptyPaywallProduct` mà người dùng đã nhấn, và `myPurchaseApi` hoặc `yourBillingClient` đại diện cho code mua hàng bạn đã có sẵn.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS">
+
+Truyền một `AdaptyObserverModeResolver` vào `getFlowConfiguration(forFlow:observerModeResolver:)`. Adapty sẽ gọi resolver khi người dùng nhấn mua hàng thay vì tự thực hiện giao dịch.
+
+```swift showLineNumbers title="Swift"
+final class MyObserverModeResolver: AdaptyObserverModeResolver {
+    func observerMode(
+        didInitiatePurchase product: AdaptyPaywallProduct,
+        onStartPurchase: @MainActor @Sendable @escaping () -> Void,
+        onFinishPurchase: @MainActor @Sendable @escaping () -> Void
+    ) {
+        Task { @MainActor in
+            onStartPurchase() // the flow shows its loading indicator
+            do {
+                // your own purchase code, returning StoreKit's VerificationResult<Transaction>
+                let verificationResult = try await myPurchaseApi.purchase(product.vendorProductId)
+                try await Adapty.reportTransaction(verificationResult, withVariationId: product.variationId)
+            } catch {
+                // handle the error
+            }
+            onFinishPurchase() // the flow hides the loading indicator
+        }
+    }
+
+    func observerModeDidInitiateRestorePurchases(
+        onStartRestore: @MainActor @Sendable @escaping () -> Void,
+        onFinishRestore: @MainActor @Sendable @escaping () -> Void
+    ) {
+        Task { @MainActor in
+            onStartRestore()
+            try? await myPurchaseApi.restore()
+            onFinishRestore()
+        }
+    }
+}
+```
+
+Then present the flow with the resolver attached:
+
+```swift showLineNumbers title="Swift"
+do {
+    let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+        forFlow: flow,
+        observerModeResolver: MyObserverModeResolver()
+    )
+
+    let visualFlow = try AdaptyUI.flowController(
+        with: flowConfiguration,
+        delegate: self // an AdaptyFlowControllerDelegate
+    )
+
+    present(visualFlow, animated: true)
+} catch {
+    // handle the error
+}
+```
+
+Xem [Hiển thị flow ở chế độ Observer](ios-present-paywall-builder-paywalls-in-observer-mode) và [Báo cáo giao dịch ở chế độ Observer](report-transactions-observer-mode).
+
+</TabItem>
+<TabItem value="android" label="Android">
+
+Truyền một `AdaptyUiObserverModeHandler` khi bạn tạo flow view — handler này là tham số của `AdaptyUI.getFlowView`, `AdaptyFlowScreen`, và `AdaptyFlowView`. `onPurchaseInitiated` của nó nhận sự kiện khi người dùng nhấn mua. `getRestoreHandler` là tùy chọn — bỏ qua nó và việc khôi phục sẽ do SDK xử lý.
+
+:::warning
+Luôn truyền handler. Nếu không có handler, SDK sẽ tự hoàn thành giao dịch — người dùng sẽ bị tính phí thông qua Adapty, và chỉ có một cảnh báo trong log thông báo điều này. Trên iOS, việc bỏ sót handler sẽ khiến giao dịch thất bại.
+:::
+
+```kotlin showLineNumbers
+val observerModeHandler = object : AdaptyUiObserverModeHandler {
+    override fun onPurchaseInitiated(
+        product: AdaptyPaywallProduct,
+        onStartPurchase: AdaptyUiObserverModeHandler.PurchaseStartCallback,
+        onFinishPurchase: AdaptyUiObserverModeHandler.PurchaseFinishCallback,
+    ) {
+        onStartPurchase() // the flow shows its loading indicator
+        yourBillingClient.makePurchase(
+            product,
+            onSuccess = { purchase ->
+                Adapty.reportTransaction(
+                    TransactionInfo.fromPurchase(purchase),
+                    product.variationId,
+                ) {
+                    onFinishPurchase() // the flow hides the loading indicator
+                }
+            },
+            onError = { onFinishPurchase() },
+            onCancel = { onFinishPurchase() },
+        )
+    }
+
+    override fun getRestoreHandler() =
+        AdaptyUiObserverModeHandler.RestoreHandler { onStartRestore, onFinishRestore ->
+            onStartRestore()
+            yourBillingClient.restorePurchases(
+                onSuccess = { onFinishRestore() },
+                onError = { onFinishRestore() },
+            )
+        }
+}
+```
+
+Sau đó truyền handler vào flow view:
+
+```kotlin showLineNumbers
+val flowView = AdaptyUI.getFlowView(
+    activity,
+    flowConfiguration,
+    products,
+    eventListener,
+    observerModeHandler = observerModeHandler,
+)
+```
+
+Xem [Hiển thị flow trong Observer mode](android-present-paywall-builder-paywalls-in-observer-mode) và [Báo cáo giao dịch trong Observer mode](report-transactions-observer-mode-android).
+
+</TabItem>
+<TabItem value="react-native" label="React Native">
+
+Truyền `onObserverPurchaseInitiated` và `onObserverRestoreInitiated` dưới dạng props trên `AdaptyFlowView`, hoặc đăng ký chúng bằng `view.setEventHandlers`.
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyFlow({ flow }) {
+  const onObserverPurchaseInitiated = useCallback<
+    FlowEventHandlers['onObserverPurchaseInitiated']
+  >((product, onStartPurchase, onFinishPurchase) => {
+    onStartPurchase(); // the flow shows its loading indicator
+    myPurchaseApi(product.vendorProductId)
+      .then((transactionId) => adapty.reportTransaction(transactionId, product.variationId))
+      .finally(() => onFinishPurchase()); // the flow hides the loading indicator
+  }, []);
+
+  const onObserverRestoreInitiated = useCallback<
+    FlowEventHandlers['onObserverRestoreInitiated']
+  >((onStartRestore, onFinishRestore) => {
+    onStartRestore();
+    myRestoreApi().finally(() => onFinishRestore());
+  }, []);
+
+  return (
+    <AdaptyFlowView
+      flow={flow}
+      onObserverPurchaseInitiated={onObserverPurchaseInitiated}
+      onObserverRestoreInitiated={onObserverRestoreInitiated}
+      // ... your other event handlers
+    />
+  );
+}
+```
+
+Trong component nhúng, giá trị trả về của một handler không đóng flow. Hãy tự unmount component khi mua hàng hoặc khôi phục mua hàng thành công.
+
+Xem [Hiển thị flow ở chế độ Observer](react-native-present-flows-in-observer-mode) và [Báo cáo giao dịch ở chế độ Observer](report-transactions-observer-mode-react-native).
+
+</TabItem>
+<TabItem value="flutter" label="Flutter">
+
+Đăng ký resolver với `AdaptyUI().setObserverModeResolver` — trên `AdaptyUI()`, không phải trên `Adapty`. Implement cả `observerModeDidInitiatePurchase` và `observerModeDidInitiateRestore`; cả hai đều bắt buộc, và mỗi hàm nhận flow view làm đối số đầu tiên.
+
+```dart showLineNumbers title="Flutter"
+class MyObserverModeResolver extends AdaptyUIObserverModeResolver {
+  @override
+  void observerModeDidInitiatePurchase(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product,
+    void Function() onStartPurchase,
+    void Function() onFinishPurchase,
+  ) async {
+    onStartPurchase(); // the flow shows its loading indicator
+    try {
+      final transactionId = await myPurchaseApi(product.vendorProductId);
+      await Adapty().reportTransaction(
+        transactionId: transactionId,
+        variationId: product.paywallVariationId,
+      );
+    } on AdaptyError catch (adaptyError) {
+      // handle the error
+    } finally {
+      onFinishPurchase(); // the flow hides the loading indicator
+    }
+  }
+
+  @override
+  void observerModeDidInitiateRestore(
+    AdaptyUIFlowView view,
+    void Function() onStartRestore,
+    void Function() onFinishRestore,
+  ) async {
+    onStartRestore();
+    try {
+      await myRestoreApi();
+    } finally {
+      onFinishRestore();
+    }
+  }
+}
+```
+
+Đăng ký resolver một lần, trước khi hiển thị bất kỳ flow nào:
+
+```dart showLineNumbers title="Flutter"
+AdaptyUI().setObserverModeResolver(MyObserverModeResolver());
+```
+
+Xem [Hiển thị flow trong Observer mode](flutter-present-flows-in-observer-mode) và [Báo cáo giao dịch trong Observer mode](report-transactions-observer-mode-flutter).
+
+</TabItem>
+<TabItem value="unity" label="Unity">
+
+Đăng ký resolver với `Adapty.SetObserverModeResolver` — trên `Adapty`, không phải trên `AdaptyUI`. Triển khai `IAdaptyUIObserverModeResolver` với `FlowViewDidInitiatePurchase` và `FlowViewDidInitiateRestore`; tên callback trong Unity khác với các nền tảng khác.
+
+```csharp showLineNumbers
+using System;
+using AdaptySDK;
+
+public class MyObserverModeResolver : IAdaptyUIObserverModeResolver
+{
+    public void FlowViewDidInitiatePurchase(
+        AdaptyUIFlowView view,
+        AdaptyPaywallProduct product,
+        Action onStartPurchase,
+        Action onFinishPurchase
+    )
+    {
+        onStartPurchase(); // the flow shows its loading indicator
+        MyPurchaseApi.Purchase(product.VendorProductId, (transactionId, purchaseError) =>
+        {
+            if (purchaseError != null)
+            {
+                onFinishPurchase();
+                return;
+            }
+
+            Adapty.ReportTransaction(transactionId, product.PaywallVariationId, (reportError) =>
+            {
+                onFinishPurchase(); // the flow hides the loading indicator
+            });
+        });
+    }
+
+    public void FlowViewDidInitiateRestore(
+        AdaptyUIFlowView view,
+        Action onStartRestore,
+        Action onFinishRestore
+    )
+    {
+        onStartRestore();
+        MyPurchaseApi.Restore((restoreError) => onFinishRestore());
+    }
+}
+```
+
+Đăng ký resolver một lần, trước khi bạn hiển thị bất kỳ flow nào:
+
+```csharp showLineNumbers
+Adapty.SetObserverModeResolver(new MyObserverModeResolver());
+```
+
+Xem [Hiển thị flow trong Observer mode](unity-present-flows-in-observer-mode) và [Báo cáo giao dịch trong Observer mode](report-transactions-observer-mode-unity).
+
+</TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform">
+
+Đăng ký resolver bằng `AdaptyUI.setObserverModeResolver`. Implement cả `observerModeDidInitiatePurchase` và `observerModeDidInitiateRestore`; cả hai đều bắt buộc, và mỗi hàm nhận view của flow làm tham số đầu tiên.
+
+```kotlin showLineNumbers
+
+class MyObserverModeResolver(
+    private val scope: CoroutineScope,
+) : AdaptyUIObserverModeResolver {
+
+    override fun observerModeDidInitiatePurchase(
+        view: AdaptyUIFlowView,
+        product: AdaptyPaywallProduct,
+        onStartPurchase: () -> Unit,
+        onFinishPurchase: () -> Unit,
+    ) {
+        onStartPurchase() // the flow shows its loading indicator
+        scope.launch {
+            val transactionId = myPurchaseApi(product.vendorProductId)
+            Adapty.reportTransaction(
+                transactionId = transactionId,
+                variationId = product.paywallVariationId,
+            ).onError { error ->
+                // handle the error
+            }
+            onFinishPurchase() // the flow hides the loading indicator
+        }
+    }
+
+    override fun observerModeDidInitiateRestore(
+        view: AdaptyUIFlowView,
+        onStartRestore: () -> Unit,
+        onFinishRestore: () -> Unit,
+    ) {
+        onStartRestore()
+        scope.launch {
+            myRestoreApi()
+            onFinishRestore()
+        }
+    }
+}
+```
+
+Đăng ký resolver một lần, trước khi hiển thị bất kỳ flow nào:
+
+```kotlin showLineNumbers
+
+AdaptyUI.setObserverModeResolver(MyObserverModeResolver(scope))
+```
+
+Xem [Hiển thị flow trong chế độ Observer](kmp-present-flows-in-observer-mode) và [Báo cáo giao dịch trong chế độ Observer](report-transactions-observer-mode-kmp).
+
+</TabItem>
+<TabItem value="capacitor" label="Capacitor">
+
+Đặt `onObserverPurchaseInitiated` và `onObserverRestoreInitiated` bằng `view.setEventHandlers` trên mỗi flow view bạn tạo — Capacitor không có đối tượng resolver riêng, và hai handler này là một phần của event handler thông thường.
+
+```typescript showLineNumbers title="Capacitor"
+
+const view = await createFlowView(flow);
+
+const unsubscribe = await view.setEventHandlers({
+  onObserverPurchaseInitiated(product, onStartPurchase, onFinishPurchase) {
+    onStartPurchase(); // the flow shows its loading indicator
+    myPurchaseApi(product.vendorProductId)
+      .then((transactionId) =>
+        adapty.reportTransaction({ transactionId, variationId: product.variationId }),
+      )
+      .finally(() => onFinishPurchase()); // the flow hides the loading indicator
+    return false; // keep the flow open; dismiss it yourself after success, or let the flow continue
+  },
+  onObserverRestoreInitiated(onStartRestore, onFinishRestore) {
+    onStartRestore();
+    myRestoreApi().finally(() => onFinishRestore());
+    return false;
+  },
+});
+```
+
+Xem [Hiển thị flow trong Observer mode](capacitor-present-flows-in-observer-mode) và [Báo cáo giao dịch trong Observer mode](report-transactions-observer-mode-capacitor).
+
+</TabItem>
+</Tabs>
+
+### Giới hạn của Observer mode \{#observer-mode-limits\}
+
+- **Adapty không cấp quyền truy cập**: Adapty không phản hồi các sự kiện mua hàng bằng cách cấp hoặc hạn chế quyền truy cập vào các tính năng trả phí, và cũng không xử lý việc gia hạn hay thử lại thanh toán. Code của bạn mới là bên kiểm soát mức độ truy cập.
+- **Code của bạn tự hoàn tất giao dịch**: Adapty không hoàn tất hoặc xác nhận các giao dịch mua hàng do code của bạn thực hiện, vì vậy việc đóng từng giao dịch vẫn là trách nhiệm của bạn.
+- **Báo cáo là bắt buộc**: `variationId` bạn truyền vào khi báo cáo là mối liên kết duy nhất giữa một giao dịch mua hàng và flow đã tạo ra nó. Hãy báo cáo mọi giao dịch, nếu không các chỉ số flow và kết quả A/B test của bạn sẽ bị sai.
+- **SDK báo cáo một kết quả cho mỗi lần mua hàng**: Code của bạn thực hiện giao dịch, nên flow luôn chạy cùng các [hành động kết quả](respond-to-purchase-outcomes#add-actions-for-a-result) bất kể điều gì xảy ra, kể cả khi người dùng hủy giao dịch: hành động **When pending** trên iOS và hành động **When succeeded** trên Android. Hãy hiển thị bất kỳ màn hình nào phụ thuộc vào kết quả mua hàng, chẳng hạn như màn hình cảm ơn, từ code của bạn. Sau khi khôi phục giao dịch mua, flow sẽ chạy các hành động **When restore completed**, bất kể điều gì xảy ra.
+
+## Nếu bạn đang dùng một nhà cung cấp khác \{#if-youre-already-using-another-vendor\}
+
+Observer mode chỉ yêu cầu code của bạn thực hiện giao dịch mua — không quan trọng SDK của ai được gọi. Flow hoạt động tương tự dù bạn đang dùng RevenueCat, Superwall, Qonversion hay code StoreKit/Billing Library của chính bạn.
+
+Có ba quyết định cần đưa ra trước khi triển khai:
+
+- **Một hệ thống hoàn tất mỗi giao dịch**: Hai SDK cùng hoàn tất một giao dịch là lỗi phổ biến nhất ở đây.
+- **Một hệ thống quản lý quyền truy cập**: Adapty không cấp quyền gì trong chế độ Observer, vì vậy hãy giữ nguyên mức độ truy cập như cũ.
+- **Báo cáo mỗi giao dịch một lần**: Báo cáo cùng một giao dịch từ hai nơi sẽ làm sai lệch dữ liệu analytics của bạn.
+
+Để chuyển hoàn toàn khỏi nhà cung cấp khác, hãy xem [Migrate từ RevenueCat](migration-from-revenuecat) hoặc [Migrate từ Superwall](migration-from-superwall).
+
+### Để Adapty thực hiện giao dịch mua thay thế \{#let-adapty-make-the-purchase-instead\}
+
+:::tip
+Ứng dụng của bạn thực hiện giao dịch mua thông qua Adapty ở đây, vì vậy phần code là một tích hợp Adapty bình thường. Làm theo [hướng dẫn bắt đầu nhanh](quickstart) hoặc [Migrate từ RevenueCat](migration-from-revenuecat), hoặc giao cho [SDK integration skill](manage-adapty-with-ai).
+:::
+
+Observer mode là cách nhanh nhất để bắt đầu. Nếu bạn muốn giữ lại analytics của RevenueCat nhưng tránh các [giới hạn của Observer mode](#observer-mode-limits), hãy đảo ngược hai cái lại: Adapty chạy ở [chế độ đầy đủ](observer-vs-full-mode) và xử lý toàn bộ giao dịch mua, trong khi RevenueCat chạy ở observer mode của chính nó và ghi lại các giao dịch mua mà Adapty thực hiện.
+
+Adapty khi đó sẽ biết flow, placement và biến thể A/B test nào tạo ra mỗi khoản thanh toán, đồng thời cấp [mức độ truy cập](access-level) và xử lý gia hạn, thử lại thanh toán và hoàn tiền.
+
+Ở phía RevenueCat, hãy đặt `purchasesAreCompletedBy` thành app của bạn khi cấu hình SDK — `.myApp` trên iOS, `MY_APP` trên Android. Tài liệu [Using the SDK with your own IAP code](https://www.revenuecat.com/docs/migrating-to-revenuecat/sdk-or-not/finishing-transactions) của RevenueCat có hướng dẫn cấu hình cho từng nền tảng, phiên bản StoreKit mà iOS yêu cầu, và lệnh `syncPurchases()` để đồng bộ các giao dịch mua mà người dùng đã thực hiện trước đó. Hãy đặt cùng một user ID cho cả hai SDK — [customer user ID](how-profiles-work) của Adapty và `appUserID` của RevenueCat — nếu không, hai dashboard sẽ hiển thị dữ liệu của những người dùng khác nhau.
+
+:::warning
+Việc này sẽ kết thúc vai trò của các entitlement RevenueCat với tư cách là nguồn dữ liệu chính xác, và mức độ truy cập của Adapty sẽ đảm nhận vai trò đó. RevenueCat vẫn tiếp tục theo dõi và dashboard của nó vẫn tiếp tục báo cáo, nhưng từ đây nó chỉ nhận thông tin về mỗi lần mua hàng một cách gián tiếp và trong phạm vi giới hạn mà tài liệu của chính nó đã nêu. Bất kỳ thành phần nào hiện đang đọc entitlement RevenueCat — ứng dụng của bạn, backend, bản build web hay desktop — đều cần chuyển sang dùng Adapty hoặc đọc từ một bản sao. Hãy giải quyết điều đó trước khi phát hành. Mọi thứ khác không thay đổi: tài khoản RevenueCat, lịch sử và các tích hợp của nó vẫn giữ nguyên.
+:::

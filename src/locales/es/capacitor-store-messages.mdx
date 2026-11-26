@@ -1,0 +1,123 @@
+---
+title: "Controlar mensajes del store en el SDK de Capacitor"
+description: "Elige cuándo tu app de Capacitor muestra mensajes de App Store y Google Play sobre aumentos de precio, problemas de facturación y pagos rechazados, para que no interrumpan un flow o un onboarding."
+metadataTitle: "Controlar mensajes del store | SDK de Capacitor | Documentación de Adapty"
+---
+
+A veces App Store y Google Play necesitan mostrar a tus usuarios un mensaje sobre su suscripción:
+
+- **App Store**: Una solicitud de consentimiento para un aumento de precio, un aviso de problema de facturación o una oferta de recuperación. Por defecto, StoreKit muestra estos mensajes por su cuenta mientras la app está abierta.
+- **Google Play**: Un aviso de que el pago de una suscripción fue rechazado y es necesario actualizar el método de pago. A partir del SDK 4.3.0, el SDK de Adapty solicita estos mensajes por defecto cada vez que se inicia una `Activity` de tu app tras `activate`, incluso cuando la app vuelve al primer plano.
+
+Ya sea de una forma u otra, un mensaje puede aparecer encima de un flow, un onboarding o un checkout. Para elegir el momento tú mismo, cambia el SDK a gestión manual de mensajes y llama a `showStoreMessages` cuando un mensaje no interrumpa al usuario.
+
+:::warning
+En el modo manual, los stores no muestran mensajes por su cuenta. Si tu app nunca llama a `showStoreMessages`, los usuarios nunca verán una solicitud de consentimiento de aumento de precio, un aviso de problema de facturación ni un aviso de pago rechazado.
+:::
+
+## Antes de empezar \{#before-you-start\}
+
+Necesitas:
+
+- **Adapty Capacitor SDK 4.3.0 o posterior**: Las versiones anteriores no tienen la API de mensajes del store.
+- **iOS 16 o posterior** para mensajes de App Store: StoreKit no entrega mensajes a apps en versiones anteriores. En iOS 15, `getPendingStoreMessageTypes` y `showStoreMessages` lanzan el error `decodingFailed`, así que si tu app admite iOS 15, captura el error como se muestra en los ejemplos a continuación.
+
+## Habilitar el manejo manual \{#enable-manual-handling\}
+
+Para mostrar los mensajes de la store solo cuando tu app llame a `showStoreMessages`, establece `storeMessagesHandling` en `'manual'` al [activar el SDK](sdk-installation-capacitor#activate-adapty-module-of-adapty-sdk):
+
+```typescript showLineNumbers
+
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    storeMessagesHandling: 'manual', // 'auto' is the default
+  },
+});
+```
+
+En iOS, el SDK añade cada mensaje de la App Store a una lista de mensajes pendientes para la sesión actual de la aplicación. En Android, el SDK deja de solicitar mensajes de Google Play por su cuenta. Con el valor predeterminado `'auto'`, el SDK no captura mensajes de la App Store, por lo que en iOS, `getPendingStoreMessageTypes` y `showStoreMessages` no tienen nada que devolver ni mostrar.
+
+## Obtener los tipos de mensajes pendientes \{#get-pending-message-types\}
+
+En iOS, para saber si hay mensajes de la App Store en espera, llama a `getPendingStoreMessageTypes`. Devuelve los tipos de los mensajes pendientes sin mostrarlos ni eliminarlos:
+
+```typescript showLineNumbers
+try {
+  const pendingTypes = await adapty.getPendingStoreMessageTypes();
+
+  if (pendingTypes === null) {
+    // Android: Google Play decides whether a message applies when you show it
+    await adapty.showStoreMessages();
+  } else if (pendingTypes.includes('billing_issue')) {
+    // For example, skip the upsell and show the billing message first
+  }
+} catch (error) {
+  // On iOS 15, the call fails with decodingFailed (2006)
+}
+```
+
+En Android, el método devuelve `null` sin llamar al SDK nativo: Google Play no informa sobre mensajes pendientes y decide si un mensaje aplica solo cuando tu app lo solicita. Un array vacío significa que no hay mensajes pendientes en iOS. Hasta que `activate` se complete, el array siempre estará vacío.
+
+Cada mensaje de App Store tiene uno de estos tipos:
+
+| Tipo | Mensaje |
+|:-----|:--------|
+| `generic` | Un mensaje general de App Store. |
+| `price_increase_consent` | Una solicitud de consentimiento para un aumento de precio de suscripción. |
+| `billing_issue` | Un aviso sobre un problema de facturación de suscripción. Disponible en iOS 16.4 y versiones posteriores. |
+| `win_back_offer` | Una [oferta de recuperación](app-store-offers#win-back-offers) elegible. Disponible en iOS 18 y versiones posteriores. |
+
+Los nuevos tipos de mensajes de StoreKit llegan con el valor `storekit_<number>`. Trata cualquier valor que no aparezca en esta tabla como un tipo que el SDK no reconoce.
+
+## Mostrar mensajes \{#show-messages\}
+
+Cuando tu app llegue a un punto donde un mensaje de la store no interrumpa al usuario — por ejemplo, después de que el usuario cierre un flow o termine el onboarding — llama a `showStoreMessages`:
+
+```typescript showLineNumbers
+try {
+  await adapty.showStoreMessages();
+} catch (error) {
+  // handle the error
+}
+```
+
+- **iOS**: El SDK muestra los mensajes pendientes uno tras otro. Tras mostrar un mensaje, StoreKit lo elimina de la lista de pendientes. Si StoreKit no puede mostrar un mensaje, el SDK lo conserva para la siguiente llamada y continúa con el resto de mensajes.
+- **Android**: El SDK solicita los mensajes de Google Play para la `Activity` actual. Google Play decide si un mensaje es aplicable al usuario, por lo que una solicitud no siempre muestra un mensaje. La llamada retorna de inmediato sin esperar a Google Play y no notifica los errores de Google Play. Si el usuario corrige su método de pago desde el mensaje, el SDK sincroniza las compras del usuario con Adapty y tu [listener de perfil](capacitor-listen-subscription-changes) recibe el nivel de acceso actualizado.
+
+### Mostrar mensajes al iniciar en Android \{#show-messages-at-launch-on-android\}
+
+En el modo `'auto'` predeterminado, la `Activity` que aloja tu aplicación se inicia antes de que se ejecute `activate`, por lo que no desencadena una solicitud y los mensajes de Google Play no aparecen al inicio. Para mostrarlos al iniciar, llama a `showStoreMessages` una vez después de `activate`, solo en Android:
+
+```typescript showLineNumbers
+
+await adapty.activate({ apiKey: 'YOUR_PUBLIC_SDK_KEY' });
+
+if (Capacitor.getPlatform() === 'android') {
+  await adapty.showStoreMessages();
+}
+```
+
+No hagas esta llamada en iOS: en el modo `'auto'`, no tiene nada que mostrar, y en iOS 15 falla.
+
+### Mostrar solo algunos tipos de mensajes \{#show-only-some-message-types\}
+
+Para mostrar solo algunos de los mensajes de App Store pendientes, indica los tipos en `ios.filter`. Los demás mensajes permanecen pendientes:
+
+```typescript showLineNumbers
+await adapty.showStoreMessages({
+  ios: { filter: ['billing_issue', 'price_increase_consent'] },
+});
+```
+
+Sin `filter`, el SDK muestra todos los mensajes pendientes, incluidos los tipos que no reconoce. Un array vacío no muestra ninguno. Android ignora `filter` y solicita todos los mensajes de Google Play.
+
+### Errores \{#errors\}
+
+En iOS, `showStoreMessages` lanza un [`AdaptyError`](capacitor-handle-errors) con uno de estos códigos:
+
+| Código | Nombre | Causa |
+|:-----|:-----|:------|
+| 2006 | `decodingFailed` | El dispositivo usa iOS 15 o anterior. Llama al método solo en iOS 16 o posterior. |
+| 3201 | `operationInProgress` | Otra llamada a `showStoreMessages` sigue mostrando mensajes y esta llamada también tiene mensajes que mostrar. Espera a que termine la primera llamada e inténtalo de nuevo. |
+| 3202 | `resolverFailure` | El SDK no encontró ninguna escena de ventana activa en primer plano para mostrar los mensajes. Los mensajes mostrados antes del error se eliminan de la lista pendiente. Llama al método de nuevo cuando tu app esté en primer plano para mostrar el resto. |

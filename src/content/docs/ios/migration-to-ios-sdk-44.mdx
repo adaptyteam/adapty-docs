@@ -1,0 +1,82 @@
+---
+title: "Migrate Adapty iOS SDK to v4.4"
+description: "Migrate to Adapty iOS SDK v4.4: update your custom action and custom asset code, read the billing period from the pricing terms, and download a new fallback file."
+metadataTitle: "Migrating to Adapty iOS SDK v4.4 | Adapty Docs"
+---
+
+To update your app from Adapty iOS SDK 4.3 to 4.4, apply every change in this guide. An app on 4.1 or 4.2 needs the [v4.3 changes](migration-to-ios-sdk-43) first, and an app on 4.0 needs the [v4.1 changes](migration-to-ios-sdk-41) before that. To continue to 4.5, follow [Migrate to v4.5](migration-to-ios-sdk-45) next.
+
+:::warning
+The fallback file format changed in 4.4, and the compiler can't detect an outdated file. Without a [new fallback file](#fallback-files), every placement loses its fallback.
+:::
+
+## Quick reference
+
+| Before | After |
+|---|---|
+| `case let .custom(id)` | `case let .custom(id, _)` |
+| `AdaptyUICustomAsset` | `AdaptyUIAsset`; `AdaptyCustomAsset` is unchanged |
+| `.color(.uiColor(x))` and `.color(.swiftUIColor(c))` | `.color(Color(uiColor: x))` and `.color(c)` |
+| `AdaptyUICustomFontAsset(font:defaultColor:defaultLetterSpacing:defaultLineHeight:)` | `AdaptyUIFontAsset(font:color:letterSpacing:lineHeight:)` |
+| No data assets | `AdaptyUIAsset` includes `.data` for data assets |
+| `AdaptyProduct.localizedBillingPeriod` | `subscriptionPricingTerms?.localizedBillingPeriod` |
+| Fallback file downloaded for 4.1–4.3 | New fallback file format; download the file again |
+
+## AdaptyUI.Action.custom contains two values \{#custom-actions\}
+
+When a user taps a button with a custom action, your app receives `AdaptyUI.Action.custom`. In 4.4, it contains a second value, `arguments`, after the action ID. In the `didPerformAction` closure and the `flowController(_:didPerform:)` delegate method, add `_` for this second value:
+
+```diff showLineNumbers
+  switch action {
+- case let .custom(id):
++ case let .custom(id, _):
+      if id == "openNewPaywall" {
+          // Display another flow or paywall
+      }
+  default:
+      break
+  }
+```
+
+Code that compares `id` to a string stops compiling until you add `_`. Other code still builds, with the warning "enum case 'custom' has 2 associated values; matching them as a tuple is deprecated". In that code, `id` contains both values, not the action ID alone. Add `_` wherever Xcode shows this warning.
+
+## Custom assets
+
+In 4.4, `AdaptyUICustomAsset` is renamed to `AdaptyUIAsset`. The old name triggers a deprecation warning.
+
+Color, font, and data assets change in three ways:
+
+- **Color assets**: `.color` takes a SwiftUI `Color`. `AdaptyUICustomColorAsset` is removed. Wrap a `UIColor` in `Color(uiColor:)`, and pass a SwiftUI `Color` directly:
+
+  ```diff showLineNumbers
+  - "brand_color": .color(.uiColor(brandColor)),
+  + "brand_color": .color(Color(uiColor: brandColor)),
+  ```
+
+- **Font assets**: `AdaptyUIFontAsset` takes `color:`, `letterSpacing:`, and `lineHeight:` instead of `defaultColor:`, `defaultLetterSpacing:`, and `defaultLineHeight:`. The `color:` parameter takes a SwiftUI `Color`:
+
+  ```diff showLineNumbers
+  - "title_font": .font(AdaptyUICustomFontAsset(font: titleFont, defaultColor: .uiColor(.white), defaultLineHeight: 24)),
+  + "title_font": .font(AdaptyUIFontAsset(font: titleFont, color: .white, lineHeight: 24)),
+  ```
+
+- **Data assets**: `AdaptyUIAsset` includes a new asset type, `.data`. A `switch` statement that lists every asset type, with no `default` branch, stops compiling. Only [custom elements](ios-flow-custom-elements) read data assets, so the new branch can be empty: `case .data: break`.
+
+## AdaptyProduct.localizedBillingPeriod is deprecated \{#localizedbillingperiod-is-deprecated\}
+
+`AdaptyProduct` has a [`subscriptionPricingTerms`](fetch-paywalls-and-products) property that describes each payment for the product: its price and how often the user pays. In 4.4, `localizedBillingPeriod`, the text that shows how often the user pays, moves from `AdaptyProduct` to `subscriptionPricingTerms`. `AdaptyProduct.localizedBillingPeriod` still works, with a deprecation warning: it returns `subscriptionPricingTerms?.localizedBillingPeriod`. To clear the warning, read the property from the pricing terms:
+
+```diff showLineNumbers
+- let period = product.localizedBillingPeriod
++ let period = product.subscriptionPricingTerms?.localizedBillingPeriod
+```
+
+## Fallback files
+
+The [fallback file](fallback-flows) format changed in SDK 4.4. Download the file again from **[Placements](https://app.adapty.io/placements)** > **Fallbacks**, select **Adapty SDK v4.4.0 and higher**, and bundle it in your app.
+
+The downloaded file is named `ios_4_4_0_fallback.json`. Give it the name that your app passes to `Bundle.main.url(forResource:withExtension:)`, or update the name in that call.
+
+:::warning
+An outdated fallback file produces no compile error. Every placement silently loses its fallback. The SDK log then shows "The fallback paywalls version is not correct. Download a new one from the Adapty Dashboard."
+:::

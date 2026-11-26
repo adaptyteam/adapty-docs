@@ -33,6 +33,10 @@ If you've designed a flow or paywall in the builder, you don't need to worry abo
 
 Fetch the flow or paywall and create its [view](capacitor-get-pb-paywalls#fetch-the-view-configuration) as early as possible — ideally well before you present it. The `createFlowView` method loads the view configuration and starts downloading and caching its images in the background. The earlier you call it, the more time these downloads have to complete. By the time you present the flow or paywall, its configuration and images can already be cached and ready to display.
 
+:::tip
+To warm several placements at once, call [`preloadFlows`](capacitor-optimize-paywall-fetching#preload-placements) (Capacitor SDK 4.3.0+). It caches the placement JSON only, so `createFlowView` still loads the layout and images.
+:::
+
 To get a flow or paywall, use the `getFlow` method:
 
 ```typescript showLineNumbers
@@ -51,7 +55,7 @@ Parameters:
 |-------------------|--------|-----------|
 | **placementId**   | required | The identifier of the desired [Placement](placements). This is the value you specified when creating a placement in the Adapty Dashboard. |
 | **fetchPolicy**   | default: `'reload_revalidating_cache_data'` | <p>Passed inside the optional `params` object. `fetchPolicy` sets which layer the SDK reads first, not whether it can use the cache. By default the SDK goes to the server first and returns cached data if that request fails. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider `'return_cache_data_else_load'`, which reverses that order — it reads the cache first and goes to the server only when nothing is cached. Users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>A third policy, `'return_cache_data_if_not_expired_else_load'`, sits between the two: it reads the cache first while the cached copy is younger than the `maxAgeSeconds` you pass alongside it, and goes to the server once it is older.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p><p></p><p>Adapty SDK stores paywalls locally in two layers: regularly updated cache described above and [fallback paywalls](fallback-paywalls). We also use CDN to fetch paywalls faster and a stand-alone fallback server in case the CDN is unreachable. This system is designed to make sure you always get the latest version of your paywalls while ensuring reliability even in cases where internet connection is scarce.</p> |
-| **loadTimeoutMs** | default: 5 sec | <p>Passed inside the optional `params` object. This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.</p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeoutMs`, since the operation may consist of different requests under the hood.</p> |
+| **loadTimeoutMs** | default: 5 sec | <p>Passed inside the optional `params` object. This value limits the timeout for this method. If the Adapty server doesn't respond in time or returns an error, the SDK returns the cached flow. If nothing is cached and the server timed out or returned a server error, the SDK requests the flow from the fallback server (a CDN copy that serves only the placement's **All Users** audience). As a last resort, the SDK returns the flow from your [fallback file](capacitor-use-fallback-paywalls).</p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeoutMs`, since the operation may consist of different requests under the hood.</p> |
 
 **Don't hardcode product IDs.** The only ID you should hardcode is the placement ID. Flows and paywalls are configured remotely, so the number of products and available offers can change at any time. Your app must handle these changes dynamically—if a paywall returns two products today and three tomorrow, display all of them without code changes.
 
@@ -59,7 +63,7 @@ Response parameters:
 
 | Parameter | Description                                                                                                                                                                            |
 | :-------- |:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Flow   | An `AdaptyFlow` object with the flow's identifiers (`id`, `variationId`), name, placement, its paywall variations (`paywalls`), any remote configs (`remoteConfigs`), and a `hasViewConfiguration` flag. |
+| Flow   | An `AdaptyFlow` object with the flow's identifiers (`id`, `variationId`), variation name (`variationName`, optional, SDK 4.2+), name, placement, its paywall variations (`paywalls`), any remote configs (`remoteConfigs`), and a `hasViewConfiguration` flag. |
 
 ## Fetch the view configuration
 
@@ -83,7 +87,7 @@ if (flow.hasViewConfiguration) {
 In Capacitor SDK, call `createFlowView` directly — you don't need to fetch the view configuration first.
 
 :::warning
-The result of the `createFlowView` method can only be used once. If you need to use it again, call the `createFlowView` method anew. Calling it twice without recreating may result in an error.
+By default, a dismissed `view` is destroyed, and reusing it results in an error. To display the flow again, call `createFlowView` one more time to create a new `view` instance, or [keep the closed flow](capacitor-present-paywalls#keep-a-closed-flow-for-later) when you dismiss it.
 :::
 
 ```typescript showLineNumbers
@@ -101,9 +105,10 @@ Parameters:
 | Parameter            | Presence | Description                                                  |
 | :------------------- | :------- | :----------------------------------------------------------- |
 | **flow**             | required | An `AdaptyFlow` object to obtain a controller for the desired flow/paywall. |
-| **locale**           | optional | The identifier of the [flow localization](add-paywall-locale-in-adapty-paywall-builder) to render the view with — for example, `en` or `pt-br`. Omit it and the view renders in `en`, or in the flow's default localization when the flow has no `en`. See [Localizations and locale codes](capacitor-localizations-and-locale-codes). |
+| **locale**           | optional | The identifier of the [flow localization](add-paywall-locale-in-adapty-paywall-builder) to render the view with — for example, `en` or `pt-BR`. Omit it and the view renders in `en`, or in the flow's default localization when the flow has no `en`. See [Localizations and locale codes](capacitor-localizations-and-locale-codes). |
 | **customLayoutId**   | <p>optional</p><p>default: `undefined`</p><p>SDK 4.1+</p> | The custom ID of a layout in the flow's layout configuration. Pass it to render that specific layout instead of the one the SDK picks automatically from the device type and screen size. If no layout matches the ID, the call fails with a no-view-configuration error. The Flow & Paywall Builder doesn't assign custom layout IDs yet, so leave this unset. |
 | **customTags**       | optional | Your app's values for the flow's [custom tags](flow-custom-tags), in an object keyed by each tag's full name. For details, read [Pass data to flows](capacitor-flow-custom-tags). |
+| **customTimers**     | optional | The end dates of the flow's **Developer defined** timers, in an object that maps each Timer ID to a `Date`. For details, read [Use developer-defined timer](capacitor-present-paywalls#use-developer-defined-timer). |
 | **prefetchProducts** | optional | Enable to optimize the display timing of products on the screen. When `true` AdaptyUI will automatically fetch the necessary products. Default: `true`. |
 | **android.enableSafeArea** | optional | Android only (ignored on iOS). Nested under the `android` key. When `true`, the flow view applies safe-area paddings. Default: `true`. The default is suitable for most cases. |
 

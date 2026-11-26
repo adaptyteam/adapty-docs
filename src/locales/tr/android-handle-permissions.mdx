@@ -1,0 +1,100 @@
+---
+title: "Flow'larda izin isteklerini yönetme - Android"
+description: "Android uygulamanızda bir flow içinden push bildirim izni istemek için onShowRequestPermission kullanın ve kullanıcının yanıtını flow'a döndürün."
+metadataTitle: "Flow İzinlerini Yönetme - Android | Adapty Dokümanları"
+---
+
+Bir [flow](adapty-flow-builder), örneğin bildirimlerin ne için kullanıldığını açıklayan bir onboarding ekranında, kullanıcıdan **Request permission** eylemiyle bildirim gönderme izni isteyebilir. Adapty SDK'sı sistem izin diyaloğunu kendisi göstermez. İsteği, flow olay dinleyicinizin `onShowRequestPermission` metoduna iletir. Uygulamanız diyaloğu gösterir ve kullanıcının yanıtını döndürür; flow da devam eder.
+
+## Başlamadan önce \{#before-you-start\}
+
+Şunlara ihtiyacınız var:
+
+- **Adapty Android SDK 4.0.0 veya üzeri**: Daha eski sürümlerde `onShowRequestPermission` bulunmaz.
+- **Request permission aksiyonuna sahip bir flow**: Flow & Paywall Builder'da, bir öğenin **On Tap** veya **On Screen Appear** tetikleyicisine **Request permission** aksiyonunu ekleyin. **After response** bölümünde, kullanıcı yanıt verdikten sonra çalışacak aksiyonları, örneğin **Navigate Next** gibi, ekleyin. Aksiyon ayarları için [Request permission](onboarding-actions#request-permission) bölümüne bakın.
+- **Android manifest dosyanızda `POST_NOTIFICATIONS` izni ve `targetSdk` 33 veya üzeri**: Android 13 ve sonrası, bildirim izni diyaloğunu yalnızca bu izni bildiren ve Android 13 veya üzerini hedefleyen uygulamalara gösterir:
+
+  ```xml title="AndroidManifest.xml"
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  ```
+
+## Flow bir izin nasıl talep eder \{#how-the-flow-requests-a-permission\}
+
+1. Flow, **Request permission** eylemine ulaşır: kullanıcı öğeye dokunur veya ekran görünür.
+2. Adapty SDK, flow görünümünün olay dinleyicisinde `onShowRequestPermission` metodunu çağırır; `permission` değeri `"push"` olarak ayarlanmıştır.
+3. Uygulamanız Android'den izni talep eder ve yanıtı `callback` ile iletir.
+4. Flow, **After response** eylemlerini çalıştırır. Bu eylemler her iki yanıt için de aynıdır.
+
+Flow, uygulamanız `callback` işlevini çağırana kadar ekranda bekler. Uygulamanız hiç çağırmazsa flow ekranda kalmaya devam eder. Android diyalog kutusunu göstermezse uygulamanız yanıtı hemen alır ve flow, **After response** eylemlerini anında çalıştırır. Bu eylemler ekrandan çıkılmasına neden olursa kullanıcı, izin isteyen ekranı yalnızca bir an için görür. Android şu durumlarda diyalog kutusunu göstermez:
+
+- **Android 12 ve öncesi**: Bildirimler çalışma zamanı izni gerektirmez, bu yüzden gösterilecek bir diyalog yoktur.
+- **Kullanıcı daha önce bildirimlere izin verdiyse**: İzin zaten verilmiştir.
+- **Kullanıcı diyalogu iki kez reddettiyse**: Android, uygulama için diyalogu göstermeyi bırakır ve her yeni isteği reddeder.
+
+**On Screen Appear** seçeneğiyle, kullanıcı **Navigate back** eylemiyle ekrana geri döndüğünde flow isteği tekrar göndermez. **On Tap** seçeneğiyle ise bir istek yanıt beklerken yapılan dokunuşlar hariç her dokunuş yeni bir istek gönderir.
+
+## onShowRequestPermission'ı geçersiz kılma \{#override-onshowrequestpermission\}
+
+:::warning
+**Varsayılan dinleyici kullanıcıya hiçbir zaman sormaz.** `AdaptyFlowDefaultEventListener`, her izin isteğini `false` ile yanıtlar ve hiçbir iletişim kutusu göstermez. Dinleyiciniz `AdaptyFlowDefaultEventListener`'ı genişletiyorsa ve `onShowRequestPermission`'ı geçersiz kılmıyorsa, flow **After response** eylemlerini hemen çalıştırır.
+:::
+
+İzin isteklerini yanıtlamak için olay dinleyicinizde `onShowRequestPermission`'ı geçersiz kılın. Bu örnekte, flow'u gösteren activity, izin iletişim kutusu için bir başlatıcı kaydeder:
+
+```kotlin showLineNumbers title="Kotlin"
+
+class FlowActivity : ComponentActivity() {
+
+    // The flow waits for this callback while the system dialog is open.
+    private var pendingPermissionCallback: AdaptyFlowEventListener.PermissionCallback? = null
+
+    private val notificationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            pendingPermissionCallback?.invoke(granted, null)
+            pendingPermissionCallback = null
+        }
+
+    private val eventListener = object : AdaptyFlowDefaultEventListener() {
+        override fun onShowRequestPermission(
+            permission: String?,
+            customArgs: Map<String, String>?,
+            callback: AdaptyFlowEventListener.PermissionCallback,
+            context: Context,
+        ) {
+            if (permission != "push") {
+                callback(false, null)
+                return
+            }
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                // Android 12 and earlier: return whether notifications are turned on for the app.
+                callback(NotificationManagerCompat.from(context).areNotificationsEnabled(), null)
+                return
+            }
+            pendingPermissionCallback = callback
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    // Pass eventListener to the flow view.
+}
+```
+
+`onShowRequestPermission` şunları alır:
+
+- **`permission`**: Flow'un talep ettiği izin. **Request permission** eylemi `"push"` gönderir.
+- **`customArgs`**: İsteğin özel argümanları. **Request permission** eylemi hiçbir şey göndermez, dolayısıyla değer `null`'dur.
+- **`callback`**: Flow'a yanıtı döndüren callback. İlk argümanı olan `granted`, kullanıcı izni verdiyse `true`, vermedi ise `false` değerini alır. İkinci argümanı olan `detailResult`, yanıtla ilgili ayrıntılar içeren isteğe bağlı bir string'dir. Hiçbir şey yoksa `null` geçin.
+
+Her istek için `callback`'i bir kez çağırın. Uygulamanızın talep etmediği izinler için `false` döndürün. Adapty SDK, `onShowRequestPermission`'dan gelen exception'ları yakalamaz; bu nedenle override'ınızda exception'ları yakalayıp `callback(false, null)` çağırın.
+
+Jetpack Compose'da, launcher'ı `registerForActivityResult` yerine `rememberLauncherForActivityResult` ile kaydedin. Diyalog açıkken activity yeniden oluşturulabiliyorsa (örneğin ekran döndürmede), bekleyen callback'i bir `ViewModel`'da tutun; böylece yeni activity onu çağırabilir.
+
+Verilen izin, uygulamanızın bildirim göstermesine olanak tanır. Push bildirimleri almak için cihazı Firebase Cloud Messaging gibi push sağlayıcınıza kaydedin; bunu uygulamanız flow'ların dışında nasıl yapıyorsa aynı şekilde yapın.
+
+## Dinleyiciyi flow'a aktarın \{#pass-the-listener-to-the-flow\}
+
+Adapty SDK, izin isteklerini flow görünümünün olay dinleyicisine gönderir. Görünümü oluştururken kendi override'ınızı `eventListener` olarak geçirin: `AdaptyUI.getFlowView()`, `AdaptyFlowView.showFlow()` veya `AdaptyFlowScreen()` çağrılarında. Bu çağrılar için [Flow'ları ve paywallları görüntüleme](android-present-paywalls), diğer dinleyici metodları için ise [Flow ve paywall olaylarını yönetme](android-handling-events) sayfasına bakın.
+
+## İzin isteğini test etme \{#test-the-permission-request\}
+
+Android 13 veya sonraki bir sürüme sahip cihazda test edin: daha eski sürümler bildirim diyaloğu göstermez. Android, kullanıcı bildirimlere izin verdikten veya iki kez reddettikten sonra diyaloğu göstermeyi bırakır. Flow'u test ederken diyaloğu tekrar görmek için uygulamayı cihazdan silin ve yeniden yükleyin. Ardından flow'u açın ve **Request permission** eylemine ulaşın. Flow diyaloğsuz ilerliyorsa, listener'ınızın `onShowRequestPermission` metodunu override ettiğinden, uygulamanın `POST_NOTIFICATIONS` iznini bildirdiğinden ve Android 13 veya sonrasını hedeflediğinden emin olun.

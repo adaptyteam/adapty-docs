@@ -1,0 +1,474 @@
+---
+title: "将 Adapty 流程与您自己的支付系统配合使用"
+description: "在您现有的支付代码之上运行 Adapty 流程，无需迁移支付基础设施。"
+metadataTitle: "将 Adapty 流程与您自己的支付系统配合使用 | Adapty 文档"
+---
+
+您无需将支付逻辑迁移到 Adapty 即可使用其流程。在 [Observer 模式](observer-vs-full-mode)下，所有购买操作仍由您的代码完成，而 Adapty 负责渲染付费墙或用户引导、决定用户看到的内容、进行 A/B 测试并报告结果。
+
+本指南介绍哪些内容会发生变化、哪些不会，以及配置所需的步骤。
+
+:::tip
+刚接触流程？[流程与付费墙编辑工具](adapty-flow-builder) 介绍了在接入这些内容之前你可以搭建哪些内容。
+:::
+
+## 哪些由你负责，哪些由 Adapty 接管 \{#what-stays-yours-what-adapty-takes-over\}
+
+你的代码负责：
+
+- 发起购买调用
+- 完成并确认交易
+- 授予和撤销访问权限
+- 续订和账单重试
+
+Adapty 接管：
+
+- 渲染流程
+- [版位](placements)与[目标受众](audience)定向
+- [A/B 测试](ab-tests)
+- [数据图表](analytics)与[集成](configuration)
+
+你的计费逻辑不会有任何改变。Adapty 负责渲染流程，并将购买点击事件交还给你的代码来完成扣费。
+
+## 在 Adapty 中创建产品 \{#create-your-products-in-adapty\}
+
+如果你的流程中没有任何屏幕展示价格或触发购买操作，可以跳过本节——纯用户引导屏幕的流程无需在 Adapty 中创建产品。
+
+一旦某个屏幕需要展示产品，请在 Adapty 中为每个订阅或一次性购买创建对应的产品。流程会从产品中读取卡片上显示的价格，因此卡片始终展示当前商店的实时价格，你也可以对该价格进行 A/B 测试，Adapty 还会在分析报告中按产品对收入进行分类统计。
+
+Adapty 中的产品指向您已在商店中销售的商品，因此创建产品不会触发任何扣费操作：每笔收费仍由您的代码发起。每个产品需要关联一个访问等级；在 Observer 模式下，Adapty 不会授予该访问等级——访问权限仍由您的代码控制——但产品必须指定一个。
+
+[Adapty CLI](developer-cli) 可以让您无需打开看板即可创建产品。安装 CLI（需要 Node.js 18 或更高版本）并登录：
+
+```bash
+npm install -g adapty
+```
+
+```bash
+adapty auth login
+```
+
+获取您的应用 ID，以及需要关联的访问等级——每个新应用默认会创建一个 `premium` 访问等级：
+
+```bash
+adapty apps list
+```
+
+```bash
+adapty access-levels list --app <app-id>
+```
+
+然后为你销售的每个应用内商品创建一个 Adapty 产品，使用来自 App Store Connect 和 Google Play Console 的产品 ID：
+
+```bash
+adapty products create --app <app-id> --title "Monthly" --access-level-id <access-level-id> --period monthly --ios-product-id com.example.monthly --android-product-id com.example.monthly --android-base-plan-id monthly
+```
+
+对于一次性购买，请传入 `--period lifetime`；如果是在网页端销售的商品，请同时传入 `--stripe-product-id` 与 `--stripe-price-id`（或对应的 Paddle 参数）。[`products create`](developer-cli-products#adapty-products-create) 列出了所有可用标志。商店产品 ID 创建后无法修改，因此如需将产品指向不同的商店产品，必须重新创建一个新产品。
+
+:::warning
+产品元素未分配任何内容会阻止保存和发布，因此你会在编辑工具中发现这个问题。而**购买**操作未设置产品时可以正常保存，但在设备上会失效——按钮点击后没有任何反应。请为每个购买操作设置产品。
+:::
+
+<Details summary="或者跳过产品，将价格写成静态文本">
+
+没有产品元素的流程可以保存和发布，因此你可以直接在文本中输入价格，让自己的代码决定点击后购买什么。这样做的代价是：
+
+- 价格需要在两个地方维护——应用商店和流程文本——一旦修改其中一处就会出现不一致。
+- 无法进行价格 A/B 测试，而这恰恰是流程的核心用途之一。
+- 数据图表和集成对收入的分组不够清晰，因为 Adapty 只能从你上报的交易中获取产品信息。
+- 你的代码需要将每个点击元素映射到对应的产品，而不是直接从流程中接收产品信息。
+
+</Details>
+
+## 配置步骤 \{#set-it-up\}
+
+1. **以 Observer 模式激活 SDK。** 配置 SDK 时开启 `observerMode`：[iOS](implement-observer-mode)、[Android](implement-observer-mode-android)、[React Native](implement-observer-mode-react-native)、[Flutter](implement-observer-mode-flutter)、[Unity](implement-observer-mode-unity)、[Kotlin Multiplatform](implement-observer-mode-kmp)、[Capacitor](implement-observer-mode-capacitor)。
+2. **在 Adapty 中创建产品**（除非整个流程中没有任何价格展示）。每个产品执行一条 CLI 命令——详见[在 Adapty 中创建产品](#create-your-products-in-adapty)。
+3. **构建流程。** 参考[流程与付费墙编辑工具](adapty-flow-builder)了解各屏幕设置，参考[设置购买](paywall-product-block)为付费墙屏幕配置产品，并[创建版位](create-placement)决定流程在应用中的展示位置。
+4. **在自己的代码中展示流程并完成购买。** Adapty 会将购买点击事件交由你注册的处理函数来处理。
+5. **上报交易**，并附上所购产品的付费墙实验变体 ID，确保购买数据能归因到对应的付费墙，并正确反映在分析中。
+
+第 4 步和第 5 步因平台而异。在所有代码片段中，`flow` 是你为版位获取的 `AdaptyFlow`，`product` 是用户点击的 `AdaptyPaywallProduct`，`myPurchaseApi` 或 `yourBillingClient` 代表你已有的购买代码。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS">
+
+将 `AdaptyObserverModeResolver` 传入 `getFlowConfiguration(forFlow:observerModeResolver:)`。Adapty 会在用户点击购买时调用该解析器，而不是自行发起购买。
+
+```swift showLineNumbers title="Swift"
+final class MyObserverModeResolver: AdaptyObserverModeResolver {
+    func observerMode(
+        didInitiatePurchase product: AdaptyPaywallProduct,
+        onStartPurchase: @MainActor @Sendable @escaping () -> Void,
+        onFinishPurchase: @MainActor @Sendable @escaping () -> Void
+    ) {
+        Task { @MainActor in
+            onStartPurchase() // the flow shows its loading indicator
+            do {
+                // your own purchase code, returning StoreKit's VerificationResult<Transaction>
+                let verificationResult = try await myPurchaseApi.purchase(product.vendorProductId)
+                try await Adapty.reportTransaction(verificationResult, withVariationId: product.variationId)
+            } catch {
+                // handle the error
+            }
+            onFinishPurchase() // the flow hides the loading indicator
+        }
+    }
+
+    func observerModeDidInitiateRestorePurchases(
+        onStartRestore: @MainActor @Sendable @escaping () -> Void,
+        onFinishRestore: @MainActor @Sendable @escaping () -> Void
+    ) {
+        Task { @MainActor in
+            onStartRestore()
+            try? await myPurchaseApi.restore()
+            onFinishRestore()
+        }
+    }
+}
+```
+
+然后展示附加了解析器的流程：
+
+```swift showLineNumbers title="Swift"
+do {
+    let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+        forFlow: flow,
+        observerModeResolver: MyObserverModeResolver()
+    )
+
+    let visualFlow = try AdaptyUI.flowController(
+        with: flowConfiguration,
+        delegate: self // an AdaptyFlowControllerDelegate
+    )
+
+    present(visualFlow, animated: true)
+} catch {
+    // handle the error
+}
+```
+
+请参阅[在 Observer 模式下展示流程](ios-present-paywall-builder-paywalls-in-observer-mode)和[在 Observer 模式下上报交易](report-transactions-observer-mode)。
+
+</TabItem>
+<TabItem value="android" label="Android">
+
+创建流程视图时传入 `AdaptyUiObserverModeHandler`——该处理器是 `AdaptyUI.getFlowView`、`AdaptyFlowScreen` 和 `AdaptyFlowView` 的参数。其 `onPurchaseInitiated` 方法接收购买点击事件。`getRestoreHandler` 为可选参数——如不传入，恢复购买功能将由 SDK 自行处理。
+
+:::warning
+请务必传入处理程序。若不传，SDK 会自行完成购买——用户通过 Adapty 完成扣款，而仅有一条日志警告提示此情况。在 iOS 上，缺少处理程序会直接导致购买失败。
+:::
+
+```kotlin showLineNumbers
+val observerModeHandler = object : AdaptyUiObserverModeHandler {
+    override fun onPurchaseInitiated(
+        product: AdaptyPaywallProduct,
+        onStartPurchase: AdaptyUiObserverModeHandler.PurchaseStartCallback,
+        onFinishPurchase: AdaptyUiObserverModeHandler.PurchaseFinishCallback,
+    ) {
+        onStartPurchase() // the flow shows its loading indicator
+        yourBillingClient.makePurchase(
+            product,
+            onSuccess = { purchase ->
+                Adapty.reportTransaction(
+                    TransactionInfo.fromPurchase(purchase),
+                    product.variationId,
+                ) {
+                    onFinishPurchase() // the flow hides the loading indicator
+                }
+            },
+            onError = { onFinishPurchase() },
+            onCancel = { onFinishPurchase() },
+        )
+    }
+
+    override fun getRestoreHandler() =
+        AdaptyUiObserverModeHandler.RestoreHandler { onStartRestore, onFinishRestore ->
+            onStartRestore()
+            yourBillingClient.restorePurchases(
+                onSuccess = { onFinishRestore() },
+                onError = { onFinishRestore() },
+            )
+        }
+}
+```
+
+然后将处理器传递给流程视图：
+
+```kotlin showLineNumbers
+val flowView = AdaptyUI.getFlowView(
+    activity,
+    flowConfiguration,
+    products,
+    eventListener,
+    observerModeHandler = observerModeHandler,
+)
+```
+
+请参阅[在观察者模式下展示流程](android-present-paywall-builder-paywalls-in-observer-mode)和[在观察者模式下上报交易](report-transactions-observer-mode-android)。
+
+</TabItem>
+<TabItem value="react-native" label="React Native">
+
+在 `AdaptyFlowView` 上通过 props 传入 `onObserverPurchaseInitiated` 和 `onObserverRestoreInitiated`，或通过 `view.setEventHandlers` 注册它们。
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyFlow({ flow }) {
+  const onObserverPurchaseInitiated = useCallback<
+    FlowEventHandlers['onObserverPurchaseInitiated']
+  >((product, onStartPurchase, onFinishPurchase) => {
+    onStartPurchase(); // the flow shows its loading indicator
+    myPurchaseApi(product.vendorProductId)
+      .then((transactionId) => adapty.reportTransaction(transactionId, product.variationId))
+      .finally(() => onFinishPurchase()); // the flow hides the loading indicator
+  }, []);
+
+  const onObserverRestoreInitiated = useCallback<
+    FlowEventHandlers['onObserverRestoreInitiated']
+  >((onStartRestore, onFinishRestore) => {
+    onStartRestore();
+    myRestoreApi().finally(() => onFinishRestore());
+  }, []);
+
+  return (
+    <AdaptyFlowView
+      flow={flow}
+      onObserverPurchaseInitiated={onObserverPurchaseInitiated}
+      onObserverRestoreInitiated={onObserverRestoreInitiated}
+      // ... your other event handlers
+    />
+  );
+}
+```
+
+在嵌入式组件中，处理程序的返回值不会关闭流程。请在购买或恢复购买成功后自行卸载该组件。
+
+请参阅[在 Observer 模式下展示流程](react-native-present-flows-in-observer-mode)和[在 Observer 模式下上报交易](report-transactions-observer-mode-react-native)。
+
+</TabItem>
+<TabItem value="flutter" label="Flutter">
+
+使用 `AdaptyUI().setObserverModeResolver` 注册解析器——注意是在 `AdaptyUI()` 上，而非 `Adapty` 上。需同时实现 `observerModeDidInitiatePurchase` 和 `observerModeDidInitiateRestore`；两者均为必填项，且都以流程视图作为第一个参数。
+
+```dart showLineNumbers title="Flutter"
+class MyObserverModeResolver extends AdaptyUIObserverModeResolver {
+  @override
+  void observerModeDidInitiatePurchase(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product,
+    void Function() onStartPurchase,
+    void Function() onFinishPurchase,
+  ) async {
+    onStartPurchase(); // the flow shows its loading indicator
+    try {
+      final transactionId = await myPurchaseApi(product.vendorProductId);
+      await Adapty().reportTransaction(
+        transactionId: transactionId,
+        variationId: product.paywallVariationId,
+      );
+    } on AdaptyError catch (adaptyError) {
+      // handle the error
+    } finally {
+      onFinishPurchase(); // the flow hides the loading indicator
+    }
+  }
+
+  @override
+  void observerModeDidInitiateRestore(
+    AdaptyUIFlowView view,
+    void Function() onStartRestore,
+    void Function() onFinishRestore,
+  ) async {
+    onStartRestore();
+    try {
+      await myRestoreApi();
+    } finally {
+      onFinishRestore();
+    }
+  }
+}
+```
+
+在展示任何流程之前，注册一次解析器：
+
+```dart showLineNumbers title="Flutter"
+AdaptyUI().setObserverModeResolver(MyObserverModeResolver());
+```
+
+参见[在观察者模式下展示流程](flutter-present-flows-in-observer-mode)和[在观察者模式下上报交易](report-transactions-observer-mode-flutter)。
+
+</TabItem>
+<TabItem value="unity" label="Unity">
+
+使用 `Adapty.SetObserverModeResolver` 注册解析器——注意是在 `Adapty` 上，而不是 `AdaptyUI` 上。实现 `IAdaptyUIObserverModeResolver` 接口，并提供 `FlowViewDidInitiatePurchase` 和 `FlowViewDidInitiateRestore` 回调；Unity 的回调名称与其他平台不同。
+
+```csharp showLineNumbers
+using System;
+using AdaptySDK;
+
+public class MyObserverModeResolver : IAdaptyUIObserverModeResolver
+{
+    public void FlowViewDidInitiatePurchase(
+        AdaptyUIFlowView view,
+        AdaptyPaywallProduct product,
+        Action onStartPurchase,
+        Action onFinishPurchase
+    )
+    {
+        onStartPurchase(); // the flow shows its loading indicator
+        MyPurchaseApi.Purchase(product.VendorProductId, (transactionId, purchaseError) =>
+        {
+            if (purchaseError != null)
+            {
+                onFinishPurchase();
+                return;
+            }
+
+            Adapty.ReportTransaction(transactionId, product.PaywallVariationId, (reportError) =>
+            {
+                onFinishPurchase(); // the flow hides the loading indicator
+            });
+        });
+    }
+
+    public void FlowViewDidInitiateRestore(
+        AdaptyUIFlowView view,
+        Action onStartRestore,
+        Action onFinishRestore
+    )
+    {
+        onStartRestore();
+        MyPurchaseApi.Restore((restoreError) => onFinishRestore());
+    }
+}
+```
+
+在展示任何流程之前，先注册一次解析器：
+
+```csharp showLineNumbers
+Adapty.SetObserverModeResolver(new MyObserverModeResolver());
+```
+
+参见[在观察者模式下展示流程](unity-present-flows-in-observer-mode)和[在观察者模式下报告交易](report-transactions-observer-mode-unity)。
+
+</TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform">
+
+使用 `AdaptyUI.setObserverModeResolver` 注册解析器。实现 `observerModeDidInitiatePurchase` 和 `observerModeDidInitiateRestore` 这两个方法；二者均为必须实现，且都将流程视图作为第一个参数传入。
+
+```kotlin showLineNumbers
+
+class MyObserverModeResolver(
+    private val scope: CoroutineScope,
+) : AdaptyUIObserverModeResolver {
+
+    override fun observerModeDidInitiatePurchase(
+        view: AdaptyUIFlowView,
+        product: AdaptyPaywallProduct,
+        onStartPurchase: () -> Unit,
+        onFinishPurchase: () -> Unit,
+    ) {
+        onStartPurchase() // the flow shows its loading indicator
+        scope.launch {
+            val transactionId = myPurchaseApi(product.vendorProductId)
+            Adapty.reportTransaction(
+                transactionId = transactionId,
+                variationId = product.paywallVariationId,
+            ).onError { error ->
+                // handle the error
+            }
+            onFinishPurchase() // the flow hides the loading indicator
+        }
+    }
+
+    override fun observerModeDidInitiateRestore(
+        view: AdaptyUIFlowView,
+        onStartRestore: () -> Unit,
+        onFinishRestore: () -> Unit,
+    ) {
+        onStartRestore()
+        scope.launch {
+            myRestoreApi()
+            onFinishRestore()
+        }
+    }
+}
+```
+
+在展示任何流程之前，请先注册一次 resolver：
+
+```kotlin showLineNumbers
+
+AdaptyUI.setObserverModeResolver(MyObserverModeResolver(scope))
+```
+
+参见[在 Observer 模式下展示流程](kmp-present-flows-in-observer-mode)和[在 Observer 模式下上报交易](report-transactions-observer-mode-kmp)。
+
+</TabItem>
+<TabItem value="capacitor" label="Capacitor">
+
+在您创建的每个流程视图上，通过 `view.setEventHandlers` 设置 `onObserverPurchaseInitiated` 和 `onObserverRestoreInitiated` —— Capacitor 没有单独的 resolver 对象，这两个处理程序是常规事件处理程序的组成部分。
+
+```typescript showLineNumbers title="Capacitor"
+
+const view = await createFlowView(flow);
+
+const unsubscribe = await view.setEventHandlers({
+  onObserverPurchaseInitiated(product, onStartPurchase, onFinishPurchase) {
+    onStartPurchase(); // the flow shows its loading indicator
+    myPurchaseApi(product.vendorProductId)
+      .then((transactionId) =>
+        adapty.reportTransaction({ transactionId, variationId: product.variationId }),
+      )
+      .finally(() => onFinishPurchase()); // the flow hides the loading indicator
+    return false; // keep the flow open; dismiss it yourself after success, or let the flow continue
+  },
+  onObserverRestoreInitiated(onStartRestore, onFinishRestore) {
+    onStartRestore();
+    myRestoreApi().finally(() => onFinishRestore());
+    return false;
+  },
+});
+```
+
+请参阅[以 Observer 模式呈现流程](capacitor-present-flows-in-observer-mode)和[在 Observer 模式下上报交易](report-transactions-observer-mode-capacitor)。
+
+</TabItem>
+</Tabs>
+
+### Observer 模式限制 \{#observer-mode-limits\}
+
+- **Adapty 不授予访问权限**：它不会响应购买事件来授予或限制付费访问权限，也不处理续订或账单重试。访问等级完全由你自己的代码管理。
+- **你的代码负责完成自己的交易**：Adapty 不会完成或确认你代码发起的购买，因此关闭每笔交易仍然是你的责任。
+- **上报不是可选项**：你随上报传入的 `variationId` 是购买行为与产生它的流程之间的唯一关联。每笔交易都必须上报，否则你的流程数据指标和 A/B 测试结果将出现偏差。
+- **SDK 对每次购买只上报一个结果**：购买由你的代码发起，因此无论发生什么情况（包括取消购买），流程都会执行相同的[结果动作](respond-to-purchase-outcomes#add-actions-for-a-result)：iOS 上执行 **When pending** 动作，Android 上执行 **When succeeded** 动作。需要根据购买结果显示的页面（例如感谢页面），请在你自己的代码中处理。恢复购买后，无论结果如何，流程都会执行 **When restore completed** 动作。
+
+## 如果你已在使用其他第三方服务 \{#if-youre-already-using-another-vendor\}
+
+Observer 模式只要求你的代码完成购买操作——而不限定调用哪家 SDK。无论底层是 RevenueCat、Superwall、Qonversion，还是你自己的 StoreKit 或 Billing Library 代码，流程的运行方式都完全一致。
+
+在上线前需要做三个决策：
+
+- **一个系统完成每笔交易**：两个 SDK 同时完成同一笔购买是这里最常见的问题。
+- **一个系统管理访问等级**：Adapty 在 Observer 模式下不授予任何权限，因此保持访问等级不变。
+- **每笔购买只上报一次**：从两个地方上报同一笔交易会导致分析数据失真。
+
+如果要完全迁移，不再使用其他供应商，请参阅[从 RevenueCat 迁移](migration-from-revenuecat)或[从 Superwall 迁移](migration-from-superwall)。
+
+### 让 Adapty 代替您完成购买 \{#let-adapty-make-the-purchase-instead\}
+
+:::tip
+您的应用通过 Adapty 完成购买，代码层面是标准的 Adapty 集成。请参阅[快速入门](quickstart)或[从 RevenueCat 迁移](migration-from-revenuecat)，或者将其交给 [SDK 集成技能](manage-adapty-with-ai)处理。
+:::
+
+观察者模式是最快的接入方式。如果你希望保留 RevenueCat 的分析功能，同时避开[观察者模式的限制](#observer-mode-limits)，可以反转两者的角色：Adapty 以[完整模式](observer-vs-full-mode)运行并完成每笔购买，而 RevenueCat 以其自身的观察者模式运行，记录 Adapty 发起的购买。
+
+这样，Adapty 就能知道每笔费用是由哪个流程、版位和 A/B 测试变体产生的，并负责授予[访问等级](access-level)以及处理续订、账单重试和退款。
+
+在 RevenueCat 一侧，配置其 SDK 时将 `purchasesAreCompletedBy` 设置为你的应用——iOS 上设为 `.myApp`，Android 上设为 `MY_APP`。RevenueCat 的 [Using the SDK with your own IAP code](https://www.revenuecat.com/docs/migrating-to-revenuecat/sdk-or-not/finishing-transactions) 中包含各平台的配置说明、iOS 所需的 StoreKit 版本，以及用于同步用户已有购买记录的 `syncPurchases()` 调用。请确保两个 SDK 使用相同的用户 ID——Adapty 的 [customer user ID](how-profiles-work) 与 RevenueCat 的 `appUserID` 保持一致，否则两个看板描述的将是不同的用户。
+
+:::warning
+此安排将终止以 RevenueCat 权益作为可信来源的机制，转由 Adapty 访问等级承担该角色。RevenueCat 仍会继续监听，其看板也会继续上报数据，但它现在是通过间接方式获知每笔购买，且受限于其官方文档所列的覆盖范围。任何当前读取 RevenueCat 权益的地方——无论是你的应用、后端、Web 端还是桌面端——都需要切换到 Adapty，或读取一份数据副本。在上线之前务必明确这一点。其他内容无需变动：RevenueCat 账户、其历史记录以及相关集成均保持不变。
+:::

@@ -51,12 +51,13 @@ Pour installer le SDK 4.1 via le Unity Package Manager, ajoutez le tag de versio
 https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unity-sdk#4.1.0
 ```
 
-Si vous installez via le package Unity, téléchargez `adapty-unity-plugin-4.1.0.unitypackage` depuis la [version 4.1.0](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.1.0). Consultez [Installer Adapty SDK](sdk-installation-unity#install-adapty-sdk) pour la configuration complète.
+Si vous installez via le package Unity, téléchargez `adapty-unity-plugin-4.1.0.unitypackage` depuis la [version 4.1.0](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.1.0). Consultez [Installer le SDK Adapty](sdk-installation-unity#install-adapty-sdk) pour la procédure complète.
 
-Deux changements de configuration de build accompagnent la version 4.x :
+Trois modifications de configuration de build accompagnent la version 4.x :
 
-- **Les dépendances iOS passent à Swift Package Manager.** Le SDK iOS natif d'Adapty est désormais déclaré comme un package Swift distant plutôt que comme un pod CocoaPods. Mettez à jour l'[External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver#getting-started) vers la version **1.2.188 ou ultérieure** — les versions antérieures ne prennent pas en charge les dépendances Swift Package Manager. Les étapes CocoaPods (`iOS Resolver -> Install Cocoapods`, ouverture de `Unity-iPhone.xcworkspace`) ne s'appliquent plus. La compilation pour iOS nécessite désormais **Xcode 26** ou une version ultérieure, car le package Swift est compilé avec Swift tools 6.2.
-- **La cible de déploiement iOS doit être 15.0 ou ultérieure.** Un nouveau validateur de build dans l'Unity Editor bloque la compilation iOS si la cible est inférieure à cette version.
+- **Les dépendances iOS passent à Swift Package Manager.** Le SDK iOS natif d'Adapty est désormais déclaré en tant que package Swift distant au lieu d'un pod CocoaPods. Mettez à jour l'[External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver#getting-started) vers la version **1.2.188 ou ultérieure** — les versions antérieures ne prennent pas en charge les dépendances Swift Package Manager. Les étapes CocoaPods (`iOS Resolver -> Install Cocoapods`, ouverture de `Unity-iPhone.xcworkspace`) ne s'appliquent plus. La compilation pour iOS nécessite désormais **Xcode 26** ou une version ultérieure, car le package Swift est compilé avec Swift tools 6.2.
+- **La cible de déploiement iOS doit être 15.0 ou supérieure.** Un nouveau validateur de build dans l'éditeur Unity bloque la compilation iOS si la cible est inférieure.
+- **Le build Android doit compiler avec le niveau d'API 35 ou supérieur.** La bibliothèque Adapty UI utilise Jetpack Compose 1.8, qui l'exige.
 
 Les SDK natifs Adapty sous-jacents passent à la version 4.x sur les deux plateformes et sont résolus automatiquement — aucune autre modification de build n'est nécessaire.
 
@@ -64,7 +65,7 @@ Les SDK natifs Adapty sous-jacents passent à la version 4.x sur les deux platef
 
 ### GetPaywall → GetFlow
 
-Le type retourné passe de `AdaptyPaywall` à `AdaptyFlow`, et le paramètre `locale` est supprimé — lors du rendu d'un flow, la locale est résolue automatiquement ; pour les paywalls personnalisés, toutes les locales sont retournées dans `flow.RemoteConfigs` :
+Le type retourné passe de `AdaptyPaywall` à `AdaptyFlow`, et le paramètre `locale` est déplacé vers les paramètres de la vue de flow (`AdaptyUICreateFlowViewParameters.SetLocale`) — voir [La correspondance de locale est exacte](#locale-matching-is-exact) ; pour les paywalls personnalisés, toutes les locales sont retournées dans `flow.RemoteConfigs` :
 
 ```diff showLineNumbers
 - Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
@@ -84,6 +85,19 @@ Le type retourné passe de `AdaptyPaywall` à `AdaptyFlow`, et le paramètre `lo
 - Adapty.GetPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", (paywall, error) => { /* ... */ });
 + Adapty.GetFlowForDefaultAudience("YOUR_PLACEMENT_ID", (flow, error) => { /* ... */ });
 ```
+
+### La correspondance des paramètres régionaux est exacte \{#locale-matching-is-exact\}
+
+:::warning
+Dans la v3, le serveur Adapty sélectionnait la localisation et revenait à la langue : une requête `pt-br` obtenait la localisation `pt` lorsque le paywall ne disposait pas de `pt-br`. Dans la v4, le SDK sélectionne la localisation sur l'appareil et n'utilise que les correspondances exactes. Un code ne correspondant à aucune localisation affiche le flow dans sa localisation par défaut, sans erreur ni avertissement.
+:::
+
+Avant de procéder à la mise à niveau, vérifiez les codes de paramètres régionaux que votre application transmet :
+
+- Pour chaque code régional que vous transmettez, ajoutez une localisation avec ce code — par exemple, `pt-BR` en plus de `pt` — ou mappez le code vers l'un que le flow possède.
+- Transmettez les codes exactement tels qu'ils sont publiés dans le flow : `pt-BR`, pas `pt-br` depuis le champ **Select languages**. Pour les paywalls de l'ancien Paywall Builder, transmettez les codes en minuscules, par exemple `pt-br`. Ne transmettez pas un identifiant de locale système tel quel : sur un appareil configuré en anglais (États-Unis), `CultureInfo.CurrentCulture.Name` retourne `en-US`, ce qui ne correspond pas à un flow qui ne possède que `en`.
+
+Voir [Localisations et codes de langue](unity-localizations-and-locale-codes#flows-and-paywalls).
 
 ### GetPaywallProducts(paywall) → GetPaywallProducts(flow)
 
@@ -240,11 +254,11 @@ Cette méthode concerne les achats intégrés mis en avant sur l'App Store et n'
 
 ### Nouvelles API \{#new-apis\}
 
-- `Adapty.SetObserverModeResolver(...)` avec un `IAdaptyUIObserverModeResolver` — gérer les achats et restaurations initiés depuis les flows lorsque le SDK fonctionne en [mode Observer](implement-observer-mode-unity). Auparavant, cette fonctionnalité n'était disponible que dans les SDKs natifs iOS et Android. Voir [Présenter les flows en mode Observer](unity-present-flows-in-observer-mode).
-- `Adapty.SetSystemRequestsHandler(...)` avec un `IAdaptyUISystemRequestsHandler` — réservé aux requêtes système provenant d'un flow : invites de permission OS (`FlowViewDidAskPermission`) et demandes d'avis sur l'app (`FlowViewDidRequestAppReview`). Les flows ne déclenchent pas encore ces requêtes, vous n'avez donc pas besoin d'enregistrer un handler.
-- `AdaptyUICreateFlowViewParameters.Locale` (à définir avec `SetLocale`) — afficher un flow ou un paywall avec une [localisation Builder](add-paywall-locale-in-adapty-paywall-builder) spécifique plutôt que celle par défaut du flow. Un flow est localisé au moment de la création de sa vue, c'est donc le seul endroit pour choisir sa localisation, et la vue créée indique la localisation avec laquelle elle a été construite dans `view.Locale`. Voir [Utiliser les localisations et les codes de langue](unity-localizations-and-locale-codes).
-- Le nouveau callback `FlowViewDidReceiveAnalyticEvent` sur `IAdaptyFlowsEventsListener` remonte les événements analytiques d'un flow, en commençant par une vue d'écran pour chaque écran qu'un utilisateur ouvre. Voir [Suivre les vues d'écran des flows](unity-flow-screen-views).
-- `AdaptyUI.OpenUrl(url, openIn, ...)` et `AdaptyUI.RequestAppReview(...)` — le traitement natif derrière les actions `open_url` et les demandes d'avis sur l'app. Appelez `OpenUrl` depuis `FlowViewDidPerformAction` pour conserver le comportement URL par défaut ; `RequestAppReview` sert d'appui à l'invite d'avis sur l'app par défaut, que les flows ne déclenchent pas encore.
+- `Adapty.SetObserverModeResolver(...)` avec un `IAdaptyUIObserverModeResolver` — gère les achats et les restaurations initiés depuis les flows lorsque le SDK fonctionne en [mode Observer](implement-observer-mode-unity). Auparavant, cette fonctionnalité n'était disponible que dans les SDK natifs iOS et Android. Voir [Présenter des flows en mode Observer](unity-present-flows-in-observer-mode).
+- `Adapty.SetSystemRequestsHandler(...)` avec un `IAdaptyUISystemRequestsHandler` — répond aux requêtes système d'un flow : invites de permission OS (`FlowViewDidAskPermission`) et demandes d'évaluation de l'app (`FlowViewDidRequestAppReview`). Enregistrez-en un si vos flows utilisent l'action **Request permission** : voir [Gérer les demandes de permission dans les flows](unity-handle-permissions).
+- `AdaptyUICreateFlowViewParameters.Locale` (à définir avec `SetLocale`) — affiche un flow ou un paywall dans une [localisation Builder](add-paywall-locale-in-adapty-paywall-builder) spécifique. Lors de la création de la vue, le SDK charge toutes les localisations du flow, et `Locale` sélectionne celle à afficher. Sans `Locale`, la vue s'affiche en `en`, ou dans la localisation par défaut si le flow n'a pas de version `en`. La vue créée indique la localisation utilisée pour sa construction dans `view.Locale`. Voir [Utiliser les localisations et les codes de langue](unity-localizations-and-locale-codes).
+- Le nouveau callback `FlowViewDidReceiveAnalyticEvent` sur `IAdaptyFlowsEventsListener` rapporte les événements analytiques d'un flow, en commençant par une vue d'écran pour chaque écran ouvert par l'utilisateur. Voir [Suivre les vues d'écran des flows](unity-flow-screen-views).
+- `AdaptyUI.OpenUrl(url, openIn, ...)` et `AdaptyUI.RequestAppReview(...)` — le traitement natif derrière les actions `open_url` et les demandes d'évaluation de l'app. Appelez `OpenUrl` depuis `FlowViewDidPerformAction` pour conserver le comportement URL par défaut ; `RequestAppReview` supporte l'invite d'évaluation par défaut, que les flows ne déclenchent pas encore.
 
 ## API d'attribution externe renommées \{#renamed-external-attribution-apis\}
 
@@ -309,10 +323,11 @@ Cette étape ne génère aucune erreur de compilation. Si vous la passez, `SetFa
 
 Ces changements ne provoquent pas d'erreurs de compilation, testez-les donc à l'exécution :
 
-- **Finalisation d'achat** : en v3, la vue se fermait automatiquement après un achat réussi. En v4, **un flow reste ouvert après un achat ou une erreur jusqu'à ce que vous le fermiez** — le SDK n'applique aucun comportement par défaut. Appelez vous-même `view.Dismiss(...)` dans `FlowViewDidFinishPurchase` dès que l'utilisateur obtient l'accès.
-- **Bouton retour Android** : le bouton retour système (ou le geste de retour) est transmis à `FlowViewDidPerformAction` sous la forme d'une action `SystemBack` et ne ferme plus le flow par lui-même — alignement avec iOS, où un flow ne peut pas être fermé par un geste système. Donnez aux utilisateurs un moyen de sortir explicite (un bouton **Close** ou une action `on_device_back`), ou fermez la vue vous-même lors du traitement de l'action.
-- **Les vues sont à usage unique** : après `Dismiss`, la vue est détruite. Appelez à nouveau `CreateFlowView` pour présenter le flow une nouvelle fois.
-- **Transactions en mode Observer** : `ReportTransaction` ne remonte plus d'erreur de décodage en cas de succès — en v3, la réponse de succès était mal analysée, si bien qu'un rapport réussi se terminait toujours avec une erreur.
+- **Localisation du flow** : Un code de paramètres régionaux ne bascule plus vers sa langue parente — `pt-br` n'utilise pas la localisation `pt`. Un code sans correspondance exacte affiche le flow dans sa localisation par défaut. Voir [La correspondance des paramètres régionaux est exacte](#locale-matching-is-exact).
+- **Fin d'achat** : En v3, la vue se fermait automatiquement après un achat réussi. En v4, **un flow reste ouvert après un achat ou une erreur jusqu'à ce que vous le fermiez** — le SDK n'applique aucun comportement par défaut. Appelez `view.Dismiss(...)` vous-même dans `FlowViewDidFinishPurchase` une fois que l'utilisateur a obtenu l'accès.
+- **Bouton retour Android** : Le bouton retour système (ou le geste de retour) est transmis à `FlowViewDidPerformAction` sous forme d'action `SystemBack` et ne ferme plus un flow de lui-même — comme sur iOS, où un flow ne peut pas être fermé par un geste système. Donnez aux utilisateurs un moyen explicite de sortir (un bouton **Close** ou une action `on_device_back`), ou fermez la vue vous-même lors du traitement de l'action.
+- **Les vues sont à usage unique** : Après `Dismiss`, la vue est détruite. Appelez à nouveau `CreateFlowView` pour afficher le flow une nouvelle fois.
+- **Transactions en mode observateur** : `ReportTransaction` ne remonte plus une erreur de décodage en cas de succès — en v3, la réponse de succès était incorrectement analysée, ce qui faisait qu'un rapport réussi se terminait toujours avec une erreur.
 
 ## Dépréciation de l'API onboarding \{#onboarding-api-deprecation\}
 

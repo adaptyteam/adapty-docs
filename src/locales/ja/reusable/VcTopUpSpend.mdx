@@ -1,0 +1,51 @@
+---
+no_index: true
+---
+
+import Callout from '../../../components/Callout.astro';
+
+プレイヤーがエネルギー切れフローのボタンをタップすると、アプリコードはバックエンドを呼び出してそのボタンのオプション分のダイヤモンドを消費します。リクエストにはシークレット API キーが必要なため、アプリコードは Adapty に直接消費を送信できません。バックエンドは [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction) を負の `amount` で呼び出します（[バーチャルカレンシークイックスタート](virtual-currency-quickstart)チュートリアルと同様）。残高を先に確認せずに消費を送信してください。Adapty が消費処理の一部として残高を検証します。
+
+各オプションのコストはバックエンドで管理してください。エネルギー補充は 10 ダイヤモンド、1 時間の無制限エネルギーは 30 ダイヤモンドです。アプリコードはオプションのみをバックエンドに送信するので、改ざんされたアプリがコストを下げることはできません。
+
+```bash title="Spend diamonds"
+curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
+  -H "Authorization: Api-Key {your secret key}" \
+  -H "adapty-customer-user-id: player-42" \
+  -H "Idempotency-Key: 5221577a-8b4c-419a-a0f5-028e4598b265" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "items": [{"currency_code": "DIAMONDS", "amount": -30}],
+        "operation": "spend",
+        "feature": "unlimited_energy",
+        "customer_placement_id": "out_of_energy",
+        "reference_id": "energy_order_7781"
+      }'
+```
+
+リクエストには消費内容、プレイヤー、オプションの情報が含まれています。
+
+- **`Idempotency-Key`**: アプリコードが新しい消費ごとに生成する UUID v4 で、同一トランザクションでプレイヤーが二重請求されるのを防ぎます。ネットワーク障害などで再試行が必要な場合は、元のトランザクションのキーを再利用してください。キーは 1 時間有効です。そのキーでトランザクションが一度成功すると、以降の同じキーによるリクエストは元のトランザクションを返し、残高は変更されません。
+- **`adapty-customer-user-id`**: サインイン中のユーザーのカスタマーユーザー ID。バックエンドではサインインセッションから読み取ってください。
+- **`feature`**: `unlimited_energy` などのオプションを示す[ラベル](virtual-currencies#feature)。このラベルを使うと、プレイヤーの[イベント履歴](virtual-currency-balance#review-balance-changes-in-the-event-history)で各消費の用途を確認できます。
+
+後から消費を追跡するための任意フィールドが 2 つあります。どちらもイベント履歴の[トランザクション詳細](virtual-currency-balance#transaction-details)に表示されます。
+
+- **`customer_placement_id`**: アプリ内で消費が発生した画面の ID。各消費がどの画面から来たかを確認できます。このレシピでは、エネルギー切れフローのプレースメント ID である `out_of_energy` を使用します。
+- **`reference_id`**: バックエンド内の関連レコードの ID（消費が対象とするエネルギー注文など）。サポートチームがこれを使って、消費とユーザーが受け取ったものを照合できます。
+
+消費が完了したら、バックエンドからプレイヤーにエネルギーを付与してください。Adapty はダイヤモンドの残高を管理しますが、エネルギーは管理しません。同じ `Idempotency-Key` による再試行は元のトランザクションを返すため、レスポンスの `transaction_id` ごとに一度だけエネルギーを付与してください。レスポンスの `balances` 配列には `DIAMONDS` の `available` 値（プレイヤーが現在消費できるダイヤモンド数）が含まれます。この値をアプリコードに返してください。
+
+残高がコストを賄えない場合、リクエストは HTTP ステータス 400 で失敗し、残高は変更されません。このエラーを検出するには、`error_code` を `insufficient_balance` と比較してください。次に、プレイヤーに必要なダイヤモンド数を計算します。[List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances) で残高を取得し、`DIAMONDS` の `available` 値をコストから引いてください。結果と `available` 値をアプリコードに返してください。
+
+結果が 0 以下の場合、消費失敗後に Adapty がサブスクリプション更新などでダイヤモンドを残高に追加した可能性があります。この場合は同じ `Idempotency-Key` でリクエストを再試行し、再試行の結果を返してください。Adapty は失敗した消費のキーを保持しないため、2 回目のリクエストを受け付けます。
+
+同じ `Idempotency-Key` による最初のリクエストがまだ処理中の場合、再試行は HTTP ステータス 409 と `idempotency_in_flight` エラーコードで失敗します。レスポンスの `Retry-After` ヘッダーに指定された秒数待ってから、同じキーでリクエストを再試行してください。
+
+すべてのユーザーからの消費リクエストは 1 つの制限にカウントされます。デフォルトではアプリあたり 1 分間に 600 リクエストです。制限を超えたリクエストは HTTP ステータス 429 と `rate_limited` エラーコードで失敗します。ピーク時にさらに多くの消費リクエストが予想される場合は、サポートにアプリに適用される[レート制限](ss-authorization#rate-limits)を確認してください。
+
+バックエンドに残高取得用のエンドポイントを追加してください。List virtual currency balances を呼び出して `DIAMONDS` の `available` 値を返します。このレシピのアプリコードは、エネルギー切れフローが開く前と購入後にこのエンドポイントを呼び出します。
+
+<Callout type="tip">
+サブスクリプションの[クレジット有効期限を有効にした](create-virtual-currency#link-products)場合、ユーザーがクレジットを期限内に使い切れるよう通知してください。[List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances) の `expiry.expiring` 配列には、いつ何クレジットが期限切れになるかが一覧表示されます。最も近い期限の数量を「30 ダイヤモンドが 2 日後に期限切れになります」のような[カスタムタグ](flow-custom-tags)を使ったフローで表示してください。
+</Callout>

@@ -86,12 +86,14 @@ function MyFlow({ flow }) {
 }
 ```
 
+Обработчик `onError` компонента `AdaptyFlowView` вызывается, когда компонент не может показать флоу. Это происходит, если флоу не удалось загрузить, или если на устройстве установлен iOS 15, который не поддерживает флоу. Прекратите рендеринг компонента и покажите собственный контент.
+
 ## Модальное отображение \{#modal-presentation\}
 
-Чтобы показать флоу как отдельный экран, используйте метод `view.present()` на объекте `view`, созданном методом [`createFlowView`](react-native-get-pb-paywalls#fetch-the-view-configuration). Каждый `view` можно использовать только один раз. Если нужно показать флоу повторно, вызовите `createFlowView` ещё раз, чтобы создать новый экземпляр `view`.
+Чтобы отобразить флоу как отдельный экран, вызовите метод `view.present()` на объекте `view`, созданном методом [`createFlowView`](react-native-get-pb-paywalls#fetch-the-view-configuration). Если нужно показать флоу повторно, вызовите `createFlowView` ещё раз, чтобы создать новый экземпляр `view`, или [сохраните закрытый view](#keep-a-closed-flow-for-later) для повторного отображения.
 
 :::warning
-Повторное использование одного и того же `view` без его пересоздания запрещено. Это приведёт к ошибке `AdaptyUIError.viewAlreadyPresented`.
+После вызова `view.dismiss()` с параметрами по умолчанию вью освобождается, и повторный вызов `present()` завершится ошибкой. Вызов `present()`, когда флоу уже отображается на экране, также завершится ошибкой. В обоих случаях вы получите `AdaptyError` с кодом `3001` (`wrongParam`), а в сообщении будет указана причина: `AdaptyUIError.viewNotFound` или `AdaptyUIError.viewAlreadyPresented`.
 :::
 
 ```typescript showLineNumbers title="React Native (TSX)"
@@ -124,16 +126,59 @@ try {
 }
 ```
 
-## Использование таймеров, определённых разработчиком \{#use-developer-defined-timer\}
+### Сохранение закрытого флоу для повторного использования \{#keep-a-closed-flow-for-later\}
 
-Чтобы использовать таймеры, определённые разработчиком, в мобильном приложении, используйте `timerId` — в данном примере `CUSTOM_TIMER_NY`, **Timer ID** таймера, заданного в дашборде Adapty. Это обеспечивает динамическое обновление таймера с правильным значением — например, `13d 09h 03m 34s` (вычисляется как время окончания таймера, например Новый год, минус текущее время).
+:::info
+Опция `destroy` и метод `destroy()` доступны начиная с версии SDK 4.3.0.
+:::
+
+По умолчанию `view.dismiss()` закрывает флоу и уничтожает его нативный вид, поэтому повторно отобразить `view` не получится. Чтобы открыть тот же флоу позже, передайте `destroy: false`. Следующий вызов `present()` откроет флоу на том экране, на котором пользователь его закрыл, с тем состоянием, в котором он его оставил, а ваши обработчики событий останутся установленными:
+
+```typescript showLineNumbers
+// Close the flow and keep its native view in memory
+await view.dismiss({ destroy: false });
+
+// Later: open the flow again on the same screen
+await view.present();
+```
+
+Нативный вид остаётся в памяти до тех пор, пока вы его не освободите. Когда флоу больше не нужен, вызовите `destroy()`:
+
+```typescript showLineNumbers
+await view.dismiss({ destroy: false });
+// ...
+await view.destroy();
+```
+
+Вызывайте `destroy()` только для вида, который вы закрыли с `destroy: false`. Обычный `dismiss()` освобождает вид самостоятельно.
+
+Обработчик события, возвращающий `true`, закрывает флоу с помощью обычного `dismiss()`, который уничтожает нативный вид, даже если вы сохраняли его ранее. Обработчики `onCloseButtonPress` и `onError` по умолчанию возвращают `true`. Чтобы сохранить флоу при закрытии пользователем, закройте его самостоятельно и верните `false`:
+
+```typescript showLineNumbers
+view.setEventHandlers({
+  onCloseButtonPress() {
+    view.dismiss({ destroy: false }).catch(error => {
+      // handle the error
+    });
+    return false;
+  },
+});
+```
+
+## Используйте таймер с поведением, заданным разработчиком \{#use-developer-defined-timer\}
+
+Используйте этот раздел для таймера с поведением **Developer defined** в Flow & Paywall Builder. В билдере у каждого такого таймера есть **Timer ID** (см. [Позвольте приложению задать дату окончания](flow-timer#let-your-app-set-the-end-date)), а ваше приложение устанавливает для него дату окончания. Используйте в коде тот же Timer ID, что и в билдере, — символ в символ, включая регистр и пробелы. Если ID не совпадают, таймер не получит дату окончания от вашего приложения.
+
+Чтобы задать дату окончания, передайте параметр `customTimers`: объект, который сопоставляет каждый Timer ID с `Date` — датой окончания таймера.
 
 <Tabs>
 <TabItem value="component" label="React component">
 ```typescript showLineNumbers title="React Native (TSX)"
-const flowParams = {
-  customTimers: { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
-};
+const flowParams = useMemo(() => ({
+  customTimers: {
+    CUSTOM_TIMER_NY: new Date(new Date().getFullYear() + 1, 0, 1), // next New Year's Day
+  },
+}), []);
 
 <AdaptyFlowView
   flow={flow}
@@ -144,13 +189,24 @@ const flowParams = {
 </TabItem>
 <TabItem value="modal" label="Modal presentation">
 ```typescript showLineNumbers title="React Native (TSX)"
-const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
 
-const view = await createFlowView(flow, { customTimers });
+const customTimers = {
+  CUSTOM_TIMER_NY: new Date(new Date().getFullYear() + 1, 0, 1), // next New Year's Day
+};
+
+try {
+  const view = await createFlowView(flow, { customTimers });
+  await view.present();
+} catch (error) {
+  // handle the error
+}
 ```
 </TabItem>
 </Tabs>
-В этом примере `CUSTOM_TIMER_NY` — это **Timer ID** таймера, заданного разработчиком в дашборде Adapty. `timerResolver` обеспечивает динамическое обновление таймера с нужным значением — например, `13d 09h 03m 34s` (вычисляется как разница между временем окончания таймера, например Новым годом, и текущим временем).
+
+В этом примере `CUSTOM_TIMER_NY` — это Timer ID таймера типа **Developer defined** в билдере. Таймер показывает время до следующего Нового года, например `13d 09h 03m 34s`.
+
+SDK считывает `customTimers` один раз при создании представления, поэтому дата, вычисляемая динамически — например, 6 часов от текущего момента — отсчитывается именно с этого момента. Если дата уже прошла, таймер сразу показывает ноль и срабатывает триггер **On timer end**. Если в `customTimers` нет ключа для данного Timer ID, таймер отсчитывает один час с момента открытия экрана.
 
 ## Показ диалогов \{#show-dialog\}
 
@@ -174,6 +230,10 @@ try {
   // handle error
 }
 ```
+
+## Отправка сообщений во флоу \{#send-messages-to-a-flow\}
+
+Метод `sendAppMessage` у представления флоу отправляет сообщение во флоу в виде JSON-объекта. Метод зарезервирован для будущих возможностей Flow & Paywall Builder. Флоу игнорируют эти сообщения, поэтому вызывать данный метод не нужно.
 
 ## Замена одной подписки на другую \{#replace-one-subscription-with-another\}
 
@@ -321,9 +381,9 @@ try {
 }
 ```
 
-## Использование таймера, заданного разработчиком \{#use-developer-defined-timer\}
+## Использование таймеров, определённых разработчиком \{#use-developer-defined-timer\}
 
-Чтобы использовать таймеры, заданные разработчиком, в мобильном приложении, используйте `timerId` — в данном примере `CUSTOM_TIMER_NY`, **Timer ID** таймера, заданного разработчиком, который вы установили в дашборде Adapty. Это позволяет приложению динамически обновлять таймер с правильным значением — например, `13d 09h 03m 34s` (рассчитывается как время окончания таймера, например Новый год, минус текущее время).
+Чтобы использовать таймеры, определённые разработчиком, в мобильном приложении, используйте `timerId` — в данном примере `CUSTOM_TIMER_NY`, **Timer ID** таймера, заданного в дашборде Adapty. Это обеспечивает динамическое обновление таймера с правильным значением — например, `13d 09h 03m 34s` (вычисляется как время окончания таймера, например Новый год, минус текущее время).
 
 <Tabs>
 <TabItem value="component" label="React component">
@@ -347,7 +407,7 @@ const view = await createPaywallView(paywall, { customTimers });
 ```
 </TabItem>
 </Tabs>
-В этом примере `CUSTOM_TIMER_NY` — это **Timer ID** таймера, заданного разработчиком в дашборде Adapty. `timerResolver` обеспечивает динамическое обновление таймера с нужным значением — например, `13d 09h 03m 34s` (вычисляется как время окончания таймера, например Новый год, минус текущее время).
+В этом примере `CUSTOM_TIMER_NY` — это **Timer ID** таймера, заданного разработчиком в дашборде Adapty. `timerResolver` обеспечивает динамическое обновление таймера с нужным значением — например, `13d 09h 03m 34s` (вычисляется как разница между временем окончания таймера, например Новым годом, и текущим временем).
 
 ## Отображение диалога \{#show-dialog\}
 

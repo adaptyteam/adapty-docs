@@ -105,6 +105,14 @@ invisible until someone's number looks wrong. So the question for a task here is
   or Flow screen even though the backend grants ARPU all of them. Verified against backend and dashboard
   code (merged, 2026-08-26), so this ownership split is current, not branch state. Check a metric
   article's "Available filters and grouping" list against the live dashboard.
+- **The Export API spec has one shared filter schema.** Checked 2026-11-12: all six data operations
+  reference `#/components/schemas/MetricsFilters`, so a new filter key is one edit there, not six. Source
+  notes for a new filter can assume per-operation schemas; check the spec before following them.
+- **Virtual currency filter (added 2026-11-12, backend feature branch, unmerged at writing).** Filter
+  only, no grouping. The API key is `virtual_currency`, the no-currency value is `no-virtual-currency`
+  (hyphens; a planning note had underscores, the backend code has hyphens). It follows the product's
+  *current* currency links for all dates, and is absent from Installs and ARPU, like Product. Re-check
+  the ARPU/Installs exclusion and the label against the live dashboard after release.
 - TODO(owner): there is no registered public source for the analytics computation layer or the event
   ingest behind it; a verified live transaction or the product team is the only check.
 
@@ -172,7 +180,7 @@ here unchanged and are not restated.
 | charts | entry | analyst | 3 | tutorial |
 | churned-expired-subscriptions | — | analyst | 3 | tutorial |
 | controls-filters-grouping-compare-proceeds | — | analyst | 9 | tutorial |
-| discrepancies-and-troubleshooting | — | analyst | 24 | tutorial |
+| discrepancies-and-troubleshooting | — | analyst | 25 | tutorial |
 | expired-churned-trials | — | analyst | 3 | tutorial |
 | grace-period | — | analyst | 3 | tutorial |
 | grace-period-converted | — | analyst | 4 | tutorial |

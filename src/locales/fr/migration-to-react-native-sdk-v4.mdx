@@ -32,6 +32,10 @@ Ce guide couvre la migration 3.x → 4.0. Le SDK 4.1 modifie quelques API suppl�
 
 Le SDK React Native Adapty 4.0 fait passer la version minimale de déploiement iOS de iOS 13.0 à **iOS 15.0**. Définissez votre cible de déploiement iOS à 15.0 ou supérieure avant de procéder à la mise à jour.
 
+## Version minimale de compile SDK Android \{#minimum-android-compile-sdk\}
+
+Adapty React Native SDK 4.0 nécessite `compileSdkVersion` 35 ou supérieur sur Android. La bibliothèque Adapty UI utilise Jetpack Compose 1.8, qui l'exige. Si `android/build.gradle` définit une version inférieure, passez-la à 35.
+
 ## Installation \{#installation\}
 
 ### Mettre à jour le package
@@ -126,6 +130,19 @@ Le type retourné passe de `AdaptyPaywall` à `AdaptyFlow`, et le paramètre `lo
 - const paywall = await adapty.getPaywallForDefaultAudience('YOUR_PLACEMENT_ID', 'en');
 + const flow = await adapty.getFlowForDefaultAudience('YOUR_PLACEMENT_ID');
 ```
+
+### La correspondance de locale est exacte \{#locale-matching-is-exact\}
+
+:::warning
+Dans la v3, le serveur Adapty sélectionnait la localisation et se rabattait sur la langue : une requête `pt-br` obtenait la localisation `pt` quand le paywall n'avait pas de `pt-br`. Dans la v4, le SDK sélectionne la localisation sur l'appareil et n'utilise que la correspondance exacte. Un code qui ne correspond à aucune localisation affiche le flow dans sa localisation par défaut, sans erreur ni avertissement.
+:::
+
+Avant de faire la mise à niveau, vérifiez les codes de locale que votre application transmet :
+
+- Pour chaque code régional que vous transmettez, ajoutez une localisation avec ce code — par exemple, `pt-BR` en plus de `pt` — ou mappez le code sur l'un de ceux disponibles dans le flow.
+- Transmettez les codes exactement tels qu'ils figurent dans le flow publié : `pt-BR`, et non `pt-br` issu du champ **Select languages**. Pour les paywalls de l'ancien Paywall Builder, transmettez des codes en minuscules, comme `pt-br`. Ne transmettez pas tel quel un identifiant de locale système : sur un appareil configuré en anglais (États-Unis), `getLocales()[0].languageTag` depuis `react-native-localize` renvoie `en-US`, ce qui ne correspond pas à un flow qui ne contient que `en`.
+
+Voir [Localisations et codes de langue](react-native-localizations-and-locale-codes#flows-and-paywalls).
 
 ### getPaywallProducts(paywall) → getPaywallProducts(flow)
 
@@ -295,10 +312,11 @@ Si vous exécutez le SDK en mode mock (Expo Go ou prévisualisation web), renomm
 
 Ces changements ne causent pas d'erreurs de compilation ; testez-les à l'exécution :
 
-- **`onAndroidSystemBack`** : Le comportement par défaut a changé : la vue reste ouverte au lieu de se fermer. Pour rétablir l'ancien comportement, retournez `true` depuis le handler.
-- **`onPurchaseCompleted`** : Le comportement par défaut a changé : la vue reste toujours ouverte au lieu de se fermer (sauf en cas d'annulation par l'utilisateur). Pour rétablir l'ancien comportement, retournez `purchaseResult.type !== 'user_cancelled'` depuis le handler.
-- **`onRestoreCompleted`** : Le comportement par défaut a changé : la vue reste ouverte au lieu de se fermer après une restauration réussie. Pour rétablir l'ancien comportement, retournez `true` depuis le handler.
-- **`onUrlPress`** : Par défaut, l'URL s'ouvre désormais via la couche native, en respectant le paramètre de navigateur intégré ou externe défini dans le tableau de bord. Remplacez le handler pour gérer vous-même l'ouverture des URL.
+- **Localisation des flows** : Un code de paramètre régional ne se replie plus sur sa langue de base — `pt-br` n'utilise pas la localisation `pt`. Un code sans correspondance exacte affiche le flow dans sa localisation par défaut. Voir [La correspondance des paramètres régionaux est exacte](#locale-matching-is-exact).
+- **`onAndroidSystemBack`** : Le comportement par défaut est passé de la fermeture de la vue au maintien de celle-ci ouverte. Pour rétablir l'ancien comportement, retournez `true` depuis le gestionnaire.
+- **`onPurchaseCompleted`** : Le comportement par défaut est passé de la fermeture de la vue (sauf si l'utilisateur annulait l'achat) au maintien systématique de celle-ci ouverte. Pour rétablir l'ancien comportement, retournez `purchaseResult.type !== 'user_cancelled'` depuis le gestionnaire.
+- **`onRestoreCompleted`** : Le comportement par défaut est passé de la fermeture de la vue après une restauration réussie au maintien de celle-ci ouverte. Pour rétablir l'ancien comportement, retournez `true` depuis le gestionnaire.
+- **`onUrlPress`** : Par défaut, l'URL s'ouvre désormais via la couche native, en respectant le paramètre de navigateur intégré ou externe défini dans le tableau de bord. Remplacez le gestionnaire pour gérer vous-même l'ouverture des URLs.
 
 ## Dépréciation de l'API onboarding \{#onboarding-api-deprecation\}
 

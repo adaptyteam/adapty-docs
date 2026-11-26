@@ -1,0 +1,123 @@
+---
+title: "Control store messages in Flutter SDK"
+description: "Choose when your Flutter app shows App Store and Google Play messages about price increases, billing issues, and declined payments, so they don't interrupt a flow or onboarding."
+metadataTitle: "Control store messages | Flutter SDK | Adapty Docs"
+---
+
+The App Store and Google Play sometimes need to show your users a message about their subscription:
+
+- **App Store**: A request to consent to a price increase, a billing issue notice, or a win-back offer. By default, StoreKit shows these messages on its own while your app is open.
+- **Google Play**: A notice that a subscription payment was declined and the payment method needs an update. By default, the Adapty SDK requests these messages every time an `Activity` of your app starts after `activate`, including when the app returns to the foreground and when a flow or onboarding opens or closes.
+
+Either way, a message can appear on top of a flow, an onboarding, or a checkout. To choose the moment yourself, switch the Adapty SDK to manual message handling, and call `showStoreMessages` when a message won't interrupt the user.
+
+:::warning
+In manual mode, the stores don't show messages on their own. If your app never calls `showStoreMessages`, users never see a price increase consent request, a billing issue notice, or a declined payment notice.
+:::
+
+## Before you start
+
+You need:
+
+- **Adapty Flutter SDK 4.3.0 or later**: Earlier versions don't have the store messages API.
+- **iOS 16 or later** for App Store messages: StoreKit doesn't deliver messages to apps on earlier versions. On iOS 15, `getPendingStoreMessageTypes` and `showStoreMessages` fail with the `decodingFailed` error, so if your app supports iOS 15, call them only on iOS 16 and later.
+
+## Enable manual handling
+
+To show store messages only when your app calls `showStoreMessages`, call `withStoreMessagesHandling` with `AdaptyStoreMessagesHandling.manual` when you [activate the SDK](sdk-installation-flutter#activate-adapty-module-of-adapty-sdk):
+
+```dart showLineNumbers title="main.dart"
+await Adapty().activate(
+  configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
+    ..withStoreMessagesHandling(AdaptyStoreMessagesHandling.manual), // auto is the default
+);
+```
+
+On iOS, the SDK then adds each App Store message to a pending list for the current app session. On Android, the SDK stops requesting Google Play messages on its own. With the default `auto` value, the SDK doesn't capture App Store messages, so on iOS, `getPendingStoreMessageTypes` and `showStoreMessages` have nothing to return or show.
+
+## Get pending message types
+
+On iOS, to find out whether any App Store messages are waiting, call `getPendingStoreMessageTypes`. It returns the types of the pending messages without showing or removing them:
+
+```dart showLineNumbers
+final pendingTypes = await Adapty().getPendingStoreMessageTypes();
+
+if (pendingTypes == null) {
+  // Android: Google Play decides whether a message applies when you show it
+} else if (pendingTypes.contains(AdaptyStoreMessageType.billingIssue)) {
+  // For example, skip the upsell and show the billing message first
+}
+```
+
+On Android, the method returns `null`: Google Play doesn't report pending messages, and decides whether a message applies only when your app requests it. An empty list means that there are no pending messages on iOS. Until `activate` completes, the list is always empty.
+
+Each App Store message has one of these types:
+
+| Type | Message |
+|:-----|:--------|
+| `AdaptyStoreMessageType.generic` | A general App Store message. |
+| `AdaptyStoreMessageType.priceIncreaseConsent` | A request to consent to a subscription price increase. |
+| `AdaptyStoreMessageType.billingIssue` | A notice about a subscription billing issue. Available on iOS 16.4 and later. |
+| `AdaptyStoreMessageType.winBackOffer` | An eligible [win-back offer](app-store-offers#win-back-offers). Available on iOS 18 and later. |
+
+A message type that the SDK doesn't recognize has a `value` of `storekit_<number>`. Compare types with `==` rather than assuming that these four types are the only ones.
+
+## Show messages
+
+When your app reaches a point where a store message won't interrupt the user — for example, after the user closes a flow or finishes onboarding — call `showStoreMessages`:
+
+```dart showLineNumbers
+try {
+  await Adapty().showStoreMessages();
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle other errors
+}
+```
+
+- **iOS**: The SDK shows the pending messages one after another. After StoreKit shows a message, the SDK removes it from the pending list. If StoreKit fails to show a message, the SDK keeps the message for the next call and continues with the other messages.
+- **Android**: The SDK requests Google Play messages for the current `Activity`. Google Play decides whether a message applies to the user, so a request doesn't always show a message. The call returns right away without waiting for Google Play, and never fails. If the user fixes their payment method from the message, the SDK syncs the user's purchases with Adapty, and your [profile listener](flutter-listen-subscription-changes) receives the updated access level.
+
+### Show messages at launch on Android
+
+In the default `auto` mode, an `Activity` that started before `activate` doesn't trigger a request, so Google Play messages don't appear at launch. To show them at launch, call `showStoreMessages` once after `activate`, on Android only:
+
+```dart showLineNumbers title="main.dart"
+import 'dart:io' show Platform;
+
+await Adapty().activate(
+  configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY'),
+);
+
+if (Platform.isAndroid) {
+  await Adapty().showStoreMessages();
+}
+```
+
+Don't make this call on iOS: in `auto` mode, it has nothing to show, and on iOS 15 it fails.
+
+### Show only some message types
+
+To show only some of the pending App Store messages, pass the types in `iosFilter`. The other messages stay pending:
+
+```dart showLineNumbers
+await Adapty().showStoreMessages(
+  iosFilter: [
+    AdaptyStoreMessageType.billingIssue,
+    AdaptyStoreMessageType.priceIncreaseConsent,
+  ],
+);
+```
+
+Without `iosFilter`, the SDK shows all pending messages, including types it doesn't recognize. An empty list shows none. Android ignores `iosFilter` and requests all Google Play messages.
+
+### Errors
+
+On iOS, `showStoreMessages` fails with an [`AdaptyError`](error-handling-on-flutter-react-native-unity) with one of these codes:
+
+| Code | Name | Cause |
+|:-----|:-----|:------|
+| 2006 | `decodingFailed` | The device runs iOS 15 or earlier. Call the method only on iOS 16 and later. |
+| 3201 | `operationInProgress` | Another `showStoreMessages` call is still showing messages. Wait for it to finish, then try again. |
+| 3202 | `resolverFailure` | The SDK found no foreground-active window scene to show the messages in. Call the method again when your app is in the foreground. |

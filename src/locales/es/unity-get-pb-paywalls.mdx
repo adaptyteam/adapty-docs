@@ -28,9 +28,13 @@ Necesitas:
 
 Si has diseñado un flow o paywall en el builder, no necesitas preocuparte por renderizarlo en el código de tu app para mostrárselo al usuario. Ese flow o paywall contiene tanto lo que debe mostrarse en él como la forma en que debe mostrarse. Aun así, necesitas obtener su ID a través del placement, su configuración de vista, y luego presentarlo en tu app.
 
-Para garantizar un rendimiento óptimo, es fundamental obtener el flow o paywall y su [configuración de vista](unity-get-pb-paywalls#fetch-the-view-configuration) lo antes posible, dejando tiempo suficiente para que las imágenes se descarguen antes de mostrárselas al usuario.
+Para garantizar un rendimiento óptimo, es fundamental recuperar el flow o paywall y su [configuración de vista](unity-get-pb-paywalls#fetch-the-view-configuration) lo antes posible, dejando tiempo suficiente para que las imágenes se descarguen antes de mostrárselas al usuario.
 
-Para obtener un flow o paywall, usa el método `GetFlow`:
+:::tip
+Para precalentar varios placements a la vez, llama a [`Adapty.PreloadFlows`](unity-optimize-paywall-fetching#preload-placements) (Unity SDK 4.3.0+). Solo almacena en caché el JSON del placement, por lo que `CreateFlowView` seguirá cargando el diseño y las imágenes.
+:::
+
+Para obtener un flow o paywall, utiliza el método `GetFlow`:
 
 ```csharp showLineNumbers
 Adapty.GetFlow(
@@ -52,13 +56,15 @@ Parámetros:
 
 | Parámetro | Presencia | Descripción |
 |---------|--------|-----------|
-| **placementId** | requerido | El identificador del [Placement](placements) deseado. Es el valor que especificaste al crear un placement en el Adapty Dashboard. |
-| **fetchPolicy** | por defecto: `AdaptyPlacementFetchPolicy.Default` | <p>`fetchPolicy` define qué capa lee primero el SDK, no si puede usar la caché. Por defecto, el SDK va primero al servidor y devuelve los datos en caché si esa solicitud falla. Recomendamos esta opción porque garantiza que tus usuarios siempre obtengan los datos más actualizados.</p><p></p><p>Sin embargo, si crees que tus usuarios tienen una conexión a internet inestable, considera `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad`, que invierte ese orden: lee la caché primero y va al servidor solo cuando no hay nada en caché. Es posible que los usuarios no obtengan los datos absolutamente más recientes, pero experimentarán tiempos de carga más rápidos, independientemente de lo inestable que sea su conexión. La caché se actualiza regularmente, por lo que es seguro usarla durante la sesión para evitar solicitudes de red.</p><p></p><p>Una tercera política, `AdaptyPlacementFetchPolicy.ReturnCacheDataIfNotExpiredElseLoad(maxAge)`, se sitúa entre las dos: lee la caché primero mientras la copia en caché sea más reciente que el `TimeSpan` que indiques, y va al servidor una vez que sea más antigua.</p><p></p><p>Ten en cuenta que la caché permanece intacta al reiniciar la app y solo se borra cuando se reinstala la app o mediante una limpieza manual.</p><p></p><p>El SDK de Adapty almacena flows y paywalls localmente en dos capas: la caché actualizada regularmente descrita anteriormente y los [paywalls de respaldo](fallback-paywalls). También usamos CDN para obtenerlos más rápido y un servidor de respaldo independiente en caso de que el CDN no sea accesible. Este sistema está diseñado para garantizar que siempre obtengas la versión más reciente, asegurando la fiabilidad incluso cuando la conexión a internet es escasa.</p> |
-| **loadTimeout** | por defecto: 5 seg | <p>Este valor limita el tiempo de espera para este método. Si se alcanza el tiempo de espera, se devolverán los datos en caché o el fallback local.</p><p>Ten en cuenta que en casos excepcionales este método puede superar ligeramente el tiempo de espera especificado en `loadTimeout`, ya que la operación puede consistir en diferentes solicitudes internamente.</p> |
+| **placementId** | obligatorio | El identificador del [Placement](placements) deseado. Es el valor que especificaste al crear un placement en el Adapty Dashboard. |
+| **fetchPolicy** | predeterminado: `AdaptyPlacementFetchPolicy.Default` | <p>`fetchPolicy` define qué capa lee primero el SDK, no si puede usar la caché. Por defecto, el SDK va primero al servidor y devuelve los datos en caché si esa solicitud falla. Recomendamos esta opción porque garantiza que tus usuarios siempre reciban los datos más actualizados.</p><p></p><p>Sin embargo, si crees que tus usuarios tienen una conexión a internet inestable, considera `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad`, que invierte ese orden: lee primero la caché y solo va al servidor cuando no hay nada en caché. Es posible que los usuarios no obtengan los datos más recientes, pero experimentarán tiempos de carga más rápidos, independientemente de lo inestable que sea su conexión. La caché se actualiza regularmente, por lo que es seguro usarla durante la sesión para evitar solicitudes de red.</p><p></p><p>Una tercera política, `AdaptyPlacementFetchPolicy.ReturnCacheDataIfNotExpiredElseLoad(maxAge)`, se sitúa entre las dos: lee primero la caché mientras la copia almacenada sea más reciente que el `TimeSpan` que indiques, y va al servidor cuando sea más antigua.</p><p></p><p>Ten en cuenta que la caché se conserva al reiniciar la aplicación y solo se borra cuando se reinstala la app o mediante una limpieza manual.</p><p></p><p>El SDK de Adapty almacena flows y paywalls localmente en dos capas: la caché de actualización periódica descrita anteriormente y los [paywall de respaldo](fallback-paywalls). También usamos CDN para obtenerlos más rápido y un servidor de respaldo independiente en caso de que el CDN no sea accesible. Este sistema está diseñado para garantizar que siempre obtengas la versión más reciente, asegurando la fiabilidad incluso cuando la conexión a internet es escasa.</p> |
+| **loadTimeout** | predeterminado: 5 seg | <p>Este valor limita el tiempo de espera de este método. Si el servidor de Adapty no responde a tiempo o devuelve un error, el SDK devuelve el flow en caché. Si no hay nada en caché y el servidor agotó el tiempo de espera o devolvió un error de servidor, el SDK solicita el flow desde el servidor de respaldo (una copia de CDN que sirve únicamente a la audiencia **All Users** del placement). Como último recurso, el SDK devuelve el flow desde tu [archivo de respaldo](unity-use-fallback-paywalls).</p><p>Ten en cuenta que, en casos excepcionales, este método puede superar ligeramente el tiempo indicado en `loadTimeout`, ya que la operación puede estar compuesta de diferentes solicitudes internamente.</p> |
+
+Parámetros de respuesta:
 
 | Parámetro | Descripción |
 | :-------- | :---------- |
-| Flow   | Un objeto `AdaptyFlow` que contiene el placement, los identificadores (`InstanceIdentity`, `VariationId`), el nombre, las variaciones de paywall (`Paywalls` — una lista de `AdaptyFlowPaywall`) y los Remote Configs (`RemoteConfigs` — una lista con una entrada por idioma). Para obtener los productos reales con fines de precarga, interfaz personalizada o comprobaciones programáticas, llama a `GetPaywallProducts(flow)`. |
+| Flow   | Un objeto `AdaptyFlow` que contiene el placement, los identificadores (`InstanceIdentity`, `VariationId`), el nombre, el nombre de la variante (`VariationName`, SDK 4.3.0+), las variantes de paywall (`Paywalls` — una lista de `AdaptyFlowPaywall`) y los Remote Configs (`RemoteConfigs` — una lista con una entrada por locale). Para obtener los productos reales para precarga, UI personalizada o comprobaciones programáticas, llama a `GetPaywallProducts(flow)`. |
 
 ## Obtener la configuración de la vista \{#fetch-the-view-configuration\}
 
@@ -85,13 +91,14 @@ AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
 
 | Parámetro                    | Presencia      | Descripción                                                  |
 | :--------------------------- | :------------- | :----------------------------------------------------------- |
-| **flow**                     | obligatorio    | Un objeto `AdaptyFlow` obtenido mediante `Adapty.GetFlow`. |
-| **Locale**                   | opcional       | El identificador de la [localización del Builder](add-paywall-locale-in-adapty-paywall-builder) con la que se renderizará el flow o paywall, por ejemplo `en` o `pt-br`. El flow se localiza cuando se crea su vista, por lo que este es el único lugar donde elegir su localización. El SDK no lee el idioma del dispositivo: si omites este parámetro, el flow se renderiza en `en`, o en su idioma predeterminado si el flow no tiene localización `en`. El código debe coincidir exactamente con un código de localización del flow. Consulta [Usar localizaciones y códigos de idioma](unity-localizations-and-locale-codes). |
-| **LoadTimeout**              | opcional       | Este valor limita el tiempo de espera de este método. Si se alcanza el límite, se devolverán datos en caché o el respaldo local. Ten en cuenta que en casos excepcionales este método puede superar ligeramente el tiempo indicado en `LoadTimeout`, ya que la operación puede consistir en diferentes solicitudes internamente. |
-| **PreloadProducts**          | opcional       | Establece en `true` para precargar productos y mejorar el rendimiento. Cuando está activado, los productos se cargan con antelación, reduciendo el tiempo necesario para mostrar el flow o paywall. |
-| **CustomTags**               | opcional       | Los valores de tu app para las [etiquetas personalizadas](flow-custom-tags) del flow, en un diccionario con el nombre completo de cada etiqueta como clave. Pasa el diccionario al método `SetCustomTags`. Para más detalles, consulta [Pasar datos a flows](unity-flow-custom-tags). |
-| **ProductPurchaseParameters** | opcional      | Solo Android (se ignora en iOS). Un diccionario de `AdaptyProductIdentifier` a `AdaptyPurchaseParameters`. Úsalo para configurar parámetros específicos de compra, como ofertas personalizadas o parámetros de actualización de suscripción para productos individuales en el flow o paywall. |
-| **EnableSafeAreaPaddings**   | opcional       | Solo Android (se ignora en iOS). Cuando es `true`, la vista del flow aplica rellenos de área segura. Valor predeterminado: `true`. El valor predeterminado es adecuado para la mayoría de los casos. |
+| **flow**                     | requerido      | Un objeto `AdaptyFlow` obtenido a través de `Adapty.GetFlow`. |
+| **Locale**                   | opcional       | El identificador de la [localización del Builder](add-paywall-locale-in-adapty-paywall-builder) con la que se renderiza el flow o el paywall, por ejemplo `en` o `pt-BR`. Al crear la vista, el SDK carga todas las localizaciones del flow, y `Locale` selecciona cuál mostrar. El SDK no lee el idioma del dispositivo, así que elige el código de idioma en tu app. Si omites este parámetro, el flow se renderiza en `en`, o en su idioma predeterminado cuando el flow no tiene localización `en`. El código debe coincidir exactamente con un código de localización del flow. Consulta [Usar localizaciones y códigos de idioma](unity-localizations-and-locale-codes). |
+| **LoadTimeout**              | opcional       | Este valor limita el tiempo de espera de este método. Si se alcanza el timeout, se devolverán los datos en caché o el fallback local. Ten en cuenta que en casos excepcionales este método puede superar ligeramente el timeout especificado en `LoadTimeout`, ya que la operación puede consistir en distintas solicitudes internamente. |
+| **PreloadProducts**          | opcional       | Establece en `true` para precargar productos y mejorar el rendimiento. Cuando está activado, los productos se cargan de antemano, reduciendo el tiempo necesario para mostrar el flow o el paywall. |
+| **CustomTags**               | opcional       | Los valores de tu app para las [etiquetas personalizadas](flow-custom-tags) del flow, en un diccionario indexado por el nombre completo de cada etiqueta. Pasa el diccionario al método `SetCustomTags`. Para más detalles, consulta [Pasar datos a flows](unity-flow-custom-tags). |
+| **CustomTimers**             | opcional       | Las fechas de finalización de los temporizadores **Developer defined** del flow, en un diccionario de IDs de temporizador a valores `DateTime`. Pasa el diccionario al método `SetCustomTimers`. Para más detalles, consulta [Configurar temporizadores definidos por el desarrollador](#set-up-developer-defined-timers). |
+| **ProductPurchaseParameters** | opcional      | Solo Android (se ignora en iOS). Un diccionario de `AdaptyProductIdentifier` a `AdaptyPurchaseParameters`. Úsalo para configurar parámetros específicos de compra, como ofertas personalizadas o parámetros de actualización de suscripción para productos individuales en el flow o el paywall. |
+| **EnableSafeAreaPaddings**   | opcional       | Solo Android (se ignora en iOS). Cuando es `true`, la vista del flow aplica paddings de área segura. Valor predeterminado: `true`. El valor predeterminado es adecuado para la mayoría de los casos. |
 
 :::note
 Si usas varios idiomas, aprende cómo añadir una [localización en el Builder](add-paywall-locale-in-adapty-paywall-builder).
@@ -173,14 +180,16 @@ AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
 Si no se encuentra un asset o falla al cargarse, el flow o paywall volverá a su apariencia predeterminada configurada en el Builder.
 :::
 
-## Configurar temporizadores definidos por el desarrollador \{#set-up-developer-defined-timers\}
+## Configura temporizadores definidos por el desarrollador \{#set-up-developer-defined-timers\}
 
-Para usar temporizadores personalizados en tu app de Unity, pasa un diccionario de IDs de temporizador y sus fechas de finalización al método `SetCustomTimers`. Aquí tienes un ejemplo:
+Usa esta sección para un temporizador con el comportamiento **Developer defined** en el Flow & Paywall Builder. En el builder, cada temporizador de este tipo tiene un **Timer ID** (consulta [Deja que tu app establezca la fecha de fin](flow-timer#let-your-app-set-the-end-date)), y tu app establece la fecha de fin para él. Usa el mismo Timer ID en tu código que en el builder, carácter por carácter, incluidas mayúsculas, minúsculas y espacios. Si los IDs difieren, el temporizador no recibirá ninguna fecha de fin de tu app.
+
+Para establecer las fechas de fin, pasa un diccionario de IDs de temporizador y sus fechas de fin al método `SetCustomTimers`. Un `DateTime` con `DateTimeKind.Utc` es una hora UTC; un `DateTime` sin tipo se interpreta como la hora local del usuario. A continuación, un ejemplo:
 
 ```csharp showLineNumbers
 var customTimers = new Dictionary<string, DateTime> {
     { "CUSTOM_TIMER_6H", DateTime.Now.AddHours(6) },
-    { "CUSTOM_TIMER_NY", new DateTime(2026, 1, 1) }
+    { "CUSTOM_TIMER_NY", new DateTime(DateTime.Now.Year + 1, 1, 1) } // next New Year's Day, local time
 };
 
 var parameters = new AdaptyUICreateFlowViewParameters()
@@ -188,14 +197,21 @@ var parameters = new AdaptyUICreateFlowViewParameters()
     .SetLoadTimeout(TimeSpan.FromSeconds(3));
 
 AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
-    // handle the result
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    // use view
 });
 ```
 
-En este ejemplo, `CUSTOM_TIMER_NY` y `CUSTOM_TIMER_6H` son los **Timer ID** de los temporizadores definidos por el desarrollador que configuraste en el Adapty Dashboard. El resolver de temporizadores garantiza que tu app actualice dinámicamente cada temporizador con el valor correcto. Por ejemplo:
+En este ejemplo, `CUSTOM_TIMER_NY` y `CUSTOM_TIMER_6H` son los IDs de temporizador de dos temporizadores **definidos por el desarrollador** en el builder:
 
-- `CUSTOM_TIMER_NY`: El tiempo restante hasta el final del temporizador, como el Año Nuevo.
-- `CUSTOM_TIMER_6H`: El tiempo restante en un período de 6 horas que comenzó cuando el usuario abrió el flow o paywall.
+- `CUSTOM_TIMER_NY`: El tiempo restante hasta el próximo Año Nuevo.
+- `CUSTOM_TIMER_6H`: El tiempo restante en un período de 6 horas que comenzó cuando tu app creó la vista.
+
+El SDK lee los temporizadores personalizados una sola vez, al crear la vista, por lo que una fecha calculada como `CUSTOM_TIMER_6H` cuenta desde ese momento, incluso si el usuario vuelve a abrir la pantalla. Si la fecha ya ha pasado, el temporizador muestra cero de inmediato y se ejecuta su disparador **On timer end**. Si el diccionario no tiene clave para un Timer ID, el temporizador cuenta regresivamente una hora desde que se abre la pantalla.
 
 </SDKv4>
 
@@ -244,9 +260,9 @@ Parámetros:
 | Parámetro | Presencia | Descripción |
 |---------|--------|-----------|
 | **placementId** | obligatorio | El identificador del [Placement](placements) deseado. Es el valor que especificaste al crear un placement en el Adapty Dashboard. |
-| **locale** | <p>opcional</p><p>por defecto: `en`</p> | <p>El identificador de la localización del paywall. Se espera que este parámetro sea un código de idioma compuesto de uno o dos subetiquetas separadas por el carácter menos (**-**). La primera subetiqueta corresponde al idioma y la segunda a la región.</p><p></p><p>Ejemplo: `en` significa inglés, `pt-br` representa el portugués de Brasil.</p><p>Consulta [Localizaciones y códigos de idioma](localizations-and-locale-codes) para más información sobre los códigos de idioma y cómo recomendamos usarlos.</p> |
-| **fetchPolicy** | por defecto: `AdaptyPlacementFetchPolicy.Default` | <p>`fetchPolicy` determina qué capa lee primero el SDK, no si puede usar la caché. Por defecto, el SDK consulta primero el servidor y devuelve los datos en caché si esa solicitud falla. Recomendamos esta opción porque garantiza que tus usuarios siempre reciban los datos más actualizados.</p><p></p><p>Sin embargo, si crees que tus usuarios tienen una conexión a internet inestable, considera `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad`, que invierte ese orden: lee primero la caché y consulta el servidor solo cuando no hay nada en caché. Es posible que los usuarios no obtengan los datos más recientes, pero experimentarán tiempos de carga más rápidos, independientemente de lo intermitente que sea su conexión. La caché se actualiza con regularidad, por lo que es seguro usarla durante la sesión para evitar solicitudes de red.</p><p></p><p>Una tercera política, `AdaptyPlacementFetchPolicy.ReturnCacheDataIfNotExpiredElseLoad(maxAge)`, se sitúa entre las dos: lee primero la caché mientras la copia almacenada sea más reciente que el `TimeSpan` que indiques, y consulta el servidor cuando sea más antigua.</p><p></p><p>Ten en cuenta que la caché se mantiene intacta al reiniciar la app y solo se borra cuando se reinstala la app o mediante limpieza manual.</p><p></p><p>El SDK de Adapty almacena los paywalls localmente en dos capas: la caché de actualización periódica descrita anteriormente y los [paywalls de respaldo](fallback-paywalls). También usamos CDN para obtener los paywalls más rápido y un servidor de respaldo independiente en caso de que el CDN no esté disponible. Este sistema está diseñado para garantizar que siempre obtengas la versión más reciente de tus paywalls, asegurando la fiabilidad incluso cuando la conexión a internet es escasa.</p> |
-| **loadTimeout** | por defecto: 5 seg | <p>Este valor limita el tiempo de espera de este método. Si se alcanza el timeout, se devolverán los datos en caché o el fallback local.</p><p>Ten en cuenta que en casos excepcionales este método puede superar ligeramente el tiempo especificado en `loadTimeout`, ya que la operación puede incluir diferentes solicitudes internamente.</p> |
+| **locale** | <p>opcional</p><p>por defecto: `en`</p> | <p>El identificador de la localización del paywall. Se espera que este parámetro sea un código de idioma compuesto de uno o dos subetiquetas separadas por el carácter menos (**-**). La primera subetiqueta corresponde al idioma y la segunda a la región.</p><p></p><p>Ejemplo: `en` significa inglés, `pt-br` representa el portugués de Brasil.</p><p>Consulta [Localizaciones y códigos de idioma](localizations-and-locale-codes) para más información sobre los códigos de idioma y cómo recomendamos utilizarlos.</p> |
+| **fetchPolicy** | por defecto: `AdaptyPlacementFetchPolicy.Default` | <p>`fetchPolicy` define qué capa lee primero el SDK, no si puede usar la caché. Por defecto, el SDK consulta primero el servidor y devuelve los datos en caché si esa solicitud falla. Recomendamos esta opción porque garantiza que tus usuarios siempre reciban los datos más actualizados.</p><p></p><p>Sin embargo, si crees que tus usuarios tienen una conexión a internet inestable, considera `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad`, que invierte ese orden: lee primero la caché y solo consulta el servidor cuando no hay nada almacenado. Es posible que los usuarios no reciban los datos más recientes, pero experimentarán tiempos de carga más rápidos, independientemente de lo inestable que sea su conexión. La caché se actualiza con regularidad, por lo que es seguro usarla durante la sesión para evitar solicitudes de red.</p><p></p><p>Una tercera política, `AdaptyPlacementFetchPolicy.ReturnCacheDataIfNotExpiredElseLoad(maxAge)`, se sitúa entre las dos: lee primero la caché mientras la copia almacenada sea más reciente que el `TimeSpan` que indiques, y consulta el servidor cuando sea más antigua.</p><p></p><p>Ten en cuenta que la caché se mantiene intacta al reiniciar la app y solo se borra cuando se reinstala la app o mediante una limpieza manual.</p><p></p><p>El SDK de Adapty almacena los paywalls localmente en dos capas: la caché de actualización periódica descrita anteriormente y los [paywalls de respaldo](fallback-paywalls). También usamos CDN para obtener los paywalls más rápido y un servidor de respaldo independiente en caso de que el CDN no esté disponible. Este sistema está diseñado para garantizar que siempre obtengas la versión más reciente de tus paywalls, asegurando la fiabilidad incluso cuando la conexión a internet es limitada.</p> |
+| **loadTimeout** | por defecto: 5 seg | <p>Este valor limita el tiempo de espera de este método. Si el servidor de Adapty no responde a tiempo o devuelve un error, el SDK devuelve el paywall desde el servidor de respaldo (una copia de CDN que sirve únicamente a la audiencia **All Users** del placement), la caché o tu [archivo de respaldo](unity-use-fallback-paywalls).</p><p>Ten en cuenta que en casos excepcionales este método puede superar ligeramente el tiempo indicado en `loadTimeout`, ya que la operación puede estar compuesta por diferentes solicitudes internamente.</p> |
 
 Parámetros de respuesta:
 

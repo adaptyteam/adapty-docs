@@ -14,29 +14,87 @@ Otorga a tus usuarios moneda virtual — tokens de IA, créditos o monedas — c
 ## Cómo funciona \{#how-it-works\}
 
 1. [Crea una moneda virtual](create-virtual-currency): Abre **Products** y haz clic en la pestaña **Virtual currency**. Haz clic en **New virtual currency**. Define una moneda con un código, un nombre y una descripción opcional.
-2. **Vincula la moneda a productos**: Asocia la moneda a productos de compra única o suscripciones y define cuántos créditos otorga cada compra.
-3. **Los créditos se conceden automáticamente**: Cuando un usuario compra un producto único vinculado o renueva una suscripción vinculada, Adapty añade los créditos configurados a su saldo.
-4. **Lee y gasta el saldo**: Tu app lee el saldo de cada usuario y concede o gasta créditos a través de la API del lado del servidor. Usa la misma API para [conceder un saldo inicial](grant-initial-balance) a los usuarios que aún no han comprado nada.
-5. **Registra cada cambio**: Cada cambio de saldo aparece en el [perfil del usuario](virtual-currency-balance).
+2. **Vincula la moneda a productos**: Asocia la moneda a productos de compra única o suscripción y define cuántos créditos otorga cada compra.
+3. **Los créditos se asignan automáticamente**: Cuando un usuario compra un producto vinculado a la moneda, Adapty añade los créditos configurados a su saldo. En el caso de una suscripción, Adapty añade créditos en cada renovación. Cuando el usuario inicia una prueba gratuita, Adapty añade créditos solo si has activado **Credit on trial start**. Los eventos de compra que Adapty envía a tu [webhook](webhook-event-types-and-fields#virtual-currency-credits) y a las integraciones de analíticas incluyen estos créditos en `virtual_currency_credits`.
+4. **Lee y gasta el saldo**: Tu app lee el saldo de cada usuario y otorga o gasta créditos a través de la API del lado del servidor. Usa la misma API para [asignar un saldo inicial](grant-initial-balance) a los usuarios que aún no han realizado ninguna compra.
+5. **Registra cada cambio**: Cada cambio de saldo aparece en el [perfil del usuario](virtual-currency-balance). Tu equipo de soporte también puede [abonar o debitar un saldo manualmente](virtual-currency-balance#adjust-a-balance-manually) desde el perfil.
+6. **Mide los ingresos por moneda**: Para ver los ingresos y otras métricas por moneda, filtra los gráficos de analíticas por [**Virtual currency**](controls-filters-grouping-compare-proceeds#filter-and-group-data).
+7. **Segmenta usuarios por saldo**: Para mostrar un paywall u onboarding diferente a usuarios con un saldo bajo o alto, crea un [segmento por saldo de moneda virtual](segments#virtual-currency-balance) y úsalo como [audiencia](audience).
+8. **Exporta el historial de transacciones**: Para cargar cada cambio de saldo en tu almacén de datos, activa la exportación diaria a [Amazon S3](s3-exports#virtual-currency-transactions) o [Google Cloud Storage](google-cloud-storage#virtual-currency-transactions).
 
 Para un recorrido completo —desde la configuración de la moneda hasta el uso de créditos a través de la API— sigue la [guía de inicio rápido de moneda virtual](virtual-currency-quickstart).
 
 ## Casos de uso \{#use-cases\}
 
-| Tipo de app | Cómo usar las monedas virtuales |
-|-------------|----------------------------------|
-| **Apps de IA** (generación de imágenes, vídeo o texto) | Cobra créditos por cada generación. Incluye una cuota mensual de créditos en la suscripción y vende paquetes de créditos como productos únicos. |
-| **Apps de cortometrajes y vídeo** | Cobra monedas para desbloquear episodios. Otorga a los suscriptores una cuota recurrente de monedas y vende paquetes de monedas como productos únicos. |
-| **Aprendizaje de idiomas y educación** | Da a los usuarios gratuitos una cuota limitada de corazones o vidas a través de la API del servidor. Otorga una cuota mayor, o elimina la comprobación de saldo, en un plan de pago. |
-| **Juegos móviles** | Gestiona una moneda blanda y una dura en paralelo: otorga oro por el juego a través de la API del servidor, vende gemas por dinero y convierte entre ellas en una única transacción atómica. |
-| **Apps de productividad** | Limita las acciones costosas, como el OCR o las exportaciones, con créditos. Da a los usuarios gratuitos una pequeña cuota, otorga más con una suscripción y vende paquetes de créditos para trabajo en lote. |
+| Tipo de app | Cómo usar monedas virtuales |
+|-------------|------------------------------|
+| **Apps de IA** (generación de imágenes, vídeo o texto) | Cobra créditos por generación. Incluye una cantidad mensual de créditos en la suscripción y vende paquetes de créditos como productos de compra única. |
+| **Apps de dramas cortos y vídeo** | Cobra monedas para desbloquear episodios. Otorga a los suscriptores una cantidad recurrente de monedas y vende paquetes de monedas como productos de compra única. |
+| **Aprendizaje de idiomas y educación** | Da a los usuarios gratuitos una cantidad limitada de corazones o vidas a través de la API de servidor. Otorga una cantidad mayor, o elimina la comprobación del saldo por completo, en un plan de pago. |
+| **Juegos móviles** | Gestiona dos monedas a la vez, una blanda y una dura: otorga oro por jugar a través de la API de servidor, <InlineTooltip tooltip="vende gemas por dinero">[iOS](ios-virtual-currency-top-up)</InlineTooltip>, y convierte entre ellas en una única transacción atómica. |
+| **Apps de productividad** | Mide las acciones costosas, como OCR o exportaciones, con créditos. Da a los usuarios gratuitos una cantidad pequeña, otorga más con una suscripción y vende paquetes de créditos para trabajo por lotes. |
 
 :::tip
-Para las asignaciones de suscripción, activa la [expiración de créditos](create-virtual-currency#link-products). Cuando los créditos no utilizados se reinician en cada renovación, la asignación sigue siendo un motivo para mantener la suscripción, y los usuarios más activos compran paquetes de créditos en lugar de agotar un stock acumulado.
+Para las asignaciones de suscripción, activa la [expiración de créditos](create-virtual-currency#link-products). Con la expiración, los usuarios no pueden acumular créditos entre períodos de facturación. Para recibir nuevos créditos, renuevan la suscripción, y los usuarios intensivos compran packs de créditos.
 :::
+
+## Etiquetar transacciones \{#label-transactions\}
+
+Cuando tu backend otorga o gasta créditos a través de [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction), etiqueta cada transacción con su significado y el motivo de los créditos. Con `operation`, puedes distinguir los gastos de los bonos, reversiones y correcciones en el historial de transacciones. Con `feature`, puedes ver en qué gastan los usuarios y por qué motivo los otorgas.
+
+Todos los campos de etiquetado son opcionales. No puedes añadir etiquetas a una transacción después de que Adapty la guarde, así que etiqueta desde tu primera llamada. Una transacción enviada sin etiquetas se guarda con `operation: null`.
+
+```json title="Spend credits on a feature"
+{
+  "items": [{ "currency_code": "COINS", "amount": -10 }],
+  "operation": "spend",
+  "feature": "power_up.extra_life",
+  "customer_placement_id": "level-complete",
+  "reference_id": "session_7781"
+}
+```
+
+### Operación \{#operation\}
+
+La mayoría de las integraciones necesitan estos valores de `operation`:
+
+| Valor | Cuándo usarlo |
+|-------|----------------|
+| `spend` | El usuario gasta créditos en una función o contenido. |
+| `spend_reversal` | Devuelves créditos por una acción fallida, como una generación fallida. |
+| `reward` | Concedes un bono, una recompensa o una compensación de soporte. |
+| `reward_reversal` | Retiras una recompensa. |
+
+Adapty establece `operation` en las transacciones que crea: las compras, renovaciones y períodos de prueba reciben `top_up`, los reembolsos de la store reciben `refund`, y los créditos expirados reciben `expiry`. Para ver la lista completa de valores, consulta [Crear transacción de moneda virtual](api-adapty/operations/createVirtualCurrencyTransaction).
+
+### Función
+
+`feature` indica en qué se gastaron o se otorgaron los créditos: una palabra de letras, dígitos y `_`, seguida opcionalmente de un subtipo tras un punto. Adapty lo almacena tal como se envía y distingue mayúsculas de minúsculas, por lo que `photoFilter` y `photofilter` son dos funciones distintas.
+
+- ✅ `hint`, `power_up.extra_life`, `photo_filter.vintage`
+- ❌ `photo filter`: contiene un espacio.
+- ❌ `photo_filter.vintage.v2`: tiene dos niveles de subtipo.
+- ❌ `pack_499`, `premium_tier`: incluir un precio o un nivel en el nombre divide una misma función en varias cuando cambian los precios o los niveles. Mantén precios, niveles, versiones y variantes fuera de `feature`.
+
+Para un bonus, usa el nombre del programa, como `welcome`, `daily_bonus`, `referral` o `support_compensation`.
+
+### Otros campos
+
+- **`reference_id`**: El ID del objeto relacionado en tu sistema, de hasta 128 caracteres. Úsalo para vincular un `spend_reversal` al `spend` que revierte, o un `reward` a la acción por la que se concedió. No incluyas datos personales aquí.
+- **`customer_placement_id`**: El ID de la pantalla en tu app donde ocurrió la operación. Es tu propio ID, no un ID de [placement](placements) de Adapty.
+- **`store` y `store_transaction_id`**: Envíalos juntos cuando tu backend acredite monedas por una compra directamente. Adapty no verifica que la compra exista. Si la compra se reembolsa en el store, Adapty retira las monedas acreditadas con esta referencia.
+- **`is_sandbox`**: Envía `true` para los créditos que concedas durante las pruebas. En las transacciones de store, Adapty lo establece a partir del entorno de la compra.
+
+:::warning
+No acredites monedas por un producto que esté [vinculado a la moneda](create-virtual-currency#link-products) en Adapty. Adapty ya acredita esas compras, por lo que un crédito adicional desde tu backend daría al usuario el doble de créditos.
+:::
+
+Las transacciones creadas antes del 12 de noviembre de 2026, cuando el etiquetado estuvo disponible, conservan sus datos: Adapty etiquetó retroactivamente sus propias transacciones, y tus transacciones de API anteriores a esa fecha se mantienen con `operation: null`. `metadata` no ha cambiado y sigue aceptando cualquier clave que necesites.
 
 ## Limitaciones \{#limitations\}
 
-- **El acceso entre dispositivos requiere identificación**: Un balance pertenece a un perfil. Un usuario anónimo conserva su balance solo en la instalación donde lo obtuvo, por lo que se pierde si reinstala la app o la abre en otro dispositivo. Identifica a los usuarios para que el balance esté disponible en todos los dispositivos y tras cada reinstalación. Consulta [Balances, perfiles y dispositivos](virtual-currency-balance#balances-profiles-and-devices).
-- **Solo en el lado del servidor**: Todavía no hay ningún método del SDK para leer o gastar un balance, por lo que tu app necesita un backend. Este lee los balances y otorga o gasta créditos a través de la API del lado del servidor.
-- **Hasta 20 divisas por app**: Puedes crear hasta 20 monedas virtuales en una sola app.
+- **El acceso entre dispositivos requiere identificación**: Un saldo pertenece a un perfil. Un usuario anónimo conserva su saldo solo en la instalación donde lo ganó, por lo que se pierde al reinstalar la app o abrirla en otro dispositivo. Identifica a los usuarios para que el saldo esté disponible en todos los dispositivos y tras cada reinstalación. Consulta [Saldos, perfiles y dispositivos](virtual-currency-balance#balances-profiles-and-devices).
+- **Solo en el servidor**: Todavía no existe ningún método del SDK para leer o gastar un saldo, por lo que tu app necesita un backend. Este lee los saldos y concede o gasta créditos a través de la API del servidor.
+- **Hasta 20 monedas por app**: Puedes crear hasta 20 monedas virtuales en una sola app.
+- **Sin créditos en algunas compras**: Las compras realizadas en una [tienda personalizada](custom-store), las compras compartidas mediante [Apple Family Sharing](apple-family-sharing) y las compras históricas importadas no otorgan créditos.
+- **Un único saldo para sandbox y producción**: Las compras en sandbox añaden créditos al mismo saldo que las compras reales. Realiza pruebas con cuentas de prueba, no con las cuentas de usuarios reales.

@@ -59,17 +59,73 @@ npm install @adapty/capacitor
 npx cap sync
 ```
 
-Sur iOS, le SDK Adapty récupère les SDK natifs Adapty uniquement via **Swift Package Manager** — le podspec CocoaPods a été supprimé ([le dépôt de specs CocoaPods passe en lecture seule en décembre 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/)). Le projet iOS de votre application doit utiliser l'intégration SPM de Capacitor :
+### Configurer votre projet iOS \{#set-up-your-ios-project\}
 
-- Pour les nouvelles apps, ajoutez la plateforme iOS avec le gestionnaire de paquets SPM :
+Sur iOS, le SDK installe les SDK Adapty natifs (`Adapty`, `AdaptyUI`, `AdaptyPlugin`) via le gestionnaire de paquets de votre projet iOS :
+
+- **Swift Package Manager (recommandé)** : Capacitor 8 crée les nouveaux projets iOS avec SPM par défaut, et le SDK ne nécessite aucune configuration supplémentaire.
+- **CocoaPods (SDK 4.2.0 et versions ultérieures)** : Votre `Podfile` installe les SDK natifs en tant que pods depuis le [dépôt de specs d'Adapty](https://github.com/adaptyteam/AdaptySDK-CocoaPods-Specs), et non depuis le dépôt public de specs CocoaPods, qui [passe en lecture seule en décembre 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/). Les SDK 4.0 et 4.1 ne prennent pas en charge CocoaPods.
+
+<Tabs groupId="ios-package-manager" queryString>
+
+<TabItem value="spm" label="Swift Package Manager (recommended)" default>
+
+- Pour les nouvelles applications, ajoutez la plateforme iOS avec le gestionnaire de paquets SPM :
 
   ```sh
   npx cap add ios --packagemanager SPM
   ```
 
-- Pour les apps existantes, migrez le projet iOS de CocoaPods vers SPM en suivant [le guide Capacitor pour utiliser SPM dans un projet existant](https://capacitorjs.com/docs/ios/spm#using-spm-in-an-existing-capacitor-project).
+- Pour les applications existantes sous CocoaPods, migrez le projet iOS vers SPM en suivant [le guide Capacitor pour utiliser SPM dans un projet existant](https://capacitorjs.com/docs/ios/spm#using-spm-in-an-existing-capacitor-project), ou conservez CocoaPods et suivez l'onglet **CocoaPods**.
 
-Vous mettez à jour depuis la v3 ? Consultez [Migrer le SDK Adapty Capacitor vers la v4.1](migration-to-capacitor-sdk-v4) pour la liste complète des changements d'API.
+</TabItem>
+
+<TabItem value="cocoapods" label="CocoaPods">
+
+Cette option nécessite le SDK 4.2.0 ou ultérieur. Pour une nouvelle application, ajoutez la plateforme iOS avec le gestionnaire de paquets CocoaPods :
+
+```sh
+npx cap add ios --packagemanager CocoaPods
+```
+
+Dans `ios/App/Podfile`, déclarez les helpers Adapty Podfile **après** la ligne `require_relative` des `pods_helpers` de Capacitor. Puis, dans la cible `App`, appelez `adapty_pods!` **après** `capacitor_pods` :
+
+```ruby showLineNumbers title="ios/App/Podfile" {2-6,10}
+require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+require Pod::Executable.execute_command('node', ['-p',
+  'require.resolve(
+    "@adapty/capacitor/ios/adapty_podfile.rb",
+    {paths: [process.argv[1]]},
+  )', __dir__]).strip
+
+target 'App' do
+  capacitor_pods
+  adapty_pods!
+  # Add your Pods here
+end
+```
+
+`npx cap sync` régénère le `Podfile` depuis sa première ligne `require_relative` jusqu'à la ligne `pods_helpers`, ainsi que toute la méthode `def capacitor_pods`. Un appel `require` ou `adapty_pods!` placé dans l'une ou l'autre de ces parties sera perdu lors de la prochaine synchronisation.
+
+`adapty_pods!` déclare les pods `Adapty`, `AdaptyUI` et `AdaptyPlugin` et les épingle au dépôt de specs d'Adapty, vous n'avez donc pas besoin d'ajouter de ligne `source` pour ce dépôt. Supprimez toute ligne `pod 'Adapty'`, `pod 'AdaptyUI'` ou `pod 'AdaptyPlugin'` présente dans votre `Podfile`.
+
+Synchronisez ensuite le projet iOS :
+
+```sh
+npx cap sync ios
+```
+
+Lorsque vous mettez à jour `@adapty/capacitor` ultérieurement, `pod install` n'actualise pas le dépôt de specs d'Adapty. Pour installer la version du SDK natif requise par la nouvelle version, exécutez :
+
+```sh
+cd ios/App && pod install --repo-update
+```
+
+</TabItem>
+
+</Tabs>
+
+Vous migrez depuis la v3 ? Consultez [Migrer le SDK Adapty Capacitor vers la v4.1](migration-to-capacitor-sdk-v4) pour la liste complète des changements d'API.
 
 ## Activer le module Adapty du SDK \{#activate-adapty-module-of-adapty-sdk\}
 
@@ -126,10 +182,11 @@ Adapty enregistre les erreurs et d'autres informations importantes pour vous aid
 
 | Level      | Description                                                  |
 | ---------- | ------------------------------------------------------------ |
-| `error`    | Seules les erreurs seront enregistrées                                    |
-| `warn`     | Les erreurs et les messages du SDK qui ne causent pas d'erreurs critiques, mais qui méritent attention, seront enregistrés |
-| `info`     | Les erreurs, avertissements et divers messages d'information seront enregistrés |
-| `verbose`  | Toute information supplémentaire pouvant être utile lors du débogage, comme les appels de fonctions, les requêtes API, etc., sera enregistrée |
+| `error`    | Seules les erreurs seront journalisées                        |
+| `warn`     | Les erreurs et les messages du SDK qui ne causent pas d'erreurs critiques, mais méritent attention, seront journalisés |
+| `info`     | Les erreurs, avertissements et divers messages d'information seront journalisés |
+| `verbose`  | Toute information supplémentaire pouvant être utile lors du débogage, comme les appels de fonctions, les requêtes API, etc., sera journalisée |
+| `debug`    | Tout ce qui précède, plus les détails internes bas niveau du SDK natif. Android n'a pas de niveau distinct et journalise au niveau `verbose`. Disponible à partir de la version 4.3.0 du SDK |
 
 Vous pouvez définir le niveau de log dans votre application avant ou pendant la configuration d'Adapty :
 
@@ -244,6 +301,25 @@ await adapty.activate({
 });
 ```
 
+### Gestion des messages du store \{#store-messages-handling\}
+
+:::info
+Ce paramètre est disponible à partir de la version 4.3.0 du SDK.
+:::
+
+Par défaut, StoreKit affiche les messages App Store — demandes de consentement pour hausse de prix, notifications de problèmes de facturation et offres de reconquête — de son propre chef lorsque votre application est ouverte, et le SDK demande les messages Google Play, comme les notifications de paiement refusé, à chaque démarrage d'une `Activity` de votre application après `activate`. Pour choisir quand votre application les affiche, définissez `storeMessagesHandling` sur `'manual'`. La valeur par défaut est `'auto'`.
+
+```typescript showLineNumbers
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    storeMessagesHandling: 'manual',
+  }
+});
+```
+
+En mode manuel, les stores n'affichent pas les messages d'eux-mêmes, donc votre application doit appeler `showStoreMessages`. Consultez la marche à suivre dans [Contrôler les messages du store](capacitor-store-messages).
+
 ### Activer l'attribution Adapty \{#enable-adapty-attribution\}
 
 :::info
@@ -293,17 +369,17 @@ Lorsque cette option est activée, le SDK ignore l'appel d'activation complet un
 #### Erreur de version iOS minimale \{#minimum-ios-version-error\}
 
 :::note
-Ceci s'applique aux projets basés sur CocoaPods avec le **SDK 3.x**. Le SDK 4 s'installe sur iOS via Swift Package Manager uniquement (il n'y a pas de `Podfile`) et nécessite iOS 15.0 — définissez votre cible de déploiement à 15.0 dans Xcode.
+Ceci s'applique aux projets basés sur CocoaPods : sur **SDK 3.x**, et sur SDK 4.2.0 et versions ultérieures avec l'option [CocoaPods](#set-up-your-ios-project). Avec Swift Package Manager, il n'y a pas de `Podfile` — définissez votre cible de déploiement à 15.0 dans Xcode.
 :::
 
-Si vous obtenez une erreur de version iOS minimale avec le SDK 3.x, mettez à jour votre Podfile :
+Si vous obtenez une erreur de version iOS minimale, mettez à jour votre Podfile :
 
 ```diff
--platform :ios, min_ios_version_supported
+-platform :ios, '14.0'
 +platform :ios, '15.0'
 ```
 
-#### Règles de sauvegarde Android (configuration Auto Backup) \{#android-backup-rules-auto-backup-configuration\}
+####  Règles de sauvegarde Android (configuration Auto Backup) \{#android-backup-rules-auto-backup-configuration\}
 
 <AndroidBackupRules />
 
@@ -328,14 +404,14 @@ Dans votre `AndroidManifest.xml`, assurez-vous que l'Activity qui démarre le fl
 #### Erreurs de build Swift 6 causées par la substitution de SWIFT_VERSION dans le Podfile
 
 :::note
-Cela s'applique aux projets basés sur CocoaPods avec le **SDK 3.x**. Le SDK 4 installe les SDK natifs via Swift Package Manager, donc il n'y a pas de `Podfile` à modifier.
+Ceci s'applique lorsque les SDK iOS natifs sont installés comme pods CocoaPods : dans **SDK 3.x**, et dans SDK 4.2.0 et versions ultérieures avec l'option [CocoaPods](#set-up-your-ios-project). Lorsqu'ils sont installés comme packages Swift, un remplacement de `SWIFT_VERSION` dans `post_install` ne les atteint pas.
 :::
 
-Lors de la compilation de votre application Capacitor pour iOS, vous pouvez rencontrer des erreurs de compilation Swift 6 sur les cibles de pod Adapty. Les symptômes typiques incluent des incompatibilités `@Sendable` dans `AdaptyUIBuilderLogic`, une conformité `Sendable` manquante sur les types Adapty, ou des erreurs d'isolation d'acteur.
+Lors de la compilation de votre application Capacitor pour iOS, des erreurs de compilation Swift 6 peuvent apparaître sur les cibles de pods Adapty. Les symptômes typiques incluent des incompatibilités `@Sendable` dans `AdaptyUIBuilderLogic`, une conformité `Sendable` manquante sur les types Adapty, ou des erreurs d'isolation d'acteur.
 
-Les pods Adapty déclarent `s.swift_version = '6.0'` et nécessitent Swift 6 pour compiler. Votre propre code d'application peut rester en Swift 5 — seuls les targets des pods Adapty (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`, `AdaptyLogger`, `AdaptyPlugin`) ont besoin d'être compilés avec Swift 6.
+Les pods Adapty déclarent `s.swift_version = '6.0'` et nécessitent Swift 6 pour compiler. Le code de votre propre application peut rester en Swift 5 — seuls les targets pods Adapty (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`, `AdaptyLogger`, `AdaptyPlugin`, et à partir du SDK 4.2.0 `AdaptyCodable`) doivent être compilés avec Swift 6.
 
-La cause la plus fréquente est un hook `post_install` dans `ios/App/Podfile` qui réécrit `SWIFT_VERSION` pour chaque target de pod :
+La cause la plus fréquente est un hook `post_install` dans `ios/App/Podfile` qui réécrit `SWIFT_VERSION` pour chaque target pod :
 
 ```ruby showLineNumbers title="ios/App/Podfile"
 post_install do |installer|
@@ -352,7 +428,7 @@ end
 ```ruby showLineNumbers title="ios/App/Podfile"
 post_install do |installer|
   installer.pods_project.targets.each do |target|
-    next if %w[Adapty AdaptyUI AdaptyUIBuilder AdaptyLogger AdaptyPlugin].include?(target.name)
+    next if %w[Adapty AdaptyUI AdaptyUIBuilder AdaptyLogger AdaptyPlugin AdaptyCodable].include?(target.name)
     target.build_configurations.each do |config|
       config.build_settings['SWIFT_VERSION'] = '5.9'
     end

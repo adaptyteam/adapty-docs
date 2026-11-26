@@ -32,6 +32,10 @@ If you've designed a flow or paywall in the builder, you don't need to worry abo
 
 To ensure optimal performance, it's crucial to retrieve the flow or paywall and its [view configuration](unity-get-pb-paywalls#fetch-the-view-configuration) as early as possible, allowing sufficient time for images to download before presenting them to the user.
 
+:::tip
+To warm several placements at once, call [`Adapty.PreloadFlows`](unity-optimize-paywall-fetching#preload-placements) (Unity SDK 4.3.0+). It caches the placement JSON only, so `CreateFlowView` still loads the layout and images.
+:::
+
 To get a flow or paywall, use the `GetFlow` method:
 
 ```csharp showLineNumbers
@@ -56,13 +60,13 @@ Parameters:
 |---------|--------|-----------|
 | **placementId** | required | The identifier of the desired [Placement](placements). This is the value you specified when creating a placement in the Adapty Dashboard. |
 | **fetchPolicy** | default: `AdaptyPlacementFetchPolicy.Default` | <p>`fetchPolicy` sets which layer the SDK reads first, not whether it can use the cache. By default the SDK goes to the server first and returns cached data if that request fails. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad`, which reverses that order — it reads the cache first and goes to the server only when nothing is cached. Users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>A third policy, `AdaptyPlacementFetchPolicy.ReturnCacheDataIfNotExpiredElseLoad(maxAge)`, sits between the two: it reads the cache first while the cached copy is younger than the `TimeSpan` you pass, and goes to the server once it is older.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p><p></p><p>Adapty SDK stores flows and paywalls locally in two layers: regularly updated cache described above and [fallback paywalls](fallback-paywalls). We also use CDN to fetch them faster and a stand-alone fallback server in case the CDN is unreachable. This system is designed to make sure you always get the latest version while ensuring reliability even in cases where internet connection is scarce.</p> |
-| **loadTimeout** | default: 5 sec | <p>This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.</p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p> |
+| **loadTimeout** | default: 5 sec | <p>This value limits the timeout for this method. If the Adapty server doesn't respond in time or returns an error, the SDK returns the cached flow. If nothing is cached and the server timed out or returned a server error, the SDK requests the flow from the fallback server (a CDN copy that serves only the placement's **All Users** audience). As a last resort, the SDK returns the flow from your [fallback file](unity-use-fallback-paywalls).</p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p> |
 
 Response parameters:
 
 | Parameter | Description |
 | :-------- | :---------- |
-| Flow   | An `AdaptyFlow` object containing the placement, identifiers (`InstanceIdentity`, `VariationId`), name, paywall variations (`Paywalls` — a list of `AdaptyFlowPaywall`), and remote configs (`RemoteConfigs` — a list with one entry per locale). To fetch the actual products for pre-loading, custom UI, or programmatic checks, call `GetPaywallProducts(flow)`. |
+| Flow   | An `AdaptyFlow` object containing the placement, identifiers (`InstanceIdentity`, `VariationId`), name, variation name (`VariationName`, SDK 4.3.0+), paywall variations (`Paywalls` — a list of `AdaptyFlowPaywall`), and remote configs (`RemoteConfigs` — a list with one entry per locale). To fetch the actual products for pre-loading, custom UI, or programmatic checks, call `GetPaywallProducts(flow)`. |
 
 ## Fetch the view configuration
 
@@ -90,10 +94,11 @@ AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
 | Parameter                    | Presence       | Description                                                  |
 | :--------------------------- | :------------- | :----------------------------------------------------------- |
 | **flow**                     | required       | An `AdaptyFlow` object obtained via `Adapty.GetFlow`. |
-| **Locale**                   | optional       | The identifier of the [Builder localization](add-paywall-locale-in-adapty-paywall-builder) to render the flow or paywall with, for example `en` or `pt-br`. A flow is localized when its view is created, so this is the only place to choose its localization. The SDK doesn't read the device locale: when you omit this parameter, the flow renders in `en`, or in its default locale when the flow has no `en` localization. The code must match a localization code of the flow exactly. See [Use localizations and locale codes](unity-localizations-and-locale-codes). |
+| **Locale**                   | optional       | The identifier of the [Builder localization](add-paywall-locale-in-adapty-paywall-builder) to render the flow or paywall with, for example `en` or `pt-BR`. When you create the view, the SDK loads all localizations of the flow, and `Locale` selects the one to show. The SDK doesn't read the device locale, so pick the locale code in your app. When you omit this parameter, the flow renders in `en`, or in its default locale when the flow has no `en` localization. The code must match a localization code of the flow exactly. See [Use localizations and locale codes](unity-localizations-and-locale-codes). |
 | **LoadTimeout**              | optional       | This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned. Note that in rare cases this method can timeout slightly later than specified in `LoadTimeout`, since the operation may consist of different requests under the hood. |
 | **PreloadProducts**          | optional       | Set to `true` to preload products for better performance. When enabled, products are loaded in advance, reducing the time needed to display the flow or paywall. |
 | **CustomTags**               | optional       | Your app's values for the flow's [custom tags](flow-custom-tags), in a dictionary keyed by each tag's full name. Pass the dictionary to the `SetCustomTags` method. For details, read [Pass data to flows](unity-flow-custom-tags). |
+| **CustomTimers**             | optional       | The end dates of the flow's **Developer defined** timers, in a dictionary of Timer IDs to `DateTime` values. Pass the dictionary to the `SetCustomTimers` method. For details, read [Set up developer-defined timers](#set-up-developer-defined-timers). |
 | **ProductPurchaseParameters** | optional      | Android only (ignored on iOS). A dictionary of `AdaptyProductIdentifier` to `AdaptyPurchaseParameters`. Use this to configure purchase-specific parameters like personalized offers or subscription update parameters for individual products in the flow or paywall. |
 | **EnableSafeAreaPaddings**   | optional       | Android only (ignored on iOS). When `true`, the flow view applies safe-area paddings. Default: `true`. The default is suitable for most cases. |
 
@@ -179,12 +184,14 @@ If an asset is not found or fails to load, the flow or paywall will fall back to
 
 ## Set up developer-defined timers
 
-To use custom timers in your Unity app, pass a dictionary of timer IDs and their end dates to the `SetCustomTimers` method. Here is an example:
+Use this section for a timer with the **Developer defined** behavior in the Flow & Paywall Builder. In the builder, each such timer has a **Timer ID** (see [Let your app set the end date](flow-timer#let-your-app-set-the-end-date)), and your app sets the end date for it. Use the same Timer ID in your code as in the builder, character for character, including letter case and spaces. If the IDs differ, the timer gets no end date from your app.
+
+To set the end dates, pass a dictionary of Timer IDs and their end dates to the `SetCustomTimers` method. A `DateTime` with `DateTimeKind.Utc` is a UTC time; a `DateTime` with no kind is read as the user's local time. Here is an example:
 
 ```csharp showLineNumbers
 var customTimers = new Dictionary<string, DateTime> {
     { "CUSTOM_TIMER_6H", DateTime.Now.AddHours(6) },
-    { "CUSTOM_TIMER_NY", new DateTime(2026, 1, 1) }
+    { "CUSTOM_TIMER_NY", new DateTime(DateTime.Now.Year + 1, 1, 1) } // next New Year's Day, local time
 };
 
 var parameters = new AdaptyUICreateFlowViewParameters()
@@ -192,14 +199,21 @@ var parameters = new AdaptyUICreateFlowViewParameters()
     .SetLoadTimeout(TimeSpan.FromSeconds(3));
 
 AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
-    // handle the result
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    // use view
 });
 ```
 
-In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s of developer-defined timers you set in the Adapty Dashboard. The timer resolver ensures your app dynamically updates each timer with the correct value. For example:
+In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the Timer IDs of two **Developer defined** timers in the builder:
 
-- `CUSTOM_TIMER_NY`: The time remaining until the timer's end, such as New Year's Day.
-- `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the flow or paywall.
+- `CUSTOM_TIMER_NY`: The time left until the next New Year's Day.
+- `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when your app created the view.
+
+The SDK reads the custom timers once, when it creates the view, so a computed date such as `CUSTOM_TIMER_6H` counts from that moment, also when the user opens the screen again. If the date is in the past, the timer shows zero at once and its **On timer end** trigger runs. If the dictionary has no key for a Timer ID, the timer counts down one hour from the screen open.
 
 </SDKv4>
 
@@ -250,7 +264,7 @@ Parameters:
 | **placementId** | required | The identifier of the desired [Placement](placements). This is the value you specified when creating a placement in the Adapty Dashboard. |
 | **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the paywall localization. This parameter is expected to be a language code composed of one or two subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p>See [Localizations and locale codes](localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p> |
 | **fetchPolicy** | default: `AdaptyPlacementFetchPolicy.Default` | <p>`fetchPolicy` sets which layer the SDK reads first, not whether it can use the cache. By default the SDK goes to the server first and returns cached data if that request fails. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad`, which reverses that order — it reads the cache first and goes to the server only when nothing is cached. Users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>A third policy, `AdaptyPlacementFetchPolicy.ReturnCacheDataIfNotExpiredElseLoad(maxAge)`, sits between the two: it reads the cache first while the cached copy is younger than the `TimeSpan` you pass, and goes to the server once it is older.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p><p></p><p>Adapty SDK stores paywalls locally in two layers: regularly updated cache described above and [fallback paywalls](fallback-paywalls). We also use CDN to fetch paywalls faster and a stand-alone fallback server in case the CDN is unreachable. This system is designed to make sure you always get the latest version of your paywalls while ensuring reliability even in cases where internet connection is scarce.</p> |
-| **loadTimeout** | default: 5 sec | <p>This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.</p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p> |
+| **loadTimeout** | default: 5 sec | <p>This value limits the timeout for this method. If the Adapty server doesn't respond in time or returns an error, the SDK returns the paywall from the fallback server (a CDN copy that serves only the placement's **All Users** audience), the cache, or your [fallback file](unity-use-fallback-paywalls).</p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p> |
 
 Response parameters:
 

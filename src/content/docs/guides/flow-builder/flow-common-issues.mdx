@@ -27,6 +27,19 @@ You may encounter the following errors when you try to preview or publish the fl
 | **Missing product target**, **Invalid product target**, **Product target on another screen**, **Ambiguous product target**, **Select Product inside a component** | A **Select product** action targets a card that was deleted, isn't in a product group, is on another screen, shares its element ID with an element on another screen, or sits inside a footer or header shared across screens. Point the action at a card in a product group on the same screen, with a unique ID. |
 | **Missing selectable group** | An element points at a selectable group that no longer exists. Reconnect it, or recreate the group. |
 | **Invalid visibility condition** | A conditional visibility rule is incomplete. Complete it in the condition builder. |
+| **Broken references**, **Fix the broken reference before publishing.**, **Fix N broken references before publishing.** | When you click **Publish to Live**, the **Can't publish yet** dialog lists the conditions that use an element, a state, or a variable that no longer exists, for example after you deleted it or pasted a screen from another flow. Condition rows with a value but no variable appear in the same list. Click **Go to screen** to open the first one. Then open the condition and pick an existing element, state, or variable, or remove the condition. |
+| **Condition uses a deleted element or state**, **Condition uses a deleted variable** | The publish failed because a condition uses an element, a state, or a variable that no longer exists. Open the condition and pick an existing element, state, or variable, or remove the condition. Then publish again. |
+| **Invalid State Condition**, `invalid_state_condition` | The Adapty CLI or the API couldn't publish the flow: a row in the condition of a **Disabled** or **custom** state has a value or **Is empty** but no variable. Pick a variable for that row, or remove the row. Then publish again. |
+| **Circular state conditions** | The **Disabled** or **custom** state conditions of several elements depend on the states of one another in a loop. In the **States** section of one of these elements, change or remove the condition that closes the loop. |
+| A formula name under **Variables**, with an error text such as **This variable no longer exists. Pick another one.** | A [formula](flow-formulas) has an error. In the Variables panel, the row of the formula shows an error icon. Open the variable, and fix the formula as in [Troubleshooting](flow-formulas#troubleshooting). |
+| **Formula "…" has a syntax error** | The formula doesn't follow the syntax rules: for example, a bracket is missing, a number has a comma, or a function name is unknown. Open the variable, and fix the formula. |
+| **Formula "…" has a wrong number of arguments** | A function of the formula has too many or too few arguments. Use the arguments from the lists of [number functions](flow-formulas#number-functions) and [date functions](flow-formulas#date-functions). |
+| **Formula "…" uses a value of the wrong type** | The formula uses a text, a yes/no value, or a date where it needs a number, or a number where it needs a date. Open the variable, and fix the formula. |
+| **Formula "…" uses a deleted value** | The formula reads a variable, an answer, or a product group that isn't in the flow. Replace the reference in the formula. |
+| **Formula "…" uses a name with two meanings** | A variable of the formula has the same name as an element answer or a product field. Rename the variable. |
+| **Formula "…" uses itself in a loop** | Formulas of the flow read each other in a loop, so the flow can't calculate them. Remove one of the references. |
+| **Set Variable writes the formula "…"** | A **Set variable** action changes a formula. A formula always depends on other values, so an action can't set it. Select another variable in the action. |
+| **Variable "…" cannot show in an action** | A Date variable or a [formula](flow-formulas) is in the title or the message of a **Show alert** action, in the address of an **Open URL** action, or in the text value of a **Set variable** action. These texts can't show a date or a calculated number on the device. Remove the variable from the action. To show the value, insert it into a text element. |
 | **Missing Default Locale Content** | An **Open URL** action has a URL in another locale but none in the default locale. Add the default URL in the [**Localizations** panel](add-paywall-locale-in-adapty-paywall-builder). |
 | **Missing product reference** | An older flow uses a product that isn't registered on the screen. Open the screen and add the product in the **Products** panel. |
 
@@ -62,13 +75,17 @@ Once a state, such as **Selected**, has its own typography settings, edits to th
 
 The element and its container both use the **Free** direction. That leaves only one possible position and size: **Absolute**, with a fixed width and height. Adapty hides the controls for everything else — the **Position** toggle, the **Spacing** section, and the **Fill** and **Hug** options. To get the controls back, change the element's [**Direction**](manage-paywall-ui-elements#direction) to **Vertical** or **Horizontal**.
 
-## Conditions and variables break after an element ID change
+## A condition stops matching after you change the Element ID of a quiz option
 
-Conditions and text variables reference elements by **Element ID**, and changing the ID doesn't update the references — they silently stop resolving. Set the Element ID before referencing it. If you have to change it, update every condition and variable reference to match. The exception is progress-bar segments: renaming a segment updates its references automatically.
+A condition that compares the option users picked with a value, such as `quiz.selectedOptionId` `=` `option_1`, contains the **Element ID** of the option as plain text. When you change the **Element ID**, the builder doesn't update that text, so the condition stops matching. Set the **Element ID** of each option before you use it in a condition. If you change it later, update every condition that compares with the old ID.
+
+The builder updates the other references for you: the variables of input fields, group IDs, element states, and progress-bar segments.
 
 ## A condition or variable resolves to an empty value
 
 The variable picker lists fields from every screen, so a condition or text variable can reference an input the user hasn't filled in yet. At runtime, such a reference resolves to an empty value. Reference only fields collected earlier in the flow.
+
+The variable of a [Number picker](builder-number-picker) is never empty: it equals the default number until users turn the wheel. A condition that evaluates the variable before users reach the picker can match an answer that users never gave.
 
 ## Users see a custom tag's Initial value instead of your app's value
 
@@ -90,6 +107,30 @@ Users see nothing in place of a [custom tag](flow-custom-tags) in the following 
 ## A Set variable action doesn't change the selected product
 
 Which product is selected isn't a variable you can assign, so **Set variable** can't move the selection. Use the [**Select product**](onboarding-actions#select-product) action instead.
+
+## The flow doesn't run the actions set for a purchase result
+
+The flow runs the [outcome actions](respond-to-purchase-outcomes#add-actions-for-a-result) of a purchase or a purchase restoration when the store returns the result. At that moment, the user must be on the screen where the purchase started. The flow skips them in the following cases:
+
+- **Your app closes the flow**: When a purchase or restoration finishes, your app closes the flow in its callback. To let the flow continue, [keep the flow open in these callbacks](respond-to-purchase-outcomes#before-you-start).
+- **A navigation runs before the result**: A **Navigate to Screen**, **Navigate Next**, **Navigate back**, or **Close Flow** action follows **Purchase** or **Restore purchases** in the same trigger. That action runs on the tap, so the user leaves the screen before the store returns the result. Move the action into an outcome, such as **When succeeded**.
+- **The user leaves the screen**: The user goes to another screen before the store returns the result, for example with a back button.
+- **The purchase is a Web Payment purchase**: The flow doesn't receive the result of a **Web Payment** purchase, so a **Purchase** action set to **Web Payment** has no outcomes. When you switch the action to **Web Payment**, the Flow & Paywall Builder removes its outcome actions.
+
+You can't make real purchases in the preview in the Adapty mobile app. To test the outcome actions, [make a sandbox purchase](test-purchases-in-sandbox) in a build of your app.
+
+## A Purchase button does nothing on Android
+
+On Android, a tap on a **Purchase** button does nothing if the user taps before Google Play returns the products. After the products load, the button works. On iOS, the same early tap fails the purchase, and the flow runs the **When failed** actions.
+
+The button never works in the following cases:
+
+- **Google Play doesn't return the product**: Make sure that the product is active in Google Play Console, and that the product in Adapty uses the same Google Play product ID. To review the product in Adapty, see [Create product](create-product).
+- **The products failed to load**: In a native Android app, the SDK doesn't load the products again by default. To retry, return `true` from [`onLoadingProductsFailure`](android-handling-events#product-loading-errors).
+- **Your app passes products to the flow without this one**: When your app passes [`products`](android-present-paywalls) to the flow, the SDK doesn't load any from Google Play. Add every product of the flow to that list.
+- **An earlier purchase never finished**: The SDK ignores new purchases until the previous one finishes. In Observer mode, call `onFinishPurchase()` after every purchase. In [`onAwaitingPurchaseParams`](android-handling-events#upgrade-subscription), always call `onPurchaseParamsReceived`.
+
+On iOS, if the App Store doesn't return the product, every tap fails the purchase, and the flow runs the **When failed** actions. To find the cause, see [Products don't appear](troubleshoot-app-store-integration#products-dont-appear).
 
 ## An image or video won't upload
 

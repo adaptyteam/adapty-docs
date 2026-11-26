@@ -1,0 +1,367 @@
+---
+title: "フローで仮想通貨を使用・購入する"
+description: "仮想通貨を使用する iOS アプリ向けに 2 つのフローを構築します。1 つのフローではユーザーがネイティブボタンで通貨を使用し、もう 1 つのフローではバランスが不足したときに通貨を購入できます。"
+metadataTitle: "フローで仮想通貨を使用・購入する | iOS SDK | Adapty ドキュメント"
+---
+
+このレシピに従って、iOS アプリでフローと仮想通貨を組み合わせる方法を学びましょう。このレシピで説明する内容は次のとおりです。
+
+- フロー内で通貨残高を表示し、フローが開いている間は最新の状態を保つ。
+- フロー内のネイティブボタンをユーザーがタップしたときに通貨を消費し、消費処理中はスピナーを表示する。
+- ユーザーがあと何ポイント必要かを表示する。
+- フロー内で通貨パックとサブスクリプションを提供する。
+- アプリコードから一方のフローを閉じて別のフローを開く。
+
+パックとサブスクリプションはフロー内にあるため、アプリのリリースなしに変更でき、[A/B テスト](ab-tests)も可能です。A/B テストのレポートには購入数が計上されます。消費はレポートに表示されません。バックエンドがテストとのリンクなしに Adapty へ送信するためです。
+
+このレシピを完了すると、ゲーム用に2つのフローが完成します。エネルギー切れフローでは、プレイヤーがダイヤモンドをエネルギーに使います。チャージフローでは、ダイヤモンドを購入します。同じ手順は、AIの生成ごとにクレジットを使ったり、ドラマのエピソードごとにコインを使ったりする仮想通貨を利用するあらゆるアプリに適用できます。ご自身のアプリでは、エネルギーオプションとダイヤモンドを、独自のオプションと通貨に置き換えてください。完成したサンプルの動作は以下のとおりです。
+
+<VcTopUpHowItWorks />
+
+<DocVideo id="vc-top-up-demo.mp4" width="300px" alt="エネルギー不足のフロー画面。ダイヤモンドの残高と2つのボタンが表示されています。ダイヤモンドが不足しているため、プレイヤーがボタンをタップするとトップアップフローが開き、「あと10ダイヤモンド必要です」というテキストが表示されます。パックを購入後、エネルギー不足のフローが再び開き、エネルギー補充ボタンをタップするとチェックマークが表示されます。" />
+
+## 始める前に \{#before-you-start\}
+
+- ユーザーにサインインを求めることで、すべてのデバイスや再インストール後も[残高を維持](virtual-currency-balance#balances-profiles-and-devices)できるようにします。ユーザーがサインインしたら、アプリコードで[ユーザーを識別](identifying-users)し、カスタマーユーザーIDを設定します。バックエンドはこのIDを使ってAdaptyにユーザーを識別させます。
+- フロー内で残高とボタンを表示するには、アプリをAdapty iOS SDK 4.4以降に更新してください。
+- フローを[取得](get-pb-paywalls)して[表示](ios-present-paywalls)するようにアプリをセットアップします。
+- [シークレットAPIキー](ss-authorization)を使ってサーバーサイドAPIを呼び出すバックエンドを用意します。キーはバックエンドで管理してください。このキーがあれば誰でも任意の残高にダイアモンドを追加できます。
+- App Store Connectで、各ダイアモンドパック用に[消耗型プロダクトを作成](app-store-products)し、自動更新サブスクリプションも作成します。その後、[各プロダクトをAdaptyに追加](create-product)します。
+- コード `DIAMONDS` で[バーチャル通貨を作成](create-virtual-currency)します。各プロダクトを `DIAMONDS` に[リンク](create-virtual-currency#link-products)し、Adaptyが残高に追加するダイアモンド数を設定します：
+  - **Diamond pack**：各購入ごとに **Credit amount** を設定します。
+  - **Subscription**：各請求期間ごとに **Credit per cycle** を設定します。ユーザーが無料トライアルを開始した場合、Adaptyは **Credit on trial start** のみを追加します。
+
+  Set each of the three values to at least 30 diamonds, the price of an hour of unlimited energy. With these values, every purchase in the top-up flow covers the missing diamonds.
+
+## ダイヤモンドを消費するフローを作成する \{#1-build-the-flow-where-players-spend-diamonds\}
+
+<VcTopUpEnergyFlowPlacement />
+
+### ダイヤモンド残高を表示する \{#show-the-diamond-balance\}
+
+<VcTopUpFlowBalance />
+
+### エネルギー補充と無制限エネルギーのボタンを追加する \{#add-buttons-for-an-energy-refill-and-unlimited-energy\}
+
+<VcTopUpSpendButtons />
+
+## 2. ボタンタップで宝石を消費する \{#2-spend-diamonds-when-a-player-taps-a-button\}
+
+このステップでは、エネルギー不足フローのバックエンドコードとアプリコードを実装します。このステップが完了すると、十分な宝石を持つプレイヤーがフロー内で宝石を消費できるようになります。
+
+### バックエンドからダイヤモンドを消費する \{#spend-diamonds-from-your-backend\}
+
+<VcTopUpSpend />
+
+### ダイヤモンド残高ビューを作成する \{#create-the-balance-view\}
+
+ダイヤモンド残高のモデルと、`currency_balance` カスタム要素用の SwiftUI ビューを作成します。このステップの後半とステップ4のコードで、バックエンドのレスポンスからモデルに残高をセットします。ビューはモデルを監視しているため、残高が変わると自動的に再描画されます。
+
+```swift showLineNumbers title="Swift"
+
+// The diamond balance that your app keeps up to date
+@MainActor
+final class DiamondWallet: ObservableObject {
+    @Published var balance: Int? // nil until your backend returns a balance
+}
+
+struct DiamondBalanceView: View {
+    @ObservedObject var wallet: DiamondWallet
+
+    var body: some View {
+        Label(wallet.balance?.formatted() ?? "—", systemImage: "diamond.fill")
+    }
+}
+```
+
+`DiamondBalanceView` はシステムのテキストカラーを使用するため、デバイスがダークモードの場合は白色に変わります。フローは、[ダークテーマを追加](paywall-dark-mode#add-a-dark-theme)しない限り、ライトカラーのままです。フローにダークテーマがない場合は、`.foregroundStyle(.black)` のように、ビューに固定のテキストカラーを設定してください。
+
+両方のフローでビューを表示するには、TypeとIDでカスタム要素をビューにマッチさせる[アプリ全体のリゾルバー](ios-flow-custom-elements#set-an-app-wide-resolver)からビューを返します。`DiamondWallet`型の`wallet`プロパティと、`currency_balance` TypeおよびID `diamonds`に対して`DiamondBalanceView`を返すケースを追加します。ハイライトされた行が追加箇所です。アプリにまだアプリ全体のリゾルバーがない場合は、コード全体をコピーしてください：
+
+```swift showLineNumbers title="Swift" {5,13-14}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let wallet: DiamondWallet
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "currency_balance" where id == "diamonds":
+            return AnyView(DiamondBalanceView(wallet: wallet))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+`DiamondWallet` を使ってリゾルバーを作成し、アプリ全体のリゾルバーとして設定します。`AdaptyUI.setCustomElementsResolver(_:)` はアプリの起動時など、一度だけ呼び出してください：
+
+```swift showLineNumbers title="Swift"
+
+@MainActor let diamondWallet = DiamondWallet()
+
+// keep this instance: a resolver for one flow can reuse it
+@MainActor let customElementsResolver = CustomElementsResolver(wallet: diamondWallet)
+
+// at app launch, such as in application(_:didFinishLaunchingWithOptions:)
+AdaptyUI.setCustomElementsResolver(customElementsResolver)
+```
+
+### ボタンビューを作成する \{#create-the-button-view\}
+
+両方のボタンに対応する SwiftUI ビューを1つ作成します。このビューはボタンのテキストと、ダイヤを消費してその結果を `true` で返すクロージャを受け取ります。消費処理の実行中はボタンにスピナーが表示され、連打も無視されます。消費が完了するとチェックマークが表示されます。
+
+```swift showLineNumbers title="Swift"
+
+struct SpendButton: View {
+    let title: String
+    let spend: @MainActor () async -> Bool // true when the spend goes through
+
+    @State private var phase = Phase.ready
+    private enum Phase { case ready, spending, done }
+
+    var body: some View {
+        Button {
+            guard phase == .ready else { return } // ignore more taps while the spend runs
+            phase = .spending
+            // a Task keeps running when the flow closes and this view disappears
+            Task {
+                phase = await spend() ? .done : .ready
+            }
+        } label: {
+            Group {
+                switch phase {
+                case .ready: Text(title)
+                case .spending: ProgressView().tint(.white) // white on the filled button
+                case .done: Image(systemName: "checkmark")
+                }
+            }
+            .frame(maxWidth: .infinity) // the full width of the custom element
+        }
+        .buttonStyle(.borderedProminent)
+    }
+}
+```
+
+### ボタンをバックエンドに接続する \{#connect-the-buttons-to-your-backend\}
+
+2つのオプション用に列挙型を作成します。各オプションのraw valueには、カスタム要素のIDを使用します。
+
+```swift showLineNumbers title="Swift"
+// the options to spend diamonds on, with the IDs of their custom elements
+enum EnergyOption: String {
+    case energyRefill = "energy_refill"
+    case unlimitedEnergy = "unlimited_energy"
+
+    // keep the numbers equal to the costs on your backend
+    var title: String {
+        switch self {
+        case .energyRefill: return "Energy refill · 10 ◆"
+        case .unlimitedEnergy: return "Unlimited energy for 1 hour · 30 ◆"
+        }
+    }
+}
+```
+
+以下のコードは UIKit 用です。エネルギー切れのフローを開くビューコントローラーに、ダイヤモンドをオプションに消費するメソッドを追加してください。このメソッドはオプションをバックエンドに送信し、レスポンスから `diamondWallet` の残高を設定します。その後、メソッドは次のいずれかを実行します。
+
+- **支出が通過した場合**: メソッドが`true`を返し、プレイヤーはボタンにチェックマークが表示されます。1秒後、コードはフローを閉じます。
+- **残高が不足している場合**: メソッドが`openTopUpFlow`を呼び出します。これは[ダイヤモンドが不足しているときにトップアップフローを開く](#open-the-top-up-flow-when-a-player-doesnt-have-enough-diamonds)関数です。
+
+```swift showLineNumbers title="Swift"
+private var outOfEnergyFlow: AdaptyFlowController? // set when the out-of-energy flow opens
+
+// true when the spend goes through
+func spendDiamonds(on option: EnergyOption) async -> Bool {
+    do {
+        // the client of your backend: your backend sends the spend to Adapty
+        let result = try await GameBackend.shared.spendDiamonds(
+            on: option.rawValue,
+            idempotencyKey: UUID() // a new key for each spend; UUID() creates a version 4 UUID
+        )
+        switch result {
+        case let .spent(available):
+            diamondWallet.balance = available
+            // your backend gave the player the energy: show it in the game
+            Task {
+                try? await Task.sleep(for: .seconds(1)) // players see the checkmark first
+                outOfEnergyFlow?.dismiss(animated: true)
+            }
+            return true
+        case let .insufficientBalance(diamondsNeeded, available):
+            diamondWallet.balance = available
+            await openTopUpFlow(diamondsNeeded: diamondsNeeded)
+            return false
+        }
+    } catch {
+        // handle the error
+        return false
+    }
+}
+```
+
+次に、エネルギー不足フロー用のリゾルバーを記述します。`spend_button` タイプのカスタム要素ごとに、リゾルバーはIDからオプションを読み取り、spend メソッドを呼び出す `SpendButton` を返します。[フローにアタッチする](ios-flow-custom-elements#attach-a-resolver-to-one-flow)リゾルバーは、そのフローのアプリ全体のリゾルバーを置き換えます。エネルギー不足フローでバランスを表示するため、このリゾルバーはアプリ全体のリゾルバーを呼び出します:
+
+```swift showLineNumbers title="Swift"
+
+struct OutOfEnergyResolver: AdaptyUICustomElementsResolver {
+    let spend: @MainActor (EnergyOption) async -> Bool // the spend method of your view controller
+    let appWideResolver: any AdaptyUICustomElementsResolver
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        // the ID tells the buttons apart: energy_refill or unlimited_energy
+        if type == "spend_button", let option = EnergyOption(rawValue: id) {
+            return AnyView(SpendButton(title: option.title) { await spend(option) })
+        }
+        // other custom elements, such as the balance: the views of the app-wide resolver
+        return appWideResolver.view(forType: type, id: id, context: context)
+    }
+}
+```
+
+### アプリのコードからエネルギー切れのフローを開く \{#open-the-out-of-energy-flow-from-your-app-code\}
+
+プレイヤーのエネルギーが切れたとき、次の関数を使ってエネルギー切れのフローを開きます。この関数はまずバックエンドに残高を問い合わせ、フローが開いたときにプレイヤーがその残高を確認できるようにします。次に、`OutOfEnergyResolver` をフローに紐付け、フローコントローラーを `outOfEnergyFlow` に保持します。この参照により、`spendDiamonds` がフローを閉じられるようになります：
+
+```swift showLineNumbers title="Swift"
+// call when a player runs out of energy
+func openOutOfEnergyFlow() async {
+    // the balance that players see when the flow opens; without it, players see a dash
+    if let available = try? await GameBackend.shared.diamondBalance() {
+        diamondWallet.balance = available
+    }
+    do {
+        let flow = try await Adapty.getFlow(placementId: "out_of_energy")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            customElementsResolver: OutOfEnergyResolver(
+                spend: { [weak self] option in
+                    await self?.spendDiamonds(on: option) ?? false
+                },
+                appWideResolver: customElementsResolver // the instance that you set app-wide
+            )
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        outOfEnergyFlow = flowController
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+エネルギー切れフローのデリゲートとして、ビューコントローラーは購入とリストアのための[デリゲートメソッド](ios-handling-events#handling-events-in-uikit)も実装する必要があります。`didFinishPurchase` については、[ステップ4](#open-the-out-of-energy-flow-again-after-a-purchase)のコードを使用してください。
+
+SwiftUIでは、フロー設定を取得する際に`OutOfEnergyResolver`をアタッチします。リゾルバーの`spend`クロージャー内で、spendメソッドを呼び出します。フロー設定を`.flow`モディファイアーで表示し、デリゲートメソッドの代わりにクロージャーを使用します。クロージャーはビューコントローラーを受け取りません。フローを閉じるには、`isPresented`を`false`に設定します。
+
+## 3. プレイヤーがダイヤモンドを購入するフローを作成する \{#3-build-the-flow-where-players-buy-diamonds\}
+
+<VcTopUpFlowPlacement />
+
+### プレイヤーに必要なダイヤ数を表示する \{#show-how-many-diamonds-the-player-needs\}
+
+<VcTopUpFlowDiamondsNeeded />
+
+### ダイヤモンドパックとサブスクリプションを追加する \{#add-diamond-packs-and-a-subscription\}
+
+<VcTopUpFlowOffers />
+
+## 4. 一方のフローを閉じてもう一方を開く \{#4-close-one-flow-and-open-the-other\}
+
+このステップが完了すると、ダイヤモンドが足りないプレイヤーはトップアップフローで購入し、その後消費できるようになります。このレシピでは、1つのビューコントローラーが両方のフローのデリゲートを担います。デリゲートメソッド内でフローを区別するには、`controller.flowPlacementId` プロパティを各フローのプレースメント ID と比較してください。SwiftUI の場合は、2つ目の `.flow` モディファイアでトップアップフローを表示し、一方のフローの `didDisappear` クロージャからもう一方のフローを開きます。
+
+### プレイヤーのダイヤモンドが不足しているときにチャージフローを開く \{#open-the-top-up-flow-when-a-player-doesnt-have-enough-diamonds\}
+
+以下の関数は、不足しているダイヤモンドの数を `diamonds_needed` タグに渡し、チャージフローを開きます。ビューコントローラーは一度に1つのフローしか表示できないため、この関数はまずエネルギー不足フローを閉じてから、チャージフローを開きます：
+
+```swift showLineNumbers title="Swift"
+func openTopUpFlow(diamondsNeeded: Int) async {
+    // with no value, players see the Initial value of the tag
+    let tags = diamondsNeeded > 0 ? ["diamonds_needed": diamondsNeeded.formatted()] : [:]
+    do {
+        let flow = try await Adapty.getFlow(placementId: "out_of_diamonds")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            tagResolver: tags
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        // a view controller presents one flow at a time
+        outOfEnergyFlow?.dismiss(animated: true) {
+            self.present(flowController, animated: true)
+        }
+    } catch {
+        // handle the error
+    }
+}
+```
+
+### 購入後にエネルギー不足フローを再表示する \{#open-the-out-of-energy-flow-again-after-a-purchase\}
+
+プレイヤーがトップアップフローでパックまたはサブスクリプションを購入すると、Adaptyは通常まずダイヤモンドを残高に追加します。その後、Adapty SDKは`didFinishPurchase`を呼び出しますが、フローは閉じません。このメソッドでは、以下のコードがバックエンドに新しい残高を問い合わせ、トップアップフローを閉じ、エネルギー不足フローを再度開きます。プレイヤーはそこで新しい残高を確認し、ボタンをタップしてダイヤモンドを消費します。購入直後にダイヤモンドを消費しないでください。プレイヤーがエネルギーを必要としなくなっている場合もあります。
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFinishPurchase product: AdaptyPaywallProduct,
+    purchaseResult: AdaptyPurchaseResult
+) {
+    // canceled or pending: the flow stays open
+    guard purchaseResult.isPurchaseSuccess,
+          controller.flowPlacementId == "out_of_diamonds" // the top-up flow
+    else { return }
+    Task {
+        let balanceBefore = diamondWallet.balance ?? 0
+        if let available = try? await GameBackend.shared.diamondBalance() {
+            diamondWallet.balance = available
+        }
+        let diamondsArrived = (diamondWallet.balance ?? 0) > balanceBefore
+        controller.dismiss(animated: true) {
+            if diamondsArrived {
+                Task { await self.openOutOfEnergyFlow() } // the player taps a button again
+            } else {
+                // Adapty adds the diamonds later: tell the player in your own UI
+            }
+        }
+    }
+}
+```
+
+プレイヤーが購入をキャンセルした場合、または購入が保留中の場合、コードはトップアップフローを開いたままにします。これらの場合、Adapty SDK も `didFinishPurchase` を呼び出しますが、残高は変わりません。
+
+購入は成功したがバックエンドの残高が変わらない場合、コードはトップアップフローを閉じ、エネルギー切れフローは開きません。いずれのフローでも、購入直後に古い残高が表示されます。残高が変わらないのは、Adapty SDK がすぐに Adapty で購入を検証できない場合です。Adapty SDK が次回のアプリ起動時など、改めて Adapty に購入情報を送信した際に、ダイヤモンドが後から追加されます。それまでの間は、ダイヤモンドがまもなく付与される旨を自分のUIでプレイヤーに伝えてください。
+
+ユーザーが`DIAMONDS`に[リンクされたプロダクト](create-virtual-currency#link-products)を購入した際、バックエンドからダイヤモンドを追加しないでください。Adapty がダイヤモンドを追加するため、ユーザーが二重に受け取ることになります。
+
+## 5. デバイスでテストする \{#5-test-on-a-device\}
+
+フローおよびペイウォールビルダーはアプリのコードを実行できないため、キャンバス上ではカスタム要素のフォールバックのみが表示されます。
+
+購入によるダイヤモンドの付与を確認するには、[サンドボックスアカウント](test-purchases-in-sandbox)を使ってテストしてください。サンドボックスでは数分ごとにサブスクリプションが更新され、Adapty は更新のたびにダイヤモンドを付与します。Xcode の StoreKit 設定ファイルを使用している場合、Adapty SDK は購入を Adapty で検証しないため、ダイヤモンドは付与されません。
+
+レシピをテストするには:
+
+1. [両方のフローを公開します](builder-save-publish)。キャッシュではなく最新の公開バージョンを確認するには、デバイスを[テストデバイス](test-devices)として登録してください。
+2. レシピコードを使ってアプリを起動し、ダイヤモンドを持っていないプレイヤーとしてサインインします。ゲーム内でエネルギーを使い切ります。エネルギー切れのフローが残高 0 で開くことを確認します。
+3. 無制限エネルギーボタンをタップします。ボタンにスピナーが表示され、その後「You need 30 more diamonds」というテキストとともにチャージフローが開くことを確認します。
+4. ダイヤモンドパックを購入します。エネルギー切れのフローが新しい残高で再び開くことを確認します。
+5. エネルギー補充ボタンをタップします。ボタンにチェックマークが表示され、フローが閉じ、ゲームがプレイヤーにエネルギーを補充することを確認します。
+6. Adapty ダッシュボードでプレイヤーのプロファイルを開きます。**Adjustment** オペレーションを使って[残高を 10 未満に引き落とします](virtual-currency-balance#adjust-a-balance-manually)。再びエネルギーを使い切り、エネルギー補充ボタンをタップして、チャージフローでサブスクリプションを購入します。エネルギー切れのフローが新しい残高で再び開くことを確認します。
+7. 無制限エネルギーボタンをタップします。ボタンにチェックマークが表示され、フローが閉じ、ゲームがプレイヤーに無制限エネルギーを付与することを確認します。
+8. <VcTopUpVerifyProfile />
+
+フォールバックが残高やボタンの代わりに表示される原因を調べるには、[カスタム要素をテストする手順](ios-flow-custom-elements#test-on-a-device)に従ってください。

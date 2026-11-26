@@ -9,6 +9,8 @@ Every article must start with an introduction before the first heading that prov
 2. **Why it matters**: Value or benefit to the reader
 3. **When to use it**: Context for application
 
+When an article has three or more H2 sections that the reader completes in order, add a numbered overview after the intro: one item per H2, in the same order, each linking to its section.
+
 ❌ No introduction:
 ```markdown
 # Configure Placements
@@ -40,7 +42,7 @@ Placements determine which paywall users see based on their location in your app
 
 ## Parallel Heading Structure
 
-Headings at the same level must follow consistent grammatical structure — all verb phrases OR all noun phrases.
+Headings at the same level follow one grammatical shape by default — all verb phrases OR all noun phrases. The one exception: a reference section (limits, options, requirements, troubleshooting) next to task sections keeps its noun phrase. A reference section never takes a task heading, and a task section never takes a noun heading.
 
 **Procedural sections — imperative verbs:**
 ```markdown
@@ -229,6 +231,11 @@ just to whole troubleshooting guides.
 - Document all parameters with types
 - Example requests and responses
 - List all possible error codes
+
+### CLI Reference
+- **Every new command, topic, flag, or behavior change states the CLI version it needs.** Use the sentence the other CLI articles use: "The `fonts` commands need CLI version 0.33.0 or later. To see your version, run `adapty --version`." Put it in the topic's intro and in the section it governs.
+- **Name the version, never the release.** ❌ "Before the release that added the `fonts` commands, it exited with code 1." ✅ "Before CLI version 0.33.0, it exited with code 1."
+- **Find the version in the CLI repo, not in your memory.** If the feature branch isn't merged yet, the version is the next one after the latest tag. Tell the author it's a guess, so they confirm it before the merge.
 
 ### Conceptual Docs
 - Define terms on first use

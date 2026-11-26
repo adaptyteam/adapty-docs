@@ -1,0 +1,289 @@
+---
+title: "Formules"
+description: "Calculez un nombre ou une date dans un flow à partir des réponses, variables et prix de produits, et affichez le résultat dans un élément texte ou utilisez-le dans une condition."
+metadataTitle: "Formules | Flows & paywalls | Documentation Adapty"
+---
+
+Une formule est une [variable personnalisée](onboarding-variables#custom-variables) avec une valeur calculée : un nombre ou une date. Une formule peut lire les réponses des utilisateurs dans le flow, d'autres variables personnalisées, le produit sélectionné et le jour actuel. Avec les formules dans le Flow & Paywall Builder, un flow peut afficher des valeurs calculées sans code dans votre application :
+
+- **Un résultat à partir de réponses** : une somme de scores de quiz, un IMC calculé à partir du poids et de la taille, ou une taille en pieds et en pouces.
+- **Un prix** : le prix du produit sélectionné après une remise de 20 %.
+- **Une date** : la date de fin d'un essai gratuit.
+
+Le flow calcule le résultat d'une formule sur l'appareil. Lorsqu'une valeur lue par la formule change, le flow met à jour le résultat. Vous pouvez afficher ce résultat dans un élément texte et l'utiliser dans des conditions.
+
+## Créer une formule \{#create-a-formula\}
+
+1. Ouvrez le panneau <Inline id="variables.svg" alt="Variables" /> Variables dans le flow builder.
+2. Ajoutez une nouvelle variable — cliquez sur <Inline id="plus.svg" alt="Plus" />.
+3. Saisissez le **Name** de la variable, par exemple `bmi`. Les autres formules utilisent ce nom pour lire le résultat.
+4. Dans le menu déroulant **Value Type**, sélectionnez **Formula**.
+5. Dans le champ **Expression**, entrez la formule, par exemple `round({{weight}} * 10000 / ({{height}} * {{height}}), 1)`, où `weight` et `height` sont des variables de type Number. Pour les règles, consultez [Écrire une formule](#write-a-formula).
+6. Cliquez sur **Create variable**.
+
+<ZoomImage id="flow-formula-create.webp" width="300px" alt="La boîte de dialogue Créer une variable avec le type Formule, une formule IMC dans le champ Expression, le type de sortie Nombre, et un aperçu de 22,9" />
+
+Quand vous quittez le champ **Expression**, le builder valide la formule. Si elle contient une erreur, le message d'erreur s'affiche sous le champ. Tant que l'erreur est visible, le bouton **Create variable**, ou **Save** pour une variable existante, est désactivé. Dès que vous modifiez l'expression, l'erreur disparaît et le bouton redevient disponible.
+
+Sans erreur, une indication s'affiche sous le champ. Pour une formule de type Date, l'indication est « Use a formula to set a date that updates automatically. Use negative n to go back in time ». Pour les autres formules, l'indication est « Use round(x, 2) to set the decimals ».
+
+Sous le champ, le builder affiche également :
+
+- **Type de sortie** : **Nombre** ou **Date**, le type du résultat. Le Paywall Builder le détermine à partir de la formule : le résultat est une Date quand la formule est une [fonction de date](#date-functions) ou une valeur Date seule, comme `{{trial_start}}`. Toute autre formule donne un Nombre.
+- **Format de date** : Uniquement pour une formule de type Date. Indique comment les éléments texte affichent le résultat. Voir [Afficher une date dans un élément texte](#show-a-date-in-a-text-element).
+- **Aperçu** : Le résultat, calculé à partir des valeurs initiales et des prix des produits. Voir [Prévisualiser une formule dans le Paywall Builder](#preview-a-formula-in-the-builder).
+
+Une formule dépend toujours d'autres valeurs, elle n'a donc pas de **Initial value**. Pour la même raison, votre application ne peut pas définir une formule.
+
+### Insérer des références et des fonctions \{#insert-references-and-functions\}
+
+Pour ajouter une référence ou une fonction sans la saisir manuellement, utilisez les deux boutons situés sur la ligne **Output type**. Chaque bouton insère du texte à l'emplacement du curseur dans le champ **Expression** :
+
+- <Inline id="variables.svg" alt="Insert variable" /> **Insert variable** : Liste les valeurs que la formule peut lire, en trois groupes : **Variables**, **Answers** et **Selected product**. Sélectionnez une valeur pour insérer sa référence, par exemple `{{weight.value}}`.
+- <Inline id="function.svg" alt="Insert function" /> **Insert function** : Liste les fonctions, chacune accompagnée d'une description et d'un exemple. Pour trouver une fonction, tapez son nom dans le champ de recherche. Sélectionnez une fonction pour insérer son nom et une parenthèse ouvrante, par exemple `addDays(`. Tapez ensuite les arguments et la parenthèse fermante.
+
+La liste **Insert variable** n'affiche que les valeurs que la formule peut lire. Elle n'affiche pas les variables de type String, Boolean ou Array, ni la formule que vous modifiez.
+
+## Écrire une formule \{#write-a-formula\}
+
+Une formule combine des nombres, des références à des valeurs, des opérateurs et des fonctions. Les noms de fonctions et de variables sont sensibles à la casse : `Round(2.5)` est une erreur.
+
+### Références \{#references\}
+
+Mettez chaque référence entre doubles accolades :
+
+| Référence | Ce que la formule lit | Exemple |
+| :--- | :--- | :--- |
+| `{{<variable name>}}` | Une variable personnalisée de type Nombre, Date ou Formule | `{{discount}}` |
+| `{{<Element ID>.value}}` | La réponse dans une [saisie Texte ou Nombre](builder-inputs-and-forms), un [sélecteur de nombre](builder-number-picker), ou une saisie Date ou Date & Heure | `{{weight.value}}` |
+| `{{<Group ID>.selectedProduct.prod_price}}` | Le prix du produit sélectionné par l'utilisateur dans un groupe de produits, sous forme de nombre | `{{products.selectedProduct.prod_price}}` |
+| `{{<Group ID>.selectedProduct.offer_price}}` | Le prix de l'offre du produit sélectionné, sous forme de nombre | `{{products.selectedProduct.offer_price}}` |
+| `{{<Group ID>.selectedProduct}}` | Le produit sélectionné, uniquement comme deuxième argument de `addOfferDuration` | `{{products.selectedProduct}}` |
+
+Une formule lit une réponse saisie sous forme de nombre lorsque la réponse est composée de chiffres, avec un éventuel signe moins devant et une éventuelle partie décimale après un point ou une virgule. La formule ignore les espaces au début et à la fin. Par exemple, `12`, `-5`, `1.5` et `1,5` sont des nombres. Toute autre réponse, comme `abc`, `1,5,0` ou `1e3`, donne à la formule [aucune valeur](#formulas-without-a-value). Dans un champ de saisie Nombre qu'une formule lit, les utilisateurs ne peuvent entrer qu'un nombre. Avec les formats **Decimal (Point)** et **Decimal (Comma)**, les utilisateurs peuvent saisir un point ou une virgule décimale, ce qui permet d'utiliser la touche décimale de n'importe quel clavier.
+
+Un champ Date ou Date & Heure renvoie le jour calendaire sélectionné par l'utilisateur.
+
+Une formule peut lire une autre formule, mais pas elle-même, et deux formules ne peuvent pas se lire mutuellement. Lorsque vous renommez une variable, un **Element ID** ou un **Group ID**, la formule affiche le nouveau nom et lit la même valeur. Lorsque vous supprimez une variable qu'une formule lit, la formule affiche `{{deleted variable}}` à sa place et génère une erreur.
+
+Un nom qui correspond à deux valeurs est une erreur. Par exemple, si une variable personnalisée est nommée `age.value` et qu'un champ a l'Element ID `age`, `{{age.value}}` correspond aux deux. Renommez la variable personnalisée.
+
+### Nombres et opérateurs \{#numbers-and-operators\}
+
+- **Nombres** : Utilisez toujours un point décimal, par exemple `0.8`. Dans une fonction, une virgule sépare les arguments : `round(2,5)` correspond à `round(2, 5)`, ce qui donne 2 et non 2,5. En dehors d'une fonction, une virgule dans un nombre est une erreur. Un signe moins devant un nombre ou une référence le rend négatif, par exemple `-3`.
+- **Opérateurs** : `+`, `-`, `*` et `/`. Le flow calcule `*` et `/` avant `+` et `-`, et les opérateurs de même niveau de gauche à droite. Utilisez des parenthèses pour modifier l'ordre : `({{a}} + {{b}}) / 2`.
+
+## Formules numériques \{#number-formulas\}
+
+Une formule numérique retourne un nombre.
+
+### Fonctions numériques \{#number-functions\}
+
+| Fonction | Résultat | Exemple |
+| :--- | :--- | :--- |
+| `round(n)` | `n` arrondi à l'entier le plus proche. Une valeur exactement à mi-chemin s'arrondit en s'éloignant de zéro. | `round(2.5)` = 3, `round(-2.5)` = -3 |
+| `round(n, digits)` | `n` arrondi à `digits` décimales. `digits` est un entier de 0 à 6 que vous saisissez directement dans la formule, pas une référence ni un calcul. | `round(23.12, 1)` = 23.1, `round(1.005, 2)` = 1.01 |
+| `floor(n)` | Le plus grand entier qui n'est pas supérieur à `n` | `floor(2.7)` = 2, `floor(-2.5)` = -3 |
+| `mod(a, b)` | Le reste de la division de `a` par `b`, avec le signe de `b`, comme la fonction MOD des tableurs | `mod(7, 3)` = 1, `mod(-7, 3)` = 2, `mod(5.5, 2)` = 1.5 |
+
+Un résultat nul de `round`, `floor` et `mod` est toujours 0, jamais -0.
+
+### Afficher un nombre dans un élément texte \{#show-a-number-in-a-text-element\}
+
+Pour afficher une formule ou une variable de type Date, [insérez la variable](onboarding-variables#use-variables-in-text) dans un élément texte depuis l'onglet **Custom** du sélecteur de variables. Les dates et les nombres avec `round` au niveau supérieur s'affichent dans la langue de l'appareil, et non dans la langue du flow.
+
+L'apparence d'une formule Nombre dépend de la fonction au niveau supérieur de la formule :
+
+- **`round` au niveau supérieur** : Le nombre affiche exactement le nombre de décimales défini par `round`. Il utilise le séparateur décimal de la langue de l'appareil, sans séparateurs de milliers ni signe monétaire. Par exemple, `round(23.12, 1)` affiche "23.1" en anglais et "23,1" en russe, et `round(15.04, 1)` affiche "15.0" en anglais.
+- **Toute autre formule** : Le nombre s'affiche sous sa forme brute, avec un point décimal quelle que soit la langue. Certains nombres décimaux affichent une longue série de chiffres : `9.99 * 0.8` donne "7.992000000000001". Pour définir le nombre de décimales, placez `round` au niveau supérieur de la formule, par exemple `round(9.99 * 0.8, 2)`.
+
+Une variable Nombre et une formule avec `floor` ou `mod` au niveau supérieur apparaissent également sous forme ordinaire.
+
+### Comparer des nombres dans les conditions \{#compare-numbers-in-conditions\}
+
+Vous pouvez sélectionner une formule ou une variable Date dans une condition, comme une règle de [visibilité conditionnelle](onboarding-element-visibility) ou une action conditionnelle :
+
+- **Formules numériques** : Utilisez les mêmes opérateurs que pour une variable de type Nombre : **Equals**, **Does not equal**, **Greater than**, **Less than**, **Is empty** et **Is not empty**. Comparez la formule avec un nombre ou avec une autre valeur de type Nombre, par exemple `bmi` **Greater than** `25`. Les opérateurs ne comprennent pas « supérieur ou égal » ni « inférieur ou égal ». Pour cibler un nombre entier de 10 ou plus, comme un score à un quiz, utilisez `score` **Greater than** `9`.
+
+## Formules de date \{#date-formulas\}
+
+Une formule de date renvoie une date. Pour utiliser un jour fixe dans une formule, comme une date de début d'essai, stockez-le dans une variable de type Date.
+
+### Créer une variable Date \{#create-a-date-variable\}
+
+1. Ouvrez le panneau <Inline id="variables.svg" alt="Variables" /> Variables et cliquez sur <Inline id="plus.svg" alt="Plus" />.
+2. Saisissez le **Name** de la variable, par exemple `trial_start`.
+3. Dans le menu déroulant **Value Type**, sélectionnez **Date**.
+4. (Facultatif) Dans le champ **Initial value**, entrez une date au format `DD.MM.YYYY`, par exemple `17.11.2026`, ou cliquez sur le champ et choisissez le jour dans le calendrier, puis cliquez sur **Apply**. Le builder n'accepte pas une date inexistante, comme `31.02.2027`. Sans valeur initiale, la variable n'a aucune valeur tant qu'une action [**Set variable**](onboarding-actions) ne la définit pas.
+5. (Facultatif) Dans le menu déroulant **Date format**, sélectionnez la façon dont les éléments de texte affichent la date. Voir [Afficher une date dans un élément de texte](#show-a-date-in-a-text-element).
+6. Cliquez sur **Create variable**.
+
+<ZoomImage id="flow-date-variable-create.webp" width="300px" alt="The Create variable dialog with the Date type and the Initial value 17.11.2026" />
+
+Une variable Date contient un jour sans heure ni fuseau horaire.
+
+Pour modifier une variable Date quand les utilisateurs appuient sur un élément, ajoutez une action [**Set variable**](onboarding-actions), sélectionnez la variable Date et saisissez la nouvelle date au format `DD.MM.YYYY` ou choisissez-la dans le calendrier. Une action **Set variable** ne peut pas modifier une formule, car une formule dépend toujours d'autres valeurs.
+
+### Fonctions de date \{#date-functions\}
+
+| Fonction | Résultat | Exemple |
+| :--- | :--- | :--- |
+| `today()` | Le jour actuel sur l'appareil | `today()` |
+| `addDays(date, n)` | `date` plus `n` jours | `addDays(today(), 7)` |
+| `addWeeks(date, n)` | `date` plus `n` semaines | `addWeeks({{trial_start}}, 2)` |
+| `addMonths(date, n)` | `date` plus `n` mois | `addMonths({{trial_start}}, 1)` |
+| `addYears(date, n)` | `date` plus `n` années | `addYears({{birth_date.value}}, 18)` |
+| `addOfferDuration(date, product)` | `date` plus la durée de l'offre du produit | `addOfferDuration(today(), {{products.selectedProduct}})` |
+
+La date functions follow these rules:
+
+- **`today()`** : Donne le début du jour actuel dans le fuseau horaire de l'appareil. Le flow lit la date à son ouverture, donc la valeur ne change pas à minuit si le flow est déjà ouvert.
+- **`n` négatif ou fractionnaire** : Un `n` négatif fait reculer la date. Le flow ignore la partie fractionnaire de `n` : `addWeeks(date, 1.5)` ajoute 1 semaine, et `addDays(date, -1.9)` fait reculer la date d'1 jour.
+- **Mois courts** : Si le mois cible n'a pas ce jour, le résultat est le dernier jour de ce mois. Par exemple, le 31 janvier 2027 plus 1 mois donne le 28 février 2027, et le 29 février 2028 plus 1 an donne le 28 février 2029.
+- **`addOfferDuration`** : Ajoute chaque phase de l'offre du produit que le SDK Adapty transmet au flow, dans l'ordre. Pour chaque phase, la fonction ajoute la période de la phase multipliée par son nombre de périodes en une seule étape : un essai gratuit de 7 jours démarrant le 10 novembre 2026 se termine le 17 novembre 2026. Si le produit n'a pas d'offre, ou si une phase de l'offre a une période inconnue, le résultat n'a aucune valeur.
+
+Dans une formule, une Date ne peut être que le premier argument d'une fonction de date. Utiliser une Date dans un calcul, par exemple `{{trial_start}} + 1`, est une erreur. Un Nombre ne peut pas être le premier argument d'une fonction de date. Une variable de type Chaîne, Booléen ou Tableau ne peut pas faire partie d'une formule.
+
+### Afficher une date dans un élément texte \{#show-a-date-in-a-text-element\}
+
+Pour afficher une formule ou une variable Date, [insérez la variable](onboarding-variables#use-variables-in-text) dans un élément texte depuis l'onglet **Custom** du sélecteur de variables. Les dates et les nombres avec `round` au niveau supérieur s'affichent dans la langue de l'appareil, et non dans la langue du flow.
+
+Une variable Date et une formule Date disposent d'un **Date format** dans les paramètres de la variable. Chaque élément texte qui affiche la variable utilise ce format, et si vous le modifiez, tous ces éléments texte sont mis à jour. Une nouvelle variable utilise le format **Medium**.
+
+Pour utiliser un autre format dans un élément de texte, dans le champ **Content**, cliquez sur la variable et sélectionnez un format. Pour revenir au format de la variable, sélectionnez **Variable default**. Les formats disponibles sont :
+
+| Format de date | Exemple en anglais |
+| :--- | :--- |
+| **Short** | 11/17/26 |
+| **Medium** | Nov 17, 2026 |
+| **Long** | November 17, 2026 |
+| **Month D** | November 17 |
+| **Mon D** | Nov 17 |
+
+**Short**, **Medium** et **Long** suivent l'ordre de date de la langue de l'appareil. **Month D** et **Mon D** affichent le mois avant le jour dans toutes les langues, comme « ноября 17 » en russe.
+
+### Comparer des dates dans les conditions \{#compare-dates-in-conditions\}
+
+Vous pouvez sélectionner une formule ou une variable de type Date dans une condition, comme une règle de [visibilité conditionnelle](onboarding-element-visibility) ou une action conditionnelle :
+
+- **Variables de type Date et formules de type Date** : utilisez **Equals**, **Does not equal**, **Earlier than** ou **Later than**. Comparez la date avec une autre date, ou avec une date que vous saisissez au format `DD.MM.YYYY` ou sélectionnez dans le calendrier.
+
+Une comparaison de dates compare des jours calendaires, pas des heures. Par exemple, une date choisie par un utilisateur à 21h00 le 17 novembre 2026 est égale à `17.11.2026`. Vous ne pouvez pas comparer une date avec un nombre.
+
+## Formules sans valeur \{#formulas-without-a-value\}
+
+Une formule n'a pas de valeur lorsque l'une de ses valeurs n'est pas disponible sur l'appareil :
+
+- Une réponse est vide ou n'est pas un nombre.
+- Les prix des produits n'ont pas été chargés.
+- Le produit sélectionné n'a pas d'offre, et la formule lit `offer_price` ou appelle `addOfferDuration`.
+- La formule divise par zéro, comme dans `{{a}} / 0` ou `mod({{a}}, 0)`.
+- Une variable Date que la formule lit n'a pas de valeur.
+
+Une formule qui lit une formule sans valeur n'a pas de valeur non plus. Sans valeur, une formule fonctionne de cette manière :
+
+- **Éléments texte** : la formule n'affiche rien.
+- **Conditions** : **Is empty** est vrai. **Equals**, **Does not equal** et toutes les comparaisons de la formule sont fausses.
+
+Le flow met à jour le résultat d'une formule dès qu'une valeur lue par cette formule change : quand l'utilisateur saisit une réponse, qu'une action **Set variable** modifie une variable, ou que les prix des produits se chargent. Si l'utilisateur revient en arrière et efface une réponse, la formule n'a aucune valeur sur l'écran suivant. Tant que le flow n'a pas modifié une variable personnalisée, la formule lit la valeur initiale de cette variable.
+
+## Aperçu d'une formule dans le builder \{#preview-a-formula-in-the-builder\}
+
+Le builder calcule le résultat d'une formule à partir des valeurs initiales des variables personnalisées et du `prod_price` du produit sélectionné. L'**Aperçu** sous le champ **Expression** affiche **No value** dans les cas suivants :
+
+- Une réponse saisie ou sélectionnée par l'utilisateur
+- `offer_price`
+- L'offre de `addOfferDuration`
+- Une variable sans valeur, comme une variable Date sans valeur initiale
+
+Dans ces cas, un élément texte sur le canevas affiche le nom de la variable entre accolades, comme `{{trial_end}}`. Pour voir les valeurs des réponses, [prévisualisez le flow dans l'application mobile Adapty](paywall-device-compatibility-preview). Les valeurs d'offre nécessitent une version de votre application avec de vrais produits.
+
+Sur le canevas, les dates et les nombres avec `round` au niveau supérieur s'affichent dans la langue que vous sélectionnez pour la prévisualisation.
+
+## Exemples \{#examples\}
+
+### Afficher la somme des réponses \{#show-a-sum-of-answers\}
+
+Sur un écran, ajoutez trois champs Number avec les IDs d'élément `a1`, `a2` et `a3`. Créez une formule `sum` :
+
+```
+{{a1.value}} + {{a2.value}} + {{a3.value}}
+```
+
+Sur l'écran suivant, insérez `sum` dans un élément texte. Si les utilisateurs saisissent 2, 3 et 4, le texte affiche « 9 ». S'ils reviennent en arrière et remplacent 4 par 5, le texte affiche « 10 ».
+
+### Afficher un IMC et un label "High" \{#show-a-bmi-and-a-high-label\}
+
+Ajoutez un champ de saisie numérique avec l'ID d'élément `weight` pour le poids en kilogrammes, et un autre avec l'ID d'élément `height` pour la taille en centimètres. Créez une formule `bmi` :
+
+```
+round({{weight.value}} * 10000 / ({{height.value}} * {{height.value}}), 1)
+```
+
+Insérez `bmi` dans un élément texte. Pour un IMC de 23,12, les utilisateurs voient « 23.1 » avec un appareil en anglais, et « 23,1 » avec un appareil en russe. Pour afficher l'étiquette « High » uniquement pour un IMC supérieur à 25, ajoutez un élément texte avec le mot « High », et attribuez-lui une règle de [visibilité conditionnelle](onboarding-element-visibility) : `bmi` **Greater than** `25`.
+
+### Afficher un prix réduit \{#show-a-discounted-price\}
+
+Créez une formule `discounted` qui applique une réduction de 20 % sur le prix du produit sélectionné :
+
+```
+{{products.selectedProduct.prod_price}} * 0.8
+```
+
+Créez ensuite une formule `shown` qui arrondit le résultat à deux décimales :
+
+```
+round({{discounted}}, 2)
+```
+
+Insérez `shown` dans un élément texte. Pour un produit au prix de 9,99, le texte affiche « 7,99 ». Quand les utilisateurs sélectionnent un produit au prix de 100, le texte affiche « 80,00 ». Le nombre n'inclut pas le symbole de devise. Si le prix du produit sélectionné n'a pas pu être chargé, le texte est vide.
+
+### Afficher la fin d'un essai et une date de rappel \{#show-the-end-of-a-trial-and-a-reminder-date\}
+
+Créez une formule `trial_end` :
+
+```
+addOfferDuration(today(), {{products.selectedProduct}})
+```
+
+Ensuite, créez une formule `reminder` pour trois jours avant la fin de l'essai :
+
+```
+addDays({{trial_end}}, -3)
+```
+
+Pour un produit avec un essai gratuit de 7 jours, le 10 novembre 2026, `trial_end` correspond au 17 novembre 2026 et `reminder` au 14 novembre 2026. Avec le format de date **Medium**, le texte affiche « Nov 17, 2026 ». Avec **Month D**, il affiche « November 17 ».
+
+### Afficher une taille en pieds et en pouces \{#show-a-height-in-feet-and-inches\}
+
+Ajoutez un champ de saisie numérique avec l'ID d'élément `height` pour la taille en centimètres. Créez trois formules :
+
+- `total` : `round({{height.value}} / 2.54)`, la taille en pouces entiers.
+- `feet` : `floor({{total}} / 12)`.
+- `inches` : `mod({{total}}, 12)`.
+
+Dans un élément texte, insérez `feet`, tapez « ft », insérez `inches`, puis tapez « in ». Pour 180 cm, le texte affiche « 5 ft 11 in ». Pour 140 cm, il affiche « 4 ft 7 in ».
+
+## Résolution des problèmes \{#troubleshooting\}
+
+Lorsque vous quittez le champ **Expression**, le builder affiche la première erreur de la formule sous le champ. Quelques exemples :
+
+| Texte de l'erreur | Cause et solution |
+| :--- | :--- |
+| `addDays() needs a date and a number` | Une fonction reçoit un mauvais nombre d'arguments ou un argument du mauvais type. Utilisez les arguments des tableaux [Fonctions numériques](#number-functions) ou [Fonctions de date](#date-functions). |
+| `Unknown function "flor". Use one of: …` | Le nom de la fonction est mal orthographié ou sa casse est incorrecte. Utilisez une fonction de la liste figurant dans l'erreur. Pour lire une variable, placez son nom entre `{{ }}`. |
+| `Use a dot in a decimal number, like 1.5` | Un nombre situé en dehors d'une fonction contient une virgule. Remplacez la virgule par un point décimal. À l'intérieur d'une fonction, le builder interprète la virgule comme séparateur entre les arguments ; utilisez donc également un point décimal. |
+| `{{…}} is not a variable, an answer or a product field of this flow` | Aucune variable, identifiant d'élément ou groupe de produits ne porte ce nom. Corrigez le nom ou créez la variable. |
+| `This variable no longer exists. Pick another one.` | Vous avez supprimé une variable utilisée par la formule. L'expression l'affiche sous la forme `{{deleted variable}}`. Remplacez-la par une autre référence. |
+| `{{…}} is the name of a variable and of an element answer: rename the variable` | Le nom correspond à deux valeurs. Renommez la variable personnalisée. |
+| `{{…}} uses this formula: formulas cannot use each other in a loop` | Deux formules ou plus se lisent mutuellement. Supprimez l'une des références. |
+
+<ZoomImage id="flow-formula-error.webp" width="300px" alt="Une erreur de fonction inconnue sous le champ Expression, avec la liste des fonctions disponibles" />
+
+Une formule contenant une erreur bloque la publication. La boîte de dialogue **Can't publish yet** liste chaque formule en erreur sous **Variables**. Pour les erreurs pouvant apparaître lors de la publication, consultez [Problèmes courants](flow-common-issues#a-flow-wont-preview-or-publish).
+
+## Limitations \{#limitations\}
+
+- **Nombres et dates uniquement** : une formule renvoie uniquement un nombre ou une date. Pour afficher du texte en fonction du résultat, ajoutez du [texte conditionnel](onboarding-text#add-conditional-text) à un élément texte. Par exemple, pour afficher « Élevé » pour un IMC supérieur à 25, définissez la condition **if** sur `bmi` **Greater than** `25`, et saisissez « Élevé » sous **then**.
+- **Prix des produits** : une formule lit uniquement le prix du produit sélectionné dans chaque groupe de produits. Elle ne peut pas lire le prix d'un produit que l'utilisateur n'a pas sélectionné, par exemple le forfait mensuel lorsqu'il sélectionne le forfait annuel. Pour afficher le résultat dès l'ouverture de l'écran, sélectionnez **Set as default** sur l'une des cartes produit.
+- **Offres sur iOS et Android** : sur iOS, le SDK Adapty transmet une seule offre au flow. Parmi les offres disponibles pour l'utilisateur, une offre de reconquête est prioritaire, suivie d'une offre promotionnelle, puis d'une offre de lancement. Sur Android, le SDK Adapty ne transmet que la première phase de l'offre de lancement. Pour un essai gratuit suivi d'un prix réduit, `addOfferDuration` sur Android n'ajoute que l'essai.

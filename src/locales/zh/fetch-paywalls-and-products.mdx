@@ -62,18 +62,37 @@ Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID") { result in
 </TabItem>
 </Tabs>
 
-| 参数 | 是否必须 | 描述 |
+| 参数 | 是否必填 | 描述 |
 |---------|--------|-----------|
-| **placementId** | 必填 | [版位](placements)的标识符。这是你在 Adapty 看板中创建版位时指定的值。 |
-| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>`fetchPolicy` 设置 SDK 优先读取哪一层数据，而非是否可以使用缓存。默认情况下，SDK 会先请求服务器，若请求失败则返回缓存数据。我们推荐此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>但如果你认为用户的网络连接不稳定，可以考虑 `.returnCacheDataElseLoad`，该策略会颠倒读取顺序——先读取缓存，仅在没有缓存时才请求服务器。用户可能无法获取最新数据，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以减少网络请求是安全的。</p><p></p><p>第三种策略 `.returnCacheDataIfNotExpiredElseLoad(maxAge:)` 介于两者之间：当缓存副本的存活时间不超过 `maxAge` 秒时优先读取缓存，超过该时间后则请求服务器。</p><p></p><p>请注意，缓存在应用重启后仍会保留，只有在应用重新安装或手动清理时才会被清除。</p><p></p><p>Adapty SDK 将流程和付费墙存储在两层中：上述定期更新的缓存以及[备用付费墙](fallback-paywalls)。我们还使用 CDN 加快流程和付费墙的获取速度，并在 CDN 无法访问时使用独立的备用服务器。</p> |
-| **loadTimeout** | 默认值：5 秒 | <p>此值限制该方法的超时时间。若超时，将返回缓存数据或本地备用数据。</p><p></p><p>请注意，在极少数情况下，此方法的实际超时时间可能略晚于 `loadTimeout` 中指定的时间，因为该操作在底层可能由多个请求组成。</p> |
+| **placementId** | 必填 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>`fetchPolicy` 决定 SDK 优先从哪一层读取数据，而非是否可以使用缓存。默认情况下，SDK 会优先请求服务器，若请求失败则返回缓存数据。我们推荐此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>不过，如果您认为用户的网络环境不稳定，可以考虑使用 `.returnCacheDataElseLoad`，该策略与默认策略顺序相反——优先读取缓存，仅在没有缓存时才请求服务器。用户获取的数据可能不是最新的，但无论网络状况如何，都能获得更快的加载速度。缓存会定期更新，因此在会话期间使用缓存以减少网络请求是安全的。</p><p></p><p>第三种策略 `.returnCacheDataIfNotExpiredElseLoad(maxAge:)` 介于两者之间：当缓存内容的存储时间短于 `maxAge` 秒时优先读取缓存，超过该时间则请求服务器。</p><p></p><p>请注意，缓存在应用重启后依然保留，仅在应用卸载重装或手动清理时才会清除。</p><p></p><p>Adapty SDK 将流程和付费墙存储在两层中：上文所述的定期更新缓存，以及[备用付费墙](fallback-paywalls)。我们还使用 CDN 以更快地获取流程和付费墙，并在 CDN 不可用时提供独立的备用服务器。</p> |
+| **loadTimeout** | 默认值：5 秒 | <p>该值限制此方法的超时时间。如果 Adapty 服务器未能及时响应或返回错误，SDK 将返回缓存的流程。如果没有缓存且服务器超时或返回服务器错误，SDK 会从备用服务器（仅服务于版位 **All Users** 目标受众的 CDN 副本）请求流程。作为最后手段，SDK 将从您的[备用文件](ios-use-fallback-paywalls)返回流程。</p><p></p><p>请注意，在极少数情况下，该方法的实际超时时间可能略晚于 `loadTimeout` 中指定的时间，因为底层操作可能涉及多个请求。</p> |
+
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
 
 :::note
-在 v4 中，`locale` 参数已从 `getFlow` 移至 `getFlowConfiguration`（仅在使用 AdaptyUI 渲染时使用）。对于自定义付费墙，所有可用的语言区域会一起返回到 `flow.remoteConfigs` 中——请选择与用户设备或应用设置相匹配的语言区域。
+在 v4 中，`getFlow` 没有 `locale` 参数，SDK 也不会读取设备上设置的首选语言。请在你的应用中自行读取，例如使用 `Locale.preferredLanguages`。由谁来展示流程或付费墙，决定了你在哪里使用它们：
+
+- SDK 会从 Flow & Paywall Builder 中展示流程。若要以用户首选语言来显示流程，请在 `getFlowConfiguration` 的 `preferredLocales` 参数中[传入语言列表](localizations-and-locale-codes#pass-the-users-languages-to-the-sdk)。
+- 您的应用自行展示自定义付费墙。`getFlow` 会在 `flow.remoteConfigs` 中返回所有语言环境的远程配置：请从中选取与首选语言匹配的远程配置。
 :::
 
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
+
+:::note
+在 v4 中，`getFlow` 没有 `locale` 参数，SDK 不会读取设备语言。请在你的应用中根据设备语言或用户在应用内选择的语言，自行选择[语言区域代码](localizations-and-locale-codes#pass-the-users-languages-to-the-sdk)。由谁来展示流程或付费墙，决定了你在哪里使用该代码：
+
+- SDK 负责显示 Flow & Paywall Builder 中创建的流程。如需选择流程的本地化语言，请在 `getFlowConfiguration` 中通过 `locale` 参数传入语言代码。
+- 您的应用自行显示自定义付费墙。`getFlow` 会在 `flow.remoteConfigs` 中返回所有语言的远程配置：从中选取与语言代码匹配的远程配置即可。
+:::
+
+</TabItem>
+</Tabs>
+
 :::tip
-若要在用户需要流程之前提前填充缓存，可调用 [`preloadFlows`](ios-optimize-paywall-fetching#preload-placements)（iOS SDK 4.1+）一次预加载多个版位。传入 `fetchPolicy: .returnCacheDataElseLoad` 即可优先读取预加载的本地副本，而非从网络获取。
+为了在用户需要使用流程之前填充缓存，可以调用 [`preloadFlows`](ios-optimize-paywall-fetching#preload-placements)（iOS SDK 4.1+）同时预加载多个版位。传入 `fetchPolicy: .returnCacheDataElseLoad` 即可在联网请求之前读取已预加载的缓存副本。
 :::
 
 不要硬编码产品 ID！由于流程是远程配置的，可用的产品、产品数量以及特殊优惠（如免费试用）可能会随时间变化。请确保你的代码能处理这些情况。
@@ -125,13 +144,13 @@ Adapty.getPaywallProducts(flow: flow) { result in
 
 在实现自定义付费墙设计时，您可能需要访问 [`AdaptyPaywallProduct`](https://swift.adapty.io/documentation/adapty/adaptypaywallproduct) 对象的这些属性。以下列出了最常用的属性，完整属性列表请参阅链接文档。
 
-| 属性 | 描述 |
+| 属性                      | 描述                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 |-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **标题** | 要显示产品标题，请使用 `product.localizedTitle`。注意，本地化基于用户所选的商店国家/地区，而非设备本身的语言环境。 |
-| **价格** | 要显示本地化价格，请使用 `product.localizedPrice`。该本地化基于设备的语言环境信息。您也可以通过 `product.price` 以数字形式获取价格，该值以本地货币表示。如需获取对应的货币符号，请使用 `product.currencySymbol`。 |
-| **订阅周期** | 要显示订阅周期（如周、月、年等），请使用 `product.localizedSubscriptionPeriod`，该本地化基于设备的语言环境。如需以编程方式获取订阅周期，请使用 `product.subscriptionPeriod`，从中可以访问 `unit` 枚举以获取时长单位（即 day、week、month、year 或 unknown）。`numberOfUnits` 表示周期单位的数量。例如，对于季度订阅，`unit` 属性显示 `.month`，`numberOfUnits` 属性显示 `3`。 |
-| **计费方案** | 对于 [12 个月承诺](app-store-12-month-commitment) 产品，请使用 `product.subscriptionPricingTerms` 来展示 Apple 要求显示的两种价格：`localizedBillingPrice` 和 `billingPeriod` 用于每月分期付款，`commitmentInfo.localizedPrice` 和 `commitmentInfo.period` 用于全年总价。承诺计划的 `billingPlan` 为 `.monthly`，其他情况为 `.upFront`。对于承诺计划，`product.price`、`product.localizedPrice` 和 `product.subscriptionPeriod` 返回的是全年总价和周期，而非分期金额。需要 Adapty SDK 4.3 或更高版本。 |
-| **新用户优惠** | 要显示表示订阅包含新用户优惠的徽章或其他指示器，请查看 `product.subscriptionOffer` 属性。该对象包含以下实用属性：<br/>• `offerType`：优惠类型，预定义值为 `introductory`、`promotional` 和 `winBack`（在 SDK 4.1 及更高版本中，它是一个开放结构体而非枚举，因此对其进行 `switch` 操作时需要添加 `default` 分支）。免费试用和初始折扣订阅属于 `introductory` 类型。<br/>• `price`：折扣价格的数值。免费试用时该值为 `0`。<br/>• `localizedPrice`：针对用户语言环境格式化后的折扣价格。<br/>• `localizedNumberOfPeriods`：使用设备语言环境本地化的字符串，描述优惠的时长。例如，三天试用优惠在该字段中显示为 `3 days`。<br/>• `subscriptionPeriod`：您也可以通过此属性获取优惠周期的各项详细信息，其使用方式与上一节描述的相同。<br/>• `localizedSubscriptionPeriod`：针对用户语言环境格式化后的折扣订阅周期。 |
+| **标题**               | 若要显示产品标题，请使用 `product.localizedTitle`。请注意，本地化基于用户所选的商店国家/地区，而非设备本身的语言环境。                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| **价格**               | 若要显示本地化价格，请使用 `product.localizedPrice`，本地化基于设备的语言环境信息。您也可以通过 `product.price` 以数字形式获取价格，该值以本地货币为单位。若要获取对应的货币符号，请使用 `product.currencySymbol`。                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **订阅周期** | 若要显示周期（例如周、月、年等），请使用 `product.localizedSubscriptionPeriod`，本地化基于设备的语言环境。若要以编程方式获取订阅周期，请使用 `product.subscriptionPeriod`。通过该属性可访问 `unit` 枚举，获取时长单位（即 day、week、month、year 或 unknown）。`numberOfUnits` 值表示周期单位的数量。例如，对于季度订阅，`unit` 属性显示 `.month`，`numberOfUnits` 属性显示 `3`。                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **计费方案**        | 对于 [12 个月承诺](app-store-12-month-commitment)产品，使用 `product.subscriptionPricingTerms` 展示 Apple 要求的两种价格：`localizedBillingPrice` 和 `localizedBillingPeriod` 表示每月分期付款，`commitmentInfo.localizedPrice` 和 `commitmentInfo.localizedPeriod` 表示年度总价。承诺计划的 `billingPlan` 为 `.monthly`，否则为 `.upFront`。对于承诺计划，`product.price`、`product.localizedPrice` 和 `product.subscriptionPeriod` 返回的是年度总价和年度周期，而非分期金额。需要 Adapty SDK 4.3 或更高版本。`localizedBillingPeriod` 和 `commitmentInfo.localizedPeriod` 需要 Adapty SDK 4.4 或更高版本。若使用较早版本的 SDK，请在应用中自行格式化 `billingPeriod`，并从 `product.localizedSubscriptionPeriod` 获取年度周期进行展示。 |
+| **新用户优惠**  | 若要显示表示订阅包含新用户优惠的徽标或其他标识，请查看 `product.subscriptionOffer` 属性。该对象包含以下实用属性：<br/>• `offerType`：优惠类型，预定义值为 `introductory`、`promotional` 和 `winBack`（在 SDK 4.1 及更高版本中，它是一个开放结构体而非枚举，因此对其进行 `switch` 时需要添加 `default` 分支）。免费试用和初始折扣订阅属于 `introductory` 类型。<br/>• `price`：折扣价格的数字形式。免费试用时该值为 `0`。<br/>• `localizedPrice`：针对用户语言环境格式化的折扣价格。<br/>• `localizedNumberOfPeriods`：使用设备语言环境本地化的字符串，描述优惠时长。例如，三天试用优惠在该字段中显示 `3 days`。<br/>• `subscriptionPeriod`：您也可以通过该属性获取优惠周期的具体信息，使用方式与上一节中描述的方式相同。<br/>• `localizedSubscriptionPeriod`：针对用户语言环境格式化的折扣订阅周期。 |
 
 :::note
 在 v4 中，`getPaywallProducts(flow:)` 返回的所有产品已包含优惠资格信息。v3 中单独的 `getPaywallProductsWithoutDeterminingOffer` 调用已被移除。
@@ -246,10 +265,10 @@ Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
 
 | 参数 | 是否必填 | 描述 |
 |---------|--------|-----------|
-| **placementId** | 必填 | [版位](placements)的标识符。这是你在 Adapty 看板中创建版位时指定的值。 |
-| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-remote-config-locale)的标识符。该参数应为语言代码，由一个或多个子标签组成，子标签之间以连字符（**-**）分隔。第一个子标签表示语言，第二个子标签表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p></p><p>有关语言区域代码及使用建议，请参阅[本地化与语言区域代码](localizations-and-locale-codes)。</p> |
-| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>`fetchPolicy` 决定 SDK 优先从哪一层读取数据，而非是否可以使用缓存。默认情况下，SDK 会先请求服务器，若请求失败则返回缓存数据。我们推荐使用此策略，因为它能确保用户始终获取最新数据。</p><p></p><p>不过，如果你认为用户的网络环境不稳定，可以考虑使用 `.returnCacheDataElseLoad`，该策略与默认策略顺序相反——优先读取缓存，仅在没有缓存时才请求服务器。用户可能无法获取最新数据，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以减少网络请求是安全可靠的。</p><p></p><p>第三种策略 `.returnCacheDataIfNotExpiredElseLoad(maxAge:)` 介于两者之间：当缓存时间小于 `maxAge` 秒时优先读取缓存，超过该时间后则请求服务器。</p><p></p><p>请注意，缓存在应用重启后仍会保留，只有在重新安装应用或手动清除时才会被清空。</p><p></p><p>Adapty SDK 将付费墙存储在两个层级中：上述定期更新的缓存层和[备用付费墙](fallback-paywalls)。我们还使用 CDN 加快付费墙的加载速度，并在 CDN 不可达时启用独立的备用服务器。该系统的设计目标是确保你始终获取最新版本的付费墙，同时在网络条件较差的情况下也能保证可靠性。</p> |
-| **loadTimeout** | 默认值：5 秒 | <p>该值用于限制此方法的超时时间。若超时，将返回缓存数据或本地备用数据。</p><p></p><p>请注意，在极少数情况下，该方法的实际超时时间可能略长于 `loadTimeout` 中指定的值，因为该操作在底层可能包含多个请求。</p> |
+| **placementId** | 必填 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-remote-config-locale)的标识符。该参数应为语言代码，由一个或多个子标签组成，子标签之间以连字符（**-**）分隔。第一个子标签表示语言，第二个子标签表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p></p><p>有关语言环境代码及推荐使用方式的更多信息，请参阅[本地化与语言环境代码](localizations-and-locale-codes)。</p> |
+| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>`fetchPolicy` 决定 SDK 优先从哪一层读取数据，而非是否可以使用缓存。默认情况下，SDK 优先请求服务器，若请求失败则返回缓存数据。我们推荐使用此方式，因为它可确保用户始终获取最新数据。</p><p></p><p>但如果您认为用户的网络环境不稳定，可考虑使用 `.returnCacheDataElseLoad`，该策略与默认策略相反——优先读取缓存，仅在缓存为空时才请求服务器。用户获取的数据可能不是最新的，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以减少网络请求是安全的。</p><p></p><p>第三种策略 `.returnCacheDataIfNotExpiredElseLoad(maxAge:)` 介于两者之间：当缓存内容未超过 `maxAge` 秒时优先读取缓存，超过后则请求服务器。</p><p></p><p>请注意，重启应用后缓存仍然保留，只有在重新安装应用或手动清理时才会被清除。</p><p></p><p>Adapty SDK 将付费墙存储在两个层级中：上述定期更新的缓存以及[备用付费墙](fallback-paywalls)。我们还使用 CDN 加速付费墙的获取，并在 CDN 不可用时提供独立的备用服务器。该系统旨在确保您始终获取最新版本的付费墙，同时在网络不稳定的情况下也能保证可靠性。</p> |
+| **loadTimeout** | 默认值：5 秒 | <p>该值限制本方法的超时时间。若 Adapty 服务器未能及时响应或返回错误，SDK 将从备用服务器（仅提供版位 **All Users** 目标受众的 CDN 副本）、缓存或您的[备用文件](ios-use-fallback-paywalls)中返回付费墙。</p><p></p><p>请注意，在极少数情况下，该方法的实际超时时间可能略晚于 `loadTimeout` 中指定的时间，因为底层操作可能由多个请求组成。</p> |
 
 不要硬编码产品 ID！由于付费墙是远程配置的，可用产品、产品数量以及特殊优惠（如免费试用）都可能随时变化。请确保你的代码能够处理这些情况。
 

@@ -55,7 +55,7 @@ adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp"
 
 `adapty-kmp-ui` モジュールは、Compose Multiplatform レイヤー（`view.present()`）でフローやペイウォールをレンダリングする場合にのみ必要です。完全なセットアップについては、[Adapty SDK のインストール](sdk-installation-kotlin-multiplatform)を参照してください。
 
-基盤となるネイティブの Adapty SDK は、両プラットフォームで 4.x リリースにバンプされており、自動的に解決されます — ビルドの変更は不要です。iOS のデプロイメントターゲットは **15.0** のままで、このリリースでは変更ありません。
+ネイティブの Adapty SDK は両プラットフォームで 4.x リリースに更新されており、自動的に解決されます。Android では、アプリモジュールの `compileSdk` を 35 以上に設定してください。Adapty UI ライブラリは Jetpack Compose 1.8 を使用しており、これが必要です。iOS のデプロイメントターゲットは **15.0** のままで、このリリースでは変更ありません。
 
 ## ⚠️ Adapty アトリビューションはデフォルトで無効になっています \{#adapty-attribution-is-disabled-by-default\}
 
@@ -105,6 +105,19 @@ Adapty Attribution を使用しない場合は、変更は不要です。
 - Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en")
 + Adapty.getFlowForDefaultAudience("YOUR_PLACEMENT_ID")
 ```
+
+### ロケールのマッチングは完全一致 \{#locale-matching-is-exact\}
+
+:::warning
+v3 では、Adapty サーバーがローカライズを選択し、言語へのフォールバックを行っていました。つまり、ペイウォールに `pt-br` のローカライズがない場合、`pt-br` のリクエストは `pt` のローカライズにフォールバックされていました。v4 では、SDK がデバイス上でローカライズを選択し、完全一致のみを使用します。どのローカライズにも一致しないコードが指定された場合、エラーや警告なしにデフォルトのローカライズでフローがレンダリングされます。
+:::
+
+アップグレード前に、アプリが渡すロケールコードを確認してください：
+
+- 渡す地域コードごとに、そのコードのローカライゼーションを追加してください。たとえば、`pt` に加えて `pt-BR` も追加します。または、フローが持つコードにマッピングしてください。
+- コードは公開済みフローに設定されている通りに正確に渡してください: **Select languages** フィールドでは `pt-br` ではなく `pt-BR` です。旧ペイウォールビルダーのペイウォールの場合は、`pt-br` のように小文字のコードを渡してください。システムのロケール識別子をそのまま渡さないでください: `pt_BR` はいかなるローカライゼーションにも一致せず、`en-US` は `en` しか持たないフローに合致しません。
+
+[ローカライゼーションとロケールコード](kmp-localizations-and-locale-codes#flows-and-paywalls)を参照してください。
 
 ### getPaywallProducts(paywall) → getPaywallProducts(flow)
 
@@ -250,12 +263,12 @@ v3と同様に、ここで渡すコールバック（および`registerFlowEvent
 
 ### 新しいAPI \{#new-apis\}
 
-- `AdaptyUI.setObserverModeResolver(...)` と `AdaptyUIObserverModeResolver` — SDKが[Observer mode](implement-observer-mode-kmp)で動作中に、フローから開始された購入と復元を処理します。以前はネイティブのiOSおよびAndroid SDKでのみ利用可能でした。[フローをObserver modeで表示する](kmp-present-flows-in-observer-mode)を参照してください。
-- `AdaptyUI.setSystemRequestsHandler(...)` と `AdaptyUISystemRequestsHandler` — フローからのシステムリクエスト（OSの権限プロンプトやアプリレビューリクエスト）向けに予約されています。フローはまだこれらのリクエストをトリガーしないため、ハンドラーを登録する必要はありません。
-- 新しいオプションのコールバック `flowViewDidReceiveAnalyticEvent` は、フローからの分析イベントを報告します。ユーザーが開いた各画面のスクリーンビューから始まります。[フローの画面ビューを追跡する](kmp-flow-screen-views)を参照してください。
-- `AdaptyUI.openWebUrl(url, openIn)` と `AdaptyUI.requestAppReview()` — デフォルトの `OpenUrlAction` 処理とデフォルトの `handleAppReviewRequest` を支援するものです。これにより、URLとアプリレビュープロンプトがすぐにネイティブで処理されます。これらのデフォルト動作をオーバーライドする場合にのみ、直接呼び出してください。
-- `AdaptyUIFlowView.locale` — ビューが構築された際のローカライゼーションを報告します。これにより、ユーザーが実際に見ているローカライゼーションを確認できます。
-- `AdaptyConfig.ServerCluster.CN` — `DEFAULT` と `EU` に加えた新しいサーバークラスターオプションです。アプリを[AdaptyのChinaサーバー](china-cluster)に接続するために使用します。
+- `AdaptyUI.setObserverModeResolver(...)` に `AdaptyUIObserverModeResolver` を指定することで、SDKが[オブザーバーモード](implement-observer-mode-kmp)で動作している間もフローから開始された購入と復元を処理できます。以前はネイティブのiOSおよびAndroid SDKでのみ利用可能でした。詳しくは[オブザーバーモードでフローを表示する](kmp-present-flows-in-observer-mode)をご覧ください。
+- `AdaptyUI.setSystemRequestsHandler(...)` に `AdaptyUISystemRequestsHandler` を指定することで、フローからのシステムリクエスト（OSの権限プロンプトやアプリレビューリクエスト）に応答できます。フローで**Request permission**アクションを使用している場合は登録してください。詳しくは[フローの権限リクエストを処理する](kmp-handle-permissions)をご覧ください。
+- 新しいオプションのコールバック `flowViewDidReceiveAnalyticEvent` は、フローからの分析イベントを報告します。ユーザーが開いたすべての画面のスクリーンビューから始まります。詳しくは[フローの画面表示を追跡する](kmp-flow-screen-views)をご覧ください。
+- `AdaptyUI.openWebUrl(url, openIn)` および `AdaptyUI.requestAppReview()` は、デフォルトの `OpenUrlAction` 処理とデフォルトの `handleAppReviewRequest` を支援するもので、URLとアプリレビュープロンプトがネイティブにすぐ処理されます。これらをデフォルトの動作をオーバーライドする場合にのみ直接呼び出してください。
+- `AdaptyUIFlowView.locale` は、ビューが構築されたローカライズを報告するため、ユーザーが実際に見ているローカライズを確認できます。
+- `AdaptyConfig.ServerCluster.CN` は、`DEFAULT` および `EU` に加わった新しいサーバークラスターオプションで、アプリを[Adaptyの中国サーバー](china-cluster)に接続するために使用します。
 
 ## 外部アトリビューション API の名称変更 \{#renamed-external-attribution-apis\}
 
@@ -326,10 +339,11 @@ IDに一致するレイアウトがない場合、フローはビュー設定な
 
 これらの変更はコンパイルエラーを引き起こさないため、ランタイムでテストしてください。
 
-- **購入完了時の挙動**: v3 では、デフォルトの `paywallViewDidFinishPurchase` が `AdaptyPurchaseResult.UserCanceled` 以外の購入結果に対してビューを閉じていました。v4 では、デフォルトの `flowViewDidFinishPurchase` は何もしないため、**購入が完了してもフローは明示的に閉じるまで開いたままになります** — iOS の挙動に合わせた変更です。自動的に閉じる動作に依存していた場合は、購入完了後に自分で `view.dismiss()` を呼び出してください。
-- **Android のシステムバック**: v3 では、デフォルトの `paywallViewDidPerformAction` が `CloseAction` と `AndroidSystemBackAction` の両方でビューを閉じていました。v4 では、デフォルトは `CloseAction` のみを処理します — **システムバックボタンでは単独でフローが閉じなくなりました**。これは、システムジェスチャーでフローを閉じられない iOS の挙動に合わせたものです。ユーザーが明示的に閉じられるよう（**Close** ボタンや `on_device_back` アクションなど）対応するか、`flowViewDidPerformAction` 内で自分でビューを閉じてください。
-- **ビューのエラー**: v3 では、デフォルトの `paywallViewDidFailRendering` は何もしませんでした。v4 では、デフォルトの `flowViewDidReceiveError` が**ビューを閉じます** — ビューを開いたままにしたい場合やエラーを独自に処理したい場合はオーバーライドしてください。
-- **ビューは使い捨て**: `dismiss()` を呼び出すとビューは破棄されます。フローを再度表示するには、`createFlowView` をもう一度呼び出してください。
+- **フローのローカライズ**: 地域ロケールコードは言語へのフォールバックを行わなくなりました。`pt-br` は `pt` のローカライズを使用しません。完全一致がない場合、フローはデフォルトのローカライズで表示されます。詳しくは[ロケールの一致は完全一致](#locale-matching-is-exact)を参照してください。
+- **購入完了**: v3 では、デフォルトの `paywallViewDidFinishPurchase` が `AdaptyPurchaseResult.UserCanceled` 以外の購入結果でビューを閉じていました。v4 では、デフォルトの `flowViewDidFinishPurchase` は何もしないため、**購入後も自分で閉じるまでフローは開いたまま**です（iOS の動作に合わせています）。自動クローズに依存していた場合は、購入完了後に自分で `view.dismiss()` を呼び出してください。
+- **Android のシステムバック**: v3 では、デフォルトの `paywallViewDidPerformAction` が `CloseAction` と `AndroidSystemBackAction` の両方でビューを閉じていました。v4 では、デフォルトは `CloseAction` のみを処理します。**システムの戻るボタンだけではフローが閉じなくなりました**（システムジェスチャーでフローを閉じられない iOS の動作に合わせています）。**Close** ボタンや `on_device_back` アクションなど、明示的な閉じる手段をユーザーに提供するか、`flowViewDidPerformAction` 内で自分でビューを閉じてください。
+- **ビューのエラー**: v3 では、デフォルトの `paywallViewDidFailRendering` は何もしませんでした。v4 では、デフォルトの `flowViewDidReceiveError` が**ビューを閉じます**。ビューを開いたままにしたい場合や別のエラー処理を行いたい場合は、オーバーライドしてください。
+- **ビューは使い捨て**: `dismiss()` 後、ビューは破棄されます。フローを再表示するには、`createFlowView` を再度呼び出してください。
 
 ## オンボーディング API の廃止予定 \{#onboarding-api-deprecation\}
 

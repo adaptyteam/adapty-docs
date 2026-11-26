@@ -15,9 +15,12 @@ Grant your users virtual currency — AI tokens, credits, or coins — when they
 
 1. [Create a virtual currency](create-virtual-currency): Open **Products** and click the **Virtual currency** tab. Click **New virtual currency**. Define a currency with a code, a name, and an optional description.
 2. **Link the currency to products**: Map the currency to one-time or subscription products and set how many credits each purchase grants.
-3. **Credits are granted automatically**: When a user buys a linked one-time product or renews a linked subscription, Adapty adds the configured credits to their balance.
+3. **Credits are granted automatically**: When a user buys a product linked to the currency, Adapty adds the configured credits to their balance. For a subscription, Adapty adds credits at each renewal. When the user starts a free trial, Adapty adds credits only if you set **Credit on trial start**. The purchase events that Adapty sends to your [webhook](webhook-event-types-and-fields#virtual-currency-credits) and analytics integrations list these credits in `virtual_currency_credits`.
 4. **Read and spend the balance**: Your app reads each user's balance and grants or spends credits through the server-side API. Use the same API to [grant an initial balance](grant-initial-balance) to users who have not bought anything yet.
-5. **Track every change**: Each balance change is listed on the [user's profile](virtual-currency-balance).
+5. **Track every change**: Each balance change is listed on the [user's profile](virtual-currency-balance). Your support team can also [credit or debit a balance by hand](virtual-currency-balance#adjust-a-balance-manually) from the profile.
+6. **Measure revenue by currency**: To see revenue and other metrics by currency, filter analytics charts by [**Virtual currency**](controls-filters-grouping-compare-proceeds#filter-and-group-data).
+7. **Target users by balance**: To show a different paywall or onboarding to users with a low or high balance, create a [segment by virtual currency balance](segments#virtual-currency-balance) and use it as an [audience](audience).
+8. **Export the transaction history**: To load every balance change into your data warehouse, turn on the daily export to [Amazon S3](s3-exports#virtual-currency-transactions) or [Google Cloud Storage](google-cloud-storage#virtual-currency-transactions).
 
 For a complete walkthrough — from currency setup to spending credits through the API — follow the [Virtual currency quickstart](virtual-currency-quickstart).
 
@@ -28,15 +31,70 @@ For a complete walkthrough — from currency setup to spending credits through t
 | **AI apps** (image, video, or text generation) | Charge credits per generation. Include a monthly credit allowance in the subscription and sell credit packs as one-time products. |
 | **Short drama and video apps** | Charge coins to unlock an episode. Grant subscribers a recurring coin allowance and sell coin packs as one-time products. |
 | **Language learning and education** | Give free users a limited allowance of hearts or lives through the server-side API. Grant a larger allowance, or skip the balance check entirely, on a paid plan. |
-| **Mobile games** | Run a soft and a hard currency side by side: grant gold for gameplay through the server-side API, sell gems for money, and convert between them in a single atomic transaction. |
+| **Mobile games** | Run a soft and a hard currency side by side: grant gold for gameplay through the server-side API, <InlineTooltip tooltip="sell gems for money">[iOS](ios-virtual-currency-top-up)</InlineTooltip>, and convert between them in a single atomic transaction. |
 | **Productivity apps** | Meter expensive actions, such as OCR or exports, with credits. Give free users a small allowance, grant more with a subscription, and sell credit packs for batch work. |
 
 :::tip
-For subscription allowances, turn on [credit expiration](create-virtual-currency#link-products). When unused credits reset at each renewal, the allowance stays a reason to keep the subscription, and heavy users buy credit packs instead of spending down a stockpile.
+For subscription allowances, turn on [credit expiration](create-virtual-currency#link-products). With expiration, users can't save up credits across billing periods. To receive new credits, they renew the subscription, and heavy users buy credit packs.
 :::
+
+## Label transactions
+
+When your backend grants or spends credits through [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction), label each transaction with what it means and what the credits were for. With `operation`, you can tell spending apart from bonuses, reversals, and corrections in the transaction history. With `feature`, you can see what users spend on and what you grant for.
+
+All labeling fields are optional. You can't add labels to a transaction after Adapty saves it, so label from your first call. A transaction sent without labels is saved with `operation: null`.
+
+```json title="Spend credits on a feature"
+{
+  "items": [{ "currency_code": "COINS", "amount": -10 }],
+  "operation": "spend",
+  "feature": "power_up.extra_life",
+  "customer_placement_id": "level-complete",
+  "reference_id": "session_7781"
+}
+```
+
+### Operation
+
+Most integrations need these `operation` values:
+
+| Value | When to use it |
+|-------|----------------|
+| `spend` | The user spends credits on a feature or content. |
+| `spend_reversal` | You return credits for a failed action, such as a failed generation. |
+| `reward` | You grant a bonus, a reward, or a support compensation. |
+| `reward_reversal` | You take a reward back. |
+
+Adapty sets `operation` on the transactions it creates: purchases, renewals, and trials get `top_up`, store refunds get `refund`, and expired credits get `expiry`. For the full list of values, see [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction).
+
+### Feature
+
+`feature` names what the credits were spent on or granted for: one word of letters, digits, and `_`, optionally followed by one subtype after a dot. Adapty stores it as sent and case-sensitive, so `photoFilter` and `photofilter` are two different features.
+
+- ✅ `hint`, `power_up.extra_life`, `photo_filter.vintage`
+- ❌ `photo filter`: contains a space.
+- ❌ `photo_filter.vintage.v2`: has two subtype levels.
+- ❌ `pack_499`, `premium_tier`: a price or a tier in the name splits one feature into several when prices or tiers change. Keep price, tier, version, and variant out of `feature`.
+
+For a bonus, use the name of the program, such as `welcome`, `daily_bonus`, `referral`, or `support_compensation`.
+
+### Other fields
+
+- **`reference_id`**: The ID of the related object in your system, up to 128 characters. Use it to link a `spend_reversal` to the `spend` it reverses, or a `reward` to the action it was granted for. Don't put personal data here.
+- **`customer_placement_id`**: The ID of the screen in your app where the operation happened. This is your own ID, not an Adapty [placement](placements) ID.
+- **`store` and `store_transaction_id`**: Send them together when your backend credits coins for a purchase itself. Adapty doesn't verify that the purchase exists. If the purchase is refunded in the store, Adapty takes back the coins credited with this reference.
+- **`is_sandbox`**: Send `true` for credits you grant while testing. On store transactions, Adapty sets it from the environment of the purchase.
+
+:::warning
+Don't credit coins for a product that is [linked to the currency](create-virtual-currency#link-products) in Adapty. Adapty already credits those purchases, so a credit from your backend gives the user the credits twice.
+:::
+
+Transactions created before November 12, 2026, when labeling became available, keep their data: Adapty labeled its own transactions retroactively, and your API transactions from before that date stay with `operation: null`. `metadata` is unchanged and still accepts any keys you need.
 
 ## Limitations
 
 - **Cross-device access requires identification**: A balance belongs to one profile. An anonymous user keeps their balance only on the installation where they earned it, so it is lost when they reinstall your app or open it on another device. Identify users to make a balance available on every device and after every reinstall. See [Balances, profiles, and devices](virtual-currency-balance#balances-profiles-and-devices).
 - **Server-side only**: There is no SDK method to read or spend a balance yet, so your app needs a backend. It reads balances and grants or spends credits through the server-side API.
 - **Up to 20 currencies per app**: You can create up to 20 virtual currencies in one app.
+- **No credits for some purchases**: Purchases in a [custom store](custom-store), purchases shared through [Apple Family Sharing](apple-family-sharing), and imported historical purchases grant no credits.
+- **One balance for sandbox and production**: Sandbox purchases add credits to the same balance as real purchases. Test purchases with test accounts, not with the accounts of real users.

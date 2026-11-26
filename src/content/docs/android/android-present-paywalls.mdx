@@ -88,7 +88,7 @@ AdaptyFlowView flowView = AdaptyUI.getFlowView(
 AdaptyFlowView flowView =
   new AdaptyFlowView(activity); //add to the view hierarchy if needed, or you receive it from xml
 ...
-flowView.showFlow(flowConfiguration, products, eventListener, insets, customAssets, tagResolver, timerResolver);
+flowView.showFlow(flowConfiguration, products, eventListener, insets, customAssets, tagResolver, timerResolver, observerModeHandler, customElementsResolver);
 ```
 
 </TabItem>
@@ -135,7 +135,8 @@ Request parameters:
 | **insets**                    | optional | <p>Insets are the spaces around the flow that prevent tapable elements from getting hidden behind system bars.</p><p>Default: `Unspecified` which means Adapty will automatically adjust the insets, which works great for edge-to-edge flows. </p><p>If your flow isn’t edge-to-edge, you might want to set custom insets. For how to do that, read in the [Change flow insets](android-present-paywalls#change-flow-insets) section below.</p> |
 | **customAssets**              | optional | Pass an `AdaptyCustomAssets` object to replace images and videos in your flow or paywall at runtime. Refer to [Customize assets](android-get-pb-paywalls#customize-assets) for more details.                                                                                                                                                      |
 | **tagResolver**               | optional | An `AdaptyUiTagResolver` that returns your app's values for the flow's [custom tags](flow-custom-tags). For details, read [Pass data to flows](android-flow-custom-tags).                                                                                                                                                                                                      |
-| **timerResolver**             | optional | Pass the resolver here if you are going to use custom timer functionality.                                                                                                                                                                                                                                                                                                                                                                                      |
+| **timerResolver**             | optional | An `AdaptyUiTimerResolver` that returns the end date of each **Developer defined** timer in the flow, by Timer ID. Default: `AdaptyUiTimerResolver.Default`, which counts down one hour from the screen open. For details, read [Use developer-defined timer](#use-developer-defined-timer). |
+| **customElementsResolver**    | <p>optional</p><p>SDK 4.4+</p> | An `AdaptyCustomElementsResolver` that returns your app's native views for the flow's [custom elements](flow-custom-elements). Replaces the app-wide resolver in this flow view. For details, read [Display custom elements](android-flow-custom-elements). |
 
 <SampleApp />
 
@@ -193,7 +194,8 @@ ViewCompat.setOnApplyWindowInsetsListener(flowView, (view, insets) -> {
 
     AdaptyFlowInsets flowInsets =
                 AdaptyFlowInsets.vertical(systemBarInsets.top, 0);
-    flowView.showFlow(flowConfiguration, products, eventListener, flowInsets);
+    flowView.showFlow(flowConfiguration, products, eventListener, flowInsets, AdaptyCustomAssets.Empty,
+            AdaptyUiTagResolver.Default, AdaptyUiTimerResolver.Default, null, null);
 
     return insets;
 });
@@ -203,23 +205,25 @@ ViewCompat.setOnApplyWindowInsetsListener(flowView, (view, insets) -> {
 
 ## Use developer-defined timer
 
-To use developer-defined timers in your mobile app, create a `timerResolver` object—a dictionary or map that pairs custom timers with the string values that will replace them when the flow is rendered. Here's an example:
+Use this section for a timer with the **Developer defined** behavior in the Flow & Paywall Builder. In the builder, each such timer has a **Timer ID** (see [Let your app set the end date](flow-timer#let-your-app-set-the-end-date)), and your app sets the end date for it. Use the same Timer ID in your code as in the builder, character for character, including letter case and spaces. If the IDs differ, the timer gets no end date from your app.
+
+To set the end dates, create an `AdaptyUiTimerResolver`. It returns a `Date`, the end date, for each Timer ID. Here's an example:
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
 import java.util.Calendar
-import java.util.Date
-import java.util.TimeZone
 
 ...
 
 val customTimers = mapOf(
-    "CUSTOM_TIMER_NY" to Calendar.getInstance(TimeZone.getDefault()).apply { set(2025, 0, 1) }.time, // New Year 2025
+    "CUSTOM_TIMER_NY" to Calendar.getInstance().apply {
+        set(get(Calendar.YEAR) + 1, Calendar.JANUARY, 1, 0, 0, 0)
+    }.time, // next New Year's Day
 )
 val timerResolver = AdaptyUiTimerResolver { timerId ->
-    customTimers.getOrElse(timerId, { Date(System.currentTimeMillis() + 3600 * 1000L) /* in 1 hour */ } )
+    customTimers[timerId] ?: AdaptyUiTimerResolver.Default.timerEndAtDate(timerId) // in 1 hour
 }
 ```
 
@@ -229,22 +233,18 @@ val timerResolver = AdaptyUiTimerResolver { timerId ->
 ```java showLineNumbers
 import java.util.Calendar;
 import java.util.Date;
-import java.util.TimeZone;
 
 ...
 
+Calendar newYear = Calendar.getInstance();
+newYear.set(newYear.get(Calendar.YEAR) + 1, Calendar.JANUARY, 1, 0, 0, 0); // next New Year's Day
+
 Map<String, Date> customTimers = new HashMap<>();
-customTimers.put(
-        "CUSTOM_TIMER_NY",
-        new Calendar.Builder().setTimeZone(TimeZone.getDefault()).setDate(2025, 0, 1).build().getTime()
-);
-AdaptyUiTimerResolver timerResolver = new AdaptyUiTimerResolver() {
-    @NonNull
-    @Override
-    public Date timerEndAtDate(@NonNull String timerId) {
-        Date date = customTimers.get(timerId);
-        return date != null ? date : new Date(System.currentTimeMillis() + 3600 * 1000L); /* in 1 hour */
-    }
+customTimers.put("CUSTOM_TIMER_NY", newYear.getTime());
+
+AdaptyUiTimerResolver timerResolver = timerId -> {
+    Date date = customTimers.get(timerId);
+    return date != null ? date : AdaptyUiTimerResolver.Default.timerEndAtDate(timerId); // in 1 hour
 };
 ```
 
@@ -252,7 +252,11 @@ AdaptyUiTimerResolver timerResolver = new AdaptyUiTimerResolver() {
 
 </Tabs>
 
-In this example, `CUSTOM_TIMER_NY` is the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. The `timerResolver` ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer’s end time, such as New Year’s Day, minus the current time).
+Pass `timerResolver` to `AdaptyUI.getFlowView`, `AdaptyFlowView.showFlow`, or `AdaptyFlowScreen`, as in the examples at the start of this page.
+
+In this example, `CUSTOM_TIMER_NY` is the Timer ID of a **Developer defined** timer in the builder. The timer shows the time left until the next New Year's Day, for example `13d 09h 03m 34s`.
+
+The SDK calls the resolver each time a screen with the timer opens. If the resolver returns a date in the past, the timer shows zero at once and its **On timer end** trigger runs. `AdaptyUiTimerResolver.Default`, which the SDK uses when you pass no resolver, counts down one hour from the screen open.
 
 ## Use custom tags
 

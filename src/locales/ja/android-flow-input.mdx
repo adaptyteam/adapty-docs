@@ -1,12 +1,12 @@
 ---
-title: "Android SDKでフローからデータを処理する"
-description: "Adapty SDKを使用して、フローでユーザーが入力したデータをAndroidアプリで保存・活用する方法を説明します。"
-metadataTitle: "フローからデータを処理する | Android SDK | Adapty ドキュメント"
+title: "AndroidSDKでフローからデータを処理する"
+description: "Adapty SDKを使用して、ユーザーがフローに入力したデータをAndroidアプリで保存・活用する方法。"
+metadataTitle: "フローのデータ処理 | Android SDK | Adapty ドキュメント"
 ---
 
-ユーザーが[フロー](adapty-flow-builder)の入力フィールドに入力したり、クイズに回答したり、トグルを切り替えたりすると、SDKはその値をアナリティクスコールバックを通じてアプリに渡します。
+ユーザーが[フロー](adapty-flow-builder)内で入力フィールドに記入したり、クイズに回答したり、トグルを切り替えたりすると、SDKはその値をアナリティクスコールバックを通じてアプリに渡します。
 
-アプリがこのデータを活用する主なケースは次のとおりです：
+アプリでこのデータを活用する主なユースケース：
 
 - **ユーザーを自社バックエンドに登録する**: オンボーディングフローでユーザーが入力したメールアドレスと名前を取得し、フローが閉じたタイミングでアカウントを作成します。
 - **回答と設定を保存する**: ユーザーが選択した内容を記録しておき、アプリが後から活用できるようにします。たとえば、カスタム属性として[Adapty プロファイルに書き込む](android-setting-user-attributes)といった使い方ができます。
@@ -41,14 +41,15 @@ class MyFlowEventListener : AdaptyFlowDefaultEventListener() {
 
 `onAnalyticEvent` コールバックは、[画面表示](android-flow-screen-views)を含むフローのすべての分析イベントを配信します。ユーザー入力イベントだけをフィルタリングするには、`name` を `flow_user_input` と比較してください。値を格納するパラメーターは `element_type` によって異なります。
 
-| `element_type` | パラメーターの格納値 | Kotlin 型 |
+| `element_type` | 値を格納するパラメータ | Kotlin型 |
 |:---------------|:----------------------------|:----------|
 | `text_input`, `email_input`, `number_input`, `phone_input` | `value` | `String` |
-| `date_picker`, `time_picker`, `date_time_picker` | `value` | `Double`、ミリ秒単位の Unix 時間。`Number` 経由で読み取ってください。 |
+| `date_picker`, `time_picker`, `date_time_picker` | `value` | SDK 4.3.0以降は`Long`、それ以前のバージョンは`Double`。ミリ秒単位のUnix時間。`Number`経由で読み取ること。 |
+| `wheel_range_picker` | `value` | SDK 4.3.0以降で整数の場合は`Long`、小数を含む数値またはそれ以前のバージョンは`Double`。`Number`経由で読み取ること。 |
 | `single_choice`, `multi_choice` | `item_ids`, `item_titles` | `List<String>` |
 | `toggle` | `value` | `Boolean` |
 
-[受け取る内容](#what-you-receive) セクションに、すべてのパラメーターと各ビルダー要素が返す値の一覧を記載しています。
+[受け取る情報](#what-you-receive) セクションでは、すべてのパラメーターと各ビルダー要素が報告する内容を一覧で確認できます。
 
 <FlowInputVerify />
 
@@ -88,7 +89,7 @@ override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: C
 override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
     params["element_id"]       // "birthday"
     params["element_type"]     // "date_picker"
-    params["value"]            // 6.45408E11   (Double — Unix milliseconds, 1990-06-15, local midnight)
+    params["value"]            // 645408000000   (Long — Unix milliseconds, 1990-06-15, local midnight. Double before SDK 4.3.0)
 }
 ```
 </Details>
@@ -139,13 +140,13 @@ override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: C
 
 ## ユースケース \{#use-cases\}
 
-### バックエンドへのユーザー登録 \{#register-users-on-your-backend\}
+### バックエンドにユーザーを登録する \{#register-users-on-your-backend\}
 
-値が届き次第収集し、フローが閉じた時点で一度のリクエストにまとめて送信することで、すべての回答を1つのリクエストで送ることができます。
+値が届くたびに収集し、フローが閉じたタイミングでまとめて送信することで、1回のリクエストに全回答を含めることができます。
 
-フローは、ユーザーが最後まで完了した場合でも、途中で離脱した場合でも閉じられます。バックエンドを呼び出す前に、必要なフィールドが揃っているかを確認してください。
+フローは、ユーザーが最後まで完了した場合でも、途中で離脱した場合でも閉じられます。バックエンドを呼び出す前に、必要なフィールドが揃っているかチェックしてください。
 
-フローはバックエンドからのエラーを表示できません。コールバックには戻り値がなく、SDKには実行中のフローにデータを送り込むメソッドもありません。たとえばメールアドレスがすでに使用中の場合など、登録に失敗した際は、フローが閉じた後に独自のUIでエラーを表示してください。
+フローはバックエンドからのエラーを表示できません。コールバックに戻り値はなく、実行中のフローはアプリからデータを受け取ることができません。たとえばメールアドレスがすでに使用されているために登録が失敗した場合は、フローが閉じた後に独自の UI でエラーを表示してください。
 
 ```kotlin showLineNumbers title="Kotlin"
 class MyFlowEventListener : AdaptyFlowDefaultEventListener() {

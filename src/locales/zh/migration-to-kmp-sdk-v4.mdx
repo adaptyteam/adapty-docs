@@ -55,7 +55,7 @@ adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp"
 
 `adapty-kmp-ui` 模块仅在你通过 Compose Multiplatform 层（`view.present()`）渲染流程和付费墙时才需要。完整配置请参阅[安装 Adapty SDK](sdk-installation-kotlin-multiplatform)。
 
-底层原生 Adapty SDK 已在两个平台上升级至 4.x 版本，并自动完成依赖解析——无需修改构建配置。iOS 部署目标保持 **15.0**，本次发布不作更改。
+两个平台的原生 Adapty SDK 底层均已升级至 4.x 版本，依赖会自动解析。在 Android 上，需在应用模块中将 `compileSdk` 设置为 35 或更高版本，因为 Adapty UI 库使用的 Jetpack Compose 1.8 有此要求。iOS 部署目标保持 **15.0** 不变，本次发布未作调整。
 
 ## ⚠️ Adapty 归因功能默认禁用 \{#adapty-attribution-is-disabled-by-default\}
 
@@ -105,6 +105,19 @@ adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp"
 - Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en")
 + Adapty.getFlowForDefaultAudience("YOUR_PLACEMENT_ID")
 ```
+
+### 语言区域匹配为精确匹配 \{#locale-matching-is-exact\}
+
+:::warning
+在 v3 中，Adapty 服务器负责选择本地化版本，并会回退到语言级别：当付费墙没有 `pt-br` 本地化时，`pt-br` 的请求会使用 `pt` 本地化版本。在 v4 中，SDK 在设备端选择本地化版本，且仅支持精确匹配。如果传入的语言区域代码与任何本地化版本均不匹配，流程将以其默认本地化版本渲染，不会报错也不会有任何警告。
+:::
+
+升级前，请检查应用传入的语言区域代码：
+
+- 对于您传递的每个地区代码，请添加该代码对应的本地化——例如，除了 `pt` 之外还需要添加 `pt-BR`——或将该代码映射到流程中已有的代码。
+- 传递的代码必须与已发布流程中的代码完全一致：传 `pt-BR` 而非 **Select languages** 字段中的 `pt-br`。对于旧版付费墙编辑工具创建的付费墙，请传递小写代码，例如 `pt-br`。不要直接传递系统语言区域标识符：`pt_BR` 无法匹配任何本地化，`en-US` 也无法匹配仅有 `en` 的流程。
+
+参见[本地化与语言区域代码](kmp-localizations-and-locale-codes#flows-and-paywalls)。
 
 ### getPaywallProducts(paywall) → getPaywallProducts(flow)
 
@@ -250,12 +263,12 @@ adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp"
 
 ### 新 API \{#new-apis\}
 
-- `AdaptyUI.setObserverModeResolver(...)` 配合 `AdaptyUIObserverModeResolver` —— 在 SDK 以[观察者模式](implement-observer-mode-kmp)运行时，驱动从流程中发起的购买和恢复操作。此前该功能仅在 iOS 和 Android 原生 SDK 中可用。详见[在观察者模式下展示流程](kmp-present-flows-in-observer-mode)。
-- `AdaptyUI.setSystemRequestsHandler(...)` 配合 `AdaptyUISystemRequestsHandler` —— 用于处理流程中的系统请求（系统权限提示和应用评价请求）。目前流程尚未触发这些请求，无需注册处理器。
-- 新增可选回调 `flowViewDidReceiveAnalyticEvent`，用于上报流程中的分析事件，从用户打开每个页面时的页面浏览事件开始。详见[追踪流程页面浏览](kmp-flow-screen-views)。
-- `AdaptyUI.openWebUrl(url, openIn)` 和 `AdaptyUI.requestAppReview()` —— 这两个方法分别为默认的 `OpenUrlAction` 处理逻辑和默认的 `handleAppReviewRequest` 提供支持，因此 URL 跳转和应用评价提示均可开箱即用地在原生端处理。只有在覆盖默认行为时，才需要直接调用它们。
-- `AdaptyUIFlowView.locale` —— 报告视图构建时所使用的本地化语言，便于了解用户实际看到的是哪种语言。
-- `AdaptyConfig.ServerCluster.CN` —— 新增服务器集群选项，与 `DEFAULT` 和 `EU` 并列，用于将应用连接至 [Adapty 中国服务器](china-cluster)。
+- `AdaptyUI.setObserverModeResolver(...)` 配合 `AdaptyUIObserverModeResolver` — 在 SDK 以[观察者模式](implement-observer-mode-kmp)运行时，驱动从流程发起的购买和恢复操作。此前该功能仅在原生 iOS 和 Android SDK 中可用。请参阅[在观察者模式下展示流程](kmp-present-flows-in-observer-mode)。
+- `AdaptyUI.setSystemRequestsHandler(...)` 配合 `AdaptyUISystemRequestsHandler` — 响应来自流程的系统请求（操作系统权限提示和应用评价请求）。如果你的流程使用了**Request permission**操作，请注册此处理器：请参阅[在流程中处理权限请求](kmp-handle-permissions)。
+- 新增的可选回调 `flowViewDidReceiveAnalyticEvent` 用于上报流程中的分析事件，从用户打开的每个页面的屏幕浏览事件开始记录。请参阅[追踪流程屏幕浏览](kmp-flow-screen-views)。
+- `AdaptyUI.openWebUrl(url, openIn)` 和 `AdaptyUI.requestAppReview()` — 这两个方法分别支持默认的 `OpenUrlAction` 处理和默认的 `handleAppReviewRequest`，因此 URL 和应用评价提示开箱即用地以原生方式处理。仅在你覆盖了这些默认行为时才需直接调用它们。
+- `AdaptyUIFlowView.locale` — 报告视图构建时所使用的本地化语言，方便你了解用户实际看到的是哪种语言。
+- `AdaptyConfig.ServerCluster.CN` — 新增的服务器集群选项，与 `DEFAULT` 和 `EU` 并列，用于将你的应用连接至 [Adapty 中国服务器](china-cluster)。
 
 ## 重命名的外部归因 API \{#renamed-external-attribution-apis\}
 
@@ -326,9 +339,10 @@ AdaptyUI.createFlowView(flow, customLayoutId = "tablet_landscape")
 
 这些变更不会导致编译错误，请在运行时进行测试：
 
-- **购买完成**：在 v3 中，默认的 `paywallViewDidFinishPurchase` 会在除 `AdaptyPurchaseResult.UserCanceled` 以外的任何购买结果后关闭视图。在 v4 中，默认的 `flowViewDidFinishPurchase` 不执行任何操作，因此**购买完成后流程会保持打开状态，直到你主动关闭它**——与 iOS 行为一致。如果你依赖之前的自动关闭逻辑，请在购买完成后自行调用 `view.dismiss()`。
-- **Android 系统返回**：在 v3 中，默认的 `paywallViewDidPerformAction` 会在 `CloseAction` 和 `AndroidSystemBackAction` 时关闭视图。在 v4 中，默认行为仅处理 `CloseAction`——**系统返回按钮不再自动关闭流程**，与 iOS 保持一致（iOS 上流程无法通过系统手势关闭）。请为用户提供明确的退出方式（如 **Close** 按钮或 `on_device_back` 动作），或在 `flowViewDidPerformAction` 中自行关闭视图。
-- **视图错误**：在 v3 中，默认的 `paywallViewDidFailRendering` 不执行任何操作。在 v4 中，默认的 `flowViewDidReceiveError` 会**关闭视图**——如需保持视图打开或自定义错误处理逻辑，请覆盖该方法。
+- **流程本地化**：区域语言代码不再回退到其对应语言——`pt-br` 不会使用 `pt` 的本地化内容。若代码没有精确匹配，流程将以默认本地化渲染。详见[语言环境匹配为精确匹配](#locale-matching-is-exact)。
+- **购买完成**：在 v3 中，默认的 `paywallViewDidFinishPurchase` 会在除 `AdaptyPurchaseResult.UserCanceled` 之外的任何购买结果后关闭视图。在 v4 中，默认的 `flowViewDidFinishPurchase` 不执行任何操作，因此**购买完成后流程会保持打开状态，直到你手动关闭**——与 iOS 行为一致。如果你依赖之前的自动关闭行为，请在购买完成后自行调用 `view.dismiss()`。
+- **Android 系统返回**：在 v3 中，默认的 `paywallViewDidPerformAction` 会在 `CloseAction` 和 `AndroidSystemBackAction` 时均关闭视图。在 v4 中，默认行为仅处理 `CloseAction`——**系统返回按钮不再自动关闭流程**，与 iOS 保持一致（iOS 上流程无法通过系统手势关闭）。请为用户提供明确的退出方式（如 **Close** 按钮或 `on_device_back` 动作），或在 `flowViewDidPerformAction` 中自行关闭视图。
+- **视图错误**：在 v3 中，默认的 `paywallViewDidFailRendering` 不执行任何操作。在 v4 中，默认的 `flowViewDidReceiveError` 会**关闭视图**——如果你希望保持视图打开或以不同方式处理错误，请覆盖此方法。
 - **视图仅可使用一次**：调用 `dismiss()` 后，视图将被销毁。如需再次展示流程，请重新调用 `createFlowView`。
 
 ## 用户引导 API 弃用 \{#onboarding-api-deprecation\}

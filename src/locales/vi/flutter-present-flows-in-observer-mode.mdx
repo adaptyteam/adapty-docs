@@ -15,11 +15,11 @@ Hướng dẫn này trình bày cách hiển thị một flow và xử lý các 
 
 Bạn cần:
 
-- **Adapty Flutter SDK 4.0 trở lên**: Các phiên bản cũ hơn không thể render flow. Để chuyển đổi ứng dụng hiện có, xem [hướng dẫn migration](migration-to-flutter-sdk-v4).
-- **`observerMode` đặt thành `true`**: Xem [hướng dẫn cài đặt Flutter SDK](sdk-installation-flutter#activate-adapty-module-of-adapty-sdk).
+- **Adapty Flutter SDK 4.0 trở lên**: Các phiên bản cũ hơn không thể hiển thị flow. Trên Android, sử dụng 4.4.0 trở lên: các phiên bản cũ hơn có thể không liên kết các giao dịch mua được báo cáo với flow. Để chuyển đổi ứng dụng hiện có, xem [hướng dẫn migration](migration-to-flutter-sdk-v4).
+- **`observerMode` được đặt thành `true`**: Xem [hướng dẫn cài đặt Flutter SDK](sdk-installation-flutter#activate-adapty-module-of-adapty-sdk).
 - **Tích hợp cửa hàng ban đầu**: Thiết lập Adapty [với App Store](initial_ios) và [với Google Play](initial-android).
-- **Một flow đã xuất bản với các sản phẩm**: Xây dựng trong [Flow & Paywall Builder](adapty-flow-builder) và gán [sản phẩm](create-product) vào đó.
-- **Một placement cho flow**: [Tạo một placement](create-placement) và gán flow của bạn vào đó.
+- **Một flow đã xuất bản có sản phẩm**: Xây dựng trong [Flow & Paywall Builder](adapty-flow-builder) và gán [sản phẩm](create-product) vào đó.
+- **Một flow placement**: [Tạo một placement](create-placement) và gán flow của bạn vào đó.
 - **Flow đã được tải trong ứng dụng của bạn**: [Lấy flow và cấu hình của nó](flutter-get-pb-paywalls) trước khi hiển thị.
 
 ## Triển khai \{#implementation\}
@@ -55,16 +55,18 @@ Bạn cần:
    }
    ```
 
-`observerModeDidInitiatePurchase` thông báo cho bạn biết người dùng đã bắt đầu mua hàng, còn `observerModeDidInitiateRestore` — người dùng đã bắt đầu khôi phục. Hãy kích hoạt flow mua hàng hoặc khôi phục tùy chỉnh của bạn để phản hồi.
+   `observerModeDidInitiatePurchase` thông báo cho bạn biết người dùng đã bắt đầu mua hàng, còn `observerModeDidInitiateRestore` — người dùng đã bắt đầu khôi phục. Hãy kích hoạt flow mua hàng hoặc khôi phục tùy chỉnh của bạn để phản hồi.
 
    Ngoài ra, nhớ gọi các callback sau để thông báo cho AdaptyUI về quá trình mua hàng hoặc khôi phục. Điều này cần thiết để flow hoạt động đúng, chẳng hạn như hiển thị loader và các thứ khác:
 
-| Callback           | Mô tả                                                                                         |
+   | Callback           | Mô tả                                                                                         |
    | :----------------- | :-------------------------------------------------------------------------------------------- |
    | onStartPurchase()  | Callback cần được gọi để thông báo cho AdaptyUI rằng quá trình mua hàng đã bắt đầu.          |
    | onFinishPurchase() | Callback cần được gọi để thông báo cho AdaptyUI rằng quá trình mua hàng đã hoàn tất.         |
    | onStartRestore()   | Callback cần được gọi để thông báo cho AdaptyUI rằng quá trình khôi phục đã bắt đầu.        |
    | onFinishRestore()  | Callback cần được gọi để thông báo cho AdaptyUI rằng quá trình khôi phục đã hoàn tất.       |
+
+   Sau `onFinishPurchase()`, flow sẽ chạy cùng [outcome actions](respond-to-purchase-outcomes#add-actions-for-a-result) dù kết quả như thế nào, kể cả khi người dùng hủy: các hành động **When pending** trên iOS và **When succeeded** trên Android. Mọi màn hình phụ thuộc vào kết quả mua hàng (ví dụ: màn hình cảm ơn) hãy hiển thị từ code của bạn — chỉ code của bạn mới biết kết quả. Sau `onFinishRestore()`, flow sẽ chạy các hành động **When restore completed**, bất kể kết quả ra sao.
 
 2. Đăng ký resolver trước khi hiển thị bất kỳ màn hình nào:
 
@@ -72,8 +74,8 @@ Bạn cần:
    AdaptyUI().setObserverModeResolver(MyObserverModeResolver());
    ```
 
-3. Tạo và hiển thị flow view như bình thường: [lấy flow và tạo view của nó](flutter-get-pb-paywalls), sau đó [hiển thị nó](flutter-present-paywalls). Không cần thêm tham số nào — khi resolver đã được đăng ký, mọi flow do Adapty render đều định tuyến các giao dịch mua và khôi phục qua nó.
+3. Tạo và hiển thị flow view như thường lệ: [tải flow và tạo view của nó](flutter-get-pb-paywalls), sau đó [hiển thị nó](flutter-present-paywalls). Không cần thêm tham số nào — sau khi resolver được đăng ký, mọi flow do Adapty render đều sẽ định tuyến các giao dịch mua và khôi phục qua resolver đó.
 
 :::warning
-Đừng quên [báo cáo giao dịch và liên kết nó với paywall](report-transactions-observer-mode-flutter). Nếu không, Adapty sẽ không nhận ra giao dịch và sẽ không xác định được paywall nguồn của giao dịch mua.
+Đừng quên [báo cáo giao dịch và liên kết với paywall](report-transactions-observer-mode-flutter). Nếu không, Adapty sẽ không nhận ra giao dịch và sẽ không xác định được paywall nguồn của giao dịch mua. Hãy truyền `paywallVariationId` của `AdaptyPaywallProduct` mà người dùng đã mua, không phải `AdaptyFlow.variationId`: ID biến thể của flow không liên kết giao dịch mua với flow đó.
 :::

@@ -55,7 +55,7 @@ adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp"
 
 `adapty-kmp-ui` modülü yalnızca flow'ları ve paywallları Compose Multiplatform katmanıyla (`view.present()`) render ediyorsanız gereklidir. Tam kurulum için [Adapty SDK'yı Yükle](sdk-installation-kotlin-multiplatform) sayfasına bakın.
 
-Temel yerel Adapty SDK'ları her iki platformda da 4.x sürümlerine güncellendi ve otomatik olarak çözümleniyor — herhangi bir derleme değişikliğine gerek yok. iOS deployment target bu sürümde değişmeden **15.0** olarak kalıyor.
+Altta yatan yerel Adapty SDK'ları her iki platformda da 4.x sürümlerine güncellendi ve otomatik olarak çözümlendi. Android'de uygulama modülünüzde `compileSdk` değerini 35 veya üzerine ayarlayın. Adapty UI kütüphanesi, bunu gerektiren Jetpack Compose 1.8'i kullanmaktadır. iOS dağıtım hedefi bu sürümde değiştirilmeden **15.0** olarak kalmaktadır.
 
 ## ⚠️ Adapty Attribution varsayılan olarak devre dışıdır \{#adapty-attribution-is-disabled-by-default\}
 
@@ -105,6 +105,19 @@ Döndürülen tür `AdaptyPaywall` yerine `AdaptyFlow` olarak değişir ve `loca
 - Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en")
 + Adapty.getFlowForDefaultAudience("YOUR_PLACEMENT_ID")
 ```
+
+### Yerel ayar eşleştirmesi birebir yapılır \{#locale-matching-is-exact\}
+
+:::warning
+v3'te Adapty sunucusu yerelleştirmeyi seçer ve dile göre geri dönüş yapardı: paywall'da `pt-br` yoksa `pt-br` isteği `pt` yerelleştirmesini alırdı. v4'te SDK, yerelleştirmeyi cihazda seçer ve yalnızca birebir eşleşme kullanır. Hiçbir yerelleştirmeyle eşleşmeyen bir kod, hata veya uyarı vermeksizin flow'u varsayılan yerelleştirmesiyle görüntüler.
+:::
+
+Yükseltme yapmadan önce uygulamanızın ilettiği yerel ayar kodlarını kontrol edin:
+
+- Her bölge kodu için, o koda sahip bir lokalizasyon ekleyin — örneğin `pt` koduna ek olarak `pt-BR` — ya da kodu flow'un sahip olduğu bir kodla eşleştirin.
+- Kodları tam olarak yayınlanmış flow'un sahip olduğu şekilde geçirin: **Select languages** alanındaki `pt-br` değil, `pt-BR`. Eski Paywall Builder'dan gelen paywall'lar için `pt-br` gibi küçük harfli kodlar geçirin. Sistem locale tanımlayıcısını olduğu gibi geçirmeyin: `pt_BR` hiçbir lokalizasyonla eşleşmez ve `en-US`, yalnızca `en` içeren bir flow'u kaçırır.
+
+[Lokalizasyonlar ve locale kodları](kmp-localizations-and-locale-codes#flows-and-paywalls) bölümüne bakın.
 
 ### getPaywallProducts(paywall) → getPaywallProducts(flow)
 
@@ -250,12 +263,12 @@ v3'te olduğu gibi, burada ilettiğiniz callback'ler (ve `registerFlowEventsList
 
 ### Yeni API'lar
 
-- `AdaptyUI.setObserverModeResolver(...)` ve `AdaptyUIObserverModeResolver` — SDK [Observer mode](implement-observer-mode-kmp)'da çalışırken flow'lardan başlatılan satın alma ve geri yükleme işlemlerini yönetir. Daha önce bu yalnızca native iOS ve Android SDK'larında kullanılabiliyordu. Bkz. [Flow'ları Observer mode'da sunma](kmp-present-flows-in-observer-mode).
-- `AdaptyUI.setSystemRequestsHandler(...)` ve `AdaptyUISystemRequestsHandler` — bir flow'dan gelen sistem istekleri (OS izin istemleri ve uygulama inceleme istekleri) için ayrılmıştır. Flow'lar henüz bu istekleri tetiklemediğinden bir handler kaydetmenize gerek yoktur.
-- Yeni isteğe bağlı `flowViewDidReceiveAnalyticEvent` callback'i, bir flow'dan analitik olaylarını raporlar; kullanıcının her açtığı ekran için bir ekran görüntüleme olayıyla başlar. Bkz. [Flow ekran görüntülemelerini takip etme](kmp-flow-screen-views).
-- `AdaptyUI.openWebUrl(url, openIn)` ve `AdaptyUI.requestAppReview()` — bunlar varsayılan `OpenUrlAction` işlemesini ve varsayılan `handleAppReviewRequest`'i destekler; böylece URL'ler ve uygulama inceleme istemleri kutudan çıktığı gibi native olarak işlenir. Yalnızca bu varsayılanları geçersiz kılıyorsanız doğrudan çağırın.
-- `AdaptyUIFlowView.locale` — view'ın hangi yerelleştirmeyle oluşturulduğunu raporlar; böylece kullanıcının gerçekte hangisini gördüğünü anlayabilirsiniz.
-- `AdaptyConfig.ServerCluster.CN` — uygulamanızı [Adapty'nin Çin sunucularına](china-cluster) bağlamak için `DEFAULT` ve `EU`'nun yanı sıra yeni bir sunucu kümesi seçeneği.
+- `AdaptyUI.setObserverModeResolver(...)` ile `AdaptyUIObserverModeResolver` — SDK [Observer mode](implement-observer-mode-kmp) modunda çalışırken flow'lardan başlatılan satın almaları ve geri yüklemeleri yönetir. Daha önce bu yalnızca yerel iOS ve Android SDK'larında mevcuttu. Bkz. [Flow'ları Observer mode'da sunma](kmp-present-flows-in-observer-mode).
+- `AdaptyUI.setSystemRequestsHandler(...)` ile `AdaptyUISystemRequestsHandler` — bir flow'dan gelen sistem isteklerini yanıtlar (işletim sistemi izin istemleri ve uygulama değerlendirme talepleri). Flow'larınızda **Request permission** eylemi kullanılıyorsa bir tane kaydedin: bkz. [Flow'larda izin isteklerini yönetme](kmp-handle-permissions).
+- Yeni isteğe bağlı `flowViewDidReceiveAnalyticEvent` geri çağrısı, bir flow'dan analitik olayları raporlar; kullanıcının açtığı her ekran için ekran görünümüyle başlar. Bkz. [Flow ekran görüntülemelerini izleme](kmp-flow-screen-views).
+- `AdaptyUI.openWebUrl(url, openIn)` ve `AdaptyUI.requestAppReview()` — bunlar varsayılan `OpenUrlAction` işlemeyi ve varsayılan `handleAppReviewRequest`'i destekler; böylece URL'ler ve uygulama değerlendirme istemleri kutudan çıktığı gibi yerel olarak işlenir. Yalnızca bu varsayılanları geçersiz kılarsanız doğrudan çağırın.
+- `AdaptyUIFlowView.locale` — görünümün hangi yerelleştirmeyle oluşturulduğunu raporlar; böylece kullanıcının gerçekte hangisini gördüğünü anlayabilirsiniz.
+- `AdaptyConfig.ServerCluster.CN` — uygulamanızı [Adapty'nin Çin sunucularına](china-cluster) bağlamak için `DEFAULT` ve `EU`'nun yanında yeni bir sunucu kümesi seçeneği.
 
 ## Yeniden adlandırılan harici attribution API'leri \{#renamed-external-attribution-apis\}
 
@@ -326,10 +339,11 @@ Hiçbir layout, ID ile eşleşmezse flow, görünüm yapılandırması olmadan y
 
 Bu değişiklikler derleme hatası oluşturmaz; bu nedenle çalışma zamanında test edin:
 
-- **Satın alma tamamlama**: v3'te, varsayılan `paywallViewDidFinishPurchase`, `AdaptyPurchaseResult.UserCanceled` dışındaki her satın alma sonucunda görünümü kapatıyordu. v4'te, varsayılan `flowViewDidFinishPurchase` hiçbir şey yapmaz; yani **satın alma tamamlandıktan sonra flow, siz kapatana kadar açık kalır** — bu iOS davranışıyla örtüşür. Otomatik kapanmaya güveniyorsanız, satın alma tamamlandığında `view.dismiss()` çağrısını kendiniz yapın.
-- **Android sistem geri tuşu**: v3'te, varsayılan `paywallViewDidPerformAction` hem `CloseAction` hem de `AndroidSystemBackAction` üzerinde görünümü kapatıyordu. v4'te, varsayılan yalnızca `CloseAction` ile ilgilenir — **sistem geri tuşu artık flow'u tek başına kapatmaz**; bu, bir flow'un sistem hareketiyle kapatılamadığı iOS davranışıyla örtüşür. Kullanıcılara açık bir çıkış yolu sunun (bir **Kapat** düğmesi veya `on_device_back` eylemi) ya da `flowViewDidPerformAction` içinde görünümü kendiniz kapatın.
-- **Görünüm hataları**: v3'te, varsayılan `paywallViewDidFailRendering` hiçbir şey yapmıyordu. v4'te, varsayılan `flowViewDidReceiveError` **görünümü kapatır** — görünümü açık tutmak veya hatayı farklı ele almak istiyorsanız bu davranışı geçersiz kılın.
-- **Görünümler tek kullanımlıktır**: `dismiss()` çağrısından sonra görünüm yok edilir. Flow'u tekrar göstermek için `createFlowView` metodunu yeniden çağırın.
+- **Flow yerelleştirme**: Bölgesel bir yerel ayar kodu artık kendi diline geri dönmez — `pt-br`, `pt` yerelleştirmesini almaz. Tam eşleşmesi olmayan bir kod, flow'u varsayılan yerelleştirmesiyle render eder. Bkz. [Yerel ayar eşleştirmesi birebir yapılır](#locale-matching-is-exact).
+- **Satın alma tamamlama**: v3'te varsayılan `paywallViewDidFinishPurchase`, `AdaptyPurchaseResult.UserCanceled` dışındaki herhangi bir satın alma sonucunda görünümü kapatıyordu. v4'te varsayılan `flowViewDidFinishPurchase` hiçbir şey yapmaz; dolayısıyla **siz kapatana kadar flow, satın alma işleminin ardından açık kalır** — iOS ile aynı davranış. Bu otomatik kapanmaya güveniyorsanız, satın alma tamamlandığında `view.dismiss()` işlevini kendiniz çağırın.
+- **Android sistem geri tuşu**: v3'te varsayılan `paywallViewDidPerformAction`, hem `CloseAction` hem de `AndroidSystemBackAction` eylemlerinde görünümü kapatıyordu. v4'te varsayılan yalnızca `CloseAction` eylemini işler — **sistem geri tuşu artık bir flow'u kendi başına kapatmaz**; bu, flow'un sistem hareketiyle kapatılamadığı iOS davranışıyla eşleşir. Kullanıcılara açık bir çıkış yolu sunun (bir **Close** düğmesi veya `on_device_back` eylemi) ya da `flowViewDidPerformAction` içinde görünümü kendiniz kapatın.
+- **Görünüm hataları**: v3'te varsayılan `paywallViewDidFailRendering` hiçbir şey yapmazdı. v4'te varsayılan `flowViewDidReceiveError` **görünümü kapatır** — görünümü açık tutmak veya hatayı farklı biçimde işlemek istiyorsanız bu davranışı geçersiz kılın.
+- **Görünümler tek kullanımlıktır**: `dismiss()` çağrıldıktan sonra görünüm yok edilir. Flow'u yeniden göstermek için `createFlowView` işlevini tekrar çağırın.
 
 ## Onboarding API'sinin kullanımdan kaldırılması \{#onboarding-api-deprecation\}
 

@@ -1,0 +1,146 @@
+---
+title: "从后端将 App Store 服务器通知转发给 Adapty"
+description: "如果您的后端必须在 App Store Connect 中保留其 URL，请将 Apple 的服务器通知原样转发给 Adapty，以便 Adapty 能够接收订阅事件。"
+metadataTitle: ""
+
+---
+
+如果您的后端需要在 App Store Connect 中保留其 URL，请将 App Store 服务器通知从您的后端原封不动地转发给 Adapty。如果您的后端不需要在 App Store Connect 中保留其 URL，可改为[在 Adapty 中设置转发到您的后端](enable-app-store-server-notifications#raw-events-forwarding)。这种方式无需编写任何代码。
+
+Adapty 会像处理 Apple 直接发送的通知一样处理来自您后端的通知。借助 [Refund Saver](refund-saver)，Adapty 仍会对其中的退款请求做出响应。
+
+如果您的后端通过自己的 Pub/Sub 主题接收来自 Google Play 的实时开发者通知，则无需编写任何代码即可将其传递给 Adapty。[为 Adapty 添加该主题的推送订阅](enable-real-time-developer-notifications-rtdn#send-notifications-to-two-adapty-apps)。
+
+如需将 App Store 服务器通知传递给 Adapty：
+
+1. 在 Adapty 中，打开您要连接的应用：每个 Adapty 应用都有其专属的通知 URL。前往 [**App settings** > **iOS SDK**](https://app.adapty.io/settings/ios-sdk)。在 **App Store server notifications** 部分，从 **URL for App Store server notifications** 字段复制 URL。
+2. 在您的后端，将 Apple 发送的每条通知转发到您复制的 URL。每个请求需满足以下要求：
+
+   - 保持 Apple 原始请求体不变：`{"signedPayload": "…"}`。
+   - 设置请求头 `Content-Type: application/json`。
+   - 不要添加 `Authorization` 请求头。
+
+   如果 Adapty 也将通知转发给你的后端，请勿将这些通知再回传给 Adapty。
+
+以下是不同编程语言的示例：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="python" label="Python" default>
+
+```python showLineNumbers
+
+url = "https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad45/" # don't forget to replace this URL
+
+payload = '{"signedPayload":"eyJhbGciOiJFUzI1NiIs..."}' # Apple's request body, unchanged
+
+headers = {
+  'Content-Type': 'application/json'
+}
+
+response = requests.request("POST", url, headers=headers, data=payload)
+```
+
+</TabItem>
+<TabItem value="javascript" label="Javascript" default>
+
+```javascript  showLineNumbers
+const axios = require('axios');
+
+const url = 'https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad45/'; // don't forget to replace this URL
+
+const payload = '{"signedPayload":"eyJhbGciOiJFUzI1NiIs..."}'; // Apple's request body, unchanged
+
+const config = {
+  method: 'post',
+  url: url,
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  data: payload,
+};
+
+const response = await axios(config);
+```
+
+</TabItem>
+<TabItem value="php" label="PHP" default>
+
+```php  showLineNumbers
+<?php
+require_once 'HTTP/Request2.php';
+
+$url = 'https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad45/'; // don't forget to replace this URL
+
+$payload = '{"signedPayload":"eyJhbGciOiJFUzI1NiIs..."}'; // Apple's request body, unchanged
+
+$request = new HTTP_Request2();
+$request->setUrl($url);
+$request->setMethod(HTTP_Request2::METHOD_POST);
+$request->setConfig(array(
+  'follow_redirects' => TRUE
+));
+$request->setHeader(array(
+  'Content-Type' => 'application/json'
+));
+$request->setBody($payload);
+$response = $request->send();
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+String url = "https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad45/"; // don't forget to replace this URL
+
+String payload = "{\"signedPayload\":\"eyJhbGciOiJFUzI1NiIs...\"}"; // Apple's request body, unchanged
+
+OkHttpClient client = new OkHttpClient().newBuilder()
+  .build();
+MediaType mediaType = MediaType.parse("application/json");
+RequestBody body = RequestBody.create(mediaType, payload);
+Request request = new Request.Builder()
+  .url(url)
+  .method("POST", body)
+  .addHeader("Content-Type", "application/json")
+  .build();
+Response response = client.newCall(request).execute();
+```
+
+</TabItem>
+<TabItem value="go" label="Go" default>
+
+  ```go showLineNumbers
+package main
+
+	"fmt"
+	"strings"
+	"net/http"
+)
+
+func main() {
+	url := "https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad45/" // Replace this with the actual URL
+
+	payload := strings.NewReader(`{"signedPayload":"eyJhbGciOiJFUzI1NiIs..."}`) // Apple's request body, unchanged
+
+	method := "POST"
+
+	client := &http.Client{}
+	req, err := http.NewRequest(method, url, payload)
+	if err != nil {
+		fmt.Println("Error creating request:", err)
+		return
+	}
+	req.Header.Add("Content-Type", "application/json")
+
+	res, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error sending request:", err)
+		return
+	}
+	defer res.Body.Close()
+}
+  ```
+
+</TabItem>  </Tabs>
+
+`200` 响应并不代表 Adapty 能够成功处理该通知。Adapty 在解码签名载荷之前就会返回响应。要确认通知已成功送达 Adapty，请进行一次[沙盒购买](test-purchases-in-sandbox)，然后在 **App Store server notifications** 部分确认[通知状态](enable-app-store-server-notifications#check-that-notifications-reach-adapty)显示为 **Active**。

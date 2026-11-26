@@ -1,6 +1,6 @@
 ---
 title: "Saldo de moneda virtual"
-description: "Consulta el saldo de monedas virtuales de un usuario en su perfil y revisa cada cambio de saldo en el historial de eventos."
+description: "Consulta los saldos de moneda virtual de un usuario en su perfil, acredita o debita un saldo desde el Adapty Dashboard y revisa cada cambio de saldo."
 metadataTitle: "Saldo de moneda virtual | Documentación de Adapty"
 ---
 
@@ -8,40 +8,107 @@ metadataTitle: "Saldo de moneda virtual | Documentación de Adapty"
 Artículo principal: [Monedas virtuales](virtual-currencies)
 :::
 
-Cada perfil de usuario en [Profiles/CRM](profiles-crm) muestra el saldo de monedas virtuales de ese usuario, junto con un historial de cada cambio.
+Cada perfil de usuario en [Profiles/CRM](profiles-crm) muestra el saldo de moneda virtual de ese usuario, junto con un historial de cada cambio. Desde el mismo perfil, tu equipo de soporte puede acreditar o debitar un saldo manualmente — por ejemplo, para compensar a un usuario por una generación fallida.
 
-## Ver saldos en el perfil de un usuario \{#view-balances-in-a-user-profile\}
+## Ver saldos en un perfil de usuario \{#view-balances-in-a-user-profile\}
 
-<ZoomImage id="virtual-currency-balance.webp" width="300px" alt="Página de perfil de un usuario con la tarjeta de moneda virtual, que muestra los saldos de moneda del usuario" float="right" />
+<ZoomImage id="virtual-currency-balance.webp" width="300px" alt="Página de perfil de un usuario con la tarjeta de moneda virtual, que muestra los saldos del usuario, uno con su cantidad disponible para gastar, y los enlaces Adjust balance y Change history" float="right" />
 
 Abre el [perfil](https://app.adapty.io/profiles/users) del usuario. La tarjeta **Virtual currency** muestra todas las monedas que tiene el usuario.
 
 Cada fila muestra:
 
-- El **código** de la moneda, por ejemplo `COINS`.
+- El **código** de la moneda, como `COINS`.
 - El **saldo** actual, como número entero.
+- El importe **gastable** entre paréntesis, como `1,200 (950 spendable)`, cuando el usuario no puede gastar todo el saldo en ese momento. Los créditos caducados que Adapty aún no ha eliminado cuentan para el saldo, pero no para el importe gastable.
 
-Los saldos se actualizan a medida que el usuario gana, gasta o recibe créditos. Un saldo no puede bajar de 0: si una transacción intenta gastar más de lo que el usuario tiene, falla con `insufficient_balance` y no cambia nada. Un perfil sin saldos muestra una tarjeta vacía.
+Los saldos se actualizan a medida que el usuario gana, gasta o recibe créditos. Un saldo no puede bajar de 0: una transacción que intente gastar más del importe gastable falla con `insufficient_balance` y no cambia nada. Un perfil sin saldos muestra una tarjeta vacía.
 
-Para leer un saldo desde tu propio código, llama a [List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances) en la API del lado del servidor.
+Para leer un saldo desde tu propio código, llama a [Listar saldos de moneda virtual](api-adapty/operations/listVirtualCurrencyBalances) en la API del lado del servidor.
 
-## Revisar cambios de saldo en el historial de eventos \{#review-balance-changes-in-the-event-history\}
+## Ajustar un saldo manualmente \{#adjust-a-balance-manually\}
 
-Cada cambio de saldo aparece en el historial de eventos del perfil, del más reciente al más antiguo. Cada entrada indica el tipo de cambio y las monedas que se vieron afectadas.
+Para compensar a un usuario, devolver créditos por una acción fallida o corregir un saldo, puedes añadir o descontar créditos desde el perfil del usuario. Un cambio puntual no requiere la API del servidor.
 
-El historial muestra tres tipos de eventos de moneda virtual:
+Los propietarios, administradores y miembros de soporte pueden ajustar saldos. El enlace **Adjust balance** aparece cuando tu app tiene al menos una [moneda virtual](create-virtual-currency).
 
-- **Virtual currency credited**: una compra, renovación o inicio de prueba otorgó créditos.
-- **Virtual currency transaction**: una llamada a la API del servidor acreditó o debitó el saldo.
-- **Virtual currency expired**: los créditos con vencimiento se reiniciaron al final de un ciclo de facturación o cuando terminó la suscripción.
+1. En el perfil del usuario, en la tarjeta **Virtual currency**, haz clic en **Adjust balance**.
 
-Cada entrada muestra, para cada moneda modificada:
+   <ZoomImage id="virtual-currency-adjust-balance-form.webp" width="400px" alt="El formulario Adjust balance con un crédito de 50 COINS, la operación Reward, la función support_compensation, un ID de referencia y un comentario" />
+
+2. Selecciona la **Currency**. Luego selecciona **Credit** para añadir créditos o **Debit** para eliminarlos. La línea sobre **Amount** muestra el saldo actual del usuario y el importe disponible en esa moneda.
+3. En **Amount**, introduce un número entero mayor que 0. Puedes debitar hasta el importe disponible.
+4. En **Operation**, selecciona qué significa el cambio. Para un crédito, selecciona **Reward**, **Spend reversal** o **Adjustment**. Para un débito, selecciona **Spend**, **Reward reversal** o **Adjustment**. Usa **Adjustment** para una corrección que no sea ni una recompensa ni una reversión. Para elegir entre las demás opciones, consulta [Operation](virtual-currencies#operation).
+5. En **Feature**, introduce para qué son los créditos, como `support_compensation`. Usa letras, dígitos y `_`, con como máximo un punto. Para consejos sobre nomenclatura, consulta [Feature](virtual-currencies#feature).
+6. Opcionalmente, en **Reference ID**, introduce el ID de un objeto relacionado, como un ticket de soporte. En **Comment**, explica el cambio en un máximo de 200 caracteres. Tu equipo ve el comentario en el historial de eventos del perfil y en **Change history**.
+7. Haz clic en **Continue**. Revisa el saldo y el importe disponible antes y después del cambio, y haz clic en **Confirm**.
+
+   <ZoomImage id="virtual-currency-adjust-balance-confirm.webp" width="400px" alt="El paso de Confirmación del ajuste, que muestra el saldo cambiando de 1.200 a 1.250 y el importe disponible de 950 a 1.000" />
+
+La tarjeta muestra el nuevo saldo y el cambio aparece en la parte superior del [historial de eventos](#review-balance-changes-in-the-event-history) del perfil.
+
+Si el formulario no puede confirmar el resultado, te pedirá que hagas clic en **Confirm** de nuevo. Hazlo: Adapty no aplica el mismo ajuste dos veces.
+
+Adapty no envía los ajustes manuales a webhooks ni a integraciones de análisis. La exportación diaria de moneda virtual a [Amazon S3](s3-exports#virtual-currency-transactions) o [Google Cloud Storage](google-cloud-storage#virtual-currency-transactions) sí los incluye, con **transaction_type** establecido en `dashboard_transaction`.
+
+### Ver quién ajustó un saldo \{#see-who-adjusted-a-balance\}
+
+Para ver qué miembro del equipo ajustó un saldo y por qué, en la tarjeta **Virtual currency**, haz clic en **Change history**. La lista muestra los ajustes manuales de los últimos 3 meses, del más reciente al más antiguo. Cada fila muestra el miembro del equipo y su rol, el cambio, su función, el ID de referencia y el comentario, y el saldo tras el cambio.
+
+Un nuevo ajuste puede tardar unos 2 minutos en aparecer en **Change history**.
+
+<ZoomImage id="virtual-currency-change-history.webp" width="700px" alt="La ventana de Historial de cambios con ajustes manuales, donde cada uno muestra la fecha, el miembro del equipo, su rol, el cambio, la función, el ID de referencia, el comentario y el saldo después" />
+
+## Revisar los cambios de saldo en el historial de eventos \{#review-balance-changes-in-the-event-history\}
+
+Cada cambio de saldo aparece en el historial de eventos del perfil, ordenado del más reciente al más antiguo. Cada entrada indica el cambio y enumera las divisas afectadas.
+
+Adapty nombra cada entrada según lo que provocó el cambio de saldo:
+
+- **Créditos de moneda virtual acreditados**: Una compra, renovación o inicio de prueba otorgó créditos.
+- **Créditos de moneda virtual expirados**: Los créditos con fecha de caducidad se reiniciaron al final de un ciclo de facturación o cuando terminó la suscripción.
+- **Transacción de moneda virtual**: Una [transacción](api-adapty/operations/createVirtualCurrencyTransaction) de la API del servidor enviada sin `operation`.
+
+Una transacción de la API del servidor enviada con `operation`, y un [ajuste manual](#adjust-a-balance-manually), reciben el nombre de su operación:
+
+| `operation` | Nombre de entrada |
+|---|---|
+| `top_up` | Moneda virtual acreditada |
+| `refund` | Moneda virtual revocada |
+| `spend` | Moneda virtual debitada |
+| `spend_reversal` | Débito de moneda virtual revertido |
+| `reward` | Moneda virtual recompensada |
+| `reward_reversal` | Recompensa de moneda virtual revertida |
+| `exchange` | Moneda virtual intercambiada |
+| `expiry` | Moneda virtual expirada |
+| `migration` | Moneda virtual migrada |
+| `adjustment` | Moneda virtual ajustada |
+
+El icono junto a una entrada sigue el signo del importe, no la operación: un icono de crédito, de débito o neutro cuando una transacción realiza ambas acciones a la vez.
+
+Cada entrada muestra, para cada moneda que modificó:
 
 - **Moneda virtual**: El nombre y código de la moneda, como `Gold Coins (COINS)`.
-- **Importe**: El cambio con signo — positivo para un abono, negativo para un cargo.
+- **Importe**: El cambio con signo — positivo para un crédito, negativo para un débito.
 - **Saldo tras el cambio**: El saldo de la moneda una vez aplicado el cambio.
 
-Un evento puede cambiar varias monedas a la vez; por ejemplo, una sola [transacción](api-adapty/operations/createVirtualCurrencyTransaction) que carga una moneda y abona otra para convertir entre ellas.
+Un solo evento puede cambiar varias monedas a la vez; por ejemplo, una sola [transacción](api-adapty/operations/createVirtualCurrencyTransaction) que debita una moneda y acredita otra para convertir entre ellas.
+
+### Detalles de la transacción \{#transaction-details\}
+
+Para ver el motivo de un cambio de saldo, despliega el bloque **Details** que aparece bajo la entrada. Solo se muestran los campos que tienen valor:
+
+<ZoomImage id="virtual-currency-transaction-details.webp" width="500px" alt="Una entrada de moneda virtual debitada en el historial del usuario con el bloque Details desplegado, mostrando la operación, la función, el ID de referencia, el ID de placement del cliente y los metadatos" />
+
+- **Store**: El store de la compra que otorgó los créditos.
+- **Operation**: La `operation` de la transacción, tal como la envió tu backend o la estableció Adapty.
+- **Feature**: En qué se gastaron o para qué se otorgaron los créditos, según el campo `feature`.
+- **Reference ID**: El ID del objeto relacionado en tu sistema, como una generación, según `reference_id`.
+- **Customer placement ID**: La pantalla o el lugar de tu app donde ocurrió la transacción, según `customer_placement_id`. Es tu propio ID, no un [placement](placements) de Adapty.
+- **Sandbox**: **Sí** para una transacción de prueba enviada con `is_sandbox: true` y para un ajuste manual del saldo de un usuario de prueba.
+- **Metadata**: Los pares clave-valor que tu backend envió en `metadata`, o el `comment` de un ajuste manual. Las demás transacciones no muestran metadatos.
+
+Tu backend establece estos campos cuando [crea una transacción](api-adapty/operations/createVirtualCurrencyTransaction). Para un ajuste manual, provienen del formulario **Adjust balance**. Las transacciones registradas antes de que Adapty almacenara estos campos muestran menos información, o ningún bloque **Details**.
 
 ## Saldos, perfiles y dispositivos \{#balances-profiles-and-devices\}
 
@@ -52,7 +119,9 @@ En la práctica, esto significa:
 - **Usuarios identificados**: Un ID de cliente siempre apunta al mismo perfil, por lo que el usuario ve el mismo saldo en todos los dispositivos donde inicia sesión y lo conserva tras reinstalar la app.
 - **Usuarios anónimos**: Un perfil anónimo puede acumular y gastar créditos, pero está vinculado a una instalación de la app en un dispositivo concreto. Si el mismo usuario reinstala la app o la abre en otro dispositivo sin iniciar sesión, Adapty crea un nuevo perfil anónimo con saldo cero. Los créditos permanecen en el perfil anterior, al que el usuario ya no puede acceder.
 
-Para gestionar una economía de moneda virtual en distintos dispositivos y reinstalaciones, identifica a tus usuarios. Puedes identificarlos desde el código de la aplicación a través del SDK (consulta [Identificar usuarios](ios-quickstart-identify) en la guía de inicio rápido) o desde tu backend mediante la [API del lado del servidor](getting-started-with-server-side-api).
+Lo mismo se aplica a los [segmentos por saldo](segments#virtual-currency-balance): un nuevo perfil anónimo coincide con ellos con un saldo de 0.
+
+Por tanto, para gestionar una economía de moneda virtual entre dispositivos y reinstalaciones, identifica a tus usuarios. Puedes identificarlos en el código de la app a través del SDK (consulta [Identificar usuarios](ios-quickstart-identify) en la guía de inicio rápido) o desde tu backend a través de la [API del lado del servidor](getting-started-with-server-side-api).
 
 Identificar a un usuario tarde tiene su propio inconveniente: si un usuario acumula créditos de forma anónima y luego inicia sesión con un customer user ID que ya pertenece a otro perfil, el dispositivo cambia a ese perfil y su saldo. Los créditos acumulados de forma anónima se quedan en el perfil anterior y dejan de ser accesibles. Si el customer user ID es nuevo, se asocia al perfil actual y el usuario conserva el saldo. Para mayor seguridad, identifica a los usuarios antes de que puedan acumular o comprar créditos.
 

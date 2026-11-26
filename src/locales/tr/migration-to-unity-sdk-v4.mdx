@@ -45,18 +45,19 @@ Adapty Unity SDK 4.1, 4.x serisinin ilk kararlı sürümüdür — 4.0 yalnızca
 
 ## Kurulum \{#installation\}
 
-SDK 4.1'i Unity Package Manager aracılığıyla yüklemek için Git URL'sine versiyon etiketini ekleyin:
+SDK 4.1'i Unity Package Manager aracılığıyla kurmak için Git URL'sine versiyon etiketini ekleyin:
 
 ```
 https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unity-sdk#4.1.0
 ```
 
-Unity paketi aracılığıyla yüklemek istiyorsanız, `adapty-unity-plugin-4.1.0.unitypackage` dosyasını [4.1.0 sürümünden](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.1.0) indirin. Tam kurulum için [Adapty SDK'yı Yükleyin](sdk-installation-unity#install-adapty-sdk) sayfasına bakın.
+Unity paketi üzerinden kurulum yapıyorsanız, `adapty-unity-plugin-4.1.0.unitypackage` dosyasını [4.1.0 sürümünden](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.1.0) indirin. Tam kurulum için bkz. [Adapty SDK'yı Yükle](sdk-installation-unity#install-adapty-sdk).
 
-4.x ile birlikte iki derleme kurulumu değişikliği geldi:
+4.x ile birlikte üç derleme kurulumu değişikliği geldi:
 
-- **iOS bağımlılıkları Swift Package Manager'a geçiyor.** Yerel Adapty iOS SDK'sı, CocoaPods pod'u yerine uzak bir Swift paketi olarak tanımlanıyor. [External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver#getting-started)'ı **1.2.188 veya üzeri** sürüme güncelleyin — önceki sürümler Swift Package Manager bağımlılıklarını desteklemiyor. CocoaPods adımları (`iOS Resolver -> Install Cocoapods`, `Unity-iPhone.xcworkspace` açma) artık geçerli değil. iOS için derleme yapmak artık **Xcode 26** veya üzerini gerektiriyor; Swift paketi, Swift tools 6.2 ile derleniyor.
+- **iOS bağımlılıkları Swift Package Manager'a geçiyor.** Yerel Adapty iOS SDK'sı, bir CocoaPods pod'u yerine uzak bir Swift paketi olarak tanımlanıyor. [External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver#getting-started)'ı **1.2.188 veya üzerine** güncelleyin — eski sürümler Swift Package Manager bağımlılıklarını desteklemiyor. CocoaPods adımları (`iOS Resolver -> Install Cocoapods`, `Unity-iPhone.xcworkspace`'i açma) artık geçerli değil. iOS için derleme yapmak artık **Xcode 26 veya üzerini** gerektiriyor; Swift paketi, Swift tools 6.2 ile derleniyor.
 - **iOS deployment target 15.0 veya üzeri olmalıdır.** Unity Editor'daki yeni bir derleme doğrulayıcısı, hedef daha düşükse iOS derlemesini durduruyor.
+- **Android derlemesi API level 35 veya üzeriyle derlenmek zorundadır.** Adapty UI kütüphanesi, bunu gerektiren Jetpack Compose 1.8'i kullanıyor.
 
 Altta yatan yerel Adapty SDK'ları her iki platformda da otomatik olarak 4.x sürümüne güncellenir; başka bir derleme değişikliğine gerek yoktur.
 
@@ -64,7 +65,7 @@ Altta yatan yerel Adapty SDK'ları her iki platformda da otomatik olarak 4.x sü
 
 ### GetPaywall → GetFlow
 
-Döndürülen tür `AdaptyPaywall`'dan `AdaptyFlow`'a değişir ve `locale` parametresi kaldırılır — bir flow render ettiğinizde, locale otomatik olarak belirlenir; özel paywalllar için tüm locale'ler `flow.RemoteConfigs` içinde döndürülür:
+Döndürülen tür `AdaptyPaywall` yerine `AdaptyFlow` olarak değişir ve `locale` parametresi flow görünümü parametrelerine taşınır (`AdaptyUICreateFlowViewParameters.SetLocale`) — bkz. [Locale eşleştirmesi tam eşleşmedir](#locale-matching-is-exact); özel paywall'lar için tüm locale'ler `flow.RemoteConfigs` içinde döndürülür:
 
 ```diff showLineNumbers
 - Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
@@ -84,6 +85,19 @@ Döndürülen tür `AdaptyPaywall`'dan `AdaptyFlow`'a değişir ve `locale` para
 - Adapty.GetPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", (paywall, error) => { /* ... */ });
 + Adapty.GetFlowForDefaultAudience("YOUR_PLACEMENT_ID", (flow, error) => { /* ... */ });
 ```
+
+### Yerel ayar eşleşmesi tam olmalıdır \{#locale-matching-is-exact\}
+
+:::warning
+v3'te Adapty sunucusu yerelleştirmeyi seçer ve dile geri dönebilirdi: paywall'da `pt-br` yoksa `pt-br` isteği `pt` yerelleştirmesini alırdı. v4'te SDK, yerelleştirmeyi cihazda seçer ve yalnızca tam eşleşme kullanır. Hiçbir yerelleştirmeyle eşleşmeyen bir kod, hata veya uyarı vermeden flow'u varsayılan yerelleştirmesiyle gösterir.
+:::
+
+Yükseltme yapmadan önce, uygulamanızın ilettiği yerel ayar kodlarını kontrol edin:
+
+- Geçirdiğiniz her bölgesel kod için, o koda sahip bir yerelleştirme ekleyin — örneğin `pt`'ye ek olarak `pt-BR` — ya da kodu flow'un sahip olduğu bir kodla eşleştirin.
+- Kodları yayımlanmış flow'un sahip olduğu şekilde tam olarak geçirin: **Select languages** alanındaki `pt-br` yerine `pt-BR`. Eski Paywall Builder'dan gelen paywall'lar için küçük harfli kodlar kullanın, örneğin `pt-br`. Sistem locale tanımlayıcısını olduğu gibi geçirmeyin: İngilizce (Amerika Birleşik Devletleri) olarak ayarlanmış bir cihazda `CultureInfo.CurrentCulture.Name` değeri `en-US` döndürür; bu, yalnızca `en` içeren bir flow'u kaçırır.
+
+[Localizations ve yerel ayar kodları](unity-localizations-and-locale-codes#flows-and-paywalls) bölümüne bakın.
 
 ### GetPaywallProducts(paywall) → GetPaywallProducts(flow)
 
@@ -240,11 +254,11 @@ Bu metot, App Store'da tanıtılan uygulama içi satın almalar için kullanıl�
 
 ### Yeni API'lar
 
-- `Adapty.SetObserverModeResolver(...)` ve `IAdaptyUIObserverModeResolver` — SDK [Observer mode](implement-observer-mode-unity)'da çalışırken flow'lardan başlatılan satın alma ve geri yükleme işlemlerini yönetir. Daha önce bu özellik yalnızca native iOS ve Android SDK'larında mevcuttu. Bkz. [Flow'ları Observer mode'da sunma](unity-present-flows-in-observer-mode).
-- `Adapty.SetSystemRequestsHandler(...)` ve `IAdaptyUISystemRequestsHandler` — bir flow'dan gelen sistem istekleri için ayrılmıştır: İşletim sistemi izin istemleri (`FlowViewDidAskPermission`) ve uygulama değerlendirme istekleri (`FlowViewDidRequestAppReview`). Flow'lar henüz bu istekleri tetiklemediğinden bir handler kaydetmenize gerek yoktur.
-- `AdaptyUICreateFlowViewParameters.Locale` (`SetLocale` ile ayarlanır) — bir flow veya paywall'ı, flow'un varsayılanı yerine belirli bir [Builder yerelleştirmesiyle](add-paywall-locale-in-adapty-paywall-builder) oluşturur. Bir flow, görünümü oluşturulduğunda yerelleştirilir; bu nedenle yerelleştirmeyi seçebileceğiniz tek yer burasıdır ve oluşturulan görünüm, yapılandırıldığı yerelleştirmeyi `view.Locale` aracılığıyla raporlar. Bkz. [Yerelleştirmeleri ve yerel ayar kodlarını kullanma](unity-localizations-and-locale-codes).
-- `IAdaptyFlowsEventsListener` üzerindeki yeni `FlowViewDidReceiveAnalyticEvent` callback'i, bir flow'dan gelen analitik olaylarını raporlar; kullanıcının açtığı her ekran için ekran görüntüleme olayıyla başlar. Bkz. [Flow ekran görüntülemelerini izleme](unity-flow-screen-views).
-- `AdaptyUI.OpenUrl(url, openIn, ...)` ve `AdaptyUI.RequestAppReview(...)` — `open_url` eylemleri ve uygulama değerlendirme isteklerinin arkasındaki native işleme. Varsayılan URL davranışını korumak için `FlowViewDidPerformAction` içinden `OpenUrl`'i çağırın; `RequestAppReview` ise henüz flow'ların tetiklemediği varsayılan uygulama değerlendirme istemini destekler.
+- `Adapty.SetObserverModeResolver(...)` ile bir `IAdaptyUIObserverModeResolver` — SDK [Observer mode](implement-observer-mode-unity) modunda çalışırken flow'lardan başlatılan satın alma ve geri yükleme işlemlerini yönetir. Daha önce bu yalnızca yerel iOS ve Android SDK'larında mevcuttu. Bkz. [Flow'ları Observer mode'da sunma](unity-present-flows-in-observer-mode).
+- `Adapty.SetSystemRequestsHandler(...)` ile bir `IAdaptyUISystemRequestsHandler` — bir flow'dan gelen sistem isteklerini yanıtlar: işletim sistemi izin istemleri (`FlowViewDidAskPermission`) ve uygulama değerlendirme istekleri (`FlowViewDidRequestAppReview`). Flow'larınızda **Request permission** eylemi kullanılıyorsa bir tane kaydedin: bkz. [Flow'larda izin isteklerini yönetme](unity-handle-permissions).
+- `AdaptyUICreateFlowViewParameters.Locale` (`SetLocale` ile ayarlanır) — bir flow veya paywall'ı belirli bir [Builder yerelleştirmesiyle](add-paywall-locale-in-adapty-paywall-builder) render eder. Görünümü oluşturduğunuzda SDK, flow'un tüm yerelleştirmelerini yükler ve `Locale` gösterilecek olanı seçer. `Locale` belirtilmezse görünüm `en` dilinde, ya da flow'da `en` yoksa varsayılan yerelleştirmede render edilir. Oluşturulan görünüm, hangi yerelleştirmeyle oluşturulduğunu `view.Locale` aracılığıyla raporlar. Bkz. [Yerelleştirmeleri ve yerel ayar kodlarını kullanma](unity-localizations-and-locale-codes).
+- `IAdaptyFlowsEventsListener` üzerindeki yeni `FlowViewDidReceiveAnalyticEvent` callback'i, bir flow'dan gelen analitik olayları raporlar; kullanıcının açtığı her ekran için ekran görüntüleme olayıyla başlar. Bkz. [Flow ekran görüntülemelerini takip etme](unity-flow-screen-views).
+- `AdaptyUI.OpenUrl(url, openIn, ...)` ve `AdaptyUI.RequestAppReview(...)` — `open_url` eylemleri ve uygulama değerlendirme isteklerinin arkasındaki yerel işleme mekanizması. Varsayılan URL davranışını korumak için `FlowViewDidPerformAction` içinden `OpenUrl` çağırın; `RequestAppReview` ise varsayılan uygulama değerlendirme istemine destek sağlar; flow'lar bu istemi henüz tetiklememektedir.
 
 ## Yeniden adlandırılan harici attribution API'leri \{#renamed-external-attribution-apis\}
 
@@ -309,10 +323,11 @@ Bu adım herhangi bir derleme hatası oluşturmaz. Atlarsanız `SetFallback`, `D
 
 Bu değişiklikler derleme hatası oluşturmaz, dolayısıyla bunları çalışma zamanında test edin:
 
-- **Satın alma tamamlama**: v3'te, başarılı bir satın almanın ardından görünüm otomatik olarak kapatılıyordu. v4'te, **bir flow satın alma veya hata sonrasında siz kapatana kadar açık kalır** — SDK herhangi bir varsayılan davranış uygulamaz. Kullanıcı erişim kazandıktan sonra `FlowViewDidFinishPurchase` içinde `view.Dismiss(...)` metodunu kendiniz çağırın.
-- **Android sistem geri tuşu**: Sistem geri tuşu (veya geri kaydırma hareketi), `FlowViewDidPerformAction`'a `SystemBack` aksiyonu olarak iletilir ve artık flow'u kendiliğinden kapatmaz — bu durum iOS ile tutarlıdır; iOS'ta bir flow sistem hareketi ile kapatılamaz. Kullanıcılara açık bir çıkış yolu sunun (bir **Close** düğmesi veya `on_device_back` aksiyonu) ya da aksiyonu işlerken görünümü kendiniz kapatın.
-- **Görünümler tek kullanımlıktır**: `Dismiss` çağrısından sonra görünüm yok edilir. Flow'u tekrar göstermek için `CreateFlowView` metodunu yeniden çağırın.
-- **Observer mode işlemleri**: `ReportTransaction` artık başarı durumunda kod çözme hatası döndürmez — v3'te başarı yanıtı hatalı şekilde ayrıştırılıyordu, bu yüzden başarılı bir rapor her zaman hatayla tamamlanıyordu.
+- **Flow yerelleştirmesi**: Bölgesel bir yerel ayar kodu artık kendi diline geri dönmez — `pt-br`, `pt` yerelleştirmesini almaz. Tam eşleşme bulunamayan bir kod, flow'u varsayılan yerelleştirmesiyle gösterir. Bkz. [Yerel ayar eşleştirmesi birebir yapılır](#locale-matching-is-exact).
+- **Satın alma tamamlama**: v3'te başarılı bir satın almanın ardından görünüm otomatik olarak kapatılıyordu. v4'te **bir flow, satın alma veya hata sonrasında siz kapatana kadar açık kalır** — SDK varsayılan bir davranış uygulamaz. Kullanıcı erişim kazandıktan sonra `FlowViewDidFinishPurchase` içinde `view.Dismiss(...)` metodunu kendiniz çağırın.
+- **Android sistem geri tuşu**: Sistem geri tuşu (veya geri hareketi) `FlowViewDidPerformAction`'a `SystemBack` eylemi olarak iletilir ve flow'u kendiliğinden kapatmaz — bu, iOS davranışıyla aynıdır (iOS'ta bir flow sistem hareketiyle kapatılamaz). Kullanıcılara açık bir çıkış yolu sunun (bir **Close** düğmesi veya `on_device_back` eylemi) ya da eylemi işlerken görünümü kendiniz kapatın.
+- **Görünümler tek kullanımlıktır**: `Dismiss` çağrısının ardından görünüm yok edilir. Flow'u tekrar göstermek için `CreateFlowView` metodunu yeniden çağırın.
+- **Observer mode işlemleri**: `ReportTransaction` artık başarılı durumda bir çözümleme hatası döndürmez — v3'te başarı yanıtı hatalı ayrıştırılıyordu, bu yüzden başarılı bir raporlama her zaman hatayla tamamlanıyordu.
 
 ## Onboarding API'sinin kullanımdan kaldırılması \{#onboarding-api-deprecation\}
 

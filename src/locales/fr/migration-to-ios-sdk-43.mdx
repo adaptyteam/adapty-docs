@@ -1,0 +1,41 @@
+---
+title: "Migrer le SDK Adapty iOS vers la v4.3"
+description: "Migrez vers le SDK Adapty iOS v4.3 : mettez à jour la gestion des prix et des codes d'erreur, et signalez les transactions avec leur signature App Store."
+metadataTitle: "Migration vers le SDK Adapty iOS v4.3 | Documentation Adapty"
+---
+
+Pour mettre à jour votre application depuis le SDK Adapty iOS 4.1 ou 4.2 vers la version 4.3, appliquez chaque modification de ce guide. Si votre application est en version 4.0, commencez par les [changements v4.1](migration-to-ios-sdk-41). Pour passer à la version 4.4, suivez ensuite [Migrer vers la v4.4](migration-to-ios-sdk-44).
+
+## Référence rapide \{#quick-reference\}
+
+| Avant | Après |
+|---|---|
+| `localizedPrice` et `currencyCode` peuvent être `nil` | Les deux propriétés retournent toujours une chaîne |
+| Pas de code d'erreur `billingPlanUnavailable` | `AdaptyError.ErrorCode` inclut `billingPlanUnavailable` |
+| `Adapty.reportTransaction` avec un `Transaction` simple | `Adapty.reportTransaction` avec un `VerificationResult<Transaction>` ; la surcharge `Transaction` est dépréciée |
+
+## localizedPrice et currencyCode ne sont plus optionnels \{#prices-are-no-longer-optional\}
+
+En 4.3, les propriétés `localizedPrice` et `currencyCode` de `AdaptyPaywallProduct` et `AdaptySubscriptionOffer` retournent toujours une chaîne, jamais `nil`. Le code qui vérifie ces valeurs avec `if let`, `guard let` ou `?.` ne compile plus. Supprimez ces vérifications :
+
+```diff showLineNumbers
+- if let price = product.localizedPrice {
+-     priceLabel.text = price
+- }
++ priceLabel.text = product.localizedPrice
+```
+
+Supprimez également les valeurs par défaut `??` sur ces propriétés : elles compilent, mais avec un avertissement.
+
+## AdaptyError.ErrorCode inclut billingPlanUnavailable \{#new-error-code\}
+
+La version 4.3 ajoute le [code d'erreur](ios-sdk-error-handling#storekit-errors) `billingPlanUnavailable`. Une instruction `switch` qui liste tous les codes d'erreur sans branche `default` ne compile plus. Pour corriger cela, ajoutez une branche `case .billingPlanUnavailable` ou une branche `default`.
+
+## La surcharge Transaction de reportTransaction est dépréciée \{#reporttransaction-overload-is-deprecated\}
+
+Dans la version 4.3.2, la surcharge `Adapty.reportTransaction(_:withVariationId:)` qui prend une `Transaction` brute, sans signature App Store, génère un avertissement de dépréciation. Pour signaler la transaction avec sa signature App Store, passez le `VerificationResult<Transaction>` que StoreKit retourne :
+
+```diff showLineNumbers
+- try await Adapty.reportTransaction(transaction, withVariationId: variationId)
++ try await Adapty.reportTransaction(verificationResult, withVariationId: variationId)
+```

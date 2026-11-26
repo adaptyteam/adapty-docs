@@ -81,6 +81,17 @@ version boundary.
   `androidObfuscatedAccountId` on Flutter and KMP, a positional third argument on Unity, absent from the
   two native articles); which Kids Mode mechanism class applies; and the poll interval plus whether it
   is foreground-gated.
+- **Store messages work in opposite directions on iOS and Android** (2026-10-26; iOS from
+  `ios-store-messages`, Android from the Android SDK code on its 4.3.0 release branch). On iOS, StoreKit
+  shows App Store messages by itself, and the SDK's manual mode intercepts them into a pending list. Google
+  Play shows nothing unless the app calls `BillingClient.showInAppMessages`, so on Android the default
+  `AdaptyConfig.StoreMessagesHandling.AUTO` means *Adapty* makes that call on every `Activity` start, and
+  `MANUAL` means nobody does until the app calls `Adapty.showStoreMessages(activity)`. Android has no
+  pending list, no message types, no type filter and no error codes — the method returns `Unit` and is a
+  no-op when the SDK isn't activated or the `Activity` is finishing, destroyed or not attached to a
+  window. When Google Play reports that the subscription status was updated from the message, the SDK
+  runs a purchase sync. Never carry an iOS sentence about pending messages or error codes into another
+  platform's article without reading that platform's code. Requires Android SDK 4.3.0.
 
 ## What we document, what we don't
 
@@ -144,7 +155,7 @@ Delta from `scope.md` only.
 | kids-mode | kids-mode | kids-mode-android | kids-mode-react-native | kids-mode-flutter | kids-mode-unity | kids-mode-kmp | kids-mode-capacitor |
 | listen-subscription-changes |  | android-listen-subscription-changes | react-native-listen-subscription-changes | flutter-listen-subscription-changes | unity-listen-subscription-changes | kmp-listen-subscription-changes | capacitor-listen-subscription-changes |
 | setting-user-attributes | setting-user-attributes | android-setting-user-attributes | react-native-setting-user-attributes | flutter-setting-user-attributes | unity-setting-user-attributes | kmp-setting-user-attributes | capacitor-setting-user-attributes |
-| store-messages | ios-store-messages |  |  |  |  |  |  |
+| store-messages | ios-store-messages | android-store-messages | react-native-store-messages | flutter-store-messages | unity-store-messages |  | capacitor-store-messages |
 | subscription-status | subscription-status |  |  |  |  |  |  |
 | user | ios-user | android-user | react-native-user | flutter-user | unity-user | kmp-user | capacitor-user |
 
@@ -153,16 +164,19 @@ Delta from `scope.md` only.
 | android-identifying-users | — | dev | 4 | android |
 | android-listen-subscription-changes | — | dev | 4 | android |
 | android-setting-user-attributes | — | dev | 4 | android |
+| android-store-messages | how-to | dev | 3 | android |
 | android-user | entry | dev | 0 | android |
 | capacitor-deal-with-att | — | dev | 0 | capacitor |
 | capacitor-identifying-users | — | dev | 6 | capacitor |
 | capacitor-listen-subscription-changes | — | dev | 4 | capacitor |
 | capacitor-setting-user-attributes | — | dev | 4 | capacitor |
+| capacitor-store-messages | how-to | dev | 7 | capacitor |
 | capacitor-user | entry | dev | 0 | capacitor |
 | flutter-deal-with-att | — | dev | 0 | flutter |
 | flutter-identifying-users | — | dev | 6 | flutter |
 | flutter-listen-subscription-changes | — | dev | 4 | flutter |
 | flutter-setting-user-attributes | — | dev | 4 | flutter |
+| flutter-store-messages | how-to | dev | 7 | flutter |
 | flutter-user | entry | dev | 0 | flutter |
 | identifying-users | — | dev | 5 | ios |
 | ios-deal-with-att | — | dev | 0 | ios |
@@ -184,6 +198,7 @@ Delta from `scope.md` only.
 | react-native-identifying-users | — | dev | 6 | react-native |
 | react-native-listen-subscription-changes | — | dev | 4 | react-native |
 | react-native-setting-user-attributes | — | dev | 4 | react-native |
+| react-native-store-messages | how-to | dev | 6 | react-native |
 | react-native-user | entry | dev | 0 | react-native |
 | setting-user-attributes | — | dev | 4 | ios |
 | subscription-status | — | dev | 4 | ios |
@@ -191,6 +206,7 @@ Delta from `scope.md` only.
 | unity-identifying-users | — | dev | 6 | unity |
 | unity-listen-subscription-changes | — | dev | 4 | unity |
 | unity-setting-user-attributes | — | dev | 4 | unity |
+| unity-store-messages | how-to | dev | 7 | unity |
 | unity-user | entry | dev | 0 | unity |
 <!-- /mill:auto -->
 ## Reader jobs
@@ -226,7 +242,12 @@ profile) live in `aliases.md` and are deliberately not repeated here.
 | "segment users by app usage", "target a paywall by user property" | `setting-user-attributes` for the SDK-side write; defining the segment that consumes it is dashboard-side and lives outside this zone. |
 | "IDFA permission", "iOS 14 tracking prompt", "attribution data missing or wrong after the prompt" | `deal-with-att`. The SDK does not read the ATT status itself — you forward it via a profile update, and late forwarding is what corrupts integration data. iOS-only concern, so there is no Android article even though the cross-platform SDKs all have one. |
 | "COPPA", "app rejected from the Kids Category", "disable IDFA/GAID collection", "remove AD_ID permission" | `kids-mode`. Two-part answer that tickets usually only half-know: a dashboard toggle to stop IP-address collection *plus* a build-time SDK variant (separate package/Podfile flag/manifest change per platform). Unity's article documents that support is still pending and points at the native guides. |
+| "price increase popup over my paywall", "billing issue sheet interrupts onboarding", "Google Play payment declined message", "in-app messages" | `store-messages`. iOS and Android only so far. On Android the message appears only because Adapty requests it (default since SDK 4.3.0); on iOS StoreKit shows it unless the SDK runs in manual mode. |
 | "where are the user/profile docs" | The `user` family — per-platform index pages with no content of their own. |
 
 ## Gaps and misses
 
+- **React Native store messages differ from both native SDKs (2026-11-03, AdaptySDK-React-Native `dev` 4.3.0 `src/adapty-handler.ts`).** `getPendingStoreMessageTypes()` resolves `null` on Android without calling native (Google Play can't report pending messages); `[]` means nothing pending on iOS. The type filter is iOS-only and nested: `showStoreMessages({ ios: { filter } })`. The activation option is top-level `storeMessagesHandling: 'auto' | 'manual'`. The features first shipped in RN 4.3.0: the store messages and preload commits are not ancestors of tag `v4.2.0` (checked with `git merge-base --is-ancestor`), although npm published 4.2.0–4.2.3.
+- **RN error 1060 arrives without a name (2026-11-03).** iOS 4.3.1 throws `billingPlanUnavailable = 1060` (`Sources/Errors/AdaptyError.swift`), and `@adapty/core` passes unknown native codes through, so `error.adaptyCode === 1060` reaches the app. Core `0726ac7`, `origin/master` and `v4.3.2` have no `1060` entry in `src/types/error.ts`, so `getErrorCode('billingPlanUnavailable')` is `undefined`. Documented in `react-native-handle-errors` as a literal-code comparison. The error lives in the errors zone, but is recorded here next to the other RN 4.3.0 findings.
+- **RN commitment and profile fields have no per-field home (2026-11-03).** `billingPlan`, `commitmentInfo` and the top-level `offerId` (with `android.offerId` deprecated) on profile access levels and subscriptions were documented only in the generated reference, since `*-sdk-models` articles aren't edited. As of 2026-11-04, `billingPlan` and `commitmentInfo` are covered for iOS and React Native in `set-up-12-month-commitment`, under `Show commitment progress in your app`. The top-level `offerId` stays reference-only. Checked with `grep -n "offerId\|billingPlan" src/content/docs/react-native/*.mdx`.
+- **Detect a commitment plan by value, never by presence (2026-11-04, iOS `4.3.2`, Android `4.3.1`, `@adapty/core` `4.3.2`).** On `Subscription`, a missing `billingPlan` becomes upfront on both native SDKs (`Sources/Profile/Entities/AdaptyProfile.Subscription.swift`, `adapty/.../utils/ProfileMapper.kt`), although the core comment says "Set for App Store purchases only". On `AccessLevel` it stays optional. The fields first appear in tag `4.3.0` on iOS and Android (absent at `4.2.2`). `android.offerId` is deprecated in core, and no article outside `react-native-sdk-models` uses it (`grep -rnE "android\??\.offerId"`).

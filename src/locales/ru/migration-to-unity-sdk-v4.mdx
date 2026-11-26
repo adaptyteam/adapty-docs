@@ -51,12 +51,13 @@ Adapty Unity SDK 4.1 — первый стабильный релиз ветки
 https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unity-sdk#4.1.0
 ```
 
-Если вы устанавливаете через Unity-пакет, скачайте `adapty-unity-plugin-4.1.0.unitypackage` из [релиза 4.1.0](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.1.0). Подробную инструкцию по настройке см. в разделе [Установка Adapty SDK](sdk-installation-unity#install-adapty-sdk).
+Если вы устанавливаете через Unity package, скачайте `adapty-unity-plugin-4.1.0.unitypackage` из [релиза 4.1.0](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.1.0). Подробнее о настройке см. в разделе [Установка Adapty SDK](sdk-installation-unity#install-adapty-sdk).
 
-С версией 4.x появились два изменения в настройке сборки:
+В версии 4.x появились три изменения в настройке сборки:
 
-- **Зависимости iOS переходят на Swift Package Manager.** Нативный Adapty iOS SDK теперь подключается как удалённый Swift-пакет вместо CocoaPods pod. Обновите [External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver#getting-started) до версии **1.2.188 или выше** — более ранние версии не поддерживают зависимости Swift Package Manager. Шаги с CocoaPods (`iOS Resolver -> Install Cocoapods`, открытие `Unity-iPhone.xcworkspace`) больше не применяются. Для сборки под iOS теперь требуется **Xcode 26** или выше, так как Swift-пакет собирается с инструментами Swift 6.2.
-- **Минимальная версия iOS deployment target — 15.0.** Новый валидатор сборки в Unity Editor прерывает iOS-сборку, если указана более низкая версия.
+- **Зависимости для iOS переходят на Swift Package Manager.** Нативный Adapty iOS SDK теперь объявлен как удалённый Swift-пакет вместо CocoaPods pod. Обновите [External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver#getting-started) до **версии 1.2.188 или выше** — более ранние версии не поддерживают зависимости Swift Package Manager. Шаги с CocoaPods (`iOS Resolver -> Install Cocoapods`, открытие `Unity-iPhone.xcworkspace`) больше не применяются. Для сборки под iOS теперь требуется **Xcode 26** или выше, так как Swift-пакет собирается с Swift tools 6.2.
+- **Минимальная версия iOS для деплоя — 15.0.** Новый валидатор сборки в Unity Editor блокирует iOS-сборку, если указана более низкая версия.
+- **Сборка под Android должна компилироваться с API level 35 или выше.** Библиотека Adapty UI использует Jetpack Compose 1.8, которая это требует.
 
 Базовые нативные SDK Adapty обновлены до версии 4.x на обеих платформах и подтягиваются автоматически — никаких дополнительных изменений в сборке не требуется.
 
@@ -64,7 +65,7 @@ https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unit
 
 ### GetPaywall → GetFlow
 
-Возвращаемый тип меняется с `AdaptyPaywall` на `AdaptyFlow`, а параметр `locale` убирается — при рендеринге флоу локаль определяется автоматически; для кастомных пейволов все локали возвращаются в `flow.RemoteConfigs`:
+Возвращаемый тип меняется с `AdaptyPaywall` на `AdaptyFlow`, а параметр `locale` перемещается в параметры представления флоу (`AdaptyUICreateFlowViewParameters.SetLocale`) — см. [Точное совпадение локали](#locale-matching-is-exact); для кастомных пейволов все локали возвращаются в `flow.RemoteConfigs`:
 
 ```diff showLineNumbers
 - Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
@@ -84,6 +85,19 @@ https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unit
 - Adapty.GetPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", (paywall, error) => { /* ... */ });
 + Adapty.GetFlowForDefaultAudience("YOUR_PLACEMENT_ID", (flow, error) => { /* ... */ });
 ```
+
+### Сопоставление локали происходит точно \{#locale-matching-is-exact\}
+
+:::warning
+В v3 сервер Adapty подбирал локализацию и использовал запасную по языку: запрос `pt-br` получал локализацию `pt`, если на пейволе не было `pt-br`. В v4 SDK подбирает локализацию на устройстве и использует только точное совпадение. Если код не совпадает ни с одной локализацией, флоу отображается в локализации по умолчанию — без ошибки и без предупреждения.
+:::
+
+Перед обновлением проверьте коды локали, которые передаёт ваше приложение:
+
+- Для каждого регионального кода, который вы передаёте, добавьте локализацию с этим кодом — например, `pt-BR` в дополнение к `pt` — или сопоставьте код с тем, который есть во флоу.
+- Передавайте коды точно так, как они заданы в опубликованном флоу: `pt-BR`, а не `pt-br` из поля **Select languages**. Для пейволов из старого Paywall Builder передавайте коды в нижнем регистре, например `pt-br`. Не передавайте системный идентификатор локали как есть: на устройстве с языком English (United States) `CultureInfo.CurrentCulture.Name` возвращает `en-US`, что не совпадёт с флоу, в котором есть только `en`.
+
+См. [Локализации и коды локалей](unity-localizations-and-locale-codes#flows-and-paywalls).
 
 ### GetPaywallProducts(paywall) → GetPaywallProducts(flow)
 
@@ -240,11 +254,11 @@ public void OnReceivePromotedPurchase(AdaptyPromotedProduct product) {
 
 ### Новые API \{#new-apis\}
 
-- `Adapty.SetObserverModeResolver(...)` с `IAdaptyUIObserverModeResolver` — управляет покупками и восстановлениями, инициированными из флоу, пока SDK работает в [режиме Observer](implement-observer-mode-unity). Ранее это было доступно только в нативных iOS и Android SDK. См. [Отображение флоу в режиме Observer](unity-present-flows-in-observer-mode).
-- `Adapty.SetSystemRequestsHandler(...)` с `IAdaptyUISystemRequestsHandler` — зарезервировано для системных запросов из флоу: запросов разрешений ОС (`FlowViewDidAskPermission`) и запросов на оценку приложения (`FlowViewDidRequestAppReview`). Флоу пока не инициируют эти запросы, поэтому регистрировать обработчик не нужно.
-- `AdaptyUICreateFlowViewParameters.Locale` (задаётся через `SetLocale`) — отображает флоу или пейвол с конкретной [локализацией Builder](add-paywall-locale-in-adapty-paywall-builder) вместо используемой по умолчанию. Флоу локализуется при создании его представления, поэтому это единственное место для выбора локализации; созданное представление сообщает о применённой локализации в `view.Locale`. См. [Использование локализаций и кодов локалей](unity-localizations-and-locale-codes).
-- Новый коллбэк `FlowViewDidReceiveAnalyticEvent` в `IAdaptyFlowsEventsListener` сообщает об аналитических событиях из флоу, начиная с события просмотра экрана для каждого экрана, который открывает пользователь. См. [Отслеживание просмотров экранов флоу](unity-flow-screen-views).
-- `AdaptyUI.OpenUrl(url, openIn, ...)` и `AdaptyUI.RequestAppReview(...)` — нативная обработка действий `open_url` и запросов на оценку приложения. Вызывайте `OpenUrl` из `FlowViewDidPerformAction`, чтобы сохранить стандартное поведение URL; `RequestAppReview` обеспечивает стандартный запрос оценки приложения, который флоу пока не инициируют.
+- `Adapty.SetObserverModeResolver(...)` с `IAdaptyUIObserverModeResolver` — управляет покупками и восстановлениями, инициированными из флоу, когда SDK работает в [режиме Observer](implement-observer-mode-unity). Ранее это было доступно только в нативных iOS и Android SDK. См. [Показ флоу в режиме Observer](unity-present-flows-in-observer-mode).
+- `Adapty.SetSystemRequestsHandler(...)` с `IAdaptyUISystemRequestsHandler` — отвечает на системные запросы из флоу: запросы разрешений ОС (`FlowViewDidAskPermission`) и запросы на оценку приложения (`FlowViewDidRequestAppReview`). Регистрируйте этот обработчик, если ваши флоу используют действие **Request permission**: см. [Обработка запросов разрешений во флоу](unity-handle-permissions).
+- `AdaptyUICreateFlowViewParameters.Locale` (задаётся через `SetLocale`) — отображает флоу или пейвол с конкретной [локализацией Builder](add-paywall-locale-in-adapty-paywall-builder). При создании представления SDK загружает все локализации флоу, а `Locale` выбирает нужную. Без `Locale` представление отображается на `en` или в локализации по умолчанию, если во флоу нет `en`. Созданное представление сообщает о локализации, с которой оно было построено, в `view.Locale`. См. [Использование локализаций и кодов локалей](unity-localizations-and-locale-codes).
+- Новый колбэк `FlowViewDidReceiveAnalyticEvent` в `IAdaptyFlowsEventsListener` сообщает об аналитических событиях из флоу, начиная с просмотра экрана для каждого экрана, который открывает пользователь. См. [Отслеживание просмотров экранов флоу](unity-flow-screen-views).
+- `AdaptyUI.OpenUrl(url, openIn, ...)` и `AdaptyUI.RequestAppReview(...)` — нативная обработка действий `open_url` и запросов на оценку приложения. Вызывайте `OpenUrl` из `FlowViewDidPerformAction`, чтобы сохранить стандартное поведение URL; `RequestAppReview` обеспечивает стандартный запрос на оценку приложения, который флоу пока не запускают самостоятельно.
 
 ## Переименованные внешние API атрибуции \{#renamed-external-attribution-apis\}
 
@@ -309,10 +323,11 @@ var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
 
 Эти изменения не вызывают ошибок компиляции, поэтому проверяйте их во время выполнения:
 
-- **Завершение покупки**: В v3 окно закрывалось автоматически после успешной покупки. В v4 **флоу остаётся открытым после покупки или ошибки, пока вы сами его не закроете** — SDK не применяет никакого поведения по умолчанию. Вызывайте `view.Dismiss(...)` самостоятельно в `FlowViewDidFinishPurchase`, когда пользователь получил доступ.
-- **Системная кнопка «Назад» на Android**: Нажатие системной кнопки «Назад» (или жест возврата) передаётся в `FlowViewDidPerformAction` как действие `SystemBack` и больше не закрывает флоу самостоятельно — аналогично iOS, где флоу нельзя закрыть системным жестом. Дайте пользователям явный способ выйти (кнопка **Close** или действие `on_device_back`), либо закрывайте вью самостоятельно при обработке этого действия.
-- **Вью одноразовые**: После `Dismiss` вью уничтожается. Чтобы снова показать флоу, вызовите `CreateFlowView` заново.
-- **Транзакции в режиме Observer**: `ReportTransaction` больше не возвращает ошибку декодирования при успехе — в v3 ответ об успехе парсился некорректно, поэтому успешный репорт всегда завершался с ошибкой.
+- **Локализация флоу**: Региональный код локали больше не использует языковой фолбэк — `pt-br` не получит локализацию `pt`. Если точного совпадения нет, флоу отображается в локализации по умолчанию. См. [Точное совпадение локали](#locale-matching-is-exact).
+- **Завершение покупки**: В v3 экран закрывался автоматически после успешной покупки. В v4 **флоу остаётся открытым после покупки или ошибки, пока вы не закроете его** — SDK не применяет поведение по умолчанию. Вызовите `view.Dismiss(...)` самостоятельно в `FlowViewDidFinishPurchase`, как только пользователь получит доступ.
+- **Системная кнопка «Назад» на Android**: Нажатие системной кнопки «Назад» (или жест назад) передаётся в `FlowViewDidPerformAction` как действие `SystemBack` и больше не закрывает флоу самостоятельно — поведение приведено в соответствие с iOS, где флоу нельзя закрыть системным жестом. Предоставьте пользователям явный способ выйти (кнопку **Close** или действие `on_device_back`), либо закройте экран самостоятельно при обработке действия.
+- **Экраны одноразовые**: После `Dismiss` экран уничтожается. Чтобы показать флоу снова, вызовите `CreateFlowView` заново.
+- **Транзакции в режиме наблюдателя**: `ReportTransaction` больше не возвращает ошибку декодирования при успехе — в v3 ответ об успехе парсился неверно, поэтому успешный отчёт всегда завершался с ошибкой.
 
 ## Устаревший API для онбордингов \{#onboarding-api-deprecation\}
 

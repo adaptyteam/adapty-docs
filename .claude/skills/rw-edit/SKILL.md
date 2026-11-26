@@ -60,7 +60,9 @@ Called by recursive-writer: mode E (step 5), each walk item in mode R, and any f
       that covers two objects ("duplicate before you restore").
       A quick list: the rules live in lib/checks/02-one-reading.md, 01-referents.md, and
       lib/reference/product-terms.md.
-   f. **Re-read the whole section before you propose.** Every side effect from step 1 is handled in
+   f. **Re-read the whole section before you propose**, and the whole article when the fix touches the
+      intro, a heading, or a section's first paragraph: each section still starts where the previous one
+      leaves the reader (the path lines in `frame.md`). Every side effect from step 1 is handled in
       the proposal, and `--lint`'s "Side effects" list is empty or answered. Look in particular for structure: steps that
       several routes share but only one route owns, parallel units in different forms, content in a
       unit where it doesn't belong. At most one problem the complaint doesn't cover goes under the

@@ -1,0 +1,367 @@
+---
+title: "Трата и продажа виртуальной валюты во флоу"
+description: "Создайте два флоу для iOS-приложения с виртуальной валютой: в одном пользователи тратят валюту с помощью нативных кнопок, в другом покупают её, если баланс слишком низкий."
+metadataTitle: "Трата и продажа виртуальной валюты во флоу | iOS SDK | Документация Adapty"
+---
+
+Следуйте этому рецепту, чтобы объединить флоу с виртуальной валютой в вашем iOS-приложении. Рецепт показывает, как:
+
+- Показывайте баланс валюты во флоу и обновляйте его, пока флоу открыто.
+- Списывайте валюту при нажатии нативной кнопки во флоу и показывайте спиннер во время операции.
+- Показывайте пользователям, сколько валюты им не хватает.
+- Предлагайте пакеты валюты и подписку во флоу.
+- Закрывайте одно флоу и открывайте другое из кода приложения.
+
+Поскольку пакеты и подписка настроены во флоу, их можно менять без обновления приложения и запускать [A/B-тесты](ab-tests). В отчёте по A/B-тесту учитываются покупки. Списания в него не попадают: ваш бэкенд отправляет их в Adapty без привязки к тесту.
+
+К концу этого рецепта у вас будет два флоу для игры. В флоу «нет энергии» игроки тратят алмазы на энергию. В флоу пополнения они покупают алмазы. Те же шаги подходят для любого приложения, где пользователи тратят виртуальную валюту: например, кредиты на генерацию AI или монеты за эпизоды дорамы. В своём приложении замените варианты энергии и алмазы на собственные варианты и валюту. Готовый пример работает так:
+
+<VcTopUpHowItWorks />
+
+<DocVideo id="vc-top-up-demo.mp4" width="300px" alt="Флоу нехватки энергии на телефоне с балансом алмазов и двумя кнопками. При недостаточном количестве алмазов игрок нажимает кнопку, и открывается флоу пополнения с текстом «Вам нужно ещё 10 алмазов». После покупки пакета снова открывается флоу нехватки энергии, и после нажатия кнопки пополнения энергии появляется галочка." />
+
+## Прежде чем начать \{#before-you-start\}
+
+- Пусть пользователи входят в аккаунт, чтобы их [баланс сохранялся](virtual-currency-balance#balances-profiles-and-devices) на всех устройствах и после переустановки. Когда пользователь входит, [идентифицируйте его](identifying-users) в коде приложения с помощью customer user ID. Ваш бэкенд использует этот ID, чтобы идентифицировать пользователя в Adapty.
+- Чтобы показывать баланс и кнопки во флоу, обновите приложение до Adapty iOS SDK 4.4 или новее.
+- Настройте приложение для [получения](get-pb-paywalls) и [отображения](ios-present-paywalls) флоу.
+- Настройте бэкенд, который вызывает серверный API с вашим [секретным API-ключом](ss-authorization). Храните ключ на бэкенде: любой, у кого есть этот ключ, сможет начислять алмазы на любой баланс.
+- В App Store Connect [создайте расходуемую покупку](app-store-products) для каждого набора алмазов и auto-renewable подписку. Затем [добавьте каждый продукт в Adapty](create-product).
+- [Создайте виртуальную валюту](create-virtual-currency) с кодом `DIAMONDS`. [Привяжите](create-virtual-currency#link-products) каждый продукт к `DIAMONDS` и укажите, сколько алмазов Adapty начисляет на баланс:
+  - **Diamond pack**: поле **Credit amount** — за каждую покупку.
+  - **Subscription**: поле **Credit per cycle** — за каждый расчётный период. Когда пользователь начинает бесплатный пробный период, Adapty начисляет только **Credit on trial start**.
+
+  Set each of the three values to at least 30 diamonds, the price of an hour of unlimited energy. With these values, every purchase in the top-up flow covers the missing diamonds.
+
+## 1. Создайте флоу, в котором игроки тратят алмазы \{#1-build-the-flow-where-players-spend-diamonds\}
+
+<VcTopUpEnergyFlowPlacement />
+
+### Показать баланс алмазов \{#show-the-diamond-balance\}
+
+<VcTopUpFlowBalance />
+
+### Добавьте кнопки для пополнения энергии и получения безлимитной энергии \{#add-buttons-for-an-energy-refill-and-unlimited-energy\}
+
+<VcTopUpSpendButtons />
+
+## 2. Трата алмазов при нажатии кнопки \{#2-spend-diamonds-when-a-player-taps-a-button\}
+
+На этом шаге вы пишете серверный код и код приложения для флоу «нет энергии». После этого шага игроки с достаточным количеством алмазов смогут тратить их во флоу.
+
+### Трата алмазов через ваш бэкенд \{#spend-diamonds-from-your-backend\}
+
+<VcTopUpSpend />
+
+### Создание представления баланса \{#create-the-balance-view\}
+
+Создайте модель для баланса алмазов и SwiftUI-представление для кастомного элемента `currency_balance`. Код далее на этом шаге и на шаге 4 устанавливает баланс в модели на основе ответов вашего бэкенда. Представление наблюдает за моделью и перерисовывается при изменении баланса:
+
+```swift showLineNumbers title="Swift"
+
+// The diamond balance that your app keeps up to date
+@MainActor
+final class DiamondWallet: ObservableObject {
+    @Published var balance: Int? // nil until your backend returns a balance
+}
+
+struct DiamondBalanceView: View {
+    @ObservedObject var wallet: DiamondWallet
+
+    var body: some View {
+        Label(wallet.balance?.formatted() ?? "—", systemImage: "diamond.fill")
+    }
+}
+```
+
+`DiamondBalanceView` использует системный цвет текста, который становится белым в тёмном режиме. Флоу сохраняет светлые цвета, если только вы не [добавите тёмную тему](paywall-dark-mode#add-a-dark-theme) к нему. Если ваши флоу не имеют тёмной темы, задайте фиксированный цвет текста в представлении, например `.foregroundStyle(.black)`.
+
+Чтобы отобразить представление в обоих флоу, возвращайте его из [глобального резолвера приложения](ios-flow-custom-elements#set-an-app-wide-resolver), который сопоставляет каждый кастомный элемент с представлением по его Type и ID. Добавьте свойство `wallet` типа `DiamondWallet` и кейс, возвращающий `DiamondBalanceView` для Type `currency_balance` и ID `diamonds`. Выделенные строки показывают, что нужно добавить. Если в вашем приложении ещё нет глобального резолвера, скопируйте весь код:
+
+```swift showLineNumbers title="Swift" {5,13-14}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let wallet: DiamondWallet
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "currency_balance" where id == "diamonds":
+            return AnyView(DiamondBalanceView(wallet: wallet))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+Создайте resolver с `DiamondWallet` и установите его как общесистемный. Вызовите `AdaptyUI.setCustomElementsResolver(_:)` один раз — например, при запуске приложения:
+
+```swift showLineNumbers title="Swift"
+
+@MainActor let diamondWallet = DiamondWallet()
+
+// keep this instance: a resolver for one flow can reuse it
+@MainActor let customElementsResolver = CustomElementsResolver(wallet: diamondWallet)
+
+// at app launch, such as in application(_:didFinishLaunchingWithOptions:)
+AdaptyUI.setCustomElementsResolver(customElementsResolver)
+```
+
+### Создайте вью для кнопки \{#create-the-button-view\}
+
+Создайте одно SwiftUI-вью для обеих кнопок. Вью принимает текст кнопки и замыкание, которое списывает алмазы и возвращает `true`, когда списание прошло успешно. Пока идёт списание, пользователь видит спиннер в кнопке, а кнопка игнорирует повторные нажатия. После успешного списания пользователь видит галочку:
+
+```swift showLineNumbers title="Swift"
+
+struct SpendButton: View {
+    let title: String
+    let spend: @MainActor () async -> Bool // true when the spend goes through
+
+    @State private var phase = Phase.ready
+    private enum Phase { case ready, spending, done }
+
+    var body: some View {
+        Button {
+            guard phase == .ready else { return } // ignore more taps while the spend runs
+            phase = .spending
+            // a Task keeps running when the flow closes and this view disappears
+            Task {
+                phase = await spend() ? .done : .ready
+            }
+        } label: {
+            Group {
+                switch phase {
+                case .ready: Text(title)
+                case .spending: ProgressView().tint(.white) // white on the filled button
+                case .done: Image(systemName: "checkmark")
+                }
+            }
+            .frame(maxWidth: .infinity) // the full width of the custom element
+        }
+        .buttonStyle(.borderedProminent)
+    }
+}
+```
+
+### Подключите кнопки к вашему бэкенду \{#connect-the-buttons-to-your-backend\}
+
+Создайте перечисление (enum) для двух вариантов. В качестве raw value каждого варианта используйте ID его кастомного элемента:
+
+```swift showLineNumbers title="Swift"
+// the options to spend diamonds on, with the IDs of their custom elements
+enum EnergyOption: String {
+    case energyRefill = "energy_refill"
+    case unlimitedEnergy = "unlimited_energy"
+
+    // keep the numbers equal to the costs on your backend
+    var title: String {
+        switch self {
+        case .energyRefill: return "Energy refill · 10 ◆"
+        case .unlimitedEnergy: return "Unlimited energy for 1 hour · 30 ◆"
+        }
+    }
+}
+```
+
+The following code is for UIKit. In the view controller that opens the out-of-energy flow, add a method that spends diamonds on an option. The method sends the option to your backend, and sets the balance in `diamondWallet` from the response. Then the method does one of the following:
+
+- **Трата прошла успешно**: Метод возвращает `true`, и игроки видят галочку на кнопке. Через одну секунду код закрывает флоу.
+- **Недостаточно средств на балансе**: Метод вызывает `openTopUpFlow` — функцию, которая [открывает флоу пополнения](#open-the-top-up-flow-when-a-player-doesnt-have-enough-diamonds).
+
+```swift showLineNumbers title="Swift"
+private var outOfEnergyFlow: AdaptyFlowController? // set when the out-of-energy flow opens
+
+// true when the spend goes through
+func spendDiamonds(on option: EnergyOption) async -> Bool {
+    do {
+        // the client of your backend: your backend sends the spend to Adapty
+        let result = try await GameBackend.shared.spendDiamonds(
+            on: option.rawValue,
+            idempotencyKey: UUID() // a new key for each spend; UUID() creates a version 4 UUID
+        )
+        switch result {
+        case let .spent(available):
+            diamondWallet.balance = available
+            // your backend gave the player the energy: show it in the game
+            Task {
+                try? await Task.sleep(for: .seconds(1)) // players see the checkmark first
+                outOfEnergyFlow?.dismiss(animated: true)
+            }
+            return true
+        case let .insufficientBalance(diamondsNeeded, available):
+            diamondWallet.balance = available
+            await openTopUpFlow(diamondsNeeded: diamondsNeeded)
+            return false
+        }
+    } catch {
+        // handle the error
+        return false
+    }
+}
+```
+
+Затем напишите резолвер для флоу «нет энергии». Для каждого кастомного элемента с типом `spend_button` резолвер считывает опцию из ID и возвращает `SpendButton`, который вызывает метод spend. Резолвер, который вы [прикрепляете к флоу](ios-flow-custom-elements#attach-a-resolver-to-one-flow), заменяет общий резолвер приложения в этом флоу. Чтобы отобразить баланс в флоу «нет энергии», этот резолвер вызывает общий резолвер приложения:
+
+```swift showLineNumbers title="Swift"
+
+struct OutOfEnergyResolver: AdaptyUICustomElementsResolver {
+    let spend: @MainActor (EnergyOption) async -> Bool // the spend method of your view controller
+    let appWideResolver: any AdaptyUICustomElementsResolver
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        // the ID tells the buttons apart: energy_refill or unlimited_energy
+        if type == "spend_button", let option = EnergyOption(rawValue: id) {
+            return AnyView(SpendButton(title: option.title) { await spend(option) })
+        }
+        // other custom elements, such as the balance: the views of the app-wide resolver
+        return appWideResolver.view(forType: type, id: id, context: context)
+    }
+}
+```
+
+### Откройте флоу «нет энергии» из кода приложения \{#open-the-out-of-energy-flow-from-your-app-code\}
+
+Когда у игрока заканчивается энергия, откройте флоу «нет энергии» с помощью следующей функции. Сначала функция запрашивает у вашего бэкенда баланс, чтобы игрок видел его при открытии флоу. Затем функция прикрепляет `OutOfEnergyResolver` к флоу и сохраняет контроллер флоу в `outOfEnergyFlow`. Благодаря этой ссылке `spendDiamonds` может закрыть флоу:
+
+```swift showLineNumbers title="Swift"
+// call when a player runs out of energy
+func openOutOfEnergyFlow() async {
+    // the balance that players see when the flow opens; without it, players see a dash
+    if let available = try? await GameBackend.shared.diamondBalance() {
+        diamondWallet.balance = available
+    }
+    do {
+        let flow = try await Adapty.getFlow(placementId: "out_of_energy")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            customElementsResolver: OutOfEnergyResolver(
+                spend: { [weak self] option in
+                    await self?.spendDiamonds(on: option) ?? false
+                },
+                appWideResolver: customElementsResolver // the instance that you set app-wide
+            )
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        outOfEnergyFlow = flowController
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+Как делегат флоу с исчерпанным энергетическим ресурсом, контроллер представления также должен реализовать [методы делегата](ios-handling-events#handling-events-in-uikit) для покупок и восстановлений. Для `didFinishPurchase` используйте код из [шага 4](#open-the-out-of-energy-flow-again-after-a-purchase).
+
+В SwiftUI прикрепите `OutOfEnergyResolver` при получении конфигурации флоу. В замыкании `spend` резолвера вызовите ваш метод списания. Отобразите конфигурацию флоу с помощью модификатора `.flow` и используйте его замыкания вместо методов делегата. Замыкания не получают никакого view controller. Чтобы закрыть флоу, установите `isPresented` в `false`.
+
+## 3. Создайте флоу, где игроки покупают алмазы \{#3-build-the-flow-where-players-buy-diamonds\}
+
+<VcTopUpFlowPlacement />
+
+### Показать, сколько алмазов нужно игроку \{#show-how-many-diamonds-the-player-needs\}
+
+<VcTopUpFlowDiamondsNeeded />
+
+### Добавьте алмазные паки и подписку \{#add-diamond-packs-and-a-subscription\}
+
+<VcTopUpFlowOffers />
+
+## 4. Закройте один флоу и откройте другой \{#4-close-one-flow-and-open-the-other\}
+
+После этого шага игроки, у которых не хватает алмазов, смогут пополнить их в флоу пополнения, а затем потратить. В этом рецепте один view controller является делегатом обоих флоу. Чтобы различать флоу в методе делегата, сравнивайте свойство `controller.flowPlacementId` с идентификатором плейсмента каждого флоу. В SwiftUI отобразите флоу пополнения с помощью второго модификатора `.flow`, а открывайте один флоу из замыкания `didDisappear` другого.
+
+### Открытие флоу пополнения, когда у игрока не хватает алмазов \{#open-the-top-up-flow-when-a-player-doesnt-have-enough-diamonds\}
+
+Следующая функция передаёт количество недостающих алмазов в тег `diamonds_needed` и открывает флоу пополнения. Поскольку контроллер представления показывает только один флоу за раз, функция сначала закрывает флоу «нехватка энергии», а затем открывает флоу пополнения:
+
+```swift showLineNumbers title="Swift"
+func openTopUpFlow(diamondsNeeded: Int) async {
+    // with no value, players see the Initial value of the tag
+    let tags = diamondsNeeded > 0 ? ["diamonds_needed": diamondsNeeded.formatted()] : [:]
+    do {
+        let flow = try await Adapty.getFlow(placementId: "out_of_diamonds")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            tagResolver: tags
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        // a view controller presents one flow at a time
+        outOfEnergyFlow?.dismiss(animated: true) {
+            self.present(flowController, animated: true)
+        }
+    } catch {
+        // handle the error
+    }
+}
+```
+
+### Снова открываем флоу «нет энергии» после покупки \{#open-the-out-of-energy-flow-again-after-a-purchase\}
+
+Когда игрок покупает набор или подписку в флоу пополнения, Adapty обычно сначала добавляет алмазы к балансу. Затем SDK вызывает `didFinishPurchase`, но не закрывает флоу. В этом методе приведённый ниже код запрашивает у вашего бэкенда новый баланс, закрывает флоу пополнения и снова открывает флоу «нет энергии». Там игрок видит обновлённый баланс и нажимает кнопку, чтобы потратить алмазы. Не тратьте алмазы сразу после покупки: игрок может передумать.
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFinishPurchase product: AdaptyPaywallProduct,
+    purchaseResult: AdaptyPurchaseResult
+) {
+    // canceled or pending: the flow stays open
+    guard purchaseResult.isPurchaseSuccess,
+          controller.flowPlacementId == "out_of_diamonds" // the top-up flow
+    else { return }
+    Task {
+        let balanceBefore = diamondWallet.balance ?? 0
+        if let available = try? await GameBackend.shared.diamondBalance() {
+            diamondWallet.balance = available
+        }
+        let diamondsArrived = (diamondWallet.balance ?? 0) > balanceBefore
+        controller.dismiss(animated: true) {
+            if diamondsArrived {
+                Task { await self.openOutOfEnergyFlow() } // the player taps a button again
+            } else {
+                // Adapty adds the diamonds later: tell the player in your own UI
+            }
+        }
+    }
+}
+```
+
+Когда игрок отменяет покупку или она переходит в статус ожидания, флоу пополнения баланса остаётся открытым. SDK в этих случаях тоже вызывает `didFinishPurchase`, но баланс не меняется.
+
+Когда покупка проходит успешно, но баланс на вашем бэкенде не изменился, код закрывает флоу пополнения и не открывает флоу нехватки энергии. В любом из флоу игрок увидит старый баланс сразу после покупки. Баланс остаётся прежним, когда SDK не может сразу валидировать покупку в Adapty. Adapty добавит алмазы позже, когда SDK отправит покупку в Adapty повторно — например, при следующем запуске приложения. До тех пор сообщите игроку через интерфейс вашего приложения, что алмазы уже в пути.
+
+Не добавляйте алмазы из вашего бэкенда, когда пользователь покупает продукт [связанный с `DIAMONDS`](create-virtual-currency#link-products): Adapty добавляет эти алмазы самостоятельно, и пользователь получит их дважды.
+
+## 5. Протестируйте на устройстве \{#5-test-on-a-device\}
+
+Flow & Paywall Builder не может выполнять код вашего приложения, поэтому на его холсте вы видите только заглушки кастомных элементов.
+
+Чтобы увидеть алмазы от покупок, протестируйте через [аккаунт песочницы](test-purchases-in-sandbox). В песочнице подписка обновляется каждые несколько минут, и Adapty начисляет алмазы при каждом обновлении. При использовании файла конфигурации StoreKit в Xcode SDK Adapty не валидирует покупки через Adapty, и алмазы не начисляются.
+
+Чтобы протестировать рецепт:
+
+1. [Опубликуйте оба флоу](builder-save-publish). Чтобы видеть последние опубликованные версии вместо кешированных, зарегистрируйте устройство как [тестовое](test-devices).
+2. Запустите приложение с кодом рецепта и войдите под игроком без алмазов. Потратьте всю энергию в игре. Убедитесь, что флоу «нет энергии» открывается с балансом 0.
+3. Нажмите кнопку безлимитной энергии. Убедитесь, что в кнопке появляется спиннер, а затем открывается флоу пополнения с текстом «You need 30 more diamonds».
+4. Купите пак алмазов. Убедитесь, что флоу «нет энергии» снова открывается с новым балансом.
+5. Нажмите кнопку пополнения энергии. Убедитесь, что в кнопке появляется галочка, флоу закрывается и игра выдаёт игроку пополнение энергии.
+6. В дашборде Adapty откройте профиль игрока. [Спишите баланс](virtual-currency-balance#adjust-a-balance-manually) до значения меньше 10 с помощью операции **Adjustment**. Снова потратьте всю энергию, нажмите кнопку пополнения энергии и купите подписку в флоу пополнения. Убедитесь, что флоу «нет энергии» снова открывается с новым балансом.
+7. Нажмите кнопку безлимитной энергии. Убедитесь, что в кнопке появляется галочка, флоу закрывается и игра выдаёт игроку безлимитную энергию.
+8. <VcTopUpVerifyProfile />
+
+Чтобы выяснить, почему вместо баланса или кнопки отображается резервный элемент, выполните [шаги по тестированию пользовательских элементов](ios-flow-custom-elements#test-on-a-device).

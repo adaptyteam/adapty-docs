@@ -277,9 +277,9 @@ Here is the table structure for the events:
 | **product_id**                  | Product ID in the Apple App Store, Google Play Store, or Stripe. For a [12-month commitment plan](app-store-12-month-commitment), the value is `<product_id>:monthly`.                                                                                                                                                                                                                                                                       |
 | **base_plan_id**                | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973)  in the Google Play Store or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices)  in Stripe.                                                                                                      |
 | **developer_id**                | Developer (SDK) ID of the paywall where the transaction originated.                                                                                                                                                                                                                                                                    |
-| **ab_test_name**                | Name of the A/B test where the transaction originated.                                                                                                                                                                                                                                                                                 |
+| **ab_test_name**                | Name of the A/B test where the transaction originated. For a crossplacement A/B test, the name of the test on one placement (`<test name> child-N`). To group a crossplacement test across placements, use **ab_test_id**.                                                                                                                                                                                                                                                                                 |
 | **ab_test_revision**            | Revision of the A/B test where the transaction originated.                                                                                                                                                                                                                                                                             |
-| **paywall_name**                | Name of the paywall where the transaction originated.                                                                                                                                                                                                                                                                                  |
+| **paywall_name**                | Name of the paywall where the transaction originated. For a flow, the ID of the paywall screen (`scr_...`). The flow name is in **flow_name**.                                                                                                                                                                                                                                                                                  |
 | **paywall_revision**            | Revision of the paywall where the transaction originated.                                                                                                                                                                                                                                                                              |
 | **profile_county**              | Profile Country determined by Adapty, based on IP.                                                                                                                                                                                                                                                                                     |
 | **install_date**                | ISO 8601 date when the installation happened.                                                                                                                                                                                                                                                                                          |
@@ -303,6 +303,17 @@ Here is the table structure for the events:
 | **attribution_creative**        | Attribution creative keyword.                                                                                                                                                                                                                                                                                                          |
 | **attributes**                  | JSON of [custom user attributes](setting-user-attributes#custom-user-attributes). This will include any custom attributes you’ve set up to send from your mobile app. To send it, enable the **Send User Attributes** option in the [Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook) page.                 |
 | **integration_ids**             | All integration IDs associated with a profile. Dictionary. Example: &#123;&#39;mixpanel_user_id&#39;: &#39;mixpanelUserId-test&#39;, &#39;facebook_anonymous_id&#39;: &#39;facebookAnonymousId-test&#39;&#125;                                                                                                                         |
+| **variation_id** | Unique ID of the paywall where the transaction originated. For a flow, the ID of the paywall screen inside the flow, not the A/B test variant. |
+| **flow_id** | ID of the flow where the transaction originated. |
+| **flow_name** | Name of the flow where the transaction originated. |
+| **flow_variation_id** | ID of the flow variant on this placement, the same as `flow.variationId` in the SDK. |
+| **ab_test_id** | ID of the A/B test where the transaction originated. For a crossplacement A/B test, the same on every placement. |
+| **ab_test_variant_id** | ID of the A/B test variant where the transaction originated. Use it to split transactions by test variant. |
+| **ab_test_variant_name** | Name of the A/B test variant. |
+| **ab_test_parent_name** | Name of the crossplacement A/B test. Empty for other A/B tests. |
+| **virtual_currency_credits** | The [virtual currency](virtual-currencies) the purchase credited, as a JSON array in the same format as the [webhook field](webhook-event-types-and-fields#virtual-currency-credits). `[]` if the purchase credited nothing. Empty for other events and for imported historical data, except data imported before July 2, 2026, which shows `[]`. The column is in the file only when **Add virtual currency credits** is on in the integration settings. |
+
+The flow and A/B test columns come at the end of the file, followed only by **virtual_currency_credits** when it's on. Adapty calculates them at export time, so a name in the export can differ from the name in an earlier webhook event if you renamed the A/B test, variant, or flow in between. For what each column holds in each A/B test type, see [Flow and A/B test fields](webhook-event-types-and-fields#flow-and-ab-test-fields).
 
 Here is the table structure for the paywall visits:
 
@@ -319,6 +330,121 @@ Here is the table structure for the paywall visits:
 | **ab_test_revision**  | Revision of the A/B test where the transaction originated.                                                   |
 | **paywall_name**      | Name of the paywall where the transaction originated.                                                        |
 | **paywall_revision**  | Revision of the paywall where the transaction originated.                                                    |
+| **variation_id**      | Unique ID of the paywall that was shown. For a flow, the ID of the paywall screen inside the flow, not the A/B test variant. |
+| **source** | Where the paywall was shown: `paywall` for a paywall, `flow` for a paywall screen inside a flow. |
+| **flow_id** | ID of the flow. Empty when **source** is `paywall`. |
+| **flow_name** | Name of the flow. Empty when **source** is `paywall`. |
+| **screen_id** | ID of the paywall screen inside the flow. Empty when **source** is `paywall`. |
+
+To add the **source**, **flow_id**, **flow_name**, and **screen_id** columns, on the **Paywall visits** tab of the integration, select **Add Flow columns to paywalls export**. The columns come at the end of the file.
+
+## Virtual currency transactions
+
+The virtual currency export sends each change of a [virtual currency](virtual-currencies) balance to your Amazon S3 bucket. Use it to load the full history of credits, spends, expiries, and refunds into your own data warehouse.
+
+This export is separate from the events and paywall visits exports. It has its own switch and credentials, and its own bucket and folder settings.
+
+### Turn on the export
+
+1. Go to [**Integrations** -> **Amazon S3**](https://app.adapty.io/integrations/s3) and open the **Virtual currency** tab.
+2. Turn on **Export virtual currency transactions to Amazon S3**.
+3. Enter the [credentials](#how-to-create-amazon-s3-credentials): the access key ID, the secret access key, the S3 bucket name, and the folder. The fields are the same as on the **Paywall visits** tab.
+
+To export the virtual currency transactions of past days, use [manual data export](#manual-data-export).
+
+### File and schedule
+
+Every day, Adapty uploads 1 file with the virtual currency transactions of the previous calendar day in UTC. A transaction belongs to the day of its `created_at` time in UTC.
+
+The file name is `<app_id>_virtual_currency_<date>.csv`, where `<date>` is 1 day after the day of the transactions, in `YYYY-MM-DD` format. For example, the file `<app_id>_virtual_currency_2026-03-08.csv` contains the transactions of March 7, 2026. Each export has its own file name. Keep each export in its own folder, so that a table or loader that reads a whole folder gets only one type of file. If the exports share a folder, select the files of this export by name: `<app_id>_virtual_currency_*.csv`.
+
+The file is a UTF-8 `.csv` file with a header row. For a day with no transactions, the file has only the header row.
+
+Each row is one balance change of one currency. A transaction that changes 2 currencies, such as an exchange of gold for gems, gives 2 rows with the same `vc_transaction_id`. Sandbox transactions are in the file too, with `is_sandbox` set to `true`.
+
+When you save the settings, Adapty verifies the credentials of each export that is on. If the virtual currency credentials are invalid, Adapty doesn't save the settings. The **Save** button saves the settings of all tabs, so Adapty doesn't save your changes on the other tabs either.
+
+The virtual currency export uses its own credentials. If its daily upload fails, the events and paywall visits uploads of the app still run.
+
+### Columns
+
+The file has these columns, in this order. Adapty adds new columns only at the end of the file.
+
+| Column | Description |
+| :----- | :---------- |
+| **vc_transaction_id** | Adapty ID of the virtual currency transaction. All rows of one transaction have the same ID. This is not the `Idempotency-Key` of your API request. |
+| **created_at** | Time of the transaction, in UTC, in `YYYY-MM-DD HH:MM:SS.ffffff+00:00` format, for example `2026-03-07 14:05:09.000000+00:00`. |
+| **profile_id** | Adapty profile ID. |
+| **customer_user_id** | Customer user ID of the profile at the time of the export. Empty if the profile has no customer user ID or no longer exists. |
+| **operation** | The [operation](virtual-currencies#operation) of the transaction: `top_up`, `refund`, `spend`, `spend_reversal`, `reward`, `reward_reversal`, `exchange`, `expiry`, `migration`, or `adjustment`. Empty for a server-side API transaction sent without `operation`. |
+| **transaction_type** | How Adapty recorded the transaction, for example `store_purchase`, `subscription_renewal`, `trial_start`, or `api_transaction`. `subscription_renewal` is used for each paid period of a subscription, the first one too. |
+| **currency_code** | Code of the virtual currency. |
+| **amount** | Change of the balance, as an integer. Positive for a credit, negative for a debit. |
+| **balance_after** | Balance of this currency on the profile after this change, as an integer. Never below 0. |
+| **store** | Store of the transaction: `app_store`, `play_store`, `stripe`, `paddle`, `adapty`, or the name of a custom store. Empty if the transaction has no store. |
+| **store_transaction_id** | Store transaction ID of the purchase. The same as **transaction_id** in the events table for this purchase. Empty if the transaction is not linked to a store purchase. |
+| **store_original_transaction_id** | Original store transaction ID of the purchase. All renewals of a subscription have the same value. Filled on the rows of a store purchase, its refund, and its expiry. |
+| **product_id** | Store product ID of the purchase. Empty if the row has no store transaction, or if Adapty has no record of the purchase. |
+| **expires_at** | Time when the credited amount expires, in UTC, in `YYYY-MM-DD HH:MM:SS.ffffff+00:00` format, for example `2026-04-07 14:05:09.000000+00:00`. Filled only on credit rows that expire. |
+| **feature** | The [`feature`](virtual-currencies#feature) of the transaction. |
+| **reference_id** | The `reference_id` of the transaction. |
+| **customer_placement_id** | The `customer_placement_id` of the transaction. |
+| **is_sandbox** | `true` for a sandbox transaction, `false` for a production transaction. |
+| **metadata** | The `metadata` of the transaction, as one JSON value in one cell. Empty if the transaction has no metadata. |
+
+### Join with the events table
+
+The virtual currency file has no prices. To get the price of a purchase that credited a currency, join the credit row with the events table:
+
+- Match **store_transaction_id** with **transaction_id** of the events table.
+- Match **store** too, but only for `app_store`, `play_store`, `stripe`, and `paddle`. For `adapty` and custom stores, the events table has an empty **store**.
+
+This example query assumes that you loaded the virtual currency files into the `vc_transactions` table and the events files into the `events` table:
+
+```sql title="SQL"
+SELECT
+  vc.vc_transaction_id,
+  vc.created_at,
+  vc.profile_id,
+  vc.currency_code,
+  vc.amount,
+  e.event_type,
+  e.product_id,
+  e.revenue_usd,
+  e.currency,
+  e.revenue_local
+FROM vc_transactions AS vc
+LEFT JOIN events AS e
+  ON e.transaction_id = vc.store_transaction_id
+  AND (
+    e.store = vc.store
+    OR vc.store NOT IN ('app_store', 'play_store', 'stripe', 'paddle')
+  )
+  AND e.event_type IN (
+    'subscription_initial_purchase',
+    'subscription_started',
+    'subscription_renewed',
+    'trial_started',
+    'trial_converted',
+    'non_subscription_purchase'
+  )
+WHERE vc.amount > 0
+  AND COALESCE(vc.store_transaction_id, '') <> '';
+```
+
+The query lists the default event names. A subscription start is `subscription_initial_purchase` in an integration created since mid-September 2025, and `subscription_started` in an earlier one. If you changed the event names in the events export settings, use your names in the query.
+
+A credit row has no matching event if the events export is off, if the events export settings exclude or rename the event type of the purchase, or if **Exclude Historical Events** excludes the event.
+
+One purchase can credit more than one currency. Each currency gets its own credit row, and all these rows join the same event. To sum revenue, count each **store_transaction_id** once.
+
+### Limitations
+
+- **No prices or refund amounts**: The virtual currency file has no purchase price and no refund amount. To get the price, [join the credit row with the events table](#join-with-the-events-table).
+- **Don't add up credits from the two files**: The **virtual_currency_credits** column of the [events](#table-structure) file and the credit rows of the virtual currency file show the same purchase credits. To count credits, use one of them, not both. Their totals can differ: the events file has only the credits of purchases, and only for the events that its settings export, while the virtual currency file has every balance change, including grants through the API and manual adjustments in the dashboard.
+- **No link between a spend and its credits**: The file doesn't show which credits a spend used, for example, purchased or granted credits.
+- **Refund rows show only the credits taken back**: A refund row shows the credits that Adapty took back from the balance. Its **amount** can be smaller than the credits that the purchase granted, for example, when the user spent part of them. If no credits were left, the file has no refund row.
+- **No refund row for a subscription upgrade**: A refund that comes from a subscription upgrade takes back no credits. The file has no refund row for it.
 
 ## Events and tags
 
@@ -329,6 +455,7 @@ You can manage what data is communicated by the integration. The integration off
 | **Exclude Historical Events**      | Opt to exclude events that occurred before the user installed the app with Adapty SDK. This prevents duplication of events and ensures accurate reporting. For instance, if a user activated a monthly subscription on January 10th and updated the app with Adapty SDK on March 6th, Adapty will omit events before March 6th and retain subsequent events. |
 | **Include events without profile** | Opt to include transactions that are not linked to a user profile in Adapty. These may include purchases made before Adapty SDK was installed or transactions received from store server notifications that cannot be immediately associated with a specific user. |
 | **Send User Attributes**           | If you wish to send user-specific attributes, like language preferences, and your OneSignal plan supports more than 10 tags, select this option. Enabling this allows the inclusion of additional information beyond the default 10 tags. Note that exceeding tag limits may result in errors. |
+| **Add virtual currency credits** | Add the **virtual_currency_credits** column to the end of each row of the events file (see [Table structure](#table-structure)). The option also applies to the [manual data export](#manual-data-export), so you can export past days again to get the column. |
 
 <Zoom>
   <img src="/assets/shared/img/s3-settings.webp"

@@ -1,0 +1,377 @@
+---
+title: "Mostrar el progreso del usuario con una animación Lottie"
+description: "Muestra el progreso de cada usuario, como una racha diaria, como una animación Lottie en una pantalla de flow."
+metadataTitle: "Mostrar el progreso del usuario con una animación Lottie | Documentación de Adapty"
+---
+
+<CustomElementLottieIntro />
+
+## Antes de empezar \{#before-you-start\}
+
+- Actualiza tu app al SDK 4.4 de Adapty React Native o posterior. Las versiones anteriores del SDK muestran el [contenido de respaldo](flow-custom-elements#set-fallback-content) para cada elemento personalizado.
+- Configura tu app para [obtener](react-native-get-pb-paywalls) y [mostrar](react-native-present-paywalls) flows.
+- Configura el código nativo de tu app para los elementos personalizados, tal como se indica en la [guía de React Native](react-native-flow-custom-elements#before-you-start).
+- En iOS, añade Lottie al target de tu app en Xcode con Swift Package Manager, desde `https://github.com/airbnb/lottie-spm.git`. Si tu app usa `lottie-react-native`, omite este paso: ese paquete ya añade Lottie a tu app.
+- En Android, [configura Jetpack Compose](react-native-flow-custom-elements#set-up-jetpack-compose) en el módulo de tu app. La vista de animación de esta receta es un composable. Añade Compose Foundation y Lottie para Jetpack Compose a tu app con Gradle, desde `androidx.compose.foundation:foundation` y `com.airbnb.android:lottie-compose`.
+
+<CustomElementLottieAnimationRequirements />
+
+## 1. Añade el elemento personalizado a la pantalla \{#1-add-the-custom-element-to-the-screen\}
+
+<CustomElementLottieBuilderSetup />
+
+## 2. Añade el archivo de animación a tu app \{#2-add-the-animation-file-to-your-app\}
+
+Tu código nativo lee el archivo de animación desde tus proyectos iOS y Android, no desde los assets de tu código JavaScript:
+
+- **iOS**: Añade el archivo al target de tu app en Xcode.
+- **Android**: Coloca el archivo en `android/app/src/main/assets`, la carpeta `assets` del módulo de tu app Android. Mantenlo en la raíz de esta carpeta, no en una subcarpeta.
+
+El nombre del archivo sin `.json` debe coincidir con el ID del elemento personalizado, por ejemplo `streak_ring.json` para `streak_ring`.
+
+## 3. Crea la vista de animación \{#create-the-animation-view\}
+
+Crea un modelo para la racha y una vista que reproduzca la animación. Tu app actualiza el modelo cuando la racha cambia. La vista lee el modelo, así que el anillo muestra la racha actual al abrir la pantalla:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift"
+
+// The streak that your app keeps up to date
+@MainActor
+final class StreakStore: ObservableObject {
+    @Published var currentStreak = 0 // days in a row
+}
+
+struct StreakRingView: View {
+    let animation: LottieAnimation
+    @ObservedObject var streakStore: StreakStore
+
+    // 7 days fill the ring: from 0 for an empty ring to 1 for a full one
+    private var progress: AnimationProgressTime {
+        min(AnimationProgressTime(streakStore.currentStreak) / 7, 1)
+    }
+
+    var body: some View {
+        LottieView(animation: animation)
+            .resizable()
+            .playing(.fromProgress(0, toProgress: progress, loopMode: .playOnce))
+    }
+}
+```
+
+`.playing(.fromProgress(0, toProgress: progress, loopMode: .playOnce))` rellena el anillo una vez, desde vacío hasta `progress`.
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin"
+
+// the streak that your app keeps up to date
+class StreakStore {
+    val currentStreak = MutableStateFlow(0) // days in a row
+}
+
+@Composable
+fun StreakRing(animationFile: String, streakStore: StreakStore) {
+    val composition by rememberLottieComposition(LottieCompositionSpec.Asset(animationFile))
+    val streak by streakStore.currentStreak.collectAsState()
+
+    // 7 days fill the ring: from 0 for an empty ring to 1 for a full one
+    val progress = minOf(streak / 7f, 1f)
+
+    LottieAnimation(
+        composition = composition,
+        modifier = Modifier.fillMaxSize(), // scale the animation to fit the custom element
+        clipSpec = LottieClipSpec.Progress(0f, progress),
+    )
+}
+```
+
+`clipSpec = LottieClipSpec.Progress(0f, progress)` rellena el anillo una vez, desde vacío hasta `progress`.
+
+</TabItem>
+</Tabs>
+
+## 4. Asocia la animación al elemento personalizado \{#4-match-the-animation-to-the-custom-element\}
+
+En tu [resolver global de la app](react-native-flow-custom-elements#pass-the-resolver-to-the-sdk), añade una propiedad para el modelo de racha. Luego devuelve la vista de animación para el tipo `lottie_animation` y el ID `streak_ring`. Las líneas resaltadas muestran qué añadir o cambiar. Si tu app aún no tiene un [resolver](react-native-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) global, copia el código completo:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift" {6,14-18}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let streakStore: StreakStore
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "lottie_animation" where id == "streak_ring":
+            guard let animation = LottieAnimation.named(id) else {
+                return nil // no animation file: show the fallback
+            }
+            return AnyView(StreakRingView(animation: animation, streakStore: streakStore))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+Coloca el caso `streak_ring` antes de cualquier otro caso `lottie_animation`, porque Swift solo ejecuta el primer caso que coincide. Si el bundle de la app no tiene ningún archivo para ese ID, el resolver devuelve `nil` y los usuarios ven el fallback.
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin" {8,22-28}
+
+class CustomElementsResolver(
+    context: Context,
+    private val streakStore: StreakStore,
+) : AdaptyCustomElementsResolver {
+    // the animation files in the assets folder, listed once
+    private val animationFiles: Set<String> = try {
+        context.assets.list("").orEmpty().toSet()
+    } catch (e: IOException) {
+        emptySet() // no list of files: every Lottie element shows the fallback
+    }
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        when (type) {
+            "lottie_animation" -> {
+                // the ID names the animation file, such as streak_ring.json
+                val file = "$id.json"
+                when {
+                    file !in animationFiles -> null // no file for this ID: show the fallback
+                    id == "streak_ring" ->
+                        AdaptyCustomElementContent.compose { StreakRing(file, streakStore) }
+                    // the other animations of your resolver
+                    else -> null
+                }
+            }
+            // the other Types of your resolver
+            else -> null
+        }
+}
+```
+
+Si la carpeta `assets` no tiene ningún archivo para el ID, el resolver devuelve `null` y los usuarios ven el fallback. Si tu resolver ya devuelve una [vista para cada archivo de animación](react-native-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views), devuelve esa vista en lugar de `null` cuando el ID no sea `streak_ring`. Así, los usuarios siguen viendo las animaciones del resto de elementos personalizados `lottie_animation`.
+
+</TabItem>
+</Tabs>
+
+Crea el resolver con el modelo de streak y establécelo como resolver global al iniciar la app:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+En `AppDelegate.swift`, añade una propiedad para el modelo de racha y establece el resolver en el método `application(_:didFinishLaunchingWithOptions:)`. Las líneas resaltadas muestran qué añadir. Mantén el resto de la clase `AppDelegate` tal como está:
+
+```swift showLineNumbers title="ios/YourApp/AppDelegate.swift" {1,6-7,13}
+
+@main
+class AppDelegate: UIResponder, UIApplicationDelegate {
+  // the streak model that your app updates
+  let streakStore = StreakStore()
+
+  func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+  ) -> Bool {
+    AdaptyUI.setCustomElementsResolver(CustomElementsResolver(streakStore: streakStore))
+    // the rest of your launch code
+    return true
+  }
+}
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+En `MainApplication.kt`, añade una propiedad para el modelo de racha y establece el resolver en el método `onCreate`. Las líneas resaltadas muestran qué añadir. Mantén el resto de la clase `MainApplication` tal como está:
+
+```kotlin showLineNumbers title="MainApplication.kt" {1,4-5,11}
+
+class MainApplication : Application(), ReactApplication {
+  // the streak model that your app updates
+  val streakStore = StreakStore()
+
+  // the other members of your MainApplication class
+
+  override fun onCreate() {
+    super.onCreate()
+    AdaptyUI.setCustomElementsResolver(CustomElementsResolver(this, streakStore))
+    // the rest of your onCreate code
+  }
+}
+```
+
+</TabItem>
+</Tabs>
+
+## 5. Envía la racha desde tu código JavaScript \{#5-send-the-streak-from-your-javascript-code\}
+
+Tu código JavaScript mantiene la racha, y las vistas nativas la leen desde el modelo de racha. Para actualizar el modelo, envía la racha a tu código nativo mediante un [Turbo Native Module](https://reactnative.dev/docs/turbo-native-modules-introduction). El módulo tiene una especificación JavaScript y una implementación para cada plataforma.
+
+En una carpeta `specs` en la raíz de tu proyecto, crea la especificación del módulo:
+
+```typescript showLineNumbers title="specs/NativeStreakStore.ts"
+
+export interface Spec extends TurboModule {
+  setStreak(days: number): void;
+}
+
+export default TurboModuleRegistry.getEnforcing<Spec>('NativeStreakStore');
+```
+
+Para generar el código nativo de la especificación, añade `codegenConfig` a `package.json`. Reemplaza `com.example.app` con el nombre del paquete de tu aplicación Android, tanto en `package.json` como en la implementación Kotlin del módulo. Si `package.json` ya tiene `codegenConfig`, añade únicamente `NativeStreakStore` al objeto `modulesProvider`:
+
+```json showLineNumbers title="package.json"
+"codegenConfig": {
+  "name": "AppSpecs",
+  "type": "modules",
+  "jsSrcsDir": "specs",
+  "android": {
+    "javaPackageName": "com.example.app.specs"
+  },
+  "ios": {
+    "modulesProvider": {
+      "NativeStreakStore": "RCTNativeStreakStore"
+    }
+  }
+}
+```
+
+Implementa el módulo para cada plataforma:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+En el target de tu app en Xcode, crea un módulo Objective-C++. Envía el streak a tu código Swift a través de `NotificationCenter`:
+
+```objectivec showLineNumbers title="RCTNativeStreakStore.h"
+#import <AppSpecs/AppSpecs.h>
+
+@interface RCTNativeStreakStore : NSObject <NativeStreakStoreSpec>
+@end
+```
+
+```objectivec showLineNumbers title="RCTNativeStreakStore.mm"
+#import "RCTNativeStreakStore.h"
+
+@implementation RCTNativeStreakStore
+
++ (NSString *)moduleName {
+  return @"NativeStreakStore";
+}
+
+- (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
+    (const facebook::react::ObjCTurboModule::InitParams &)params {
+  return std::make_shared<facebook::react::NativeStreakStoreSpecJSI>(params);
+}
+
+- (void)setStreak:(double)days {
+  // the AppDelegate updates the streak model when it receives this notification
+  [[NSNotificationCenter defaultCenter] postNotificationName:@"StreakDidChange"
+                                                      object:nil
+                                                    userInfo:@{@"days": @((NSInteger)days)}];
+}
+
+@end
+```
+
+Para actualizar el modelo de streaks con cada nuevo streak, observa `NotificationCenter` en tu clase `AppDelegate`. En el método `application(_:didFinishLaunchingWithOptions:)`, añade el observador después de la llamada a `AdaptyUI.setCustomElementsResolver`:
+
+```swift showLineNumbers title="ios/YourApp/AppDelegate.swift"
+// the streak that your JavaScript code sends through the native module
+NotificationCenter.default.addObserver(
+  forName: Notification.Name("StreakDidChange"),
+  object: nil,
+  queue: .main
+) { [streakStore] notification in
+  guard let days = notification.userInfo?["days"] as? Int else { return }
+  MainActor.assumeIsolated { streakStore.currentStreak = days }
+}
+```
+
+Para generar el código nativo de la especificación, ejecuta `pod install` en la carpeta `ios`.
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+Create the module, and a package that registers it with React Native:
+
+```kotlin showLineNumbers title="NativeStreakStoreModule.kt"
+package com.example.app
+
+
+class NativeStreakStoreModule(reactContext: ReactApplicationContext) :
+    NativeStreakStoreSpec(reactContext) {
+
+    override fun getName() = NAME
+
+    override fun setStreak(days: Double) {
+        val app = reactApplicationContext.applicationContext as MainApplication
+        app.streakStore.currentStreak.value = days.toInt()
+    }
+
+    companion object {
+        const val NAME = "NativeStreakStore"
+    }
+}
+```
+
+```kotlin showLineNumbers title="NativeStreakStorePackage.kt"
+
+class NativeStreakStorePackage : BaseReactPackage() {
+    override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? =
+        if (name == NativeStreakStoreModule.NAME) NativeStreakStoreModule(reactContext) else null
+
+    override fun getReactModuleInfoProvider() = ReactModuleInfoProvider {
+        mapOf(
+            NativeStreakStoreModule.NAME to ReactModuleInfo(
+                name = NativeStreakStoreModule.NAME,
+                className = NativeStreakStoreModule.NAME,
+                canOverrideExistingModule = false,
+                needsEagerInit = false,
+                isCxxModule = false,
+                isTurboModule = true,
+            )
+        )
+    }
+}
+```
+
+En `MainApplication.kt`, añade `NativeStreakStorePackage` a la lista de paquetes:
+
+```kotlin showLineNumbers title="MainApplication.kt" {2}
+PackageList(this).packages.apply {
+  add(NativeStreakStorePackage())
+}
+```
+
+</TabItem>
+</Tabs>
+
+En tu código JavaScript, envía la racha al iniciar la app y cada vez que cambie:
+
+```typescript showLineNumbers title="sendStreak.ts"
+
+// call at app launch, and each time the streak changes
+export function sendStreak(days: number) {
+  NativeStreakStore.setStreak(days);
+}
+```
+
+## 6. Prueba en un dispositivo \{#test-on-a-device\}
+
+<CustomElementLottieTest />
+
+Para descubrir por qué aparece el contenido de respaldo en lugar de la animación, sigue las instrucciones de la sección [Prueba en un dispositivo](react-native-flow-custom-elements#test-on-a-device) de la guía de React Native.

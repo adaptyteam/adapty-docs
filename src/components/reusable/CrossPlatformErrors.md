@@ -17,7 +17,7 @@
 | privacyAcknowledgementRequired | 9 | This error code indicates that the user has not yet acknowledged the store privacy policy. |
 | unauthorizedRequestData | 10 | This error code indicates that the request is built incorrectly. |
 | invalidOfferIdentifier | 11 | <p>The offer identifier is not valid. Possible reasons:</p><p></p><p>- You have not set up an offer with that identifier in the App Store.</p><p>- You have revoked the offer.</p><p>- You misprinted the offer ID.</p> |
-| invalidSignature | 12 | This error code indicates that the signature in a payment discount is not valid. Make sure you've filled out the **In-app purchase Key ID**  field and uploaded the **In-App Purchase Private Key** file. Refer to the [Configure App Store integration](app-store-connection-configuration) topic for details. |
+| invalidSignature | 12 | This error code indicates that the signature in a payment discount is not valid. Make sure you've filled out the **Subscription key ID** field and uploaded the **Subscription key (.p8 file)** in the **App Store promotional offers** section. Refer to [Add the In-App Purchase key to Adapty](generate-in-app-purchase-key#add-the-key-to-adapty) for details. |
 | missingOfferParams | 13 | <p>This error indicates issues with Adapty integration or with offers.</p><p>Refer to the [Configure App Store integration](app-store-connection-configuration)  and to [Offers](offers)  for details on how to set them up.</p> |
 | invalidOfferPrice | 14 | This error code indicates that the price you specified in the store is no longer valid. Offers must always represent a discounted price. |
 
@@ -52,6 +52,7 @@
 | productPurchaseFailed | 1006 | Product purchase failed. This wraps an underlying StoreKit error — read the wrapped error (or enable verbose logs to see it in the console) for the actual reason. The wrapped error is typically one of the StoreKit codes 0–14 in the table above — most commonly `paymentCancelled`, `paymentInvalid`, `paymentNotAllowed`, or `invalidOfferPrice`. If you can't identify a specific reason, try a new [sandbox profile](test-purchases-in-sandbox); if it still fails, contact Apple support. |
 | refreshReceiptFailed | 1010 | This error indicates that the receipt was not received. Applicable to StoreKit 1 only. |
 | receiveRestoredTransactionsFailed | 1011 | Purchase restoration failed. |
+| billingPlanUnavailable | 1060 | iOS only, SDK 4.3.0+. The product doesn't offer the requested billing plan on this device or in this storefront. A [12-month commitment](app-store-12-month-commitment) plan requires iOS 26.4 or later, and an app built with Xcode 26.5 or later. |
 
 
 ## Custom network codes
@@ -71,4 +72,6 @@
 | unsupportedData      | 3007 | This error indicates that the data format is not supported by the SDK. |
 | persistingDataError  | 3100 | It was an error while saving data.                           |
 | fetchTimeoutError    | 3101 | This error means that the paywall could not be fetched within the set limit. To avoid this situation, [set up local fallbacks](fetch-paywalls-and-products). |
+| operationInProgress  | 3201 | iOS only, SDK 4.3.0+. Returned by `showStoreMessages` when a previous call is still showing [store messages](capacitor-store-messages). Wait for it to finish, then try again. |
+| resolverFailure      | 3202 | iOS only, SDK 4.3.0+. Returned by `showStoreMessages` when no foreground-active window scene exists. Call the method again when the app is in the foreground. |
 | operationInterrupted | 9000 | This operation was interrupted by the system.                |

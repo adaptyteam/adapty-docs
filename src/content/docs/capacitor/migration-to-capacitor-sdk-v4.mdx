@@ -56,9 +56,13 @@ Then sync the native projects:
 npx cap sync
 ```
 
-### iOS: Swift Package Manager only
+### iOS: Swift Package Manager only in 4.0–4.1 \{#ios-swift-package-manager-only\}
 
-[CocoaPods' spec repo goes read-only in December 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/), so starting with v4 the `AdaptyCapacitor.podspec` is removed and the SDK installs on iOS **only through Swift Package Manager (SPM)**. Your app's iOS project must use Capacitor's SPM integration:
+:::note
+SDK 4.2.0 brings CocoaPods back: the native SDKs install as pods from [Adapty's spec repo](https://github.com/adaptyteam/AdaptySDK-CocoaPods-Specs). To keep your iOS project on CocoaPods, upgrade straight to 4.2.0 or later and add the Adapty Podfile helpers described in [Set up your iOS project](sdk-installation-capacitor#set-up-your-ios-project).
+:::
+
+[CocoaPods' spec repo goes read-only in December 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/), so in 4.0 and 4.1 the `AdaptyCapacitor.podspec` is removed and the SDK installs on iOS **only through Swift Package Manager (SPM)**. To stay on 4.0 or 4.1, your app's iOS project must use Capacitor's SPM integration:
 
 - New apps: add the iOS platform with the SPM package manager:
 
@@ -111,6 +115,19 @@ The returned type changes from `AdaptyPaywall` to `AdaptyFlow`, and the `locale`
 - const paywall = await adapty.getPaywallForDefaultAudience({ placementId: 'YOUR_PLACEMENT_ID', locale: 'en' });
 + const flow = await adapty.getFlowForDefaultAudience({ placementId: 'YOUR_PLACEMENT_ID' });
 ```
+
+### Locale matching is exact
+
+:::warning
+In v3, the Adapty server picked the localization and fell back to the language: a `pt-br` request got the `pt` localization when the paywall had no `pt-br`. In v4, the SDK picks the localization on the device and uses only an exact match. A code that matches no localization renders the flow in its default localization, without an error or a warning.
+:::
+
+Before you upgrade, check the locale codes your app passes:
+
+- For each regional code you pass, add a localization with that code — for example, `pt-BR` in addition to `pt` — or map the code to one that the flow has.
+- Pass codes exactly as the published flow has them: `pt-BR`, not `pt-br` from the **Select languages** field. For paywalls from the old Paywall Builder, pass lowercase codes, such as `pt-br`. Don't pass a system locale identifier as is: on a device set to English (United States), `navigator.language` returns `en-US`, which misses a flow that has only `en`.
+
+See [Localizations and locale codes](capacitor-localizations-and-locale-codes#flows-and-paywalls).
 
 ### getPaywallProducts(paywall) → getPaywallProducts(flow)
 
@@ -235,7 +252,7 @@ v4 also adds a few capabilities you can opt into:
 - `adapty.openWebUrl({ url, openIn })` and `adapty.requestAppReview()` methods — these back the default `onUrlPress` and `onRequestAppReview` handlers, so URLs and app-review prompts are handled natively out of the box. Call them directly only if you override those handlers.
 - Observer-mode purchase handling inside flows via the new `onObserverPurchaseInitiated` / `onObserverRestoreInitiated` handlers. See [Present flows in Observer mode](capacitor-present-flows-in-observer-mode).
 - `onAnalytics: (name, params)` — analytics events a flow emits, starting with a screen view for every screen the user opens. See [Track flow screen views](capacitor-flow-screen-views).
-- `onRequestPermission: (permission, customArgs)` — reserved for system-permission requests (such as push notifications or camera access) from a flow. Flows don't trigger permission requests yet, so you don't need to implement it.
+- `onRequestPermission: (permission, customArgs)` — invoked when a flow runs the **Request permission** action. See [Handle permission requests in flows](capacitor-handle-permissions).
 
 Separately, 4.1.1 adds an SDK-level event rather than a flow handler: `'onPromotedPurchaseReceived'`, delivered through `adapty.addListener`. With no listener registered, the SDK completes the promoted purchase itself; registering one hands completion to your app. See [App Store promoted in-app purchases](#app-store-promoted-in-app-purchases).
 
@@ -290,6 +307,7 @@ Write code only to take over completion yourself — for example to show a scree
 
 These changes do not cause compile errors, so test them at runtime:
 
+- **Flow localization**: A regional locale code no longer falls back to its language — `pt-br` doesn't get the `pt` localization. A code with no exact match renders the flow in its default localization. See [Locale matching is exact](#locale-matching-is-exact).
 - **`onAndroidSystemBack`**: The default changed from closing the view to keeping it open. To restore the previous behavior, return `true` from the handler.
 - **`onPurchaseCompleted`**: The default changed from closing the view (unless the user canceled the purchase) to always keeping it open. To restore the previous behavior, return `purchaseResult.type !== 'user_cancelled'` from the handler.
 - **`onRestoreCompleted`**: The default changed from closing the view after a successful restore to keeping it open. To restore the previous behavior, return `true` from the handler.

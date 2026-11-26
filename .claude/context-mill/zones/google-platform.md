@@ -21,8 +21,8 @@ side, not Android SDK code and not the Adapty Dashboard's own settings.
 This zone is split by owner, and the split is unusually clean: most sentences here are **Google's**
 facts, a minority are **Adapty's**, and neither half has a registered source.
 
-- **Google's half has no source, and cannot have one.** Cloud IAM role names (Pub/Sub Admin,
-  Monitoring Viewer), Play Console **Account permissions** labels, which three APIs must be enabled,
+- **Google's half has no source, and cannot have one.** Cloud IAM role names (Pub/Sub Admin),
+  Play Console **Account permissions** labels, which three APIs must be enabled,
   the 3,000 queries/min default quota and the shape of the quota-request form, the Data Safety
   question wording and answer options, Reduced Service Fee thresholds and enrollment steps, and every
   console navigation path and screenshot in the zone — none of it is verifiable from any repo in
@@ -61,8 +61,8 @@ facts, a minority are **Adapty's**, and neither half has a registered source.
 - **The sharpest trap: two consoles, two grants, and a ticket that names neither.** Establish which
   before doing anything else.
   - Google **Cloud** Console, on the *Cloud project*: enabling the three APIs
-    (`enabling-of-devepoler-api`), the service account's **IAM roles** — Pub/Sub Admin, Monitoring
-    Viewer (`create-service-account`), and issuing its **JSON key** for download
+    (`enabling-of-devepoler-api`), granting the service account the **Pub/Sub Admin** IAM role
+    (`create-service-account`), and issuing its **JSON key** for download
     (`create-service-account-key-file`). These are what Adapty's RTDN setup consumes: creating a topic
     and subscription inside the customer's own Cloud project needs the Pub/Sub role, not any Play
     Console permission.
@@ -156,7 +156,7 @@ most, deliberately — so the exception needs stating rather than assuming.
 | android-products | — | dev | 4 | tutorial |
 | create-service-account | — | dev | 4 | tutorial |
 | create-service-account-key-file | — | dev | 4 | tutorial |
-| enable-real-time-developer-notifications-rtdn | — | dev | 8 | tutorial |
+| enable-real-time-developer-notifications-rtdn | — | dev | 9 | tutorial |
 | enabling-of-devepoler-api | — | dev | 3 | tutorial |
 | google-platform-resources | entry | dev | 3 | tutorial |
 | google-play-data-safety | — | dev | 7 | tutorial |
@@ -220,7 +220,7 @@ order that `initial-android` and the `What's next` chains agree on: enable the t
 |---|---|
 | "Adapty can't validate Android purchases", "service account permissions missing", "I invited the account and it still fails" | `grant-permissions-to-service-account`. There are **two** separate grants: Cloud IAM roles at creation time (`create-service-account`) and Play Console **Account permissions** here — View app information, View financial data/orders/cancellation surveys, Manage orders and subscriptions, Manage store presence. A ticket that says "permissions" almost always means this one. |
 | "API not enabled" error, "androidpublisher isn't on" | `enabling-of-devepoler-api`. Three APIs, not one — Google Play Android Developer, Google Play Developer Reporting, Cloud Pub/Sub — and the Cloud project picked here must stay the same one all the way through the key-file upload. |
-| "no real-time notifications", "Pub/Sub Admin role", "notification queue" | `create-service-account`, not the RTDN article. The two Cloud roles granted at creation are Pub/Sub Admin (required for RTDN to work at all) and Monitoring Viewer (queue monitoring); an RTDN-shaped complaint often traces back to a role missed here. |
+| "no real-time notifications", "Pub/Sub Admin role", "notification queue", "Monitoring Viewer" | `create-service-account`, not the RTDN article. Creation grants one Cloud role, Pub/Sub Admin, and RTDN can't work without it; an RTDN-shaped complaint often traces back to that grant missing. Adapty needs no **Monitoring Viewer** role: Google pushes RTDN to an Adapty endpoint, and the backend doesn't call the Monitoring API. Setup guides for other subscription platforms still ask for it. |
 | "Adapty rejects the key file", "nothing works right after setup", "24 hours" | `create-service-account-key-file`. A new service account takes ~24 h to activate; the documented workaround is editing and saving any product description in Play Console. The same note is repeated in `initial-android`. |
 | "where do I upload the JSON key", "package name", "connect the Android app to Adapty" | `google-play-store-connection-configuration` — the one Adapty-Dashboard-side step inside an otherwise Google-console chain. |
 | "paywalls stopped showing on Android after release", "products vanished after we changed the app config" | `google-play-store-connection-configuration`. Changing the package name or key file after shipping Adapty paywalls breaks the integration — the constraint, not the mechanics, is what the ticket needs. |

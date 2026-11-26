@@ -86,12 +86,14 @@ function MyFlow({ flow }) {
 }
 ```
 
-## Trình bày dạng modal \{#modal-presentation\}
+`onError` handler của `AdaptyFlowView` nhận lỗi khi component không thể hiển thị flow. Điều này xảy ra khi flow không tải được, hoặc khi thiết bị chạy iOS 15 — phiên bản không được flow hỗ trợ. Hãy dừng render component và hiển thị nội dung của riêng bạn.
 
-Để hiển thị một flow dưới dạng màn hình độc lập, hãy dùng phương thức `view.present()` trên `view` được tạo bởi phương thức [`createFlowView`](react-native-get-pb-paywalls#fetch-the-view-configuration). Mỗi `view` chỉ có thể dùng một lần. Nếu bạn cần hiển thị flow lại, hãy gọi `createFlowView` thêm một lần nữa để tạo một `view` mới.
+## Hiển thị dạng modal \{#modal-presentation\}
+
+Để hiển thị một flow dưới dạng màn hình độc lập, sử dụng phương thức `view.present()` trên `view` được tạo bởi phương thức [`createFlowView`](react-native-get-pb-paywalls#fetch-the-view-configuration). Nếu bạn cần hiển thị lại flow, hãy gọi `createFlowView` thêm một lần nữa để tạo một `view` mới, hoặc [giữ lại view đã đóng](#keep-a-closed-flow-for-later) để hiển thị lại sau.
 
 :::warning
-Không được tái sử dụng cùng một `view` mà không tạo lại. Điều này sẽ dẫn đến lỗi `AdaptyUIError.viewAlreadyPresented`.
+Sau khi gọi `view.dismiss()` với các tùy chọn mặc định, view sẽ được giải phóng và gọi `present()` lại sẽ thất bại. Gọi `present()` khi một flow đang hiển thị trên màn hình cũng thất bại. Trong cả hai trường hợp, bạn sẽ nhận được `AdaptyError` với mã `3001` (`wrongParam`), và thông báo lỗi sẽ cho biết nguyên nhân: `AdaptyUIError.viewNotFound` hoặc `AdaptyUIError.viewAlreadyPresented`.
 :::
 
 ```typescript showLineNumbers title="React Native (TSX)"
@@ -124,16 +126,59 @@ try {
 }
 ```
 
-## Sử dụng timer do developer tự định nghĩa \{#use-developer-defined-timer\}
+### Giữ lại flow đã đóng để dùng sau \{#keep-a-closed-flow-for-later\}
 
-Để sử dụng timer do developer tự định nghĩa trong ứng dụng mobile, hãy dùng `timerId`, trong ví dụ này là `CUSTOM_TIMER_NY` — **Timer ID** của timer mà bạn đã thiết lập trong Adapty dashboard. Điều này đảm bảo ứng dụng của bạn tự động cập nhật timer với giá trị chính xác — ví dụ như `13d 09h 03m 34s` (được tính bằng thời điểm kết thúc của timer, chẳng hạn như Ngày đầu năm mới, trừ đi thời gian hiện tại).
+:::info
+Tùy chọn `destroy` và phương thức `destroy()` khả dụng từ SDK phiên bản 4.3.0 trở lên.
+:::
+
+Theo mặc định, `view.dismiss()` đóng flow và hủy native view của nó, do đó `view` không thể được hiển thị lại. Để hiển thị lại cùng một flow sau này, hãy truyền `destroy: false`. Lần gọi `present()` tiếp theo sẽ mở flow tại màn hình mà người dùng đã đóng, với trạng thái người dùng để lại, và các event handler của bạn vẫn được giữ nguyên:
+
+```typescript showLineNumbers
+// Close the flow and keep its native view in memory
+await view.dismiss({ destroy: false });
+
+// Later: open the flow again on the same screen
+await view.present();
+```
+
+Native view vẫn được giữ trong bộ nhớ cho đến khi bạn giải phóng nó. Khi không còn cần đến flow nữa, hãy gọi `destroy()`:
+
+```typescript showLineNumbers
+await view.dismiss({ destroy: false });
+// ...
+await view.destroy();
+```
+
+Chỉ gọi `destroy()` cho view mà bạn đã đóng với `destroy: false`. Một lệnh `dismiss()` thông thường sẽ tự giải phóng view.
+
+Một event handler trả về `true` sẽ đóng flow bằng `dismiss()` thông thường, điều này sẽ hủy native view ngay cả khi bạn đã giữ nó trước đó. Các handler mặc định `onCloseButtonPress` và `onError` đều trả về `true`. Để giữ lại flow khi người dùng đóng nó, hãy tự đóng flow và trả về `false`:
+
+```typescript showLineNumbers
+view.setEventHandlers({
+  onCloseButtonPress() {
+    view.dismiss({ destroy: false }).catch(error => {
+      // handle the error
+    });
+    return false;
+  },
+});
+```
+
+## Sử dụng bộ đếm thời gian do nhà phát triển định nghĩa \{#use-developer-defined-timer\}
+
+Sử dụng phần này cho bộ đếm thời gian có hành vi **Developer defined** trong Flow & Paywall Builder. Trong builder, mỗi bộ đếm thời gian như vậy có một **Timer ID** (xem [Để ứng dụng của bạn đặt ngày kết thúc](flow-timer#let-your-app-set-the-end-date)), và ứng dụng của bạn sẽ đặt ngày kết thúc cho nó. Hãy sử dụng cùng một Timer ID trong code của bạn như trong builder, từng ký tự một, bao gồm cả chữ hoa chữ thường và dấu cách. Nếu các ID không khớp, bộ đếm thời gian sẽ không nhận được ngày kết thúc từ ứng dụng của bạn.
+
+Để đặt ngày kết thúc, hãy truyền tham số `customTimers`: một đối tượng ánh xạ mỗi Timer ID tới một `Date`, tức là ngày kết thúc của bộ đếm thời gian.
 
 <Tabs>
 <TabItem value="component" label="React component">
 ```typescript showLineNumbers title="React Native (TSX)"
-const flowParams = {
-  customTimers: { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
-};
+const flowParams = useMemo(() => ({
+  customTimers: {
+    CUSTOM_TIMER_NY: new Date(new Date().getFullYear() + 1, 0, 1), // next New Year's Day
+  },
+}), []);
 
 <AdaptyFlowView
   flow={flow}
@@ -144,13 +189,24 @@ const flowParams = {
 </TabItem>
 <TabItem value="modal" label="Modal presentation">
 ```typescript showLineNumbers title="React Native (TSX)"
-const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
 
-const view = await createFlowView(flow, { customTimers });
+const customTimers = {
+  CUSTOM_TIMER_NY: new Date(new Date().getFullYear() + 1, 0, 1), // next New Year's Day
+};
+
+try {
+  const view = await createFlowView(flow, { customTimers });
+  await view.present();
+} catch (error) {
+  // handle the error
+}
 ```
 </TabItem>
 </Tabs>
-Trong ví dụ này, `CUSTOM_TIMER_NY` là **Timer ID** của bộ đếm thời gian do developer định nghĩa mà bạn đã thiết lập trong Adapty dashboard. `timerResolver` đảm bảo ứng dụng của bạn cập nhật động bộ đếm với giá trị chính xác—chẳng hạn như `13d 09h 03m 34s` (được tính bằng thời điểm kết thúc của bộ đếm, ví dụ như Năm Mới, trừ đi thời gian hiện tại).
+
+Trong ví dụ này, `CUSTOM_TIMER_NY` là Timer ID của timer do **Nhà phát triển định nghĩa** trong builder. Timer hiển thị thời gian còn lại cho đến Năm Mới tiếp theo, ví dụ `13d 09h 03m 34s`.
+
+SDK đọc `customTimers` một lần duy nhất khi tạo view, vì vậy một ngày bạn tính toán, chẳng hạn như 6 giờ kể từ bây giờ, sẽ được đếm ngược từ thời điểm đó. Nếu ngày đó đã qua, timer hiển thị về không ngay lập tức và trigger **On timer end** của nó sẽ chạy. Nếu `customTimers` không có key cho Timer ID nào đó, timer sẽ đếm ngược một giờ kể từ khi mở màn hình.
 
 ## Hiển thị hộp thoại \{#show-dialog\}
 
@@ -174,6 +230,10 @@ try {
   // handle error
 }
 ```
+
+## Gửi tin nhắn đến một flow \{#send-messages-to-a-flow\}
+
+Phương thức `sendAppMessage` của một flow view dùng để gửi tin nhắn đến flow dưới dạng đối tượng JSON. Phương thức này được dành cho các tính năng trong tương lai của Flow & Paywall Builder. Các flow sẽ bỏ qua những tin nhắn này, vì vậy bạn không cần gọi phương thức này.
 
 ## Thay thế một gói đăng ký bằng gói khác \{#replace-one-subscription-with-another\}
 
@@ -321,9 +381,9 @@ try {
 }
 ```
 
-## Sử dụng timer do lập trình viên định nghĩa \{#use-developer-defined-timer\}
+## Sử dụng timer do developer tự định nghĩa \{#use-developer-defined-timer\}
 
-Để sử dụng timer do lập trình viên định nghĩa trong ứng dụng di động, hãy dùng `timerId`, trong ví dụ này là `CUSTOM_TIMER_NY` — **Timer ID** của timer do lập trình viên định nghĩa mà bạn đã thiết lập trên Adapty dashboard. Điều này đảm bảo ứng dụng cập nhật động giá trị của timer với giá trị chính xác — chẳng hạn `13d 09h 03m 34s` (được tính bằng thời điểm kết thúc của timer, ví dụ như ngày đầu năm mới, trừ đi thời gian hiện tại).
+Để sử dụng timer do developer tự định nghĩa trong ứng dụng mobile, hãy dùng `timerId`, trong ví dụ này là `CUSTOM_TIMER_NY` — **Timer ID** của timer mà bạn đã thiết lập trong Adapty dashboard. Điều này đảm bảo ứng dụng của bạn tự động cập nhật timer với giá trị chính xác — ví dụ như `13d 09h 03m 34s` (được tính bằng thời điểm kết thúc của timer, chẳng hạn như Ngày đầu năm mới, trừ đi thời gian hiện tại).
 
 <Tabs>
 <TabItem value="component" label="React component">
@@ -347,7 +407,7 @@ const view = await createPaywallView(paywall, { customTimers });
 ```
 </TabItem>
 </Tabs>
-Trong ví dụ này, `CUSTOM_TIMER_NY` là **Timer ID** của timer do developer định nghĩa mà bạn đã cài đặt trong Adapty dashboard. `timerResolver` đảm bảo ứng dụng của bạn cập nhật động timer với giá trị chính xác—chẳng hạn như `13d 09h 03m 34s` (được tính bằng thời điểm kết thúc của timer, như Ngày Đầu Năm Mới, trừ đi thời gian hiện tại).
+Trong ví dụ này, `CUSTOM_TIMER_NY` là **Timer ID** của bộ đếm thời gian do developer định nghĩa mà bạn đã thiết lập trong Adapty dashboard. `timerResolver` đảm bảo ứng dụng của bạn cập nhật động bộ đếm với giá trị chính xác—chẳng hạn như `13d 09h 03m 34s` (được tính bằng thời điểm kết thúc của bộ đếm, ví dụ như Năm Mới, trừ đi thời gian hiện tại).
 
 ## Hiển thị dialog \{#show-dialog\}
 

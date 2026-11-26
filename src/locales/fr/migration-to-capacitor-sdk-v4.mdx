@@ -56,17 +56,21 @@ Puis synchronisez les projets natifs :
 npx cap sync
 ```
 
-### iOS : Swift Package Manager uniquement \{#ios-swift-package-manager-only\}
+### iOS : Swift Package Manager uniquement dans les versions 4.0–4.1 \{#ios-swift-package-manager-only\}
 
-[Le dépôt de specs CocoaPods passe en lecture seule en décembre 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/), donc à partir de la v4, le fichier `AdaptyCapacitor.podspec` est supprimé et le SDK s'installe sur iOS **uniquement via Swift Package Manager (SPM)**. Le projet iOS de votre application doit utiliser l'intégration SPM de Capacitor :
+:::note
+SDK 4.2.0 réintroduit CocoaPods : les SDK natifs s'installent en tant que pods depuis le [dépôt de specs d'Adapty](https://github.com/adaptyteam/AdaptySDK-CocoaPods-Specs). Pour rester sur CocoaPods dans votre projet iOS, mettez directement à jour vers la version 4.2.0 ou ultérieure et ajoutez les helpers Podfile d'Adapty décrits dans [Configurer votre projet iOS](sdk-installation-capacitor#set-up-your-ios-project).
+:::
 
-- Nouvelles applications : ajoutez la plateforme iOS avec le gestionnaire de paquets SPM :
+[Le dépôt spec de CocoaPods passe en lecture seule en décembre 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/), donc dans les versions 4.0 et 4.1, le fichier `AdaptyCapacitor.podspec` est supprimé et le SDK s'installe sur iOS **uniquement via Swift Package Manager (SPM)**. Pour utiliser la version 4.0 ou 4.1, le projet iOS de votre application doit utiliser l'intégration SPM de Capacitor :
+
+- Nouvelles applications : ajoutez la plateforme iOS avec le gestionnaire de packages SPM :
 
 ```bash showLineNumbers
 npx cap add ios --packagemanager SPM
 ```
 
-- Applications existantes basées sur CocoaPods : migrez le projet iOS en suivant le [guide Capacitor pour utiliser SPM dans un projet existant](https://capacitorjs.com/docs/ios/spm#using-spm-in-an-existing-capacitor-project).
+- Applications existantes basées sur CocoaPods : migrez le projet iOS en suivant [le guide de Capacitor pour utiliser SPM dans un projet existant](https://capacitorjs.com/docs/ios/spm#using-spm-in-an-existing-capacitor-project).
 
 Consultez [Installer le SDK Adapty](sdk-installation-capacitor) pour la configuration complète.
 
@@ -111,6 +115,19 @@ Le type retourné passe de `AdaptyPaywall` à `AdaptyFlow`, et l'option `locale`
 - const paywall = await adapty.getPaywallForDefaultAudience({ placementId: 'YOUR_PLACEMENT_ID', locale: 'en' });
 + const flow = await adapty.getFlowForDefaultAudience({ placementId: 'YOUR_PLACEMENT_ID' });
 ```
+
+### La correspondance des paramètres régionaux est exacte \{#locale-matching-is-exact\}
+
+:::warning
+Dans la v3, le serveur Adapty sélectionnait la localisation et revenait à la langue : une requête `pt-br` obtenait la localisation `pt` quand le paywall n'avait pas de `pt-br`. Dans la v4, le SDK sélectionne la localisation sur l'appareil et n'utilise que les correspondances exactes. Un code qui ne correspond à aucune localisation affiche le flow dans sa localisation par défaut, sans erreur ni avertissement.
+:::
+
+Avant de procéder à la mise à niveau, vérifiez les codes de paramètres régionaux que votre application utilise :
+
+- Pour chaque code régional que vous transmettez, ajoutez une localisation avec ce code — par exemple, `pt-BR` en plus de `pt` — ou mappez le code sur l'un de ceux que le flow possède.
+- Transmettez les codes exactement tels qu'ils figurent dans le flow publié : `pt-BR`, et non `pt-br` issu du champ **Select languages**. Pour les paywalls de l'ancien Paywall Builder, transmettez des codes en minuscules, comme `pt-br`. Ne transmettez pas tel quel un identifiant de locale système : sur un appareil configuré en anglais (États-Unis), `navigator.language` renvoie `en-US`, ce qui ne correspond pas à un flow qui ne contient que `en`.
+
+Voir [Localisations et codes de langue](capacitor-localizations-and-locale-codes#flows-and-paywalls).
 
 ### getPaywallProducts(paywall) → getPaywallProducts(flow)
 
@@ -232,10 +249,10 @@ Tous les autres gestionnaires d'événements conservent leur nom. L'un d'eux cha
 
 La v4 ajoute également quelques fonctionnalités que vous pouvez activer à la demande :
 
-- `adapty.openWebUrl({ url, openIn })` et `adapty.requestAppReview()` — ces méthodes sont utilisées par les gestionnaires par défaut `onUrlPress` et `onRequestAppReview`, donc les URLs et les demandes d'avis sur l'application sont gérées nativement sans configuration supplémentaire. Appelez-les directement uniquement si vous surchargez ces gestionnaires.
-- Gestion des achats en mode Observer dans les flows via les nouveaux gestionnaires `onObserverPurchaseInitiated` / `onObserverRestoreInitiated`. Voir [Présenter des flows en mode Observer](capacitor-present-flows-in-observer-mode).
-- `onAnalytics: (name, params)` — événements d'analyse émis par un flow, à commencer par une vue d'écran pour chaque écran ouvert par l'utilisateur. Voir [Suivre les vues d'écran des flows](capacitor-flow-screen-views).
-- `onRequestPermission: (permission, customArgs)` — réservé aux demandes de permissions système (comme les notifications push ou l'accès à la caméra) émises par un flow. Les flows ne déclenchent pas encore de demandes de permissions, vous n'avez donc pas besoin de l'implémenter.
+- `adapty.openWebUrl({ url, openIn })` et `adapty.requestAppReview()` — ces méthodes sont à la base des gestionnaires par défaut `onUrlPress` et `onRequestAppReview`, ce qui permet de gérer nativement les URLs et les demandes d'avis sur l'application. Ne les appelez directement que si vous remplacez ces gestionnaires.
+- Gestion des achats en mode Observer dans les flows via les nouveaux gestionnaires `onObserverPurchaseInitiated` / `onObserverRestoreInitiated`. Voir [Présenter les flows en mode Observer](capacitor-present-flows-in-observer-mode).
+- `onAnalytics: (name, params)` — événements analytiques émis par un flow, à commencer par un événement de vue d'écran pour chaque écran ouvert par l'utilisateur. Voir [Suivre les vues d'écran des flows](capacitor-flow-screen-views).
+- `onRequestPermission: (permission, customArgs)` — déclenché lorsqu'un flow exécute l'action **Request permission**. Voir [Gérer les demandes de permission dans les flows](capacitor-handle-permissions).
 
 Séparément, la version 4.1.1 ajoute un événement au niveau du SDK plutôt qu'un gestionnaire de flow : `'onPromotedPurchaseReceived'`, transmis via `adapty.addListener`. Sans écouteur enregistré, le SDK finalise lui-même l'achat promu ; en enregistrer un délègue la finalisation à votre application. Voir [Achats intégrés promus sur l'App Store](#app-store-promoted-in-app-purchases).
 
@@ -290,11 +307,12 @@ Rédigez du code uniquement pour prendre en charge la complétion vous-même —
 
 Ces changements ne provoquent pas d'erreurs de compilation, testez-les donc à l'exécution :
 
-- **`onAndroidSystemBack`**: Le comportement par défaut est passé de la fermeture de la vue à son maintien ouvert. Pour retrouver l'ancien comportement, renvoyez `true` depuis le handler.
-- **`onPurchaseCompleted`**: Le comportement par défaut est passé de la fermeture de la vue (sauf si l'utilisateur a annulé l'achat) à son maintien ouvert dans tous les cas. Pour retrouver l'ancien comportement, renvoyez `purchaseResult.type !== 'user_cancelled'` depuis le handler.
-- **`onRestoreCompleted`**: Le comportement par défaut est passé de la fermeture de la vue après une restauration réussie à son maintien ouvert. Pour retrouver l'ancien comportement, renvoyez `true` depuis le handler.
-- **`onUrlPress`**: Le comportement par défaut ouvre désormais l'URL via la couche native, en respectant le paramètre de navigateur intégré ou externe configuré dans le tableau de bord. Surchargez le handler pour ouvrir les URL vous-même.
-- **Les vues sont à usage unique** : après `dismiss()`, la vue est détruite. Appelez `createFlowView` à nouveau pour afficher le flow une nouvelle fois.
+- **Localisation des flows** : un code de langue régional ne se rabat plus sur sa langue de base — `pt-br` n'utilise pas la localisation `pt`. Un code sans correspondance exacte affiche le flow dans sa localisation par défaut. Voir [La correspondance des locales est exacte](#locale-matching-is-exact).
+- **`onAndroidSystemBack`** : le comportement par défaut est passé de la fermeture de la vue au maintien de celle-ci ouverte. Pour rétablir l'ancien comportement, renvoyez `true` depuis le handler.
+- **`onPurchaseCompleted`** : le comportement par défaut est passé de la fermeture de la vue (sauf si l'utilisateur a annulé l'achat) au maintien systématique de celle-ci ouverte. Pour rétablir l'ancien comportement, renvoyez `purchaseResult.type !== 'user_cancelled'` depuis le handler.
+- **`onRestoreCompleted`** : le comportement par défaut est passé de la fermeture de la vue après une restauration réussie au maintien de celle-ci ouverte. Pour rétablir l'ancien comportement, renvoyez `true` depuis le handler.
+- **`onUrlPress`** : par défaut, l'URL s'ouvre désormais via la couche native, en respectant le paramètre de navigateur intégré ou externe défini dans le dashboard. Substituez le handler pour gérer l'ouverture des URL vous-même.
+- **Les vues sont à usage unique** : après `dismiss()`, la vue est détruite. Appelez à nouveau `createFlowView` pour afficher le flow une nouvelle fois.
 
 ## API supprimées \{#removed-apis\}
 

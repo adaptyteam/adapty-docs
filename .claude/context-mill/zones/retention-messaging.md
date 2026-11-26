@@ -56,9 +56,36 @@ there is no Google Play equivalent.
   through a single update no matter which step's button was pressed — so **Save Changes** on the
   General step is not a lighter-weight save, and "any edit to a Live message returns it to review" is
   correct as the docs state it.
+- **Title position** (dashboard code, 2026-10-28): a Default message with an image has a **Title position**
+  choice on the Content step — **Below the image** (default) or **Above the image**; the body stays below the
+  image either way. It is fixed at creation: in edit mode the radios are disabled with a hint to create a new
+  message. No image at creation → the default position is stored, so an image added later in edit shows the
+  title below. Promo messages carry no image, so no choice.
+- **Bullet points** (dashboard code and release QA notes, 2026-11-09): Default messages only, with or without an
+  image; up to 5; each needs an icon (PNG, exactly 1024 × 1024 px, no transparency, 10 MB cap), text up to 66
+  characters, optional alt text up to 150 (empty → a default is sent). Icons are shared across locales and only
+  the text is translated; alt text is not localized. A locale with any text must fill every bullet point, and an
+  over-long or empty bullet cell blocks **Submit To Review**. Bullet points can't be reordered. Not yet shipped:
+  the **Rejected** state for an icon Apple turns down, and removing replaced icons from Apple — don't document
+  either until they land. Documented in `retention-messaging-create` → *Content* and *Localization*.
+- **Alt text is not localized** (dashboard code, 2026-10-28): one alt text is sent for the message, not per locale.
+- **Locales with an empty title and body are dropped on submit**, silently (dashboard code, 2026-10-28).
 - **Reactivation does not re-enter Apple's review.** The confirm-modal copy is explicit: deactivating
   hides the message "but not deleted. You can reactivate it anytime without going through review
   again", and activating "may take a few minutes to appear for all users".
+- **The analytics metrics are now readable in the backend** (backend metrics query on the production line
+  and the release QA notes, 2026-10-29) — this corrects "the backend carries no retention-messaging
+  logic" above, for analytics only. The table has six columns: **Shown**, **Retained users** (was
+  **Retained** until 2026-10-28), **Saved users**, **Retention rate**, **Save rate**, **Saved revenue**.
+  The unit is one (message, original transaction, day) — still attempts, not people, despite the "users"
+  labels. Retained = a paid start, renewal or trial conversion billed after the view and before the first
+  auto-renew-off or expiry; ties go to churn. Not retained: offer accepted then cancelled before paying,
+  a $0 period, cancel → re-enable → pay, resubscribe after expiry, a charge Apple billed before the view,
+  a refunded payment. Saved = no auto-renew-off within 24 h of the day's first view, counted only once
+  24 h have passed; Save rate = saved / views older than 24 h. Saved revenue = USD price before Apple's
+  commission of the retained attempts' payments until the first cancel or expiry, each payment credited
+  to the latest retaining view before it; Family Sharing payments count as retained but add no revenue.
+  Documented in `retention-messaging-analytics`.
 
 ## What we document, what we don't
 
@@ -83,8 +110,8 @@ Delta from `scope.md` only.
 <!-- mill:auto:roster -->
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
-| retention-messaging | entry | — | 1 | tutorial |
-| retention-messaging-analytics | — | — | 4 | tutorial |
+| retention-messaging | entry | — | 2 | tutorial |
+| retention-messaging-analytics | — | — | 6 | tutorial |
 | retention-messaging-create | — | — | 9 | tutorial |
 | retention-messaging-setup | — | — | 7 | tutorial |
 <!-- /mill:auto -->
@@ -100,6 +127,9 @@ Delta from `scope.md` only.
 - **`analytics`** — `retention-messaging-analytics` is this zone's (the Shown / Retained / Retention rate
   columns on the Retention Messaging page). `analytics-retention` is cohort retention charts in
   `analytics`, an unrelated feature with a confusingly similar name.
+- **`agent-tooling`** — `developer-cli-retention-messaging` (2026-11-18) is the CLI topic page for the same actions, and
+  `adapty-mcp` has a Retention Messaging row. They link here for message states, setup steps and metric meanings; a change to
+  those belongs here first, then the CLI page if it restates a value (the image limits and the metric formulas).
 - **`products-and-offers`** — a promo message attaches an App Store promotional offer or a plan switch,
   but creating either is `app-store-offers` / `create-product`.
 
@@ -136,6 +166,32 @@ aggregated support handoffs; the third stage has no ticket evidence yet.
 
 ## Gaps and misses
 
+- **2026-11-18, the backend does carry retention-messaging logic** (backend code, 2026-11-17, read for the CLI topic): this
+  corrects "the backend carries no retention-messaging logic that could be read" in Sources of truth for setup, messages and
+  suggestions too, not only analytics. From that read: setup status values `credentials`, `registration_status`,
+  `realtime_url_status` (`not_configured`, `configured_to_other_url`, `configured_to_adapty`) and `performance_test_status`; a
+  status read can save the test result; a list or message read asks Apple about review and can queue an approved message;
+  configuring sandbox creates a hidden test message; production configure is refused before the test passes; header image PNG
+  3840 px wide, 160–2160 px tall, no transparency, 10 MB; title position is stored as `header_position` (`above_body`,
+  `above_image`).
+- **Open question, 2026-11-18: does activation re-enter review?** `retention-messaging-create` says reactivation skips Apple's
+  review. The same backend read says `activate` moves an `inactive` message to `in_review` and that approved locales don't wait
+  for a new review. Both can be true (a state change with no new upload), but the article's sentence and the API state disagree
+  on the surface. `developer-cli-retention-messaging` states the API behavior; the create article is unchanged. Confirm with
+  product before you edit either.
+- **Resolved 2026-10-28 in favor of the dashboard code** (the docs owner's call: "trust the code"):
+  `retention-messaging-create` now says a message goes live once Apple approves **at least one** locale
+  (Localization step footer: "Production stays gated until at least one locale is approved."), and that
+  **AI Translate All Cells** overwrites manual edits in every added locale (the UI intro still claims
+  otherwise). Unconfirmed against the backend — revisit if a ticket shows a message stuck in review with
+  some locales approved.
+- **Setup copy fixed 2026-10-28**: alt texts and the two-click **Configure Sandbox URL** path updated, and
+  both setup screenshots recaptured from a mocked dashboard.
+- **A pending dashboard change will surface the missing App Store Connect key on Plan Switch** (2026-10-28,
+  unmerged): today the plan list just stays empty when the key is missing. Once it ships, a ticket line
+  ("plan switch list is empty") belongs under Ticket language pointing at the key.
+- **Unwritten but verified** (2026-10-28): the analytics table's filters (type, state, name search) and its
+  **Started at** column; the locale picker's **Add All Locales**; the empty-state copy. Low reader impact.
 - **The backend's "no active sandbox transaction" failure remains unverified.** The dashboard has no
   error branch for it (checked 2026-08-20), and the backend carries no retention-messaging code that
   could be read, so this needs product or backend confirmation — another code read will not settle it.
@@ -147,7 +203,10 @@ aggregated support handoffs; the third stage has no ticket evidence yet.
   "Failed to update message status. Please try again." Left in the article unchanged and flagged here: it
   may well be a backend rule that was known when the article was written, and this is not evidence
   against it.
-- **Both setup screenshots are stale**, neither caused by a docs edit: the sandbox card was retitled and
+- **Fixed 2026-10-28:** the Content, promo-offer and plan-switch screenshots in `retention-messaging-create`
+  were recaptured from a mocked dashboard (labels **Associated product**, **Associated offers**,
+  **Associated plan**, **Link Promo Offer** / **Link Plan Switch**).
+- **(Superseded 2026-10-28 — recaptured.)** Both setup screenshots were stale, neither caused by a docs edit: the sandbox card was retitled and
   its button relabelled 2026-08-04–11, and the test card's copy changed with it.
   `retention-messaging-configure-sandbox-url.webp` and `retention-messaging-test-sandbox-url.webp` both
   need recapture, plus a new one for the access-request guide.

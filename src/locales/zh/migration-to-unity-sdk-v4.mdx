@@ -51,12 +51,13 @@ Adapty Unity SDK 4.1 是 4.x 系列的首个稳定版本——4.0 仅以 Beta �
 https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unity-sdk#4.1.0
 ```
 
-如果通过 Unity package 安装，请从 [4.1.0 release](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.1.0) 下载 `adapty-unity-plugin-4.1.0.unitypackage`。完整配置步骤请参阅[安装 Adapty SDK](sdk-installation-unity#install-adapty-sdk)。
+如果通过 Unity 包安装，请从 [4.1.0 release](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.1.0) 下载 `adapty-unity-plugin-4.1.0.unitypackage`。完整安装步骤请参阅 [安装 Adapty SDK](sdk-installation-unity#install-adapty-sdk)。
 
-4.x 版本带来了两项构建配置变更：
+4.x 版本包含三项构建配置变更：
 
-- **iOS 依赖项切换到 Swift Package Manager。** 原生 Adapty iOS SDK 现以远程 Swift 包的形式声明，而非 CocoaPods pod。请将 [External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver#getting-started) 更新至 **1.2.188 或更高版本**——更早的版本不支持 Swift Package Manager 依赖项。CocoaPods 相关步骤（`iOS Resolver -> Install Cocoapods`、打开 `Unity-iPhone.xcworkspace`）不再适用。为 iOS 构建现在需要 **Xcode 26** 或更高版本，因为该 Swift 包使用 Swift tools 6.2 构建。
-- **iOS 部署目标必须为 15.0 或更高版本。** Unity Editor 中新增了构建验证器，若目标版本低于此要求，iOS 构建将被阻止。
+- **iOS 依赖项切换至 Swift Package Manager。** 原生 Adapty iOS SDK 现以远程 Swift 包的形式声明，不再使用 CocoaPods。请将 [External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver#getting-started) 更新至 **1.2.188 或更高版本**——更早的版本不支持 Swift Package Manager 依赖项。CocoaPods 相关步骤（`iOS Resolver -> Install Cocoapods`、打开 `Unity-iPhone.xcworkspace`）不再适用。构建 iOS 版本现在需要 **Xcode 26** 或更高版本，因为 Swift 包使用 Swift tools 6.2 构建。
+- **iOS 部署目标必须为 15.0 或更高版本。** Unity Editor 中新增的构建校验器会在目标版本低于此要求时阻止 iOS 构建。
+- **Android 构建必须针对 API level 35 或更高版本进行编译。** Adapty UI 库使用的 Jetpack Compose 1.8 有此要求。
 
 The underlying native Adapty SDKs are bumped to 4.x on both platforms and are resolved automatically — no other build changes are needed.
 
@@ -64,7 +65,7 @@ The underlying native Adapty SDKs are bumped to 4.x on both platforms and are re
 
 ### GetPaywall → GetFlow
 
-返回类型从 `AdaptyPaywall` 变更为 `AdaptyFlow`，同时移除了 `locale` 参数——当你渲染一个流程时，语言环境会自动解析；对于自定义付费墙，所有语言环境的配置都会通过 `flow.RemoteConfigs` 返回：
+返回类型从 `AdaptyPaywall` 变更为 `AdaptyFlow`，`locale` 参数移至流程视图参数（`AdaptyUICreateFlowViewParameters.SetLocale`）——详见[语言区域匹配为精确匹配](#locale-matching-is-exact)；对于自定义付费墙，所有语言区域均在 `flow.RemoteConfigs` 中返回：
 
 ```diff showLineNumbers
 - Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
@@ -78,12 +79,25 @@ The underlying native Adapty SDKs are bumped to 4.x on both platforms and are re
   });
 ```
 
-`GetPaywallForDefaultAudience` 已按相同方式重命名：
+`GetPaywallForDefaultAudience` 也以相同方式重命名：
 
 ```diff showLineNumbers
 - Adapty.GetPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", (paywall, error) => { /* ... */ });
 + Adapty.GetFlowForDefaultAudience("YOUR_PLACEMENT_ID", (flow, error) => { /* ... */ });
 ```
+
+### 语言区域匹配为精确匹配 \{#locale-matching-is-exact\}
+
+:::warning
+在 v3 中，Adapty 服务器会选择本地化方案并回退到语言级别：当付费墙没有 `pt-br` 本地化时，`pt-br` 请求会使用 `pt` 本地化。在 v4 中，SDK 在设备端选择本地化方案，且仅支持精确匹配。如果传入的语言区域代码与任何本地化方案均不匹配，流程将以其默认本地化方案渲染，不会报错或发出警告。
+:::
+
+在升级之前，请检查应用传入的语言区域代码：
+
+- 对于您传递的每个地区代码，请添加该代码对应的本地化——例如，除 `pt` 之外还需添加 `pt-BR`——或将该代码映射到流程中已有的代码。
+- 请严格按照已发布流程中的代码传递：从 **Select languages** 字段传递 `pt-BR`，而不是 `pt-br`。对于旧版付费墙编辑工具中的付费墙，请传递小写代码，例如 `pt-br`。不要直接传递系统语言区域标识符：在设置为英语（美国）的设备上，`CultureInfo.CurrentCulture.Name` 返回 `en-US`，这会导致只包含 `en` 的流程无法匹配。
+
+请参阅[本地化与语言代码](unity-localizations-and-locale-codes#flows-and-paywalls)。
 
 ### GetPaywallProducts(paywall) → GetPaywallProducts(flow)
 
@@ -240,11 +254,11 @@ public void OnReceivePromotedPurchase(AdaptyPromotedProduct product) {
 
 ### 新 API \{#new-apis\}
 
-- `Adapty.SetObserverModeResolver(...)` 配合 `IAdaptyUIObserverModeResolver` — 在 SDK 以[观察者模式](implement-observer-mode-unity)运行时，处理从流程发起的购买和恢复操作。此前该功能仅在原生 iOS 和 Android SDK 中可用。详见[在观察者模式下展示流程](unity-present-flows-in-observer-mode)。
-- `Adapty.SetSystemRequestsHandler(...)` 配合 `IAdaptyUISystemRequestsHandler` — 用于处理流程中的系统请求：操作系统权限提示（`FlowViewDidAskPermission`）和应用评价请求（`FlowViewDidRequestAppReview`）。当前流程尚不会触发这些请求，因此无需注册处理器。
-- `AdaptyUICreateFlowViewParameters.Locale`（通过 `SetLocale` 设置）— 使用特定的[编辑工具本地化](add-paywall-locale-in-adapty-paywall-builder)来渲染流程或付费墙，而非使用流程的默认语言。流程在视图创建时完成本地化，因此这是选择本地化的唯一时机，创建完成的视图会通过 `view.Locale` 报告其构建时所用的本地化。详见[使用本地化和语言代码](unity-localizations-and-locale-codes)。
-- `IAdaptyFlowsEventsListener` 上新增的 `FlowViewDidReceiveAnalyticEvent` 回调，用于上报来自流程的分析事件，从用户打开的每个屏幕的页面浏览事件开始。详见[追踪流程屏幕浏览](unity-flow-screen-views)。
-- `AdaptyUI.OpenUrl(url, openIn, ...)` 和 `AdaptyUI.RequestAppReview(...)` — `open_url` 操作和应用评价请求背后的原生处理逻辑。在 `FlowViewDidPerformAction` 中调用 `OpenUrl` 可保留默认的 URL 处理行为；`RequestAppReview` 支持默认的应用评价提示，但流程目前尚不会触发该功能。
+- `Adapty.SetObserverModeResolver(...)` 配合 `IAdaptyUIObserverModeResolver` — 在 SDK 以[观察者模式](implement-observer-mode-unity)运行时，驱动从流程发起的购买和恢复操作。此前该功能仅在原生 iOS 和 Android SDK 中可用。请参阅[在观察者模式下呈现流程](unity-present-flows-in-observer-mode)。
+- `Adapty.SetSystemRequestsHandler(...)` 配合 `IAdaptyUISystemRequestsHandler` — 响应来自流程的系统请求：操作系统权限弹窗（`FlowViewDidAskPermission`）和应用评价请求（`FlowViewDidRequestAppReview`）。如果您的流程使用了**Request permission**操作，请注册此处理程序：参阅[处理流程中的权限请求](unity-handle-permissions)。
+- `AdaptyUICreateFlowViewParameters.Locale`（通过 `SetLocale` 设置）— 以特定[编辑工具本地化语言](add-paywall-locale-in-adapty-paywall-builder)渲染流程或付费墙。创建视图时，SDK 会加载该流程的所有本地化版本，`Locale` 用于选择要展示的那一个。若未设置 `Locale`，视图将以 `en` 渲染；若流程没有 `en` 版本，则使用默认本地化。创建的视图会通过 `view.Locale` 报告其实际使用的本地化语言。参阅[使用本地化语言和区域代码](unity-localizations-and-locale-codes)。
+- `IAdaptyFlowsEventsListener` 上新增的 `FlowViewDidReceiveAnalyticEvent` 回调，用于上报流程中的分析事件，从用户打开每个页面时的页面浏览事件开始。参阅[追踪流程页面浏览](unity-flow-screen-views)。
+- `AdaptyUI.OpenUrl(url, openIn, ...)` 和 `AdaptyUI.RequestAppReview(...)` — `open_url` 操作和应用评价请求背后的原生处理逻辑。在 `FlowViewDidPerformAction` 中调用 `OpenUrl` 可保留默认 URL 行为；`RequestAppReview` 支持默认的应用评价弹窗，目前流程尚未自动触发该弹窗。
 
 ## 重命名外部归因 API \{#renamed-external-attribution-apis\}
 
@@ -309,10 +323,11 @@ var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
 
 这些变更不会导致编译错误，请在运行时进行测试：
 
-- **购买完成**：在 v3 中，购买成功后视图会自动关闭。在 v4 中，**购买或发生错误后，流程会保持打开状态，直到您主动关闭它** — SDK 不会应用任何默认行为。请在用户获得访问权限后，在 `FlowViewDidFinishPurchase` 中自行调用 `view.Dismiss(...)`。
-- **Android 系统返回**：系统返回按钮（或返回手势）会以 `SystemBack` 动作的形式传递给 `FlowViewDidPerformAction`，不再自动关闭流程 — 这与 iOS 保持一致，iOS 上的流程同样无法通过系统手势关闭。请为用户提供明确的退出方式（**关闭**按钮或 `on_device_back` 动作），或在处理该动作时自行关闭视图。
-- **视图只能使用一次**：调用 `Dismiss` 后，视图将被销毁。如需再次展示流程，请重新调用 `CreateFlowView`。
-- **观察者模式事务**：`ReportTransaction` 在成功时不再返回解码错误 — 在 v3 中，成功响应解析有误，导致成功的上报始终以错误结束。
+- **流程本地化**：区域语言代码不再回退到其对应语言——`pt-br` 不会使用 `pt` 本地化。如果找不到精确匹配的代码，流程将以默认本地化语言渲染。详见[语言匹配为精确匹配](#locale-matching-is-exact)。
+- **购买完成**：在 v3 中，购买成功后视图会自动关闭。在 v4 中，**流程在购买或发生错误后会保持打开状态，直到你主动关闭**——SDK 不会执行任何默认行为。请在 `FlowViewDidFinishPurchase` 中自行调用 `view.Dismiss(...)`，确保用户获得访问权限后再关闭视图。
+- **Android 系统返回**：系统返回按钮（或返回手势）将作为 `SystemBack` 动作传递给 `FlowViewDidPerformAction`，不再自动关闭流程——与 iOS 保持一致（iOS 上流程不能通过系统手势关闭）。请为用户提供明确的退出方式（如 **Close** 按钮或 `on_device_back` 动作），或在处理该动作时自行关闭视图。
+- **视图为一次性使用**：调用 `Dismiss` 后，视图将被销毁。如需再次展示流程，请重新调用 `CreateFlowView`。
+- **旁观者模式下的交易**：`ReportTransaction` 在成功时不再返回解码错误——在 v3 中，成功响应被错误解析，导致成功上报始终以错误结束。
 
 ## 用户引导 API 弃用 \{#onboarding-api-deprecation\}
 

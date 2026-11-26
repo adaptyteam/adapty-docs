@@ -1,0 +1,398 @@
+---
+title: "Display custom elements with the React Native SDK"
+description: "Display a native iOS or Android view in each custom element of a flow, and test the flow on a device."
+metadataTitle: "Display custom elements | React Native SDK | Adapty Docs"
+---
+
+<FlowCustomElementsIntro />
+
+## Before you start
+
+:::important
+In an Expo project, custom elements work only if you keep the `ios` and `android` folders in Git and don't run `npx expo prebuild --clean`. Otherwise, Expo regenerates these folders and deletes the code from this page. New Expo projects keep these folders out of Git, so EAS Build regenerates them for every build.
+:::
+
+You need:
+
+- **Adapty React Native SDK 4.4 or later**: Earlier versions show the fallback for every custom element.
+- **Native code for iOS and Android**: You can't display a React Native component in a custom element. Write this code in Swift for iOS and in Kotlin for Android. Add the Swift code to your app target in Xcode, and the Kotlin code to the folder of `MainApplication.kt`. Start each new Kotlin file with the `package` line of `MainApplication.kt`.
+- **A naming scheme for custom elements**: Give each native view a Type, such as `lottie_animation`. Use only lowercase letters, numbers, and underscores in Types. To distinguish between custom elements of the same Type, give each one an ID, such as `welcome_wave`. The Types and IDs in your code must match the ones in the [Flow & Paywall Builder](flow-custom-elements#add-and-configure).
+
+Use the same Types and IDs in your iOS and Android code. Unless you set up a separate [audience](audience) for each platform, iOS and Android users see the same flows.
+
+## Set up your Android project
+
+Your iOS project needs no extra setup. In your Android project, add the Adapty UI library. To build native views as composables, also set up Jetpack Compose.
+
+### Add the Adapty UI library
+
+In `android/app/build.gradle`, add `io.adapty:android-ui` to the `dependencies` block, without a version. `react-native-adapty` sets the version. A different `android-ui` version can break flows.
+
+```groovy showLineNumbers title="android/app/build.gradle"
+dependencies {
+    implementation("io.adapty:android-ui")
+}
+```
+
+The library needs `compileSdkVersion` 35 or later: if `android/build.gradle` sets a lower version, raise it to 35.
+
+### Set up Jetpack Compose
+
+The React Native template doesn't [set up Compose](https://developer.android.com/develop/ui/compose/setup-compose-dependencies-and-compiler) in the app module. An Android `View` needs no Compose setup. To build native views as composables, set up the Compose compiler for the Kotlin version of your app, the `kotlinVersion` in `android/build.gradle`:
+
+<Tabs groupId="kotlin-version" queryString>
+<TabItem value="kotlin-2" label="Kotlin 2.0 and later" default>
+
+The templates of React Native 0.77 and later use Kotlin 2.0 or later. Add the Compose compiler Gradle plugin to the `buildscript` dependencies:
+
+```groovy showLineNumbers title="android/build.gradle"
+buildscript {
+    dependencies {
+        classpath("org.jetbrains.kotlin:compose-compiler-gradle-plugin:$kotlinVersion")
+    }
+}
+```
+
+Then apply the plugin to the app module, and set `compose true` in the `buildFeatures` block:
+
+```groovy showLineNumbers title="android/app/build.gradle"
+apply plugin: "org.jetbrains.kotlin.plugin.compose"
+
+android {
+    buildFeatures {
+        compose true
+    }
+}
+```
+
+</TabItem>
+<TabItem value="kotlin-1-9" label="Kotlin 1.9">
+
+The templates of React Native 0.75 and 0.76 use Kotlin 1.9. In the `android` block, set `compose true` and the Compose compiler version that matches your Kotlin version. React Native 0.75 and 0.76 build with Kotlin 1.9.24, which needs Compose compiler 1.5.14. For other Kotlin versions, see the [Compose to Kotlin compatibility map](https://developer.android.com/jetpack/androidx/releases/compose-kotlin).
+
+```groovy showLineNumbers title="android/app/build.gradle"
+android {
+    buildFeatures {
+        compose true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion "1.5.14"
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+For the Lottie view on this page, also add `com.airbnb.android:lottie-compose`.
+
+## Create views for custom elements
+
+For each Type, create a native view for iOS and for Android, or reuse one from your native code. The following views of the `lottie_animation` Type play a Lottie animation. The Android view is a composable that uses the `com.airbnb.android:lottie-compose` library:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift"
+import Lottie
+import SwiftUI
+
+struct LottieElementView: View {
+    let animation: LottieAnimation?
+
+    var body: some View {
+        LottieView(animation: animation)
+            .resizable()
+            .looping()
+    }
+}
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin"
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
+
+@Composable
+fun LottieElement(animationFile: String) {
+    val composition by rememberLottieComposition(LottieCompositionSpec.Asset(animationFile))
+    LottieAnimation(
+        composition = composition,
+        iterations = LottieConstants.IterateForever,
+    )
+}
+```
+
+</TabItem>
+</Tabs>
+
+### Requirements and best practices
+
+- **Sizing**:
+  - **Padding and alignment**: Make sure the native view fits the container you allocated for it in the Flow & Paywall Builder, minus the padding. If the view doesn't take up the entire area, it appears in the top start corner of that area by default. To move it, change the alignment in the **Layout** section of the custom element.
+  - **Hug height**: If the height of the custom element is set to **Hug**, a view that stretches to fill the available space (like a map or a lazy list) will collapse, or stretch to the height of the screen. Give the custom element a [**Fixed** height](flow-custom-elements#add-and-configure) instead.
+- **Theme**: Native views don't inherit the styles of your React Native components. Set colors and fonts in the native code.
+- **Flow actions**: The native view can't run flow actions, such as a transition to the next screen. The element context can send messages to the flow, with `sendMessage` on iOS and `send` on Android, but they're reserved for future Flow & Paywall Builder capabilities. Keep navigation buttons, purchase buttons, and other buttons with flow actions outside the custom element.
+- **Selectable elements**: Keep the custom element outside product cards and other [selectable elements](flow-selectable-elements). When the selection changes, the native view can lose its state.
+- **Navigation handling**: When the user moves to the next screen, the SDK removes the native view from the screen. Stop what the view started, such as camera sessions, players, and location updates:
+  - **SwiftUI view**: Use the `onDisappear` action. For async work, use `.task`: SwiftUI cancels it when the view disappears.
+  - **Composable**: Use the `onDispose` block of a `DisposableEffect`. For async work, use `LaunchedEffect`: Compose cancels it when the composable leaves the composition.
+  - **Android `View`**: Override `onDetachedFromWindow` in your `View` subclass, or add a `View.OnAttachStateChangeListener` to the `View`.
+
+  When the user comes back, the SDK calls the resolver again, and the native view starts without the state of the previous one. On Android, in a flow that you open with `present()`, a rotation makes the SDK call the resolver again. In an embedded `AdaptyFlowView`, the native view keeps its state after a rotation.
+- **UIKit views**: On iOS, wrap them in `UIViewRepresentable`.
+- **Carousels**: On Android, in a [carousel](builder-containers#carousel), the native views on all slides stay active while the screen is open, not only the view on the visible slide. Keep camera previews and players with sound out of carousels.
+
+## Write a resolver to match custom elements and views
+
+Write a resolver for each platform. The resolver receives the Type and ID of a custom element, and returns the matching native view.
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+To write a resolver, make a type conform to the `AdaptyUICustomElementsResolver` protocol, and implement the `view(forType:id:context:)` method.
+
+For the `lottie_animation` Type, the following resolver returns `LottieElementView`. The ID names the animation file in the app bundle, such as `welcome_wave`:
+
+```swift showLineNumbers title="Swift"
+import AdaptyUIBuilder
+import Lottie
+import SwiftUI
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "lottie_animation":
+            // the ID names the animation file, such as welcome_wave.json
+            guard let animation = LottieAnimation.named(id) else {
+                return nil // no file for this ID: show the fallback
+            }
+            return AnyView(LottieElementView(animation: animation))
+        default:
+            return nil
+        }
+    }
+}
+```
+
+In the `default` case, return `nil`.
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+To write a resolver, implement the `AdaptyCustomElementsResolver` interface. Its `resolve` method returns the matching view in one of the following forms:
+
+- **A composable**: Return `AdaptyCustomElementContent.compose`, with the composable inside its lambda.
+- **An Android `View`**: Return `AdaptyCustomElementContent.view`, with a function that creates the `View`. Name the `factory` parameter: `AdaptyCustomElementContent.view(factory = { context, _ -> ChartView(context) })`. Without the name, Kotlin passes a trailing lambda to the optional `update` parameter, and the code doesn't compile.
+
+For the `lottie_animation` Type, the following resolver returns the [Lottie view](#create-views-for-custom-elements). The ID names the animation file in the `assets` folder, `android/app/src/main/assets`, such as `welcome_wave` for `welcome_wave.json`:
+
+```kotlin showLineNumbers title="Kotlin"
+import android.content.Context
+import com.adapty.ui.AdaptyCustomElementContent
+import com.adapty.ui.AdaptyCustomElementsResolver
+import java.io.IOException
+
+class CustomElementsResolver(context: Context) : AdaptyCustomElementsResolver {
+    // the animation files in the assets folder, listed once
+    private val animationFiles: Set<String> = try {
+        context.assets.list("").orEmpty().toSet()
+    } catch (e: IOException) {
+        emptySet() // no list of files: every Lottie element shows the fallback
+    }
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        when (type) {
+            "lottie_animation" -> {
+                // the ID names the animation file, such as welcome_wave.json
+                val file = "$id.json"
+                if (file in animationFiles) {
+                    AdaptyCustomElementContent.compose { LottieElement(file) }
+                } else {
+                    null // no file for this ID: show the fallback
+                }
+            }
+            else -> null
+        }
+}
+```
+
+For any other Type, return `null`.
+
+</TabItem>
+</Tabs>
+
+If you [add a custom element with a new Type](flow-custom-elements#what-changes-require-an-app-release) after you release the app, users of the released version see its fallback.
+
+The resolver has the following requirements:
+
+- **Network data and players**: Keep network data and players in the state of the [native view](#create-views-for-custom-elements), not in the resolver. The SDK calls the resolver many times while the screen is open. Code in the resolver runs again on each call, so network requests repeat and players start over. The native view keeps its state between these calls, so the data loads once and the players keep playing. Create players, sessions, and network requests inside the native view:
+  - **SwiftUI view**: Create players, sessions, and network requests in `.task` or a `@StateObject`, not in the initial value of a `@State` property. Swift evaluates that initial value again each time the resolver creates the view.
+  - **Composable**: Create players and sessions in `remember`, and network requests in `LaunchedEffect`.
+  - **Android `View`**: Create players, sessions, and network requests in `onAttachedToWindow`.
+- **One native view per custom element**: Some native views change while the screen is open, for example, when their data loads or when the user taps them. Implement this logic in the native view itself, not in the resolver. If the resolver returns a different view for the same custom element, the view loses its state.
+- **A new `View` for each appearance**: On Android, create a new `View` in each call of `factory`. The SDK calls `factory` each time the custom element appears, such as when the screen opens, when the user returns to the screen, or, in a flow that you open with `present()`, after a rotation.
+- **App data**: Store an object that holds the data, such as an `ObservableObject` or a `StateFlow` with a [daily streak](react-native-custom-element-lottie-animation), in a property of the resolver. Pass the object to the native view, and observe the object there:
+  - **SwiftUI view**: Observe an `ObservableObject` with `@ObservedObject`.
+  - **Composable**: Collect a `StateFlow` with `collectAsState`, or observe a `LiveData` with `observeAsState`.
+  - **Android `View`**: Observe the object in `onAttachedToWindow`, and stop in `onDetachedFromWindow`.
+
+  A value that you copy into the resolver, such as the streak number, stays as it was when you created the resolver. If your JavaScript code has the data, such as a daily streak, send each new value to the native code through a [Turbo Native Module](https://reactnative.dev/docs/turbo-native-modules-introduction), and update the object there.
+
+### Set conditions for fallback content
+
+<FlowCustomElementsFallbackConditions />
+
+For a permission, return no view only when the user denied it before the screen opened. On Android, `ContextCompat.checkSelfPermission` returns the same value, `PERMISSION_DENIED`, in two cases: before your app first asks the user for the permission, and after the user denies it. To tell these cases apart, save the result of the permission request, and read the saved result in the resolver. If your app hasn't requested the permission yet, return the native view, and request the permission inside the view. For example, request location access when a [map view](react-native-custom-element-map#3-match-the-map-to-the-custom-element) appears, and show the map as soon as the user grants access. If you return no view and the user grants access afterwards, they still see the fallback. A permission change doesn't make the SDK call the resolver again. The native view appears only after the SDK calls the resolver again, such as when the user returns to the screen.
+
+## Pass the resolver to the SDK
+
+Set the resolver once for each platform, at app launch. The SDK calls it in every flow, including a flow embedded with `AdaptyFlowView`. Users see your native views in new flows and A/B tests without an app release. These views still show each user their own data, such as a [daily streak](react-native-custom-element-lottie-animation), because they read that data from your app.
+
+### iOS
+
+<Tabs groupId="ios-app-delegate" queryString>
+<TabItem value="swift" label="AppDelegate.swift" default>
+
+In `AppDelegate.swift`, import `AdaptyUI`, and call `AdaptyUI.setCustomElementsResolver(_:)` in the `application(_:didFinishLaunchingWithOptions:)` method. The highlighted lines show what to add. Keep the rest of the `AppDelegate` class as it is:
+
+```swift showLineNumbers title="ios/YourApp/AppDelegate.swift" {1,10}
+import AdaptyUI
+import UIKit
+
+@main
+class AppDelegate: UIResponder, UIApplicationDelegate {
+  func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+  ) -> Bool {
+    AdaptyUI.setCustomElementsResolver(CustomElementsResolver())
+    // the rest of your launch code
+    return true
+  }
+}
+```
+
+If you write the resolver in `AppDelegate.swift` too, also import `AdaptyUIBuilder` there.
+
+If `application(_:didFinishLaunchingWithOptions:)` ends with a bare `true`, as in the React Native 0.88 template, change `true` to `return true`.
+
+</TabItem>
+<TabItem value="objc" label="AppDelegate.mm">
+
+Set the resolver through a Swift class, because `AdaptyUI.setCustomElementsResolver(_:)` is Swift-only:
+
+1. Add a Swift file with the class to your app target:
+
+   ```swift showLineNumbers title="CustomElementsSetup.swift"
+   import AdaptyUI
+
+   @objc final class CustomElementsSetup: NSObject {
+     @MainActor @objc static func register() {
+       AdaptyUI.setCustomElementsResolver(CustomElementsResolver())
+     }
+   }
+   ```
+
+2. In `AppDelegate.mm`, import the Swift header that Xcode generates for your target, `<YourApp>-Swift.h`. Call `[CustomElementsSetup register]` at the start of `application:didFinishLaunchingWithOptions:`. In an Expo project, import `<ExpoModulesCore/ExpoModulesCore-Swift.h>` before the header of your target.
+
+   ```objectivec showLineNumbers title="ios/YourApp/AppDelegate.mm" {1,5}
+   #import "YourApp-Swift.h"
+
+   - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+   {
+     [CustomElementsSetup register];
+     // the rest of your launch code
+   }
+   ```
+
+</TabItem>
+</Tabs>
+
+### Android
+
+In `MainApplication.kt`, import `AdaptyUI`, and call `AdaptyUI.setCustomElementsResolver` in the `onCreate` method. The highlighted lines show what to add. Keep the rest of the `MainApplication` class as it is:
+
+```kotlin showLineNumbers title="MainApplication.kt" {1,8}
+import com.adapty.ui.AdaptyUI
+
+class MainApplication : Application(), ReactApplication {
+  // the other members of your MainApplication class
+
+  override fun onCreate() {
+    super.onCreate()
+    AdaptyUI.setCustomElementsResolver(CustomElementsResolver(this))
+    // the rest of your onCreate code
+  }
+}
+```
+
+:::tip
+To show the same view in every custom element of a Type, pass a map of Types and views instead of a resolver. With a map, you write less code than with a resolver, but you cannot [set conditions for fallback content](#set-conditions-for-fallback-content).
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+The map is a `[String: AdaptyUICustomElementBuilder]` dictionary. If you write the map in `AppDelegate.swift`, also import `Lottie` there.
+
+```swift showLineNumbers title="Swift"
+AdaptyUI.setCustomElementsResolver([
+    "lottie_animation": .init { _, id, _ in LottieElementView(animation: .named(id)) },
+])
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+Pass the map to `AdaptyCustomElementsResolver.of`:
+
+```kotlin showLineNumbers title="Kotlin"
+val appWideViews = mapOf(
+    "confetti" to AdaptyCustomElementContent.compose { LottieElement("confetti.json") },
+)
+AdaptyUI.setCustomElementsResolver(AdaptyCustomElementsResolver.of(appWideViews))
+```
+
+</TabItem>
+</Tabs>
+:::
+
+You can't attach a resolver to one flow. To display data that your app only has when it opens a flow, send the data to your native code before the flow opens. Then read the data in the resolver. For example, a paywall displays the [weight that the user entered in a previous flow](react-native-custom-element-interactive-chart).
+
+## Test on a device
+
+The Flow & Paywall Builder can't run your app code, so its canvas only shows the fallback. An error in the native view can crash the app. Before you release the app, test every screen that has a custom element on an iOS device and on an Android device:
+
+1. To see the latest published version of each flow instead of a cached one, register the device as a [test device](test-devices).
+2. To see the warnings of the Adapty SDK in the Xcode console and in Logcat, set the [log level](sdk-installation-react-native-pure#logging) to `warn` or a more detailed level.
+3. On the device, run a build that includes the resolver. Open each screen that has a custom element, and verify that the native view appears and fits the custom element. If the view scrolls or responds to drags, test these gestures.
+4. If the fallback appears instead of the native view, find this warning in the Xcode console or in Logcat: `custom element <type>:<id> is not served by a resolver`. Then verify that:
+   - The Type and ID in the warning match the ones in your code, letter for letter.
+   - Your app has the file, data, or permission that the view needs.
+   - Your app sets the resolver at launch: in the `AppDelegate` class on iOS, and in the `MainApplication` class on Android.
+
+   If the warning doesn't appear, verify that the app uses Adapty React Native SDK 4.4 or later.
+5. On Android, if the custom element stays empty, find one of these warnings in Logcat:
+   - `custom element <type>:<id> is not served by a resolver`: The custom element has no fallback content, and no resolver returns a view for it. Verify each item in step 4.
+   - `content does not report its size`: The composable has no height of its own. Give the custom element a [**Fixed** height](flow-custom-elements#add-and-configure).
+
+   The SDK only logs the size warning for composables. If an Android `View` stays empty with no warning, give the custom element a **Fixed** height too.
+6. To preview the fallback, return no view for the Type, and open the screen again.
+
+## Examples
+
+Each recipe shows the setup in the builder and the code for your app:
+
+- [Show user progress with a Lottie animation](react-native-custom-element-lottie-animation): A ring that fills as a streak grows.
+- [Show an interactive weight goal chart in a paywall](react-native-custom-element-interactive-chart): A weight goal chart, in the paywall flow that follows the onboarding flow.
+- [Show nearby places on a map in a flow](react-native-custom-element-map): A map of fitness centers near each user.

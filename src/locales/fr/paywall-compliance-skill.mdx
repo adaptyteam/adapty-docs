@@ -1,0 +1,104 @@
+---
+title: "Skill d'agent pour la conformité des paywalls"
+description: "Installez le skill de conformité des paywalls pour que votre outil de codage IA vérifie un paywall ou un onboarding par rapport aux règles de l'App Store et de Google Play ainsi qu'au droit de la consommation en matière d'abonnement avant de soumettre."
+metadataTitle: "Skill d'agent de conformité des paywalls | Revue de store | Documentation Adapty"
+---
+
+Un build rejeté vous coûte des jours : vous corrigez un point, vous soumettez à nouveau, et vous repassez en file d'attente. Le skill paywall-compliance détecte ces problèmes avant qu'un reviewer ne les trouve. Il répond à une seule question sur un paywall ou un onboarding : **Apple ou Google rejetterait-il ceci, et y a-t-il un risque juridique ?**
+
+Demandez à votre outil IA « Apple va-t-il rejeter ce paywall ? » Le skill lit les écrans, les vérifie par rapport aux règles des stores, et vous dit quoi corriger, avec la directive correspondant à chaque constat.
+
+:::note
+paywall-compliance est en lecture seule. Il ne modifie jamais un flow, un produit ou le code de votre application. Lorsqu'une correction est nécessaire, il vous montre la modification et ne l'applique qu'après votre accord.
+:::
+
+## Installer le skill \{#install-the-skill\}
+
+paywall-compliance fait partie du [plugin `adapty-skills`](https://github.com/adaptyteam/adapty-skills).
+
+<AdaptySkillsInstall />
+
+Ensuite, posez des questions comme :
+
+- « Apple va-t-il rejeter ce paywall ? »
+- « L'App Store nous a rejetés sous la règle 3.1.2. Quel est le problème ? »
+- « Puis-je mettre un bouton Ignorer sur l'écran des notifications ? »
+- « Un bouton toggle pour l'essai gratuit est-il autorisé ? »
+- « Mon paywall est-il conforme aux règles de la FTC ? »
+
+## Ce que vous pouvez lui fournir \{#what-you-can-give-it\}
+
+- **Un flow Adapty** : nommez le flow, ou laissez le skill lister vos flows et vous demander lequel choisir. Il lit la configuration du flow et votre catalogue de produits via le [CLI Adapty](developer-cli-quickstart) ou le [serveur MCP Adapty](adapty-mcp) et exécute ses propres vérifications.
+- **Des captures d'écran ou des maquettes** : paywalls, écrans d'onboarding, enregistrement d'écran ou captures jointes à un refus.
+- **Le code de votre app** : un paywall développé en SwiftUI, UIKit, Jetpack Compose, Flutter ou React Native. Le skill suit chaque bouton jusqu'au code qu'il appelle : un libellé indique ce qu'un bouton prétend faire, et seul son gestionnaire indique ce qu'il fait réellement.
+
+Avant de faire son rapport, le skill demande ce que les écrans ne peuvent pas montrer : où vous vendez, qui facture vos utilisateurs (les stores, ou vous sur le web), et dans quels stores vous êtes distribué. Il ne devine jamais votre marché à partir de la devise.
+
+## Ce qu'il vérifie \{#what-it-checks\}
+
+Le skill effectue des vérifications sur cinq couches, et chaque couche possède sa propre section dans le rapport.
+
+1. **Ce que les stores exigent.** Un paywall qui vend doit proposer un moyen de restaurer les achats, des liens vers vos Conditions d'utilisation et votre Politique de confidentialité, ainsi qu'une sortie pour l'utilisateur qui n'achète pas. Les directives App Store 3.1.1 et 3.1.2 l'imposent — l'absence de l'un d'eux est un bloquant.
+2. **Les éléments qui ont entraîné des rejets.** Un toggle d'essai gratuit, un prix à la semaine supérieur au montant facturé, un bouton Ignorer affiché à côté d'une demande de permission, un mur d'inscription, une offre qui s'affiche quand l'utilisateur ferme le paywall. Les examinateurs des stores sont des humains, et leurs décisions évoluent. Le skill signale ces éléments comme des risques : « Apple a rejeté ceci », jamais « Apple rejettera ceci ».
+3. **Le droit de la consommation.** Ce sur quoi les régulateurs américains, britanniques et européens interviennent lorsqu'une app vend un abonnement. Par exemple : les conditions de renouvellement aussi visibles que l'offre, un « gratuit » qui ne coûte rien, un « forfait personnel » qui change selon les réponses au quiz, un bouton de refus qui ne culpabilise pas l'utilisateur.
+4. **L'app autour des écrans.** Des règles qu'un paywall parfait ne peut pas corriger : des champs d'onboarding inutiles pour l'app, la suppression de compte depuis l'app, Se connecter avec Apple, le consentement avant l'envoi de données utilisateur à un fournisseur d'IA tiers, la modération dans les apps d'IA et de chat, les catégories d'apps saturées.
+5. **Ce que les développeurs signalent récemment.** Les pratiques d'examen évoluent plus vite que les directives. Le skill consulte les rapports de rejet récents sur les Apple Developer Forums et Apple Developer News, puis ajoute ceux qui correspondent à vos écrans, avec des liens. Un rapport de développeur est un indice, il ne modifie donc jamais la sévérité d'un constat. Le skill ne fait apparaître ni le nom de votre app, ni votre marque, ni vos textes dans aucune recherche.
+
+[`flow-audit`](flow-audit-skill) exécute le même vérificateur de store sur chaque flow qu'il audite, donc les mécanismes requis comptent également dans son verdict.
+
+## Versions d'un flow par pays \{#country-versions-of-a-flow\}
+
+Certaines règles varient selon les pays. Par exemple, l'App Store américain autorise un lien vers votre site pour acheter, tandis que les autres storefronts rejettent ce même lien. Pour un flow Adapty, le skill peut proposer de ne conserver la version autorisée que là où elle l'est :
+
+- L'audience par défaut du placement reçoit la version qui passe partout. Les utilisateurs hors des pays listés, ainsi que ceux dont le pays est inconnu, voient cette version.
+- Une copie du flow, avec la différence autorisée, est envoyée à un [segment](segments) de ces pays uniquement, filtré par **Country from store account**.
+
+La skill propose ce plan sans rien modifier. Sur votre accord, les skills [flow-generator](flow-generator-skill) et audiences créent la copie et ajoutent l'audience, et chacune vous demande votre approbation au préalable. La skill ne crée jamais une version qui montre au relecteur quelque chose de différent de ce que voient les utilisateurs dans son pays.
+
+## Exemple de rapport \{#example-report\}
+
+```
+The stores will reject this as it is: 1 thing to fix first.
+
+Fix before you submit
+
+1. There is no way to restore a purchase. Someone who reinstalls your app
+   or moves to a new phone cannot get their subscription back.
+   Fix: Add a "Restore purchases" link under the purchase button. (App Store 3.1.1)
+
+Has drawn rejections
+
+2. The per-week price is bigger than the price people are billed.
+   Fix: Make the yearly price the largest price on the card. (App Store 3.1.2(c))
+
+Consumer law
+
+3. "Renews automatically" is only in the grey footnote, while the free week
+   is the largest text on the screen.
+   Fix: Put "Free for 7 days, then $59.99/year, renews until you cancel"
+   under the button. (US: ROSCA; EU: Consumer Rights Directive Art. 6)
+
+Tell me, and I can check
+
+4. Does the plan on "Your plan is ready" change with the quiz answers?
+```
+
+La ligne de verdict ne comptabilise que les points listés sous **Fix before you submit**. Les autres sections contiennent des risques et des questions, donc un rapport peut comporter plusieurs points et n'avoir aucun bloquant.
+
+Ensuite, le skill propose une prochaine étape. Pour un flow Adapty avec des points à corriger, il propose de les corriger. Pour un paywall dans votre code ou dans des captures d'écran, il propose de reconstruire le paywall en tant que flow Adapty en intégrant les corrections. Avec un flow, vous pouvez modifier le paywall ultérieurement sans nouvelle version de l'application. Les modifications côté serveur doivent toujours respecter les directives.
+
+## Ce qu'il ne peut pas faire \{#what-it-cant-do\}
+
+- **Certifier un passage** : un contrôle sans anomalie n'est pas une approbation, et une anomalie trouvée n'est pas un rejet. Chaque rapport le précise.
+- **Donner des conseils juridiques** : les anomalies liées au droit de la consommation indiquent ce sur quoi les régulateurs ont agi. Savoir si une loi s'applique à votre application est une question pour un avocat.
+- **Accéder à votre configuration App Store Connect** : avant de soumettre, vérifiez que vos produits sont approuvés, que la fiche store contient bien des liens vers vos Conditions générales et votre Politique de confidentialité, et que vos prix correspondent à la fiche.
+- **Confirmer que les utilisateurs atteignent le paywall** : un placement que l'application ne récupère jamais n'affiche rien. C'est une question pour [`flow-audit`](flow-audit-skill).
+- **Lire la communauté de révision Google Play** : les signalements de rejets récents proviennent uniquement des sources Apple.
+
+Après chaque exécution, le skill envoie à Adapty une courte note sur le déroulement de la vérification. Cette note ne contient ni texte, ni noms de marques, ni valeurs de compte. Pour désactiver l'envoi de cette note, indiquez au skill de ne pas envoyer de feedback.
+
+## Et ensuite ? \{#whats-next\}
+
+- [Préparez votre application pour la revue du store](prepare-your-app-for-store-review) : ce que les stores examinent, au-delà du paywall.
+- [Skill d'agent pour auditer les flows](flow-audit-skill) : produits, prix, langues et navigation, avant la publication.
+- [Gérer Adapty avec des agents IA et des outils de développement](manage-adapty-with-ai) : les autres skills Adapty et outils IA.

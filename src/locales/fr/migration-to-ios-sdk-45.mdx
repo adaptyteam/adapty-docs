@@ -1,0 +1,83 @@
+---
+title: "Migrer vers le SDK iOS Adapty v4.5"
+description: "Migrez vers le SDK iOS Adapty v4.5 : transmettez les langues de l'utilisateur à getFlowConfiguration au lieu d'un seul locale, et vérifiez différemment ce que voient les utilisateurs."
+metadataTitle: "Migration vers le SDK iOS Adapty v4.5 | Documentation Adapty"
+---
+
+Pour mettre à jour votre app du SDK iOS Adapty 4.4 vers la version 4.5, appliquez chaque modification décrite dans ce guide. Si votre app est en version 4.3 ou antérieure, commencez par les [modifications v4.4](migration-to-ios-sdk-44).
+
+Dans la version 4.5, `getFlowConfiguration` requiert une liste de langues dans `preferredLocales`, au lieu d'un code de langue optionnel dans `locale`. Le SDK [sélectionne une localisation du flow à partir de cette liste](localizations-and-locale-codes).
+
+:::warning
+Le build échoue tant que chaque appel à `getFlowConfiguration` ne passe pas [`preferredLocales`](#replace-locale-with-the-users-languages). Une fois le build corrigé, le SDK 4.5 peut afficher aux utilisateurs [une localisation différente du même flow](#what-users-see-after-the-update) par rapport au SDK 4.4.
+:::
+
+## Référence rapide \{#quick-reference\}
+
+| Avant | Après |
+|---|---|
+| `getFlowConfiguration(forFlow: flow, locale: "fr")` | `getFlowConfiguration(forFlow: flow, preferredLocales: Locale.preferredLanguages)` |
+| `locale` : optionnel | `preferredLocales` : obligatoire |
+| Sans `locale` : les utilisateurs voient `en`, même si la locale par défaut du flow est une autre langue. Sans `en` dans le flow, les utilisateurs voient la locale par défaut | `preferredLocales: []` : tous les utilisateurs voient le flow dans sa locale par défaut, quelle que soit la langue de leur appareil |
+| Pas de paramètre de stratégie | `localizationStrategy:`, optionnel. La valeur par défaut, `.auto`, convient à la plupart des applications. |
+
+## Remplacer `locale` par les langues de l'utilisateur \{#replace-locale-with-the-users-languages\}
+
+Dans la version 4.5, les deux méthodes `getFlowConfiguration` — asynchrone et avec completion handler — acceptent désormais une liste `preferredLocales` à la place de `locale`. Le paramètre `preferredLocales` est obligatoire. Si vous passez `locale` ou omettez les deux paramètres, Xcode signale :
+
+```text
+'getFlowConfiguration(forFlow:locale:…)' is unavailable: Pass preferredLocales: Locale.preferredLanguages to show the flow in the device's language, or [] to use the flow's default localization.
+```
+
+Le paramètre `locale` de `getOnboarding` ne change pas.
+
+```diff showLineNumbers
+  let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+      forFlow: flow,
+-     locale: "fr"
++     preferredLocales: Locale.preferredLanguages
+  )
+```
+
+Ce que votre application passait en 4.4 détermine ce qu'il faut passer en 4.5 :
+
+- Si votre application transmettait une valeur d'appareil, comme `Locale.current.identifier`, passez plutôt `Locale.preferredLanguages`. Supprimez tout code qui convertissait la valeur : la casse et les séparateurs n'ont pas d'importance en 4.5.
+- Si votre application transmettait une langue sélectionnée par l'utilisateur dans l'application, placez-la en premier : `[selectedLanguage] + Locale.preferredLanguages`. Quand un flow du Flow & Paywall Builder ne dispose pas de cette langue, le SDK essaie les langues de l'appareil.
+- Si votre application appelait `getFlowConfiguration` sans `locale`, ajoutez `preferredLocales: Locale.preferredLanguages`.
+
+Pour afficher le flow dans la langue de l'interface de votre application plutôt que dans celle de l'appareil, passez `Bundle.main.preferredLocalizations`. Pour comparer ces deux approches, consultez [Passer les langues de l'utilisateur au SDK](localizations-and-locale-codes#pass-the-users-languages-to-the-sdk).
+
+Pour afficher le flow dans sa langue par défaut pour tous les utilisateurs, passez une liste vide : `preferredLocales: []`.
+
+Vous n'avez pas besoin de passer `localizationStrategy`. Sa valeur par défaut, `.auto`, convient aux flows du Flow & Paywall Builder et aux paywalls de l'ancien Paywall Builder. Les [autres stratégies](localizations-and-locale-codes#select-a-localization-strategy) modifient la façon dont le SDK fait correspondre les langues.
+
+## Ce que voient les utilisateurs après la mise à jour \{#what-users-see-after-the-update\}
+
+Avec la `localizationStrategy` par défaut, le SDK 4.5 peut afficher aux utilisateurs une localisation différente du même flow par rapport au SDK 4.4 :
+
+| L'appli envoie | Le flow contient | 4.4 | 4.5 |
+|---|---|---|---|
+| Aucune langue : pas de `locale` en 4.4, `[]` en 4.5 | N'importe quelle locale | `en`, si le flow la contient ; sinon, la locale par défaut | La locale par défaut |
+| Un code avec une casse ou un séparateur différent, par exemple `pt_BR` | `pt-BR` | La locale par défaut | `pt-BR` |
+| Un code régional, par exemple `pt-BR` | La langue seule, par exemple `pt` | La locale par défaut | `pt` |
+| Un code régional impliquant un script, par exemple `zh-TW` | Le script, par exemple `zh-hant` | La locale par défaut | `zh-hant` ; sur les paywalls de l'ancien Paywall Builder, la locale par défaut |
+| Plusieurs langues, par exemple `fr`, puis `de` | Une langue ultérieure, par exemple `de`, mais pas la première | La locale par défaut | La langue ultérieure ; sur les paywalls de l'ancien Paywall Builder, la locale par défaut |
+
+Les versions de l'application utilisant le SDK 4.0–4.4 continuent de faire correspondre exactement vos flows jusqu'à ce que les utilisateurs mettent à jour l'application. La stratégie `.legacy` ne rétablit pas la correspondance exacte du SDK 4.4.
+
+Pour savoir quelle localisation s'affiche sur un appareil, lisez `flowConfiguration.locale` : le SDK ne le journalise pas. Pour une procédure de test, consultez [Tester quelle localisation voit un utilisateur](localizations-and-locale-codes#test-which-localization-a-user-sees).
+
+## Vérifier les locales de vos flows \{#review-the-locales-of-your-flows\}
+
+Le SDK 4.5 affiche vos flows publiés avec leurs locales actuelles. Pour montrer à chaque utilisateur le flow dans sa langue, suivez ces trois règles :
+
+- Traduisez intégralement la locale par défaut. Les utilisateurs la voient quand le flow ne prend en charge aucune de leurs langues. Pour l'afficher ou la modifier, consultez [Définir la locale par défaut](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale).
+- Pour les versions d'application utilisant le SDK 4.0–4.4 et les applications sur d'autres SDK Adapty, conservez chaque code de locale qu'elles transmettent. Ces applications n'utilisent pas la correspondance 4.5.
+- Pour couvrir davantage d'utilisateurs, ajoutez [les locales que 4.5 correspond mieux](localizations-and-locale-codes#select-which-locales-to-add-to-a-flow), comme `zh-hans` et `zh-hant` en plus de `zh`.
+
+## Ajouter le module AdaptyUIBuilder \{#add-the-adaptyuibuilder-module\}
+
+Depuis la version 4.5, certains types pour AdaptyUI proviennent du module AdaptyUIBuilder, comme le protocole pour un [résolveur de localisation personnalisé](localizations-and-locale-codes#pick-a-flows-localization-in-your-own-code). Pour utiliser ces types dans votre code, ajoutez AdaptyUIBuilder à votre application :
+
+1. Dans Xcode, dans l'onglet **General** de votre cible d'application, sous **Frameworks, Libraries, and Embedded Content**, ajoutez **AdaptyUIBuilder** depuis le package AdaptySDK-iOS.
+2. Dans chaque fichier qui utilise ces types, ajoutez `import AdaptyUIBuilder`.

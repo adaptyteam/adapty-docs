@@ -16,12 +16,12 @@ metadataTitle: "Показ флоу в режиме Observer | Документ�
 
 Вам понадобится:
 
-- **Adapty Android SDK v4 или новее**: Более ранние версии не умеют отображать флоу. Чтобы перейти с v3, см. [гайд по миграции](migration-to-android-sdk-v4).
-- **`observerMode` со значением `true`**: См. [гайд по установке Android SDK](sdk-installation-android).
-- **Первоначальная интеграция со стором**: Настройте Adapty [с Google Play](initial-android).
-- **Опубликованный флоу с продуктами**: Создайте его в [Flow & Paywall Builder](adapty-flow-builder) и добавьте [продукты](create-product).
-- **Плейсмент для флоу**: [Создайте плейсмент](create-placement) и привяжите к нему флоу.
-- **Флоу, загруженный в приложении**: [Получите флоу и его конфигурацию](android-get-pb-paywalls) перед отображением.
+- **Adapty Android SDK версии 4.3.4 или выше**: v3 не умеет отображать флоу, а версии v4 ниже 4.3.4 могут не привязывать зафиксированные покупки к флоу. Для миграции существующего приложения с v3 см. [руководство по миграции](migration-to-android-sdk-v4).
+- **`observerMode` установлен в `true`**: См. [руководство по установке Android SDK](sdk-installation-android).
+- **Начальная интеграция со стором**: Настройте Adapty [с Google Play](initial-android).
+- **Опубликованный флоу с продуктами**: Создайте его в [Flow & Paywall Builder](adapty-flow-builder) и назначьте [продукты](create-product).
+- **Плейсмент для флоу**: [Создайте плейсмент](create-placement) и назначьте ему флоу.
+- **Флоу, загруженный в приложение**: [Получите флоу и его конфигурацию](android-get-pb-paywalls) перед отображением.
 
 ## Реализация \{#implementation\}
 
@@ -143,14 +143,16 @@ metadataTitle: "Показ флоу в режиме Observer | Документ�
 
    Не забудьте вызвать следующие колбэки, чтобы уведомить AdaptyUI о процессе покупки или восстановления. Это необходимо для корректного поведения флоу, например для отображения загрузчика:
 
-   | Callback           | Description                                                                                        |
-   | :----------------- |:---------------------------------------------------------------------------------------------------|
-   | onStartPurchase()  | Callback должен вызываться, чтобы уведомить AdaptyUI о начале покупки.                             |
-   | onFinishPurchase() | Callback должен вызываться, чтобы уведомить AdaptyUI о завершении покупки.                         |
-   | onStartRestore()   | Опционально. Callback может вызываться, чтобы уведомить AdaptyUI о начале восстановления покупок.  |
-   | onFinishRestore()  | Опционально. Callback может вызываться, чтобы уведомить AdaptyUI о завершении восстановления покупок. |
+   | Callback           | Description                                                                            |
+   | :----------------- |:---------------------------------------------------------------------------------------|
+   | onStartPurchase()  | Колбэк должен вызываться, чтобы уведомить AdaptyUI о начале покупки.        |
+   | onFinishPurchase() | Колбэк должен вызываться, чтобы уведомить AdaptyUI о завершении покупки.       |
+   | onStartRestore()   | Необязательно. Колбэк можно вызвать, чтобы уведомить AdaptyUI о начале восстановления.  |
+   | onFinishRestore()  | Обязательно, если вы задали обработчик восстановления. Вызовите его, чтобы уведомить AdaptyUI о завершении восстановления: до этого момента флоу игнорирует повторные нажатия на кнопку восстановления и не выполняет действия **When restore completed**. |
 
-2. Чтобы отобразить визуальный флоу на экране устройства, его нужно сначала настроить.
+   После `onFinishPurchase()` флоу выполняет действия **When succeeded** из [действий по результату](respond-to-purchase-outcomes#add-actions-for-a-result) независимо от того, что произошло, включая отменённую покупку. Любой экран, зависящий от результата покупки, показывайте из своего кода: только ваш код знает этот результат. После `onFinishRestore()` флоу выполняет действия **When restore completed** независимо от результата.
+
+2. Чтобы отобразить визуальный флоу на экране устройства, его необходимо сначала настроить.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="views" label="Views" default>
@@ -158,7 +160,7 @@ metadataTitle: "Показ флоу в режиме Observer | Документ�
 Для этого вызовите метод `AdaptyUI.getFlowView()` или создайте `AdaptyFlowView` напрямую:
 
 <Tabs groupId="current-os" queryString>
-  <TabItem value="kotlin" label="Kotlin (option 1)" default>
+  <TabItem value="kotlin" label="Kotlin (вариант 1)" default>
 
 ```kotlin showLineNumbers
    val flowView = AdaptyUI.getFlowView(
@@ -270,7 +272,7 @@ AdaptyFlowScreen(
 | **observerModeHandler** | обязательный для режима Observer | `AdaptyUiObserverModeHandler`, реализованный на предыдущем шаге. |
 
 :::warning
-Не забудьте [связать пейволы с транзакциями покупок](report-transactions-observer-mode-android). Иначе Adapty не сможет определить источник флоу покупки.
+Не забудьте [связать пейволы с транзакциями покупок](report-transactions-observer-mode-android). Иначе Adapty не определит источник флоу для покупки. Передавайте `variationId` продукта `AdaptyPaywallProduct`, который купил пользователь, а не `AdaptyFlow.variationId`: собственный variation ID флоу не привязывает покупку к флоу.
 :::
 
 </SDKv4>
@@ -280,7 +282,7 @@ AdaptyFlowScreen(
 <Tabs groupId="current-os" queryString> 
 <TabItem value="SDK3" label="Paywall Builder (SDK 3.x)" default> 
 <details>
-   <summary>Перед отображением пейволов (нажмите, чтобы развернуть)</summary>
+   <summary>Перед показом пейволов (нажмите, чтобы развернуть)</summary>
 
       1. Настройте начальную интеграцию Adapty [с Google Play](initial-android) и [с App Store](initial_ios).
    2. Установите и настройте SDK. Убедитесь, что параметр `observerMode` установлен в `true`. Следуйте нашим инструкциям для конкретного фреймворка [для Android](sdk-installation-android).
@@ -415,12 +417,12 @@ AdaptyFlowScreen(
 
    Не забудьте вызывать следующие коллбэки, чтобы уведомить AdaptyUI о процессе покупки или восстановления. Это необходимо для корректного поведения пейвола, например, для отображения загрузчика:
 
-   | Callback           | Description                                                                                                |
-   | :----------------- |:-----------------------------------------------------------------------------------------------------------|
-   | onStartPurchase()  | Коллбэк должен вызываться для уведомления AdaptyUI о том, что покупка начата.                              |
-   | onFinishPurchase() | Коллбэк должен вызываться для уведомления AdaptyUI о том, что покупка завершена.                          |
-   | onStartRestore()   | Необязательно. Коллбэк может вызываться для уведомления AdaptyUI о том, что восстановление начато.        |
-   | onFinishRestore()  | Необязательно. Коллбэк может вызываться для уведомления AdaptyUI о том, что восстановление завершено.     |
+   | Callback           | Description                                                                                        |
+   | :----------------- |:---------------------------------------------------------------------------------------------------|
+   | onStartPurchase()  | Callback должен вызываться, чтобы уведомить AdaptyUI о начале покупки.                             |
+   | onFinishPurchase() | Callback должен вызываться, чтобы уведомить AdaptyUI о завершении покупки.                         |
+   | onStartRestore()   | Опционально. Callback может вызываться, чтобы уведомить AdaptyUI о начале восстановления покупок.  |
+   | onFinishRestore()  | Опционально. Callback может вызываться, чтобы уведомить AdaptyUI о завершении восстановления покупок. |
 
 2. Чтобы отобразить визуальный пейвол на экране устройства, его необходимо сначала настроить.
 
@@ -446,7 +448,7 @@ AdaptyFlowScreen(
 ```
 
 </TabItem>
-<TabItem value="kotlin2" label="Kotlin (вариант 2)" default>
+<TabItem value="kotlin2" label="Kotlin (option 2)" default>
 
 ```kotlin showLineNumbers
    val paywallView =

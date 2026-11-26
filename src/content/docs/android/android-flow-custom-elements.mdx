@@ -1,0 +1,357 @@
+---
+title: "Display custom elements with the Android SDK"
+description: "Display a composable or an Android View in each custom element of a flow, and test the flow on a device."
+metadataTitle: "Display custom elements | Android SDK | Adapty Docs"
+---
+
+<FlowCustomElementsIntro />
+
+## Before you start
+
+You need:
+
+- **Adapty Android SDK 4.4 or later**: Earlier versions show the fallback for every custom element.
+- **A native Android app**: For a React Native app, follow [Display custom elements with the React Native SDK](react-native-flow-custom-elements). For a Flutter app, follow [Display custom elements with the Flutter SDK](flutter-flow-custom-elements). The Adapty SDKs for other cross-platform frameworks show the fallback for every custom element.
+- **A naming scheme for custom elements**: Give each native view a Type, such as `lottie_animation`. Use only lowercase letters, numbers, and underscores in Types. To distinguish between custom elements of the same Type, give each one an ID, such as `welcome_wave`. The Types and IDs in your code must match the ones in the [Flow & Paywall Builder](flow-custom-elements#add-and-configure).
+
+If your iOS app already displays custom elements, reuse its Types and IDs. Unless you set up a separate [audience](audience) for each platform, iOS and Android users see the same flows.
+
+## Create views for custom elements
+
+For each Type, create or reuse a composable/Android `View`. The following views of the `lottie_animation` Type play a Lottie animation from the `assets` folder of your app. The Kotlin example is a composable that uses the `com.airbnb.android:lottie-compose` library. The Java example creates an Android `View` from the `com.airbnb.android:lottie` library:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+@Composable
+fun LottieElement(animationFile: String) {
+    val composition by rememberLottieComposition(LottieCompositionSpec.Asset(animationFile))
+    LottieAnimation(
+        composition = composition,
+        iterations = LottieConstants.IterateForever,
+    )
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+public class LottieViews {
+    public static View createLottieView(Context context, String animationFile) {
+        LottieAnimationView view = new LottieAnimationView(context);
+        view.setAnimation(animationFile);
+        view.setRepeatCount(LottieDrawable.INFINITE);
+        view.playAnimation();
+        return view;
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+### Requirements and best practices
+
+- **Sizing**:
+  - **Padding and alignment**: Make sure the native view fits the container you allocated for it in the Flow & Paywall Builder, minus the padding. If the view doesn't take up the entire area, it appears in the top start corner of that area by default. To move it, change the alignment in the **Layout** section of the custom element.
+  - **Hug height**: If the height of the custom element is set to **Hug**, a view that stretches to fill the available space (like a lazy list) will collapse, or stretch to the height of the screen. Give the custom element a [**Fixed** height](flow-custom-elements#add-and-configure) instead.
+- **Theme**: To display a composable in the colors and fonts of your app on a screen built with Views, wrap it in your Compose theme.
+- **Flow actions**: The native view can't run flow actions, such as a transition to the next screen. The `send` method of the element context is reserved for future Flow & Paywall Builder capabilities. Keep navigation buttons, purchase buttons, and other buttons with flow actions outside the custom element.
+- **Selectable elements**: Keep the custom element outside product cards and other [selectable elements](flow-selectable-elements). When the selection changes, the native view can lose its state.
+- **Navigation handling**: When the user moves to the next screen, the SDK removes the native view from the screen. Stop what the view started, such as camera sessions, players, and location updates:
+  - **Composable**: Use the `onDispose` block of a `DisposableEffect`. For async work, use `LaunchedEffect`: Compose cancels it when the composable leaves the composition.
+  - **Android `View`**: Override `onDetachedFromWindow` in your `View` subclass, or add a `View.OnAttachStateChangeListener` to the `View`.
+
+  When the user comes back, or after a configuration change such as a rotation, the SDK calls the resolver again, and creates a new native view without the state of the previous one.
+- **Carousels**: In a [carousel](builder-containers#carousel), the native views on all slides stay active while the screen is open, not only the view on the visible slide. Keep camera previews and players with sound out of carousels.
+
+## Write a resolver to match custom elements and views
+
+To write a resolver, implement the `AdaptyCustomElementsResolver` interface. Its `resolve` method receives the Type and ID of a custom element, and returns the matching view in one of the following forms:
+
+- **A composable**: Return `AdaptyCustomElementContent.compose`, with the composable inside its lambda.
+- **An Android `View`**: Return `AdaptyCustomElementContent.view`, with a function that creates the `View`. In Kotlin, name the `factory` parameter: `AdaptyCustomElementContent.view(factory = { context, _ -> ChartView(context) })`. Without the name, Kotlin passes a trailing lambda to the optional `update` parameter, and the code doesn't compile.
+
+For the `lottie_animation` Type, the following resolver returns the [Lottie view](#create-views-for-custom-elements). The ID names the animation file in the `assets` folder, such as `welcome_wave` for `welcome_wave.json`:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+class CustomElementsResolver(context: Context) : AdaptyCustomElementsResolver {
+    // the animation files in the assets folder, listed once
+    private val animationFiles: Set<String> = try {
+        context.assets.list("").orEmpty().toSet()
+    } catch (e: IOException) {
+        emptySet() // no list of files: every Lottie element shows the fallback
+    }
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        when (type) {
+            "lottie_animation" -> {
+                // the ID names the animation file, such as welcome_wave.json
+                val file = "$id.json"
+                if (file in animationFiles) {
+                    AdaptyCustomElementContent.compose { LottieElement(file) }
+                } else {
+                    null // no file for this ID: show the fallback
+                }
+            }
+            else -> null
+        }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+public class CustomElementsResolver implements AdaptyCustomElementsResolver {
+    // the animation files in the assets folder, listed once
+    private final Set<String> animationFiles = new HashSet<>();
+
+    public CustomElementsResolver(Context context) {
+        try {
+            String[] files = context.getAssets().list("");
+            if (files != null) {
+                animationFiles.addAll(Arrays.asList(files));
+            }
+        } catch (IOException e) {
+            // no list of files: every Lottie element shows the fallback
+        }
+    }
+
+    @Override
+    public AdaptyCustomElementContent resolve(String type, String id) {
+        if (type.equals("lottie_animation")) {
+            // the ID names the animation file, such as welcome_wave.json
+            String file = id + ".json";
+            if (!animationFiles.contains(file)) {
+                return null; // no file for this ID: show the fallback
+            }
+            return AdaptyCustomElementContent.view(
+                    (context, elementContext) -> LottieViews.createLottieView(context, file)
+            );
+        }
+        return null;
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+For any other Type, return `null`. If you [add a custom element with a new Type](flow-custom-elements#what-changes-require-an-app-release) after you release the app, users of the released version see its fallback.
+
+The resolver has the following requirements:
+
+- **Network data and players**: Keep network data and players in the state of the [native view](#create-views-for-custom-elements), not in the resolver. The SDK calls the resolver many times while the screen is open. Code in the resolver runs again on each call, so network requests repeat and players start over. The SDK doesn't recreate the native view between these calls, so the data loads once and the players keep playing. Create players, sessions, and network requests inside the native view:
+  - **Composable**: Create players and sessions in `remember`, and network requests in `LaunchedEffect`.
+  - **Android `View`**: Create players, sessions, and network requests in `onAttachedToWindow`.
+- **One native view per custom element**: Some native views change while the screen is open, for example, when their data loads or when the user taps them. Implement this logic in the native view itself, not in the resolver. If the resolver returns a different composable for the same custom element, Compose resets the state of the view.
+- **A new `View` for each appearance**: Create a new `View` in each call of `factory`. The SDK calls `factory` each time the custom element appears, such as when the screen opens, when the user returns to the screen, or after a rotation.
+- **App data**: Store an object that holds the data, such as a `StateFlow` or a `LiveData` with a [daily streak](android-custom-element-lottie-animation), in a property of the resolver. Pass the object to the native view, and observe the object there:
+  - **Composable**: Collect a `StateFlow` with `collectAsState`, or observe a `LiveData` with `observeAsState`.
+  - **Android `View`**: Observe the object in `onAttachedToWindow`, and stop in `onDetachedFromWindow`.
+
+  A value that you copy into the resolver, such as the streak number, stays as it was when you created the resolver.
+
+### Set conditions for fallback content
+
+<FlowCustomElementsFallbackConditions />
+
+For a permission, return `null` only when the user denied it before the screen opened. `ContextCompat.checkSelfPermission` returns the same value, `PERMISSION_DENIED`, in two cases: before your app first asks the user for the permission, and after the user denies it. To tell these cases apart, save the result of the permission request, and read the saved result in the resolver. If your app hasn't requested the permission yet, return the native view instead of `null`, and request the permission inside the view. For example, request location access when a [map view](android-custom-element-map#3-match-the-map-to-the-custom-element) appears, and show the map as soon as the user grants access. If you return `null` and the user grants access afterwards, they still see the fallback. A permission change doesn't make the SDK call the resolver again. The native view appears only after the SDK calls the resolver again, such as when the user returns to the screen.
+
+## Pass the resolver to the SDK
+
+Start with an app-wide resolver. The SDK calls it in every flow without a resolver of its own. Users see your native views in new flows and A/B tests without an app release. These views still show each user their own data, such as a [daily streak](android-custom-element-lottie-animation), because they read that data from your app.
+
+Attach a resolver to one flow when the flow requires data that your app only has when it opens that flow. For example, a paywall displays the [weight that the user entered in a previous flow](android-custom-element-interactive-chart), or previews the document that the user wants to export. You can also attach a resolver to one flow to show a different view for a Type in that flow.
+
+### Display views in every flow \{#display-views-in-every-flow\}
+
+To use the resolver in every flow, call `AdaptyUI.setCustomElementsResolver` once, such as in the `onCreate` method of your `Application` class:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+class App : Application() {
+    // keep this instance: a resolver for one flow can reuse it
+    // lazy: the context isn't attached yet while App is constructed
+    val customElementsResolver by lazy { CustomElementsResolver(this) }
+
+    override fun onCreate() {
+        super.onCreate()
+        AdaptyUI.setCustomElementsResolver(customElementsResolver)
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+public class App extends Application {
+    // keep this instance: a resolver for one flow can reuse it
+    private CustomElementsResolver customElementsResolver;
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        customElementsResolver = new CustomElementsResolver(this);
+        AdaptyUI.setCustomElementsResolver(customElementsResolver);
+    }
+
+    public CustomElementsResolver getCustomElementsResolver() {
+        return customElementsResolver;
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+:::tip
+To show the same view in every custom element of a Type, pass a map of Types and views to `AdaptyCustomElementsResolver.of`. With a map, you write less code than with a resolver class, but you cannot [set conditions for fallback content](#set-conditions-for-fallback-content).
+
+```kotlin showLineNumbers title="Kotlin"
+val appWideViews = mapOf(
+    "confetti" to AdaptyCustomElementContent.compose { LottieElement("confetti.json") },
+)
+AdaptyUI.setCustomElementsResolver(AdaptyCustomElementsResolver.of(appWideViews))
+```
+:::
+
+### Display data for one flow, such as a document to export \{#display-data-for-one-flow\}
+
+A resolver that you pass to a flow view replaces the app-wide resolver in that flow view.
+
+To keep the app-wide views in this flow, pass the app-wide resolver to this resolver, and call the app-wide resolver for the other Types and IDs. The following resolver previews the document that the user wants to export, and calls the app-wide resolver for every other custom element:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+class ExportPaywallResolver(
+    private val document: Document, // the document that the user wants to export
+    private val appWideResolver: AdaptyCustomElementsResolver,
+) : AdaptyCustomElementsResolver {
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        if (type == "document_preview") {
+            AdaptyCustomElementContent.compose { DocumentPreview(document) }
+        } else {
+            // other Types: the views of the app-wide resolver
+            appWideResolver.resolve(type, id)
+        }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+public class ExportPaywallResolver implements AdaptyCustomElementsResolver {
+    private final Document document; // the document that the user wants to export
+    private final AdaptyCustomElementsResolver appWideResolver;
+
+    public ExportPaywallResolver(Document document, AdaptyCustomElementsResolver appWideResolver) {
+        this.document = document;
+        this.appWideResolver = appWideResolver;
+    }
+
+    @Override
+    public AdaptyCustomElementContent resolve(String type, String id) {
+        if (type.equals("document_preview")) {
+            return AdaptyCustomElementContent.view(
+                    (context, elementContext) -> new DocumentPreviewView(context, document)
+            );
+        }
+        // other Types: the views of the app-wide resolver
+        return appWideResolver.resolve(type, id);
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+Pass the resolver in the `customElementsResolver` parameter of `AdaptyUI.getFlowView`:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+val app = activity.application as App
+
+val flowView = AdaptyUI.getFlowView(
+    activity,
+    flowConfiguration,
+    products = null,
+    eventListener = eventListener,
+    customElementsResolver = ExportPaywallResolver(
+        document = document,
+        appWideResolver = app.customElementsResolver, // the instance that you set app-wide
+    ),
+)
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+App app = (App) activity.getApplication();
+
+AdaptyFlowView flowView = AdaptyUI.getFlowView(
+        activity,
+        flowConfiguration,
+        null, // products
+        eventListener,
+        // defaults: if your app passes other values here, keep them
+        AdaptyFlowInsets.Unspecified,
+        AdaptyCustomAssets.Empty,
+        AdaptyUiTagResolver.Default,
+        AdaptyUiTimerResolver.Default,
+        null, // observerModeHandler
+        new ExportPaywallResolver(document, app.getCustomElementsResolver())
+);
+```
+
+</TabItem>
+</Tabs>
+
+If you create `AdaptyFlowView` yourself, pass the resolver to its `showFlow` method. In Java, `showFlow` takes the same arguments as `getFlowView`, except `activity`. In Jetpack Compose, pass the resolver to `AdaptyFlowScreen`. For an example of each call, read [Display flows & paywalls](android-present-paywalls).
+
+If you use `AdaptyCustomElementsResolver.of` instead of resolver classes, merge the map of app-wide views with a map for this flow: `AdaptyCustomElementsResolver.of(appWideViews + flowViews)`. Pass the result to the flow view. For a Type in both maps, this code keeps the view for this flow.
+
+## Test on a device
+
+The Flow & Paywall Builder can't run your app code, so its canvas only shows the fallback. An error in the native view can crash the app. Before you release the app, test every screen that has a custom element on a device:
+
+1. To see the latest published version of each flow instead of a cached one, register the device as a [test device](test-devices).
+2. To see the warnings of the Adapty SDK in Logcat, set the [log level](sdk-installation-android#logging) to `AdaptyLogLevel.WARN` or a more detailed level. With the default level, `AdaptyLogLevel.NONE`, the SDK logs nothing.
+3. On the device, run a build that includes the resolver. Open each screen that has a custom element, and verify that the native view appears and fits the custom element. If the view scrolls or responds to drags, test these gestures.
+4. If the fallback appears instead of the native view, find this warning in Logcat: `custom element <type>:<id> is not served by a resolver`. Then verify that:
+   - The Type and ID in the warning match the ones in your code, letter for letter.
+   - Your app has the file, data, or permission that the view needs.
+   - Your app sets the app-wide resolver.
+   - A [resolver for this flow](#display-data-for-one-flow), if you pass one, returns a view for the Type and ID.
+
+   If the warning doesn't appear, verify that the app uses Adapty Android SDK 4.4 or later.
+5. If the custom element stays empty, find one of these warnings in Logcat:
+   - `custom element <type>:<id> is not served by a resolver`: The custom element has no fallback content, and no resolver returns a view for it. Verify each item in step 4.
+   - `content does not report its size`: The composable has no height of its own. Give the custom element a [**Fixed** height](flow-custom-elements#add-and-configure).
+
+   The SDK only logs the size warning for composables. If an Android `View` stays empty with no warning, give the custom element a **Fixed** height too.
+6. To preview the fallback, return `null` for the Type, and open the screen again.
+
+## Examples
+
+Each recipe shows the setup in the builder and the code for your app:
+
+- [Show user progress with a Lottie animation](android-custom-element-lottie-animation): A ring that fills as a streak grows.
+- [Show an interactive weight goal chart in a paywall](android-custom-element-interactive-chart): A weight goal chart, in the paywall flow that follows the onboarding flow.
+- [Show nearby places on a map in a flow](android-custom-element-map): A map of fitness centers near each user.

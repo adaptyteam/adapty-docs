@@ -17,6 +17,10 @@ Walk through unresolved GitHub PR review comments one by one. Suggest fixes and 
 - NEVER skip comments or batch them together — except Easy comments, which may be batch-applied (see Step 6a).
 - ALWAYS use multi-line code blocks when you quote text content or suggest edits. Preserve the exact MDX formatting, but insert line breaks so that no line exceeds ~80 characters. Break at logical boundaries (before `<br />`, between table cells, after sentence-ending punctuation).
 
+### What each comment means
+
+Before you classify comments, load `.claude/skills/editor/references/review-comments.md`. It decides how to read each comment (language, short forms, suggestion blocks), how far a fix reaches (every instance, snippets, other platforms), and which outcome each comment ends with.
+
 ### Style and grammar
 
 Execute the following MANDATORY steps before offering a suggestion, either one you generate, or one you pull from the comment:

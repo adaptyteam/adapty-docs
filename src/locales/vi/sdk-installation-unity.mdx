@@ -20,7 +20,11 @@ Muốn xem ví dụ thực tế về cách tích hợp Adapty SDK vào ứng d�
 
 ## Yêu cầu \{#requirements\}
 
-Adapty SDK hỗ trợ iOS 13.0+, nhưng yêu cầu iOS 15.0+ để hoạt động với các paywall được tạo trong paywall builder. Adapty SDK 4.1 — bổ sung hỗ trợ cho [flow](adapty-flow-builder) — yêu cầu **iOS 15.0+** cho toàn bộ ứng dụng: một trình kiểm tra build trong Unity Editor sẽ dừng quá trình build iOS nếu deployment target thấp hơn mức này. Build cho iOS với SDK 4.x cũng yêu cầu **Xcode 26** trở lên — SDK iOS gốc được thêm vào dưới dạng Swift package được xây dựng với Swift tools 6.2.
+Adapty SDK hỗ trợ iOS 13.0+, nhưng yêu cầu iOS 15.0+ để hoạt động với các paywall được tạo trong paywall builder. Adapty SDK 4.1 — bổ sung hỗ trợ cho [flow](adapty-flow-builder) — yêu cầu **iOS 15.0+** cho toàn bộ ứng dụng: một trình kiểm tra build trong Unity Editor sẽ dừng quá trình build iOS nếu deployment target thấp hơn mức này. Build cho iOS với SDK 4.x cũng yêu cầu **Xcode 26** trở lên — native iOS SDK được thêm vào dưới dạng Swift package và được build bằng Swift tools 6.2.
+
+Adapty SDK 4.3.0 trở lên yêu cầu **Unity 6.0 (6000.0)** trở lên. Trên Unity 2022.3, hãy sử dụng Adapty SDK 4.1.x.
+
+Trên Android, ứng dụng cần được biên dịch với Android API level 35 trở lên.
 
 <InstallationPrereqs />
 
@@ -113,6 +117,20 @@ Hai thay đổi về cấu hình build đi kèm với phiên bản 4.x — SDK A
 - Đặt iOS deployment target là **15.0 trở lên**. Trình xác thực build trong Unity Editor sẽ chặn iOS build nếu không đáp ứng yêu cầu này.
 
 Xem [hướng dẫn migration](migration-to-unity-sdk-v4) để biết danh sách đầy đủ các thay đổi trong dòng 4.x.
+
+### Adapty SDK 4.3
+
+SDK 4.3 bổ sung [commitment plans](app-store-12-month-commitment), [kept flow views](unity-present-paywalls#keep-the-view-to-present-it-again), [tính năng tải trước flow](unity-optimize-paywall-fetching#preload-placements), và [kiểm soát thông báo cửa hàng](unity-store-messages). Yêu cầu Unity 6.0 trở lên. Để cài đặt qua Unity Package Manager, thêm thẻ phiên bản vào URL Git:
+
+```
+https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unity-sdk#4.3.0-beta.1
+```
+
+Nếu bạn cài đặt qua Unity package, hãy tải `adapty-unity-plugin-4.3.0-beta.1.unitypackage` từ [bản phát hành 4.3.0-beta.1](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.3.0-beta.1). Hãy xóa thư mục `Assets/AdaptySDK/Plugins/Android/Local` trước khi import: việc import một `.unitypackage` không bao giờ xóa các file cũ, và SDK 4.3 không còn đi kèm với wrapper Java Android nội bộ mà thư mục này chứa.
+
+Nếu bạn nâng cấp Unity lên phiên bản 6 trước khi nâng cấp SDK, hãy giữ **Application Entry Point** của Android ở chế độ **Activity**: Adapty SDK 4.1.x không hoạt động với GameActivity. SDK 4.3 hoạt động với cả hai entry point.
+
+Xem [hướng dẫn migration](migration-to-unity-sdk-43) để biết những thay đổi cần cập nhật code.
 
 ## Kích hoạt module Adapty của Adapty SDK \{#activate-adapty-module-of-adapty-sdk\}
 
@@ -324,6 +342,21 @@ var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
     .SetAppleClearDataOnBackup(true);
 ```
 
+### Xử lý thông báo từ cửa hàng \{#store-messages-handling\}
+
+:::info
+Tham số này khả dụng từ phiên bản SDK 4.3.0 trở lên.
+:::
+
+Theo mặc định, StoreKit tự hiển thị các thông báo từ App Store — yêu cầu chấp thuận tăng giá, thông báo sự cố thanh toán và ưu đãi thu hút khách hàng cũ — khi ứng dụng đang mở, và SDK yêu cầu các thông báo từ Google Play, chẳng hạn như thông báo thanh toán bị từ chối, mỗi khi một `Activity` của ứng dụng khởi động sau khi kích hoạt. Để chủ động kiểm soát thời điểm hiển thị các thông báo này, hãy gọi `SetStoreMessagesHandling` với giá trị `AdaptyStoreMessagesHandling.Manual`. Giá trị mặc định là `AdaptyStoreMessagesHandling.Auto`.
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetStoreMessagesHandling(AdaptyStoreMessagesHandling.Manual);
+```
+
+Ở chế độ thủ công, các cửa hàng sẽ không tự hiển thị thông báo, vì vậy ứng dụng của bạn phải gọi `Adapty.ShowStoreMessages`. Xem hướng dẫn tại [Kiểm soát thông báo cửa hàng](unity-store-messages).
+
 ### Bật Adapty Attribution \{#enable-adapty-attribution\}
 
 :::info
@@ -380,7 +413,7 @@ Nếu ứng dụng của bạn bị crash trên Android khi hiển thị paywall
 
 2. Thêm dòng sau vào `/Assets/Plugins/Android/launcherTemplate.gradle`:
 
-```groovy showLineNumbers
+   ```groovy showLineNumbers
    apply plugin: 'com.android.application'
    // highlight-next-line
    apply plugin: 'kotlin-android'
