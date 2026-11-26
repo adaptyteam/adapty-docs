@@ -873,3 +873,13 @@ the seven guides' `## Code for each permission`.
   `pm clear` or reinstall. Android 16 labels differ from earlier versions (precise-location upgrade:
   "Keep approximate location"; photos: "Allow limited access"), so the reference describes those dialogs
   without labels.
+- **Local network refusal confirmed on a physical iPhone (iOS 27.2, 2026-11-27, iOS guide code):** no
+  report to the app; the guide code's timeout answer came after 20.8 s, and the flow then ran **After
+  response** with `no_status`. The reference states that **When denied** never runs for `local_network` on
+  iOS, that the user waits on the screen until the app's timeout, and that the timeout must stay well
+  under 60 s; the iOS guide says the same next to its code. Health read requests behave the same way
+  (always no status); the reference says so plainly.
+- **Builder callout (dashboard code, 2026-11-27):** the callout now warns that `local_network` and
+  `health` give no refusal on iOS; the dashboard PR adds it. A change to that behavior moves the callout
+  and the two reference sections together.
+
