@@ -1,0 +1,51 @@
+---
+no_index: true
+---
+
+import Callout from '../../../components/Callout.astro';
+
+Lorsqu'un joueur appuie sur un bouton dans le flow « plus d'énergie », votre code applicatif appelle votre backend pour dépenser des diamants sur l'option de ce bouton. Votre code applicatif ne peut pas envoyer la dépense à Adapty, car la requête nécessite votre clé API secrète. Votre backend appelle [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction) avec un `amount` négatif, comme dans le tutoriel [Virtual currency quickstart](virtual-currency-quickstart). Envoyez la dépense sans faire de requête de solde au préalable : Adapty vérifie le solde dans le cadre de la dépense.
+
+Conservez le coût de chaque option sur votre backend : 10 diamants pour recharger l'énergie, et 30 pour une heure d'énergie illimitée. Votre code applicatif envoie uniquement l'option à votre backend, ainsi une version modifiée de votre application ne peut pas réduire le coût.
+
+```bash title="Spend diamonds"
+curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
+  -H "Authorization: Api-Key {your secret key}" \
+  -H "adapty-customer-user-id: player-42" \
+  -H "Idempotency-Key: 5221577a-8b4c-419a-a0f5-028e4598b265" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "items": [{"currency_code": "DIAMONDS", "amount": -30}],
+        "operation": "spend",
+        "feature": "unlimited_energy",
+        "customer_placement_id": "out_of_energy",
+        "reference_id": "energy_order_7781"
+      }'
+```
+
+La requête identifie la dépense, le joueur et l'option :
+
+- **`Idempotency-Key`** : Un UUID v4 que votre code applicatif crée pour chaque nouvelle dépense, afin de protéger l'utilisateur contre un débit multiple pour la même transaction. Si vous devez réessayer une transaction (par exemple, en cas d'échec réseau), réutilisez la clé de la transaction d'origine. La clé reste valide pendant 1 heure. Une fois qu'une transaction avec cette clé réussit, les requêtes ultérieures avec cette même clé retournent la transaction d'origine et ne modifient pas le solde.
+- **`adapty-customer-user-id`** : L'identifiant utilisateur client de l'utilisateur connecté. Dans votre backend, lisez-le depuis la session de connexion.
+- **`feature`** : Un [label](virtual-currencies#feature) pour l'option, comme `unlimited_energy`. Grâce à ce label, vous pouvez voir à quoi correspondait chaque dépense dans l'[historique des événements](virtual-currency-balance#review-balance-changes-in-the-event-history) du joueur.
+
+Deux champs optionnels vous aident à retrouver une dépense ultérieurement. Tous deux apparaissent dans les [détails de la transaction](virtual-currency-balance#transaction-details) de l'historique des événements :
+
+- **`customer_placement_id`** : L'identifiant de l'écran dans votre application où la dépense a eu lieu. Il vous permet de voir depuis quel écran provient chaque dépense. Dans cette recette, utilisez l'identifiant de placement du flow « plus d'énergie », `out_of_energy`.
+- **`reference_id`** : L'identifiant de l'enregistrement correspondant dans votre backend, comme la commande d'énergie que la dépense paie. Grâce à lui, votre équipe support peut associer une dépense à ce que l'utilisateur a reçu.
+
+Si la dépense aboutit, accordez au joueur l'énergie depuis votre backend : Adapty gère le solde de diamants, pas l'énergie. Accordez l'énergie une seule fois par `transaction_id` de la réponse, car une nouvelle tentative avec le même `Idempotency-Key` retourne la transaction d'origine. Le tableau `balances` de la réponse inclut la valeur `available` de `DIAMONDS` : les diamants que le joueur peut dépenser maintenant. Retournez cette valeur à votre code applicatif.
+
+Si le solde ne peut pas couvrir le coût, la requête échoue avec le statut HTTP 400 et ne modifie pas le solde. Pour détecter cette erreur, comparez `error_code` avec `insufficient_balance`. Calculez ensuite combien de diamants manquent au joueur : lisez le solde avec [List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances), et soustrayez la valeur `available` de `DIAMONDS` du coût. Retournez le résultat et la valeur `available` à votre code applicatif.
+
+Si le résultat est 0 ou moins, Adapty a ajouté des diamants au solde après l'échec de la dépense, par exemple lors d'un renouvellement d'abonnement. Dans ce cas, relancez la requête avec le même `Idempotency-Key`, et retournez le résultat de cette nouvelle tentative. Adapty ne conserve pas la clé d'une dépense échouée, donc il accepte la deuxième requête.
+
+Lorsque la première requête avec le même `Idempotency-Key` est encore en cours, la nouvelle tentative échoue avec le statut HTTP 409 et le code d'erreur `idempotency_in_flight`. Attendez le nombre de secondes indiqué dans l'en-tête `Retry-After` de la réponse, puis relancez la requête avec la même clé.
+
+Les requêtes de dépense de tous vos utilisateurs sont soumises à une seule limite : par défaut, 600 requêtes par minute pour votre application. Une requête dépassant cette limite échoue avec le statut HTTP 429 et le code d'erreur `rate_limited`. Si vous anticipez davantage de requêtes de dépense aux heures de pointe, demandez au support quelle [limite de débit](ss-authorization#rate-limits) s'applique à votre application.
+
+Sur votre backend, ajoutez un endpoint pour le solde : appelez List virtual currency balances et retournez la valeur `available` de `DIAMONDS`. Le code applicatif de cette recette appelle cet endpoint avant l'ouverture du flow « plus d'énergie », et après un achat.
+
+<Callout type="tip">
+Lorsque vous [activez l'expiration des crédits](create-virtual-currency#link-products) pour l'abonnement, rappelez aux utilisateurs de dépenser leurs crédits à temps. Le tableau `expiry.expiring` de [List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances) liste le nombre de crédits qui expirent et leur date d'expiration. Affichez le montant le plus proche dans un flow avec un [tag personnalisé](flow-custom-tags), par exemple « 30 diamants expirent dans 2 jours ».
+</Callout>

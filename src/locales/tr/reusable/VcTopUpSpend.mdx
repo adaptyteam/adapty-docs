@@ -1,0 +1,51 @@
+---
+no_index: true
+---
+
+import Callout from '../../../components/Callout.astro';
+
+Oyuncu, enerjisiz kalma akışında bir butona dokunduğunda, uygulama kodunuz o butonun seçeneğine elmas harcamak için backend'inizi çağırır. Harcamayı doğrudan Adapty'ye göndermeniz mümkün değildir; çünkü istek, gizli API anahtarınızı gerektirir. Backend'iniz, [Virtual currency quickstart](virtual-currency-quickstart) eğitiminde olduğu gibi, negatif bir `amount` ile [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction) uç noktasını çağırır. Harcamayı önce bakiye sorgusu yapmadan gönderin: Adapty, bakiyeyi harcama işleminin bir parçası olarak doğrular.
+
+Her seçeneğin maliyetini backend'inizde saklayın: enerji yenilemesi için 10 elmas, bir saatlik sınırsız enerji için 30 elmas. Uygulama kodunuz yalnızca seçeneği backend'inize gönderir; böylece uygulamanızın değiştirilmiş bir sürümü maliyeti düşüremez.
+
+```bash title="Spend diamonds"
+curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
+  -H "Authorization: Api-Key {your secret key}" \
+  -H "adapty-customer-user-id: player-42" \
+  -H "Idempotency-Key: 5221577a-8b4c-419a-a0f5-028e4598b265" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "items": [{"currency_code": "DIAMONDS", "amount": -30}],
+        "operation": "spend",
+        "feature": "unlimited_energy",
+        "customer_placement_id": "out_of_energy",
+        "reference_id": "energy_order_7781"
+      }'
+```
+
+İstek; harcamayı, oyuncuyu ve seçeneği tanımlar:
+
+- **`Idempotency-Key`**: Uygulama kodunuzun her yeni harcama için oluşturduğu bir UUID v4; kullanıcının aynı işlem için birden fazla kez borçlandırılmasını önler. Bir işlemi yeniden denemek gerekirse (örneğin ağ hatası nedeniyle), orijinal işlemin anahtarını kullanın. Anahtar 1 saat geçerli kalır. Bu anahtarla bir işlem başarılı olduğunda, aynı anahtarla gelen sonraki istekler orijinal işlemi döndürür ve bakiyeyi değiştirmez.
+- **`adapty-customer-user-id`**: Oturum açmış kullanıcının müşteri kullanıcı kimliği. Backend'inizde, oturum açma oturumundan okuyun.
+- **`feature`**: `unlimited_energy` gibi seçeneğe ait bir [etiket](virtual-currencies#feature). Bu etiket sayesinde, oyuncunun [olay geçmişinde](virtual-currency-balance#review-balance-changes-in-the-event-history) her harcamanın ne için yapıldığını görebilirsiniz.
+
+İki isteğe bağlı alan, bir harcamayı daha sonra takip etmenize yardımcı olur. Her ikisi de olay geçmişinin [işlem ayrıntılarında](virtual-currency-balance#transaction-details) görünür:
+
+- **`customer_placement_id`**: Harcamanın gerçekleştiği uygulama ekranının kimliği. Bu sayede her harcamanın hangi ekrandan geldiğini görebilirsiniz. Bu tarifde, enerjisiz kalma akışının placement kimliğini, yani `out_of_energy` değerini kullanın.
+- **`reference_id`**: Backend'inizdeki ilgili kaydın kimliği; örneğin harcamanın karşıladığı enerji siparişi. Bu sayede destek ekibiniz bir harcamayı kullanıcının aldığı şeyle eşleştirebilir.
+
+Harcama başarıyla gerçekleşirse, oyuncuya enerjiyi backend'inizden verin: Adapty elmas bakiyesini tutar, enerjiyi değil. Aynı `Idempotency-Key` ile yapılan yeniden deneme orijinal işlemi döndüreceğinden, her `transaction_id` için enerjiyi yalnızca bir kez verin. Yanıtın `balances` dizisi, `DIAMONDS` öğesinin `available` değerini içerir: oyuncunun şu an harcayabileceği elmaslar. Bu değeri uygulama kodunuza döndürün.
+
+Bakiye maliyeti karşılayamazsa, istek HTTP 400 durumuyla başarısız olur ve bakiye değişmez. Bu hatayı tespit etmek için `error_code` değerini `insufficient_balance` ile karşılaştırın. Ardından oyuncunun kaç elmasa ihtiyacı olduğunu hesaplayın: [List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances) ile bakiyeyi okuyun ve `DIAMONDS` öğesinin `available` değerini maliyetten çıkarın. Sonucu ve `available` değerini uygulama kodunuza döndürün.
+
+Sonuç 0 veya daha küçükse, Adapty harcama başarısız olduktan sonra bakiyeye elmas eklemiştir; örneğin bir abonelik yenilemesi nedeniyle. Bu durumda, aynı `Idempotency-Key` ile isteği yeniden deneyin ve yeniden denemenin sonucunu döndürün. Adapty başarısız bir harcamanın anahtarını saklamaz, dolayısıyla ikinci isteği kabul eder.
+
+Aynı `Idempotency-Key` ile yapılan ilk istek hâlâ işlemdeyken yeniden deneme, HTTP 409 durumuyla ve `idempotency_in_flight` hata koduyla başarısız olur. Yanıtın `Retry-After` başlığında belirtilen saniye kadar bekleyin ve isteği aynı anahtarla yeniden deneyin.
+
+Tüm kullanıcılarınızın harcama istekleri tek bir limite dahildir: varsayılan olarak uygulamanız için dakikada 600 istek. Limite aşan bir istek, HTTP 429 durumuyla ve `rate_limited` hata koduyla başarısız olur. Yoğun saatlerde daha fazla harcama isteği bekliyorsanız, hangi [hız sınırının](ss-authorization#rate-limits) uygulamanıza uygulandığını destek ekibine sorun.
+
+Backend'inizde bakiye için bir uç nokta ekleyin: List virtual currency balances'ı çağırın ve `DIAMONDS` öğesinin `available` değerini döndürün. Bu tarifdeki uygulama kodu, enerjisiz kalma akışı açılmadan önce ve bir satın alma işleminden sonra bu uç noktayı çağırır.
+
+<Callout type="tip">
+Abonelik için [kredi süresinin dolmasını etkinleştirdiğinizde](create-virtual-currency#link-products), kullanıcıları kredilerini zamanında harcamaları için hatırlatın. [List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances) yanıtının `expiry.expiring` dizisi, ne kadar kredinin ne zaman sona ereceğini listeler. En yakın tarihteki miktarı, "30 elmas 2 gün içinde sona eriyor" gibi bir [custom tag](flow-custom-tags) içeren bir flow ile gösterin.
+</Callout>

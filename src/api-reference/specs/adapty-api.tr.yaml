@@ -1614,7 +1614,7 @@ paths:
     get:
       summary: Sanal para birimi bakiyelerini listele
       description: |
-        Bir profil için her sanal para biriminin mevcut bakiyesini döndürür. Uygulamada sanal para birimi yoksa `data` boş bir dizi olur.
+        Bir profil için her sanal para biriminin mevcut bakiyesini döndürür. Uygulamanın sanal para birimi yoksa `data` boş bir dizidir.
       operationId: listVirtualCurrencyBalances
       tags:
         - Virtual Currency
@@ -1626,13 +1626,13 @@ paths:
           required: false
           schema:
             type: string
-          description: Sisteminizde müşterinin benzersiz kimliği. `adapty-customer-user-id` veya `adapty-profile-id` alanlarından biri zorunludur.
+          description: Sisteminizde müşterinin benzersiz kimliği. `adapty-customer-user-id` veya `adapty-profile-id`'den biri zorunludur.
         - name: adapty-profile-id
           in: header
           required: false
           schema:
             type: string
-          description: Sisteminizde profilin benzersiz kimliği. Anonim profillerle çalışıyorsanız en iyi seçeneğinizdir. `adapty-customer-user-id` veya `adapty-profile-id` alanlarından biri zorunludur.
+          description: Sisteminizde profilin benzersiz kimliği. Anonim profillerle çalışıyorsanız en iyi seçeneğinizdir. `adapty-customer-user-id` veya `adapty-profile-id`'den biri zorunludur.
       responses:
         '200':
           description: Bakiyeler başarıyla döndürüldü
@@ -1648,18 +1648,35 @@ paths:
                     balance: 12450
                     held: 0
                     available: 12450
+                    expiry:
+                      non_expiring: 12450
+                      expiring: []
+                      expiring_later: 0
+                      expired: 0
                   - code: GEMS
                     name: Gems
                     balance: 3280
                     held: 0
                     available: 3280
+                    expiry:
+                      non_expiring: 280
+                      expiring:
+                        - amount: 3000
+                          expires_at: 2026-12-24T10:00:00.000000+0000
+                      expiring_later: 0
+                      expired: 0
                   - code: ENERGY
                     name: Energy
                     balance: 840
                     held: 0
                     available: 840
+                    expiry:
+                      non_expiring: 840
+                      expiring: []
+                      expiring_later: 0
+                      expired: 0
         '400':
-          description: Geçersiz istek. Ne `adapty-profile-id` ne de `adapty-customer-user-id` gönderilmedi (`error_code` değeri `validation_error`).
+          description: Hatalı istek. Ne `adapty-profile-id` ne de `adapty-customer-user-id` gönderilmedi (`error_code` değeri `validation_error`).
           content:
             application/json:
               schema:
@@ -3350,16 +3367,16 @@ components:
           type: integer
           format: int32
           minimum: 0
-          description: Şu anda beklemede tutulan miktarlar dahil toplam bakiye.
+          description: Şu anda bekletilen miktarlar dahil toplam bakiye.
         held:
           type: integer
           format: int32
           minimum: 0
-          description: Tüm aktif beklemelerin toplamı (rezerve edilmiş miktarlar). Şu anda her zaman 0'dır.
+          description: Tüm aktif bekletmelerin toplamı (rezerve edilmiş miktarlar). Şu anda her zaman 0'dır.
         available:
           type: integer
           format: int32
-          description: Harcanabilir bakiye; `balance - held` olarak hesaplanır.
+          description: Harcanabilir bakiye; `balance` değerinden `held` ve Adapty'nin henüz kaldırmadığı süresi dolmuş krediler çıkarılarak hesaplanır.
       required:
         - code
         - name
@@ -3368,7 +3385,7 @@ components:
         - available
     VirtualCurrencyBalanceListResponse:
       type: object
-      description: Bir profilin tüm sanal para birimlerine ait güncel bakiyeler.
+      description: Uygulamadaki her sanal para birimi için bir profilin mevcut bakiyeleri; bakiyesi 0 olan para birimleri de dahildir.
       properties:
         response_created_at:
           type: integer
@@ -3394,22 +3411,70 @@ components:
           type: integer
           format: int32
           minimum: 0
-          description: Şu anda beklemedeki tutarlar dahil toplam bakiye.
+          description: Şu anda beklemede tutulan miktarlar dahil toplam bakiye.
         held:
           type: integer
           format: int32
           minimum: 0
-          description: Tüm aktif tutmaların toplamı (rezerve edilen tutarlar). Şu anda her zaman 0'dır.
+          description: Tüm aktif beklemelerin toplamı (ayrılmış tutarlar). Şu anda her zaman 0'dır.
         available:
           type: integer
           format: int32
-          description: Harcanabilir bakiye; `balance - held` olarak hesaplanır.
+          minimum: 0
+          description: Harcanabilir bakiye; `balance` eksi `held` eksi `expiry.expired` olarak hesaplanır.
+        expiry:
+          $ref: '#/components/schemas/VirtualCurrencyBalanceExpiry'
       required:
         - code
         - name
         - balance
         - held
         - available
+        - expiry
+    VirtualCurrencyBalanceExpiry:
+      type: object
+      description: Yanıt anındaki bakiye, son kullanma tarihine göre bölünmüş olarak gösterilir. `non_expiring`, `expiring[].amount` toplamı, `expiring_later` ve `expired` değerleri birlikte `balance` değerini oluşturur.
+      properties:
+        non_expiring:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Hiç sona ermeyen krediler.
+        expiring:
+          type: array
+          description: Sona eren krediler, son kullanma tarihine göre gruplandırılmış ve en yakın tarihten itibaren sıralanmıştır. En fazla 10 son kullanma tarihi listelenir. Daha sonraki son kullanma tarihlerine sahip krediler `expiring_later` alanında toplanır.
+          items:
+            $ref: '#/components/schemas/VirtualCurrencyExpiringAmount'
+        expiring_later:
+          type: integer
+          format: int32
+          minimum: 0
+          description: '`expiring` alanındaki 10 son kullanma zamanının ötesindeki, sona eren krediler. `expiring` alanında 10 kayıt yoksa 0 değerini alır.'
+        expired:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Son kullanma tarihi geçmiş ancak hâlâ `balance` alanında sayılan krediler. Kullanıcılar bu kredileri harcayamaz ve Adapty bunları birkaç dakika içinde `balance` alanından kaldırır; bu nedenle değer genellikle 0'dır.
+      required:
+        - non_expiring
+        - expiring
+        - expiring_later
+        - expired
+    VirtualCurrencyExpiringAmount:
+      type: object
+      properties:
+        amount:
+          type: integer
+          format: int32
+          minimum: 1
+          description: '`expires_at` tarihinde süresi dolacak kredi sayısı (kullanıcı daha önce harcamazsa).'
+        expires_at:
+          type: string
+          description: Bu kredilerin UTC cinsinden en geç sona erme zamanı. Dönem bitmeden gerçekleşen bir abonelik yenilemesi veya iade, bu kredileri daha erken kaldırabilir.
+          example: 2026-12-24T10:00:00.000000+0000
+      required:
+        - amount
+        - expires_at
     VirtualCurrencyTransactionsHistoryResponse:
       type: object
       description: Bir profil için sanal para birimi işlemlerinin sayfalandırılmış listesi.

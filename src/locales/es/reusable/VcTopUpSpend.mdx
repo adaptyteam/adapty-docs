@@ -1,0 +1,51 @@
+---
+no_index: true
+---
+
+import Callout from '../../../components/Callout.astro';
+
+Cuando un jugador pulsa un botón en el flow de sin energía, el código de tu app llama a tu backend para gastar diamantes en la opción de ese botón. El código de la app no puede enviar el gasto a Adapty, porque la solicitud necesita tu clave API secreta. Tu backend llama a [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction) con un `amount` negativo, tal como se indica en el tutorial [Virtual currency quickstart](virtual-currency-quickstart). Envía el gasto sin solicitar el saldo primero: Adapty verifica el saldo como parte del proceso de gasto.
+
+Guarda el coste de cada opción en tu backend: 10 diamantes para recargar energía y 30 para una hora de energía ilimitada. El código de la app solo envía la opción a tu backend, así que una versión modificada de tu app no puede reducir el coste.
+
+```bash title="Spend diamonds"
+curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
+  -H "Authorization: Api-Key {your secret key}" \
+  -H "adapty-customer-user-id: player-42" \
+  -H "Idempotency-Key: 5221577a-8b4c-419a-a0f5-028e4598b265" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "items": [{"currency_code": "DIAMONDS", "amount": -30}],
+        "operation": "spend",
+        "feature": "unlimited_energy",
+        "customer_placement_id": "out_of_energy",
+        "reference_id": "energy_order_7781"
+      }'
+```
+
+La solicitud identifica el gasto, el jugador y la opción:
+
+- **`Idempotency-Key`**: Un UUID v4 que el código de tu app crea para cada nuevo gasto, para proteger al usuario de ser cobrado varias veces por la misma transacción. Si necesitas reintentar una transacción (por ejemplo, por un fallo de red), reutiliza la clave de la transacción original. La clave es válida durante 1 hora. Una vez que una transacción con esa clave tiene éxito, las solicitudes posteriores con esa clave devuelven la transacción original y no modifican el saldo.
+- **`adapty-customer-user-id`**: El customer user ID del usuario que ha iniciado sesión. En tu backend, léelo desde la sesión de inicio de sesión.
+- **`feature`**: Una [etiqueta](virtual-currencies#feature) para la opción, como `unlimited_energy`. Con esta etiqueta, puedes ver en qué se usó cada gasto en el [historial de eventos](virtual-currency-balance#review-balance-changes-in-the-event-history) del jugador.
+
+Dos campos opcionales te ayudan a rastrear un gasto más adelante. Ambos aparecen en los [detalles de la transacción](virtual-currency-balance#transaction-details) del historial de eventos:
+
+- **`customer_placement_id`**: El ID de la pantalla en tu app donde ocurrió el gasto. Con él, puedes ver desde qué pantalla provino cada gasto. En esta receta, usa el ID del placement del flow de sin energía, `out_of_energy`.
+- **`reference_id`**: El ID del registro relacionado en tu backend, como el pedido de energía que paga el gasto. Con él, tu equipo de soporte puede relacionar un gasto con lo que recibió el usuario.
+
+Si el gasto se procesa correctamente, otorga la energía al jugador desde tu backend: Adapty gestiona el saldo de diamantes, no la energía. Otorga la energía una sola vez por `transaction_id` de la respuesta, porque un reintento con el mismo `Idempotency-Key` devuelve la transacción original. El array `balances` de la respuesta incluye el valor `available` de `DIAMONDS`: los diamantes que el jugador puede gastar ahora. Devuelve este valor al código de tu app.
+
+Si el saldo no puede cubrir el coste, la solicitud falla con el estado HTTP 400 y no modifica el saldo. Para detectar este error, compara `error_code` con `insufficient_balance`. Luego calcula cuántos diamantes necesita el jugador: lee el saldo con [List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances) y resta el valor `available` de `DIAMONDS` al coste. Devuelve el resultado y el valor `available` al código de tu app.
+
+Si el resultado es 0 o menor, Adapty añadió diamantes al saldo después de que el gasto fallara, por ejemplo por la renovación de una suscripción. En ese caso, reintenta la solicitud con el mismo `Idempotency-Key` y devuelve el resultado del reintento. Adapty no conserva la clave de un gasto fallido, por lo que acepta la segunda solicitud.
+
+Cuando la primera solicitud con el mismo `Idempotency-Key` sigue en curso, el reintento falla con el estado HTTP 409 y el código de error `idempotency_in_flight`. Espera el número de segundos indicado en la cabecera `Retry-After` de la respuesta y reintenta la solicitud con la misma clave.
+
+Las solicitudes de gasto de todos tus usuarios computan hacia un único límite: por defecto, 600 solicitudes por minuto para tu app. Una solicitud que supere el límite falla con el estado HTTP 429 y el código de error `rate_limited`. Si esperas más solicitudes de gasto en momentos de pico, consulta con el soporte qué [límite de velocidad](ss-authorization#rate-limits) aplica a tu app.
+
+En tu backend, añade un endpoint para el saldo: llama a List virtual currency balances y devuelve el valor `available` de `DIAMONDS`. El código de la app en esta receta llama a este endpoint antes de que se abra el flow de sin energía y después de una compra.
+
+<Callout type="tip">
+Cuando [actives la expiración de créditos](create-virtual-currency#link-products) para la suscripción, recuerda a los usuarios que gasten sus créditos a tiempo. El array `expiry.expiring` de [List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances) lista cuántos créditos expiran y cuándo. Muestra la cantidad más próxima en un flow con una [etiqueta personalizada](flow-custom-tags), como "30 diamantes expiran en 2 días".
+</Callout>

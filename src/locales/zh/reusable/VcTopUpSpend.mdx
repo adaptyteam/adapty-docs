@@ -1,0 +1,51 @@
+---
+no_index: true
+---
+
+import Callout from '../../../components/Callout.astro';
+
+当玩家在能量耗尽流程中点击某个按钮时，你的应用代码会调用后端，使用钻石购买该按钮对应的选项。应用代码无法直接向 Adapty 发送消耗请求，因为该请求需要你的密钥。你的后端需要调用 [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction)，并传入负数 `amount`，具体方式参见 [Virtual currency quickstart](virtual-currency-quickstart) 教程。直接发送消耗请求，无需提前查询余额：Adapty 会在处理消耗时自动验证余额。
+
+将每个选项的费用保存在后端：补充能量消耗 10 颗钻石，获得一小时无限能量消耗 30 颗钻石。应用代码只向后端发送所选选项，这样即使应用被篡改，也无法降低费用。
+
+```bash title="Spend diamonds"
+curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
+  -H "Authorization: Api-Key {your secret key}" \
+  -H "adapty-customer-user-id: player-42" \
+  -H "Idempotency-Key: 5221577a-8b4c-419a-a0f5-028e4598b265" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "items": [{"currency_code": "DIAMONDS", "amount": -30}],
+        "operation": "spend",
+        "feature": "unlimited_energy",
+        "customer_placement_id": "out_of_energy",
+        "reference_id": "energy_order_7781"
+      }'
+```
+
+请求中包含消耗信息、玩家信息以及所选选项：
+
+- **`Idempotency-Key`**：由应用代码为每笔新消耗生成的 UUID v4，用于防止同一笔交易被重复扣费。如果需要重试（例如因网络故障），请复用原始交易的密钥。该密钥有效期为 1 小时。一旦某笔使用该密钥的交易成功，后续使用相同密钥的请求将返回原始交易结果，不会再次变更余额。
+- **`adapty-customer-user-id`**：已登录用户的 customer user ID。在后端从登录会话中读取该值。
+- **`feature`**：选项的[标签](virtual-currencies#feature)，例如 `unlimited_energy`。通过该标签，你可以在玩家的[事件历史记录](virtual-currency-balance#review-balance-changes-in-the-event-history)中查看每笔消耗的用途。
+
+以下两个可选字段有助于后续追溯消耗记录，均会显示在事件历史记录的[交易详情](virtual-currency-balance#transaction-details)中：
+
+- **`customer_placement_id`**：应用中发生消耗的页面 ID。通过该字段，你可以查看每笔消耗来自哪个页面。在本示例中，使用能量耗尽流程的版位 ID：`out_of_energy`。
+- **`reference_id`**：后端相关记录的 ID，例如本次消耗对应的能量订单 ID。通过该字段，客服团队可以将消耗记录与用户实际获得的内容关联起来。
+
+消耗成功后，请在后端为玩家补充能量：Adapty 只维护钻石余额，不管理能量。每个响应中的 `transaction_id` 只补充一次能量，因为使用相同 `Idempotency-Key` 重试时会返回原始交易。响应中 `balances` 数组包含 `DIAMONDS` 的 `available` 值，即玩家当前可用的钻石数。将该值返回给应用代码。
+
+如果余额不足以支付费用，请求将以 HTTP 状态码 400 失败，余额不会发生变化。如需检测此错误，请将 `error_code` 与 `insufficient_balance` 进行比对。然后计算玩家还差多少钻石：通过 [List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances) 查询余额，用费用减去 `DIAMONDS` 的 `available` 值，即为所需差额。将差额和 `available` 值一并返回给应用代码。
+
+如果差额为 0 或负数，说明 Adapty 在消耗失败后（例如订阅续期）又向余额中添加了钻石。此时，请使用相同的 `Idempotency-Key` 重试请求，并返回重试结果。由于 Adapty 不保存失败消耗的密钥，因此第二次请求会被正常接受。
+
+当使用相同 `Idempotency-Key` 的首次请求仍在处理中时，重试将以 HTTP 状态码 409 和 `idempotency_in_flight` 错误码失败。请等待响应头 `Retry-After` 中指定的秒数后，再使用相同密钥重试。
+
+所有用户的消耗请求共享同一个限额：默认情况下，你的应用每分钟最多 600 次请求。超出限额的请求将以 HTTP 状态码 429 和 `rate_limited` 错误码失败。如果预计高峰期的消耗请求量会超出限额，请联系支持团队确认适用于你的应用的[速率限制](ss-authorization#rate-limits)。
+
+在后端添加一个余额查询接口：调用 List virtual currency balances，并返回 `DIAMONDS` 的 `available` 值。本示例中的应用代码会在能量耗尽流程打开前以及购买完成后调用该接口。
+
+<Callout type="tip">
+为订阅[开启积分到期功能](create-virtual-currency#link-products)后，请提醒用户及时消耗积分。[List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances) 返回的 `expiry.expiring` 数组列出了即将到期的积分数量及到期时间。可在流程中通过[自定义标签](flow-custom-tags)展示最近一次到期信息，例如"30 颗钻石将在 2 天后到期"。
+</Callout>

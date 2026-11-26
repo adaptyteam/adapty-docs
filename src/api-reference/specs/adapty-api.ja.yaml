@@ -1612,9 +1612,9 @@ paths:
           description: 内部サーバーエラー
   /api/v2/server-side-api/vc/balances/:
     get:
-      summary: 仮想通貨の残高一覧を取得する
+      summary: 仮想通貨残高の一覧取得
       description: |
-        プロファイルのすべての仮想通貨の現在の残高を返します。アプリに仮想通貨が存在しない場合、`data` は空の配列になります。
+        プロファイルのすべての仮想通貨の現在の残高を返します。アプリに仮想通貨が存在しない場合、`data` は空の配列となります。
       operationId: listVirtualCurrencyBalances
       tags:
         - Virtual Currency
@@ -1632,7 +1632,7 @@ paths:
           required: false
           schema:
             type: string
-          description: お客様のシステムにおけるプロファイルの一意のID。匿名プロファイルを扱う場合に最適な選択肢です。`adapty-customer-user-id` または `adapty-profile-id` のいずれかが必須です。
+          description: お客様のシステムにおけるプロファイルの一意のID。匿名プロファイルを扱う場合に最適なオプションです。`adapty-customer-user-id` または `adapty-profile-id` のいずれかが必須です。
       responses:
         '200':
           description: 残高が正常に返されました
@@ -1648,16 +1648,33 @@ paths:
                     balance: 12450
                     held: 0
                     available: 12450
+                    expiry:
+                      non_expiring: 12450
+                      expiring: []
+                      expiring_later: 0
+                      expired: 0
                   - code: GEMS
                     name: Gems
                     balance: 3280
                     held: 0
                     available: 3280
+                    expiry:
+                      non_expiring: 280
+                      expiring:
+                        - amount: 3000
+                          expires_at: 2026-12-24T10:00:00.000000+0000
+                      expiring_later: 0
+                      expired: 0
                   - code: ENERGY
                     name: Energy
                     balance: 840
                     held: 0
                     available: 840
+                    expiry:
+                      non_expiring: 840
+                      expiring: []
+                      expiring_later: 0
+                      expired: 0
         '400':
           description: リクエストが不正です。`adapty-profile-id` も `adapty-customer-user-id` も送信されていません（`error_code` は `validation_error`）。
           content:
@@ -3338,10 +3355,10 @@ components:
       properties:
         code:
           type: string
-          description: 仮想通貨コード。
+          description: バーチャル通貨コード。
         name:
           type: string
-          description: 仮想通貨の表示名。
+          description: バーチャル通貨の表示名。
         balance:
           type: integer
           format: int32
@@ -3355,7 +3372,7 @@ components:
         available:
           type: integer
           format: int32
-          description: 使用可能な残高。`balance - held` として計算されます。
+          description: 利用可能な残高。`balance` から `held` と Adapty がまだ削除していない期限切れのクレジットを差し引いた値として計算されます。
       required:
         - code
         - name
@@ -3364,12 +3381,12 @@ components:
         - available
     VirtualCurrencyBalanceListResponse:
       type: object
-      description: プロファイルのすべてのバーチャル通貨の現在の残高。
+      description: アプリ内のすべての仮想通貨に対するプロファイルの現在の残高（残高が0の通貨を含む）。
       properties:
         response_created_at:
           type: integer
           format: int64
-          description: レスポンスが生成された日時（Unixタイムスタンプ、ミリ秒単位）。
+          description: レスポンスが生成された日時（ミリ秒単位のUnixタイムスタンプ）。
         data:
           type: array
           items:
@@ -3382,10 +3399,10 @@ components:
       properties:
         code:
           type: string
-          description: アプリ内で一意の仮想通貨コード。ASCII文字、数字、アンダースコアが使用可能です。
+          description: アプリ内で一意のバーチャル通貨コード。ASCII文字、数字、アンダースコアを使用。
         name:
           type: string
-          description: 仮想通貨の表示名。
+          description: バーチャル通貨の表示名。
         balance:
           type: integer
           format: int32
@@ -3395,17 +3412,65 @@ components:
           type: integer
           format: int32
           minimum: 0
-          description: すべてのアクティブな保留（予約済み金額）の合計。現在は常に0です。
+          description: すべてのアクティブな保留（予約済み金額）の合計。現在は常に0。
         available:
           type: integer
           format: int32
-          description: 支出可能な残高。`balance - held` として算出されます。
+          minimum: 0
+          description: 使用可能な残高。`balance` から `held` と `expiry.expired` を差し引いた値。
+        expiry:
+          $ref: '#/components/schemas/VirtualCurrencyBalanceExpiry'
       required:
         - code
         - name
         - balance
         - held
         - available
+        - expiry
+    VirtualCurrencyBalanceExpiry:
+      type: object
+      description: レスポンス時点での有効期限別の残高。`non_expiring`、`expiring[].amount` の合計、`expiring_later`、および `expired` を足し合わせると `balance` になります。
+      properties:
+        non_expiring:
+          type: integer
+          format: int32
+          minimum: 0
+          description: 有効期限のないクレジット。
+        expiring:
+          type: array
+          description: 有効期限のあるクレジットを、期限が近い順にグループ化したもの。最大10件の有効期限を一覧表示します。それ以降の有効期限のクレジットは `expiring_later` に合算されます。
+          items:
+            $ref: '#/components/schemas/VirtualCurrencyExpiringAmount'
+        expiring_later:
+          type: integer
+          format: int32
+          minimum: 0
+          description: '`expiring` に含まれる10件の有効期限を超えた期限付きクレジット。`expiring` のエントリーが10件に達していない場合は0です。'
+        expired:
+          type: integer
+          format: int32
+          minimum: 0
+          description: 有効期限を過ぎているにもかかわらず `balance` に引き続き計上されているクレジット。ユーザーは使用できず、Adapty は数分以内に `balance` から削除するため、通常は0です。
+      required:
+        - non_expiring
+        - expiring
+        - expiring_later
+        - expired
+    VirtualCurrencyExpiringAmount:
+      type: object
+      properties:
+        amount:
+          type: integer
+          format: int32
+          minimum: 1
+          description: '`expires_at` の時点で有効期限が切れるクレジットの数（ユーザーが先に使用した場合を除く）。'
+        expires_at:
+          type: string
+          description: これらのクレジットの有効期限（UTC）。期間終了前のサブスクリプション更新または返金により、早期に削除される場合があります。
+          example: 2026-12-24T10:00:00.000000+0000
+      required:
+        - amount
+        - expires_at
     VirtualCurrencyTransactionsHistoryResponse:
       type: object
       description: プロファイルの仮想通貨トランザクション履歴のページネーションリスト。
