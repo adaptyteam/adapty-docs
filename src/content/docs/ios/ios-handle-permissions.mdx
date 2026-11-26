@@ -58,9 +58,22 @@ final class FlowPermissionHandler: AdaptySystemRequestsHandler {
     }
 
     private func requestNotifications() async -> AdaptyPermissionResult {
+        let center = UNUserNotificationCenter.current()
+        switch await center.notificationSettings().authorizationStatus {
+        case .authorized, .ephemeral:
+            return .granted("granted")
+        case .provisional:
+            return .granted("provisional")
+        case .denied:
+            // The user declined earlier: iOS shows no alert.
+            return .denied("permanently_denied")
+        case .notDetermined:
+            break
+        @unknown default:
+            return .denied(nil)
+        }
         do {
-            let granted = try await UNUserNotificationCenter.current()
-                .requestAuthorization(options: [.alert, .badge, .sound])
+            let granted = try await center.requestAuthorization(options: [.alert, .badge, .sound])
             return granted ? .granted("granted") : .denied("denied")
         } catch {
             // Not an answer from the user: the flow runs After response.
@@ -73,7 +86,8 @@ final class FlowPermissionHandler: AdaptySystemRequestsHandler {
         case .authorized:
             return .granted("granted")
         case .denied:
-            return .denied("denied")
+            // The user declined earlier: iOS shows no alert.
+            return .denied("permanently_denied")
         case .restricted:
             return .denied("restricted")
         case .notDetermined:
@@ -110,7 +124,7 @@ iOS asks the user for a permission only when the app explains why it needs it. F
 | [Precise location](flow-permissions#location_full_accuracy) | `.locationFullAccuracy` | `NSLocationWhenInUseUsageDescription` and `NSLocationTemporaryUsageDescriptionDictionary` |
 | [Camera](flow-permissions#camera) | `.camera` | `NSCameraUsageDescription` |
 | [Microphone](flow-permissions#microphone) | `.microphone` | `NSMicrophoneUsageDescription` |
-| [Photos](flow-permissions#photos) | `.photos` | `NSPhotoLibraryUsageDescription` |
+| [Photos](flow-permissions#photos) | `.photos` | `NSPhotoLibraryUsageDescription`, or `NSPhotoLibraryAddUsageDescription` if the app only adds photos |
 | [Media library](flow-permissions#media_library) | `.mediaLibrary` | `NSAppleMusicUsageDescription` |
 | [Apple Music](flow-permissions#music) | `.music` | `NSAppleMusicUsageDescription` |
 | [Speech recognition](flow-permissions#speech) | `.speech` | `NSSpeechRecognitionUsageDescription`, and `NSMicrophoneUsageDescription` for live audio |
@@ -122,7 +136,7 @@ iOS asks the user for a permission only when the app explains why it needs it. F
 | [Bluetooth](flow-permissions#bluetooth) | `.bluetooth` | `NSBluetoothAlwaysUsageDescription` |
 | [Local network](flow-permissions#local_network) | `.localNetwork` | `NSLocalNetworkUsageDescription`, and `NSBonjourServices` for Bonjour |
 | [HomeKit](flow-permissions#homekit) | `.homekit` | `NSHomeKitUsageDescription`, and the HomeKit capability |
-| [Focus status](flow-permissions#focus_status) | `.focusStatus` | `NSFocusStatusUsageDescription`, and the Communication Notifications capability to read the status |
+| [Focus status](flow-permissions#focus_status) | `.focusStatus` | `NSFocusStatusUsageDescription`, and, to read the status, notification authorization and the Communication Notifications capability |
 | [Siri](flow-permissions#siri) | `.siri` | `NSSiriUsageDescription`, and the Siri capability |
 
 For example, the handler in [Implement the handler](#implement-the-handler) requests camera access, so the app declares this key:
@@ -153,7 +167,7 @@ The flow configuration keeps a strong reference to the handler, so you don't nee
 
 ## Test the permission request
 
-iOS shows each permission dialog only once per app install. To see the dialog again while you test the flow, delete the app from the device and install it again. Then open the flow and reach the **Request permission** action. If the screen stays and no dialog appears, the flow got no answer: make sure that you pass `systemRequestsHandler` to `AdaptyUI.getFlowConfiguration`.
+iOS shows most permission dialogs only once per app install. To see the dialog again while you test the flow, delete the app from the device and install it again. Then open the flow and reach the **Request permission** action. If the screen stays and no dialog appears, the flow got no answer: make sure that you pass `systemRequestsHandler` to `AdaptyUI.getFlowConfiguration`.
 
 To see how users answer permission requests, read the flow's analytics events in the `didReceiveAnalyticEvent` callback. For where to implement it, see [Handle flow & paywall events](ios-handling-events).
 

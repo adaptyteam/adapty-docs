@@ -10,11 +10,15 @@ A [flow](adapty-flow-builder) can ask users for a system permission with the **R
 
 You need:
 
-- **Adapty Unity SDK 4.1.0 or later, and 4.3.0 or later on Android**: Earlier versions don't have `IAdaptyUISystemRequestsHandler` with this signature. On Android, 4.1.x delivers an answer sent from an OS permission callback only after the flow closes. Version 4.3.0 requires Unity 6.
+- **Adapty Unity SDK 4.1.0 or later**: Earlier versions don't have `IAdaptyUISystemRequestsHandler` with this signature. The latest stable release is 4.1.2. On Android, the changelog of 4.3.0-beta.1 lists two fixes for permission requests in 4.1.x:
+  - **GameActivity**: In an app with the GameActivity entry point, the default for new Unity 6 projects, no event reaches C#, so your handler is never called.
+  - **Answers from another thread**: A `respond` call made off Unity's main thread while a flow is on screen reaches the flow only after the flow closes.
+
+  The fixes ship in 4.3.0-beta.1, a pre-release that requires Unity 6.
 - **A flow with the Request permission action**: In the Flow & Paywall Builder, add the **Request permission** action to an element's **On Tap** or **On Screen Appear** trigger. In the action, select the permission in the **Permission** field, and add the actions to run after the user answers to its outcome sections, such as **Navigate Next** in **After response**. For the action settings, see [Request permission](onboarding-actions#request-permission).
 - **For notifications on iOS**: The [Mobile Notifications](https://docs.unity3d.com/Packages/com.unity.mobile.notifications@latest) package, which the handler in this guide uses to show the iOS dialog. In **Project Settings > Mobile Notifications > iOS**, turn off **Request Authorization on App Launch**, so that the dialog appears when the flow asks for it.
 - **The declarations of the permissions that your handler requests**: A purpose string in `Info.plist` on iOS, and a permission in the Android manifest. See [Declare the permissions](#declare-the-permissions).
-- **For notifications on Android**: A target API level of 33 or higher in **Player Settings**. Android 13 and later show the notification permission dialog only to apps that target Android 13 or later.
+- **For notifications on Android**: A target API level of 33 or higher in **Player Settings**. Only apps that target Android 13 or later choose when the notification permission dialog appears.
 
 ## How the flow requests a permission
 
@@ -142,7 +146,9 @@ public class FlowSystemRequestsHandler : MonoBehaviour, IAdaptyUISystemRequestsH
         callbacks.PermissionGranted += _ => respond(true, "granted");
         callbacks.PermissionDenied += _ => respond(false, "denied");
         // The user closed the dialog without choosing: the flow runs After response.
+#if UNITY_6000_0_OR_NEWER
         callbacks.PermissionRequestDismissed += _ => respond(false, null);
+#endif
         Permission.RequestUserPermission(androidPermission, callbacks);
     }
 #endif
@@ -156,7 +162,7 @@ public class FlowSystemRequestsHandler : MonoBehaviour, IAdaptyUISystemRequestsH
 - **`customArgs`**: Custom arguments of the request. The **Request permission** action sends none, so the value is `null`.
 - **`respond`**: The callback that returns the answer to the flow. Pass `true` if the user allowed the permission and `false` otherwise. The second argument is the status of the answer, such as `"granted"` or `"permanently_denied"`.
 
-Call `respond` exactly once for each request. The Adapty SDK ignores a second call and prints a warning to the Unity console. From version 4.3.0, you can call `respond` from any thread, including an OS permission callback.
+Call `respond` exactly once for each request. The Adapty SDK ignores a second call and prints a warning to the Unity console. `respond` is safe to call from any thread. On Android in 4.1.x, call it on Unity's main thread: an answer from another thread reaches the flow only after the flow closes.
 
 If `FlowViewDidAskPermission` throws before it calls `respond`, the Adapty SDK logs the exception and sends no answer, so the flow stays on the screen. Catch exceptions and call `respond(false, null)`.
 
@@ -174,7 +180,7 @@ Unity requests only a few permissions on iOS: camera and microphone access with 
 | `tracking` | `com.unity.ads.ios-support`: `ATTrackingStatusBinding.RequestAuthorizationTracking()` | — |
 | `location_when_use` | Native plugin | `Permission.FineLocation` and `Permission.CoarseLocation`, together with `Permission.RequestUserPermissions()` |
 | `location_always` | Native plugin | `"android.permission.ACCESS_BACKGROUND_LOCATION"`, after foreground location is granted |
-| `location_full_accuracy` | Native plugin | `Permission.FineLocation` |
+| `location_full_accuracy` | Native plugin | `Permission.FineLocation` and `Permission.CoarseLocation`, together with `Permission.RequestUserPermissions()`. Full accuracy is `Permission.FineLocation` granted |
 | `camera` | `Application.RequestUserAuthorization(UserAuthorization.WebCam)` | `Permission.Camera` |
 | `microphone` | `Application.RequestUserAuthorization(UserAuthorization.Microphone)` | `Permission.Microphone` |
 | `photos` | Native plugin | `"android.permission.READ_MEDIA_IMAGES"` on Android 13 and later, `Permission.ExternalStorageRead` on Android 12 and earlier |
@@ -182,7 +188,7 @@ Unity requests only a few permissions on iOS: camera and microphone access with 
 | `music` | Native plugin | — |
 | `speech` | Native plugin | `Permission.Microphone` |
 | `contacts` | Native plugin | `"android.permission.READ_CONTACTS"` |
-| `calendar` | Native plugin | `"android.permission.READ_CALENDAR"` |
+| `calendar` | Native plugin | `"android.permission.READ_CALENDAR"`, and `"android.permission.WRITE_CALENDAR"` to add events |
 | `reminders` | Native plugin | — |
 | `health` | Native plugin | Health Connect, in a native plugin |
 | `motion` | Native plugin | `"android.permission.ACTIVITY_RECOGNITION"`, on Android 10 and later |
@@ -199,7 +205,7 @@ Pass the status from the result of the Unity API:
 - **`Application.HasUserAuthorization`**: Returns only whether the user allowed access. Pass `granted` or `denied`. To pass `restricted` or `permanently_denied` on iOS, read the authorization status in a native plugin, such as `AVCaptureDevice.authorizationStatus(for:)`.
 - **Mobile Notifications on iOS**: Read `iOSNotificationCenter.GetNotificationSettings().AuthorizationStatus`. Pass `granted` for `Authorized` and `provisional` for `Provisional`. For `Denied`, pass `denied` after the dialog, or `permanently_denied` if the status was `Denied` before the request.
 - **Mobile Notifications on Android**: Pass `granted` for `PermissionStatus.Allowed`, `denied` for `PermissionStatus.Denied`, and `permanently_denied` for `PermissionStatus.NotificationsBlockedForApp`.
-- **`PermissionCallbacks` on Android**: Pass `granted` from `PermissionGranted`. From `PermissionDenied`, pass `denied` if `Permission.ShouldShowRequestPermissionRationale()` returns `true`, and `permanently_denied` otherwise.
+- **`PermissionCallbacks` on Android**: Pass `granted` from `PermissionGranted`, and `denied` from `PermissionDenied`, as the example does. On Unity 6, `PermissionRequestDismissed` reports a dialog closed without a choice: answer without a status. To pass `permanently_denied`, follow the [rules for a refusal without a dialog](flow-permissions#rules-for-every-permission).
 
 The iOS purpose strings for camera, microphone, and location have fields in **Player Settings > iOS > Other Settings**. Add the other `Info.plist` keys in a `[PostProcessBuild]` editor script with [`PlistDocument`](https://docs.unity.com/en-us/engine/6000.0/script-reference/unityeditor/ios/xcode/plistdocument), because Unity creates the Xcode project again on a clean build and drops manual changes. Add the HealthKit, HomeKit, Siri, and Push Notifications capabilities in the same script with [`ProjectCapabilityManager`](https://docs.unity.com/en-us/engine/6000.0/script-reference/unityeditor/ios/xcode/projectcapabilitymanager).
 
@@ -238,7 +244,7 @@ void OnDestroy()
 
 ## Test the permission request
 
-iOS shows each permission dialog only once per app install. Android stops showing a permission dialog after the user allows the permission or denies it twice. To see the dialog again while you test the flow, delete the app from the device and install it again. Then open the flow and reach the **Request permission** action. If the screen stays and no dialog appears, the flow got no answer: make sure that your app registers the handler before it presents the flow. If the flow moves on without a dialog, make sure that the app declares the permission on both platforms. For notifications, the Android app must also target API level 33 or higher, and **Request Authorization on App Launch** must be off.
+iOS shows most permission dialogs only once per app install. Android stops showing a permission dialog after the user allows the permission or denies it twice. To see the dialog again while you test the flow, delete the app from the device and install it again. Then open the flow and reach the **Request permission** action. If the screen stays and no dialog appears, the flow got no answer: make sure that your app registers the handler before it presents the flow. If the flow moves on without a dialog, make sure that the app declares the permission on both platforms. For notifications, the Android app must also target API level 33 or higher, and **Request Authorization on App Launch** must be off.
 
 To see how users answer permission requests, read the flow's analytics events in the `FlowViewDidReceiveAnalyticEvent` method of your flows events listener. For details, see [Handle flow & paywall events](unity-handling-events).
 

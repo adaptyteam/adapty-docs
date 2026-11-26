@@ -14,7 +14,7 @@ You need:
 - **A flow with the Request permission action**: In the Flow & Paywall Builder, add the **Request permission** action to an element's **On Tap** or **On Screen Appear** trigger. In the action, select the permission in the **Permission** field, and add the actions to run after the user answers to its outcome sections, such as **Navigate Next** in **After response**. For the action settings, see [Request permission](onboarding-actions#request-permission).
 - **A library that shows the permission dialogs**: The example uses [react-native-permissions](https://github.com/zoontek/react-native-permissions). To set it up, follow its [setup guide](https://github.com/zoontek/react-native-permissions#setup), and add each permission that your handler requests, such as `Notifications` and `Camera`, to the iOS permissions it sets up. Any other library that shows the dialogs works too, for example `expo-notifications` in an Expo app.
 - **The declarations of the permissions that your handler requests**: A purpose string in `Info.plist` on iOS, and a permission in the Android manifest. See [Declare the permissions](#declare-the-permissions).
-- **For push notifications on Android, `targetSdk` 33 or higher**: Android 13 and later show the notification permission dialog only to apps that target Android 13 or later.
+- **For push notifications on Android, `targetSdk` 33 or higher**: Only apps that target Android 13 or later choose when the notification permission dialog appears.
 
 ## How the flow requests a permission
 
@@ -105,13 +105,13 @@ The example uses [react-native-permissions](https://github.com/zoontek/react-nat
 | `push` | `requestNotifications()` | `Notifications` | `requestNotifications()` |
 | `tracking` | `PERMISSIONS.IOS.APP_TRACKING_TRANSPARENCY` | `AppTrackingTransparency` | — |
 | `location_when_use` | `PERMISSIONS.IOS.LOCATION_WHEN_IN_USE` | `LocationWhenInUse` | `PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION` and `PERMISSIONS.ANDROID.ACCESS_COARSE_LOCATION`, together with `requestMultiple()` |
-| `location_always` | `PERMISSIONS.IOS.LOCATION_ALWAYS` | `LocationAlways` | `PERMISSIONS.ANDROID.ACCESS_BACKGROUND_LOCATION` |
-| `location_full_accuracy` | `requestLocationAccuracy({ purposeKey })` | `LocationAccuracy` | `PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION` |
+| `location_always` | `PERMISSIONS.IOS.LOCATION_ALWAYS` | `LocationAlways` | `PERMISSIONS.ANDROID.ACCESS_BACKGROUND_LOCATION`, after foreground location is granted |
+| `location_full_accuracy` | `requestLocationAccuracy({ purposeKey })` | `LocationAccuracy` | `PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION` and `PERMISSIONS.ANDROID.ACCESS_COARSE_LOCATION`, together with `requestMultiple()` |
 | `camera` | `PERMISSIONS.IOS.CAMERA` | `Camera` | `PERMISSIONS.ANDROID.CAMERA` |
 | `microphone` | `PERMISSIONS.IOS.MICROPHONE` | `Microphone` | `PERMISSIONS.ANDROID.RECORD_AUDIO` |
-| `photos` | `PERMISSIONS.IOS.PHOTO_LIBRARY` | `PhotoLibrary` | `PERMISSIONS.ANDROID.READ_MEDIA_IMAGES`, and `PERMISSIONS.ANDROID.READ_MEDIA_VISUAL_USER_SELECTED` on Android 14 and later |
-| `media_library` | `PERMISSIONS.IOS.MEDIA_LIBRARY` | `MediaLibrary` | — |
-| `music` | — | — | — |
+| `photos` | `PERMISSIONS.IOS.PHOTO_LIBRARY` | `PhotoLibrary` | `PERMISSIONS.ANDROID.READ_MEDIA_IMAGES` and `PERMISSIONS.ANDROID.READ_MEDIA_VISUAL_USER_SELECTED`, together with `requestMultiple()`, on Android 13 and later. `PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE` on Android 12 and earlier |
+| `media_library` | `PERMISSIONS.IOS.MEDIA_LIBRARY` | `MediaLibrary` | `PERMISSIONS.ANDROID.READ_MEDIA_AUDIO` |
+| `music` | `PERMISSIONS.IOS.STOREKIT` | `StoreKit` | — |
 | `speech` | `PERMISSIONS.IOS.SPEECH_RECOGNITION` | `SpeechRecognition` | `PERMISSIONS.ANDROID.RECORD_AUDIO` |
 | `contacts` | `PERMISSIONS.IOS.CONTACTS` | `Contacts` | `PERMISSIONS.ANDROID.READ_CONTACTS` |
 | `calendar` | `PERMISSIONS.IOS.CALENDARS` | `Calendars` | `PERMISSIONS.ANDROID.READ_CALENDAR` and `PERMISSIONS.ANDROID.WRITE_CALENDAR` |
@@ -124,7 +124,13 @@ The example uses [react-native-permissions](https://github.com/zoontek/react-nat
 | `focus_status` | — | — | — |
 | `siri` | `PERMISSIONS.IOS.SIRI` | `Siri` | — |
 
-`requestLocationAccuracy()` works on iOS 14 and later, and throws an error on Android. `PERMISSIONS.IOS.MEDIA_LIBRARY` requests the media library, not Apple Music, so the table has no request for `music`.
+`requestMultiple()` returns a result for each permission. Reduce it to one answer:
+
+- **Location**: Granted when `ACCESS_COARSE_LOCATION` is granted. For `location_full_accuracy`, granted when `ACCESS_FINE_LOCATION` is granted.
+- **Photos**: Pass `granted` when `READ_MEDIA_IMAGES` is granted, and `limited` when only `READ_MEDIA_VISUAL_USER_SELECTED` is granted. react-native-permissions never returns `RESULTS.LIMITED` on Android.
+- **Calendar and Bluetooth**: Granted when all requested permissions are granted.
+
+On iOS, `requestLocationAccuracy()` resolves to `'full'` or `'reduced'`, not to a result: pass `granted` for `'full'` and `denied` for `'reduced'`. It rejects when the app has no location access yet, and it throws an error on Android. `PERMISSIONS.IOS.STOREKIT` requests access with `SKCloudServiceController`, which Apple deprecated in iOS 18 in favor of MusicKit.
 
 Pass the status from the result of react-native-permissions:
 
@@ -136,7 +142,7 @@ Pass the status from the result of react-native-permissions:
 | `RESULTS.BLOCKED` | `permanently_denied` | **When denied** |
 | `RESULTS.UNAVAILABLE` | `unsupported` | **After response** |
 
-On iOS, react-native-permissions reports a permission that parental controls or a device policy restrict as `RESULTS.UNAVAILABLE`. Your app can't tell it from an unavailable permission, so it can't pass `restricted`, and the flow runs **After response** for it. For notifications, `requestNotifications()` returns `RESULTS.GRANTED` for provisional authorization too. To pass `provisional`, read `settings.provisional` from its result.
+On iOS, react-native-permissions reports every refusal as `RESULTS.BLOCKED`, also right after the dialog, so a refusal on iOS has the `outcome` `permanently_denied`. It reports a permission that parental controls or a device policy restrict as `RESULTS.UNAVAILABLE`. Your app can't tell it from an unavailable permission, so it can't pass `restricted`, and the flow runs **After response** for it. For notifications, `requestNotifications()` returns `RESULTS.GRANTED` for provisional authorization too. To pass `provisional`, read `settings.provisional` from its result.
 
 ## Declare the permissions
 
@@ -206,7 +212,7 @@ await view.present();
 
 ## Test the permission request
 
-iOS shows each permission dialog only once per app install. Android stops showing a permission dialog after the user allows the permission or denies it twice. To see the dialog again while you test the flow, delete the app from the device and install it again. Then open the flow and reach the **Request permission** action. If the flow moves on without a dialog, make sure that the flow view has the `onRequestPermission` handler, and that the app declares the permission on both platforms. For notifications on Android, the app must also target Android 13 or later.
+iOS shows most permission dialogs only once per app install. Android stops showing a permission dialog after the user allows the permission or denies it twice. To see the dialog again while you test the flow, delete the app from the device and install it again. Then open the flow and reach the **Request permission** action. If the flow moves on without a dialog, make sure that the flow view has the `onRequestPermission` handler, and that the app declares the permission on both platforms. For notifications on Android, the app must also target Android 13 or later.
 
 To see how users answer permission requests, read the flow's analytics events in the `onAnalytics` handler of the flow view. For details, see [Handle flow & paywall events](react-native-handling-events-1).
 

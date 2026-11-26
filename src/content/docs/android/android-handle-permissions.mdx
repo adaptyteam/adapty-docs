@@ -13,7 +13,7 @@ You need:
 - **Adapty Android SDK 4.0.0 or later**: Earlier versions don't have `onShowRequestPermission`.
 - **A flow with the Request permission action**: In the Flow & Paywall Builder, add the **Request permission** action to an element's **On Tap** or **On Screen Appear** trigger. In the action, select the permission in the **Permission** field, and add the actions to run after the user answers to its outcome sections, such as **Navigate Next** in **After response**. For the action settings, see [Request permission](onboarding-actions#request-permission).
 - **A manifest permission for each permission that your listener requests**: See [Declare the permissions](#declare-the-permissions).
-- **For push notifications, `targetSdk` 33 or higher**: Android 13 and later show the notification permission dialog only to apps that target Android 13 or later.
+- **For push notifications, `targetSdk` 33 or higher**: Only apps that target Android 13 or later choose when the notification permission dialog appears.
 
 ## How the flow requests a permission
 
@@ -58,11 +58,29 @@ class FlowActivity : ComponentActivity() {
 
     // The flow waits for this callback while the system dialog is open.
     private var pendingPermissionCallback: AdaptyFlowEventListener.PermissionCallback? = null
+    private var pendingPermission: String? = null
+    private var rationaleBeforeRequest = false
+    private var requestedBefore = false
+
+    // Android can't tell whether the app requested a permission before, so the app keeps a flag.
+    private val requestedPermissions by lazy { getSharedPreferences("flow_permissions", MODE_PRIVATE) }
 
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            pendingPermissionCallback?.invoke(granted, if (granted) "granted" else "denied")
+            val callback = pendingPermissionCallback ?: return@registerForActivityResult
+            val permission = pendingPermission ?: return@registerForActivityResult
             pendingPermissionCallback = null
+            pendingPermission = null
+            val status = when {
+                granted -> "granted"
+                // No rationale before a repeated request: Android showed no dialog.
+                requestedBefore && !rationaleBeforeRequest -> "permanently_denied"
+                // The user declined the dialog.
+                rationaleBeforeRequest || shouldShowRequestPermissionRationale(permission) -> "denied"
+                // The user closed the dialog without choosing: the flow runs After response.
+                else -> null
+            }
+            callback(granted, status)
         }
 
     private val eventListener = object : AdaptyFlowDefaultEventListener() {
@@ -77,7 +95,7 @@ class FlowActivity : ComponentActivity() {
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
                         // Android 12 and earlier: return whether notifications are turned on for the app.
                         val enabled = NotificationManagerCompat.from(context).areNotificationsEnabled()
-                        callback(enabled, if (enabled) "granted" else "denied")
+                        callback(enabled, if (enabled) "granted" else "permanently_denied")
                         return
                     }
                     Manifest.permission.POST_NOTIFICATIONS
@@ -94,6 +112,10 @@ class FlowActivity : ComponentActivity() {
                 return
             }
             pendingPermissionCallback = callback
+            pendingPermission = manifestPermission
+            rationaleBeforeRequest = shouldShowRequestPermissionRationale(manifestPermission)
+            requestedBefore = requestedPermissions.getBoolean(manifestPermission, false)
+            requestedPermissions.edit().putBoolean(manifestPermission, true).apply()
             permissionLauncher.launch(manifestPermission)
         }
     }
@@ -108,7 +130,7 @@ class FlowActivity : ComponentActivity() {
 - **`customArgs`**: Custom arguments of the request. The **Request permission** action sends none, so the value is `null`.
 - **`callback`**: The callback that returns the answer to the flow. Its first argument, `granted`, is `true` if the user allowed the permission, and `false` otherwise. Its second argument, `detailResult`, is the status of the answer, such as `"granted"` or `"permanently_denied"`.
 
-Invoke `callback` once for every request. The Adapty SDK doesn't catch exceptions from `onShowRequestPermission`, so catch them in your override and invoke `callback(false, null)`.
+For how the example tells a refusal in the dialog from a refusal without a dialog, and from a dialog closed without a choice, see [System permissions](flow-permissions#rules-for-every-permission). Invoke `callback` once for every request. The Adapty SDK doesn't catch exceptions from `onShowRequestPermission`, so catch them in your override and invoke `callback(false, null)`.
 
 In Jetpack Compose, register the launcher with `rememberLauncherForActivityResult` instead of `registerForActivityResult`. If the activity can be recreated while the dialog is open, for example on rotation, keep the pending callback in a `ViewModel`, so that the new activity can invoke it.
 
@@ -129,11 +151,11 @@ Android shows a permission dialog only for a permission that the app declares in
 | [Photos](flow-permissions#photos) | `photos` | `READ_MEDIA_IMAGES` and `READ_MEDIA_VIDEO`, Android 13 and later. `READ_MEDIA_VISUAL_USER_SELECTED`, Android 14 and later. `READ_EXTERNAL_STORAGE`, Android 12 and earlier |
 | [Media library](flow-permissions#media_library) | `media_library` | `READ_MEDIA_AUDIO`, Android 13 and later. `READ_EXTERNAL_STORAGE`, Android 12 and earlier |
 | [Speech recognition](flow-permissions#speech) | `speech` | `RECORD_AUDIO` |
-| [Contacts](flow-permissions#contacts) | `contacts` | `READ_CONTACTS` |
+| [Contacts](flow-permissions#contacts) | `contacts` | `READ_CONTACTS`, and `WRITE_CONTACTS` to write contacts |
 | [Calendar](flow-permissions#calendar) | `calendar` | `READ_CALENDAR`, and `WRITE_CALENDAR` to add events |
-| [Health data](flow-permissions#health) | `health` | Health Connect permissions for each data type, such as `android.permission.health.READ_STEPS` |
+| [Health data](flow-permissions#health) | `health` | Health Connect permissions for each data type, such as `android.permission.health.READ_STEPS`, requested with the Health Connect contract, not with `RequestPermission` |
 | [Motion & Fitness](flow-permissions#motion) | `motion` | `ACTIVITY_RECOGNITION`, Android 10 and later |
-| [Bluetooth](flow-permissions#bluetooth) | `bluetooth` | `BLUETOOTH_SCAN` and `BLUETOOTH_CONNECT`, Android 12 and later. `ACCESS_FINE_LOCATION`, Android 11 and earlier |
+| [Bluetooth](flow-permissions#bluetooth) | `bluetooth` | `BLUETOOTH_SCAN` and `BLUETOOTH_CONNECT`, Android 12 and later, for apps that target Android 12. `ACCESS_FINE_LOCATION` otherwise |
 | [Local network](flow-permissions#local_network) | `local_network` | `ACCESS_LOCAL_NETWORK`, Android 17 and later, for apps that target Android 17 |
 
 The listener in this guide requests notifications and camera access, so the app declares these permissions:

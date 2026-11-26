@@ -28,25 +28,29 @@ The table lists, for each permission in the builder, the value that your app rec
 
 In the tables on this page, an answer is written as "Granted" or "Not granted", followed by the status that your app passes with it.
 
+
 ## Rules for every permission
 
-- **Request only what the app declares and links**: Answer `unsupported` for any other permission, without a call to the OS. Link only the frameworks of the permissions that your app requests. Apple notes that libraries can reference APIs that require a purpose string, so a linked framework needs its purpose string even when your app answers its permission as unsupported.
-- **Read the current status before you request**: For most permissions, the OS shows the dialog once, and later requests return the stored answer without a dialog. Some iOS requests never call back when the status is already decided, and the flow then stays on the screen. Read the status first, and answer at once when it's decided.
-- **Wait for indirect requests with a timeout**: iOS has no request method for **Bluetooth**, **Motion & Fitness**, **Local network**, and **HomeKit**. The alert appears when the app first uses the framework, and the result arrives in a delegate method or not at all. Wrap the wait in a timeout, then answer from the current status, or without a status.
-- **Tell a new refusal from an earlier one**: iOS keeps every refusal until the user changes it in Settings. Pass `denied` when the user declined the dialog of this request, and `permanently_denied` when iOS showed no dialog because the user declined earlier. On Android 11 and later, the OS stops showing the dialog after the user denies a permission twice. After a refusal, call `shouldShowRequestPermissionRationale()`. Pass `denied` if it returns `true`, and `permanently_denied` if it returns `false`.
-- **Read the status at every request**: Some grants expire. **Allow Once** on iOS and **Only this time** on Android last while the app is in use. Temporary full accuracy on iOS expires on its own. Android resets the permissions of apps that the user hasn't used for a few months. Don't store an answer for a later request.
+- **Request only what the app declares and links**: Answer `unsupported` for any other permission, without a call to the OS. Link only the frameworks of the permissions that your app requests. Apple notes that [libraries and SDKs can reference APIs that require a purpose string](https://developer.apple.com/documentation/uikit/requesting-access-to-protected-resources).
+- **Read the current status before you request**: For most permissions, the OS shows the dialog once, and later requests return the stored answer without a dialog. Some iOS requests never call back when the status is already decided. [`CLLocationManager.requestWhenInUseAuthorization()`](https://developer.apple.com/documentation/corelocation/cllocationmanager/requestwheninuseauthorization()) does nothing and doesn't call the delegate when the status isn't `.notDetermined`. After the first call to [`requestAlwaysAuthorization()`](https://developer.apple.com/documentation/corelocation/cllocationmanager/requestalwaysauthorization()), further calls have no effect. Read the status first, and answer at once when it's decided.
+- **Wait for indirect requests with a timeout**: iOS has no request method for **Bluetooth**, **Motion & Fitness**, **Local network**, and **HomeKit**. The alert appears when the app first uses the framework, and the result arrives in a delegate method or a query handler, or not at all. Wrap the wait in a timeout shorter than 60 seconds, then answer from the current status, or without a status. After 60 seconds without an answer, the flow reports `flow_permission_unanswered`.
+- **Tell a new refusal from an earlier one**: iOS keeps every refusal until the user changes it in Settings. On iOS, pass `denied` when the user declined the alert of this request, and `permanently_denied` when iOS showed no alert because the user declined earlier. On Android 11 and later, the OS stops showing the dialog after the user denies a permission twice. On Android, `shouldShowRequestPermissionRationale()` also returns `false` after a dialog that the user closed without a choice. So read it before the request, and keep a flag for each permission that your app requested before:
+  - **No rationale before the request, and the app requested the permission before**: Android showed no dialog. Pass `permanently_denied`.
+  - **A rationale before or after the request**: The user declined the dialog. Pass `denied`.
+  - **No rationale before or after the first request**: The user closed the dialog without a choice. Answer without a status, so the flow runs **After response**.
+- **Read the status at every request**: Some grants expire. **Allow Once** on iOS and **Only this time** on Android last while the app is in use. Temporary full accuracy on iOS expires on its own. For apps that target Android 11 or higher, Android resets the permissions of an app that the user hasn't used for a few months. Don't store an answer for a later request.
 - **Explain the permission before the dialog**: Put the request on the **On Tap** trigger of a button on a screen that explains the permission. Apple's [Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/privacy) recommend one button on such a screen, such as **Continue**, that opens the system alert.
 - **Let the user go on after a refusal**: [App Review Guideline 5.1.2(i)](https://developer.apple.com/app-store/review/guidelines/#data-use-and-sharing) doesn't allow an app to require push notifications, location services, tracking, or other system functionality to use the app or its content. Add a way forward to **When denied**, such as **Navigate Next**. A **When denied** section that leaves the user without a way forward risks rejection. Guideline 5.1.1(iv) also asks apps to respect the user's permission settings and not to manipulate, trick, or force users to consent.
-- **Reset the answers when you test**: To see a dialog again on iOS, delete the app, or open **Settings > General > Transfer or Reset > Reset > Reset Location & Privacy**, which resets every app. On Android, delete the app, or run `adb shell pm revoke <package> <permission>` and `adb shell pm clear-permission-flags <package> <permission> user-set user-fixed`. Don't install the test build with `adb install -g`: it grants every runtime permission, so no dialog appears.
+- **Reset the answers when you test**: To see a dialog again on iOS, delete the app, or open **Settings > General > Transfer or Reset iPhone > Reset > Reset Location & Privacy**, which resets every app. On Android, delete the app, or run `adb shell pm revoke <package> <permission>` and `adb shell pm clear-permission-flags <package> <permission> user-set user-fixed`. Don't install the test build with `adb install -g`: it grants every runtime permission, so no dialog appears.
 
 ## Notifications and tracking
 
 ### Push notifications \{#push\}
 
-- **What the user sees**: On iOS, an alert that asks to allow notifications. On Android 13 and later, a dialog with **Allow** and **Don't allow**. The user can also swipe the Android dialog away, which leaves the permission unanswered. Android 12 and earlier show no dialog: notifications are on unless the user turns them off in the system settings.
+- **What the user sees**: On iOS, an alert that asks to allow notifications. On Android 13 and later, a dialog with **Allow** and **Don't allow**. The user can also swipe the Android dialog away, which leaves the permission unchanged. Android 12 and earlier show no dialog: notifications are on unless the user turns them off in the system settings.
 - **Platforms**: iOS and Android.
 - **iOS setup**: No `Info.plist` key. Request the permission with `UNUserNotificationCenter.requestAuthorization(options:)`. To receive remote push notifications, the app also needs the Push Notifications capability and registers with APNs. The permission itself doesn't need them.
-- **Android setup**: `<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />`, a runtime permission on Android 13 (API 33) and later. Target API 33 or higher: for an app that targets API 32 or lower, Android shows the dialog when the app creates its first notification channel, not when the flow asks. On Android 12 and earlier, answer from `NotificationManagerCompat.areNotificationsEnabled()` without a dialog.
+- **Android setup**: `<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />`, a runtime permission on Android 13 (API 33) and later. Only apps that target API 33 or higher decide when the dialog appears. For an app that targets API 32 or lower, Android shows the dialog when the app starts an activity after it creates its first notification channel. After one **Don't allow**, Android doesn't show it to such an app again until the app is reinstalled. On Android 12 and earlier, answer from `NotificationManagerCompat.areNotificationsEnabled()` without a dialog.
 
 Answer the request from the notification authorization status:
 
@@ -55,12 +59,13 @@ Answer the request from the notification authorization status:
 | iOS | `.notDetermined`, then the user allows | Granted, `granted` | **When allowed** | `granted` |
 | iOS | `.notDetermined`, then the user declines | Not granted, `denied` | **When denied** | `denied` |
 | iOS | `.denied` before the request | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
-| iOS | `.authorized` | Granted, `granted` | **When allowed** | `granted` |
+| iOS | `.authorized`, or `.ephemeral` in an App Clip | Granted, `granted` | **When allowed** | `granted` |
 | iOS | `.provisional`, after a request with the `.provisional` option | Granted, `provisional` | **When allowed** | `provisional` |
 | iOS | `requestAuthorization(options:)` throws an error | Not granted, no status | **After response** | `no_status` |
 | Android 13+ | Granted | Granted, `granted` | **When allowed** | `granted` |
-| Android 13+ | Denied, Android shows the dialog again | Not granted, `denied` | **When denied** | `denied` |
-| Android 13+ | Denied, Android no longer shows the dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
+| Android 13+ | Denied in the dialog | Not granted, `denied` | **When denied** | `denied` |
+| Android 13+ | Denied, and Android showed no dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
+| Android 13+ | The user swiped the dialog away | Not granted, no status | **After response** | `no_status` |
 | Android 12 and earlier | Notifications are on | Granted, `granted` | **When allowed** | `granted` |
 | Android 12 and earlier | Notifications are off | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
 
@@ -69,9 +74,9 @@ Answer the request from the notification authorization status:
 
 ### App tracking (ATT) \{#tracking\}
 
-- **What the user sees**: On iOS, the App Tracking Transparency alert with your purpose string. iOS shows no alert and returns the current status at once when tracking is restricted, the user turned off **Allow Apps to Request to Track** in Settings, another ATT request waits for an answer, or the app isn't active.
+- **What the user sees**: On iOS, the App Tracking Transparency alert with your purpose string. In France, Germany, Italy, Poland, and Romania, iOS shows a full-page sheet instead of the alert. iOS shows nothing and returns the current status when tracking is restricted, or when the user turned off **Allow Apps to Request to Track** in Settings. iOS also shows nothing when another request waits for an answer, the request comes from an app extension, or the app isn't active.
 - **Platforms**: iOS only. Android has no such permission: answer `unsupported`, and the flow runs **After response**.
-- **iOS setup**: `NSUserTrackingUsageDescription`. An app that uses the AppTrackingTransparency framework without this key crashes. Request the permission with `ATTrackingManager.requestTrackingAuthorization()`.
+- **iOS setup**: `NSUserTrackingUsageDescription`. An app that uses the AppTrackingTransparency framework without this key crashes. For the full-page sheet, you can add `NSUserTrackingMarkdownUsageDescription`. Request the permission with `ATTrackingManager.requestTrackingAuthorization()`.
 - **Android setup**: None: answer `unsupported` without a dialog. The advertising ID on Android uses the install-time permission `com.google.android.gms.permission.AD_ID`, which asks the user nothing. Don't report `granted` because the app has an advertising ID.
 
 Answer the request from the tracking authorization status:
@@ -80,14 +85,15 @@ Answer the request from the tracking authorization status:
 |:---|:--------------|:-------|:--------|:----------|
 | iOS | `.notDetermined`, then the user allows | Granted, `granted` | **When allowed** | `granted` |
 | iOS | `.notDetermined`, then the user declines | Not granted, `denied` | **When denied** | `denied` |
-| iOS | `.denied` before the request | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
+| iOS | `.denied` before the request. In the EU, less than a year after the user's answer | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
 | iOS | `.restricted` | Not granted, `restricted` | **When denied** | `restricted` |
 | iOS | `.authorized` | Granted, `granted` | **When allowed** | `granted` |
-| iOS | `.notDetermined` after the request: the alert closed without a choice | Not granted, no status | **After response** | `no_status` |
+| iOS | `.notDetermined` after the request: iOS closed the prompt without a decision, the app wasn't active, or another request waited for an answer | Not granted, no status | **After response** | `no_status` |
 | Android | Any request | Not granted, `unsupported` | **After response** | `unsupported` |
 
 - **Limitations**:
-  - iOS shows the alert only while the app is active. With **On Screen Appear** on the first screen after launch, the request can arrive before the app is active. Before the request, wait for `UIApplication.didBecomeActiveNotification`.
+  - iOS shows the alert only while the app is active. With **On Screen Appear** on the first screen after launch, the request can arrive before the app is active. Before the request, read `UIApplication.shared.applicationState`. Only if it isn't `.active`, wait for `UIApplication.didBecomeActiveNotification`: an app that is already active never receives it.
+  - In the EU, iOS lets the app ask again a year after the user's answer, whether the user allowed or denied tracking, unless the user turned tracking off in Settings. Store the date of the answer, and after a year, request again instead of answering `permanently_denied`. See [`requestTrackingAuthorization`](https://developer.apple.com/documentation/apptrackingtransparency/attrackingmanager/requesttrackingauthorization(completionhandler:)).
   - [App Review Guideline 5.1.2(i)](https://developer.apple.com/app-store/review/guidelines/#data-use-and-sharing) requires the ATT permission for tracking. The app can't require tracking for access to features or for rewards.
   - A screen before the ATT alert must not offer an incentive, imitate the system alert, show an image of it, or annotate the screen behind it. Apple's [Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/privacy#Tracking-requests) say that App Review rejects such screens.
   - After the user answers, send the ATT status to Adapty. See [Deal with ATT](ios-deal-with-att).
@@ -96,9 +102,9 @@ Answer the request from the tracking authorization status:
 
 ### Location while using the app \{#location_when_use\}
 
-- **What the user sees**: On iOS, an alert with **Allow Once**, **Allow While Using App**, and **Don't Allow**, and a **Precise** switch. On Android 12 and later, a dialog with a choice of **Precise** or **Approximate**, and the buttons **While using the app**, **Only this time**, and **Don't allow**. If the app declares only approximate location, the Android dialog offers only approximate location.
+- **What the user sees**: On iOS, an alert with **Allow Once**, **Allow While Using App**, and **Don't Allow**, and a **Precise** switch. On Android 12 and later, a dialog with a choice of **Precise** or **Approximate**, and the buttons **While using the app**, **Only this time**, and **Don't allow**. If the app requests only `ACCESS_COARSE_LOCATION`, the Android dialog offers only approximate location.
 - **Platforms**: iOS and Android.
-- **iOS setup**: `NSLocationWhenInUseUsageDescription`. Request the permission with `CLLocationManager.requestWhenInUseAuthorization()`. The answer arrives in `locationManagerDidChangeAuthorization(_:)`. The app must be in the foreground to show the alert.
+- **iOS setup**: `NSLocationWhenInUseUsageDescription`. Request the permission with `CLLocationManager.requestWhenInUseAuthorization()`. The status arrives in `locationManagerDidChangeAuthorization(_:)`. iOS also calls this method when the app creates the `CLLocationManager`, with the current status. Ignore `.notDetermined`, and answer only after a status change that follows the request. The app must be in the foreground to show the alert.
 - **Android setup**: `ACCESS_COARSE_LOCATION`, and `ACCESS_FINE_LOCATION` for precise location. Request both permissions together: some Android 12 releases ignore a request for `ACCESS_FINE_LOCATION` alone.
 
 Answer the request from the location authorization status:
@@ -107,62 +113,60 @@ Answer the request from the location authorization status:
 |:---|:--------------|:-------|:--------|:----------|
 | iOS | `.notDetermined`, then **Allow While Using App** or **Allow Once** | Granted, `granted` | **When allowed** | `granted` |
 | iOS | `.notDetermined`, then **Don't Allow** | Not granted, `denied` | **When denied** | `denied` |
-| iOS | `.denied` before the request, including Location Services turned off | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
+| iOS | `.denied` before the request, including Location Services turned off and Airplane mode | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
 | iOS | `.restricted` | Not granted, `restricted` | **When denied** | `restricted` |
 | iOS | `.authorizedWhenInUse` or `.authorizedAlways` | Granted, `granted` | **When allowed** | `granted` |
 | Android | Precise or approximate location granted | Granted, `granted` | **When allowed** | `granted` |
-| Android | Denied, Android shows the dialog again | Not granted, `denied` | **When denied** | `denied` |
-| Android | Denied, Android no longer shows the dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
+| Android | Denied in the dialog | Not granted, `denied` | **When denied** | `denied` |
+| Android | Denied, and Android showed no dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
 
 To report approximate location in analytics, pass `limited` with the granted answer instead of `granted`. The flow still runs **When allowed**.
 
 - **Limitations**:
-  - iOS doesn't call back in two cases. If the status isn't `.notDetermined`, `requestWhenInUseAuthorization()` does nothing. If `NSLocationWhenInUseUsageDescription` is missing, the request fails at once without a callback and without a crash. A handler that waits for the delegate never answers, and the flow stays on the screen. Read `authorizationStatus` first, and answer at once when it isn't `.notDetermined`.
+  - If the status isn't `.notDetermined`, [`requestWhenInUseAuthorization()`](https://developer.apple.com/documentation/corelocation/cllocationmanager/requestwheninuseauthorization()) does nothing and doesn't call the delegate. If `NSLocationWhenInUseUsageDescription` is missing, [the request fails at once](https://developer.apple.com/documentation/corelocation/requesting-authorization-to-use-location-services). A handler that waits for a status change in these cases never answers, and the flow stays on the screen. Read `authorizationStatus` first, answer at once when it isn't `.notDetermined`, and wrap the wait in a timeout.
   - **Allow Once** on iOS and **Only this time** on Android grant access while the app is in use. On iOS, the status then returns to `.notDetermined`, so the alert appears again later.
-  - When the user changes precise location to approximate in the Android settings, Android restarts the app process.
-- **Cross-platform notes**: Request this permission before **Location always** and **Precise location**: both need location access while the app is in use first.
+  - When the user changes precise location to approximate, in the dialog or in the Android settings, Android restarts the app process.
+- **Cross-platform notes**: On Android, request this permission before **Location always** and **Precise location**: both need location access while the app is in use first. On iOS, **Location always** can also start from `.notDetermined`, with two alerts.
 
 ### Location always \{#location_always\}
 
 - **What the user sees**: Two steps on both OSes.
   - **iOS, no answer yet**: The alert for location while using the app. **Allow While Using App** grants provisional Always access. iOS asks the second question, **Keep Only While Using** or **Change to Always Allow**, later, typically while the app isn't running.
-  - **iOS, location while using the app already granted**: The upgrade alert, with **Keep Only While Using** and **Change to Always Allow**, at once.
+  - **iOS, location while using the app already granted**: The upgrade alert, with **Keep Only While Using** and **Change to Always Allow**, at once. After **Allow Once**, or after an earlier Always request, iOS ignores the request and shows nothing.
   - **Android 10**: The dialog includes **Allow all the time**.
-  - **Android 11 and later**: The dialog has no **Allow all the time** option. The user turns on background location on a settings page.
+  - **Android 11 and later**: For apps that target Android 11 or higher, the dialog has no **Allow all the time** option. The user turns on background location on a settings page.
 - **Platforms**: iOS and Android. Android 9 and earlier grant background location together with foreground location.
 - **iOS setup**: `NSLocationWhenInUseUsageDescription` and `NSLocationAlwaysAndWhenInUseUsageDescription`. Request the permission with `CLLocationManager.requestAlwaysAuthorization()`. Location updates in the background also need the Background Modes capability. The permission itself doesn't need it.
-- **Android setup**: `ACCESS_BACKGROUND_LOCATION`, from Android 10 (API 29), in addition to `ACCESS_COARSE_LOCATION` and `ACCESS_FINE_LOCATION`. Request it in a separate request after foreground location is granted. For apps that target Android 11 or higher, a request for foreground and background location together grants neither. Google Play restricts background location to an app's core features.
+- **Android setup**: `ACCESS_BACKGROUND_LOCATION`, from Android 10 (API 29), in addition to `ACCESS_COARSE_LOCATION` and `ACCESS_FINE_LOCATION`. Request foreground location first, then background location in a separate request. For apps that target Android 11 or higher, a request for foreground and background location together grants neither. Google Play restricts background location to an app's core features.
 
 Answer the request from the location authorization status:
 
 | OS | Native result | Answer | Section | `outcome` |
 |:---|:--------------|:-------|:--------|:----------|
-| iOS | `.notDetermined`, then **Allow While Using App**: provisional Always access | Granted, `provisional` | **When allowed** | `provisional` |
-| iOS | `.notDetermined`, then **Allow Once** | Not granted, `denied` | **When denied** | `denied` |
+| iOS | `.notDetermined`, then the user allows location access in the first alert | Granted, `provisional` | **When allowed** | `provisional` |
 | iOS | `.notDetermined`, then **Don't Allow** | Not granted, `denied` | **When denied** | `denied` |
-| iOS | `.authorizedWhenInUse`, first request, then **Change to Always Allow** | Granted, `granted` | **When allowed** | `granted` |
-| iOS | `.authorizedWhenInUse`, first request, then **Keep Only While Using** | Not granted, `denied` | **When denied** | `denied` |
-| iOS | `.authorizedWhenInUse`, the app requested Always access before | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
+| iOS | `.authorizedWhenInUse`, the upgrade alert appears, then **Change to Always Allow** | Granted, `granted` | **When allowed** | `granted` |
+| iOS | `.authorizedWhenInUse`, the upgrade alert appears, then **Keep Only While Using** | Not granted, `denied` | **When denied** | `denied` |
+| iOS | `.authorizedWhenInUse`, and no alert appears: after **Allow Once**, or after an earlier Always request | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
 | iOS | `.authorizedAlways` | Granted, `granted` | **When allowed** | `granted` |
 | iOS | `.denied` | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
 | iOS | `.restricted` | Not granted, `restricted` | **When denied** | `restricted` |
+| Android 10+ | Foreground location denied in its request | Not granted, `denied` | **When denied** | `denied` |
 | Android 10+ | Background location granted | Granted, `granted` | **When allowed** | `granted` |
-| Android 10+ | Foreground location granted, background location denied, Android shows the request again | Not granted, `denied` | **When denied** | `denied` |
-| Android 10+ | Background location denied, Android no longer shows the request | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
+| Android 10+ | Background location not granted when the user comes back | Not granted, `denied` | **When denied** | `denied` |
 | Android 9 and earlier | Foreground location granted | Granted, `granted` | **When allowed** | `granted` |
 
 - **Limitations**:
-  - On iOS, **Keep Only While Using** doesn't call the delegate. A handler that waits for the delegate never answers. Wait until the app becomes active again after the alert, then read the status.
-  - iOS accepts one Always request per install: later calls have no effect, also after **Allow Once**. iOS has no API that tells whether the app asked before, so the app saves its own flag after the first request.
-  - iOS reports provisional Always access and full Always access with the same status, `.authorizedAlways`. Only a handler that saw the status change from `.notDetermined` knows that the access is provisional.
-  - With provisional Always access, the user can choose **Keep Only While Using** later, outside the flow.
+  - iOS may show no alert, so don't wait for the app to become active. After the request, wait a short time for the alert. If no alert appears, answer from the status at once. If the alert appears, answer when the app becomes active again: **Keep Only While Using** doesn't call the delegate, because the status doesn't change. Never wait longer than 60 seconds.
+  - iOS accepts one Always request per install: later calls have no effect. iOS has no API that tells whether the app asked before, so the app saves its own flag after the first request.
+  - With **Allow Once** in the first alert, the access is temporary, and iOS ignores later Always requests. With provisional Always access, the user can choose **Keep Only While Using** later, outside the flow.
   - On Android 11 and later, the user leaves the app for the settings page. Read the permission state when the user comes back to the app, and answer then.
-- **Cross-platform notes**: Both OSes need location access while the app is in use first. Request **Location while using the app** on an earlier screen.
+- **Cross-platform notes**: Android needs foreground location first, so request **Location while using the app** on an earlier screen. On iOS, the request can also start from `.notDetermined`.
 
 ### Precise location \{#location_full_accuracy\}
 
 - **What the user sees**: On iOS, after the user turned off **Precise** in the location alert, an alert that asks for precise location once, with the text of your purpose key. On Android 12 and later, after the user chose approximate location, a dialog with **Change to precise location**, **Only this time**, and **Deny**. If the user chose **Only this time** with approximate location, the Android dialog has only **Only this time** and **Deny**.
-- **Platforms**: iOS and Android. Android 11 and earlier have no approximate-only access: a location grant there is precise.
+- **Platforms**: iOS and Android. On Android 11 and earlier, the dialog has no choice of approximate location: an app that requests `ACCESS_FINE_LOCATION` gets precise location.
 - **iOS setup**: `NSLocationWhenInUseUsageDescription` and `NSLocationTemporaryUsageDescriptionDictionary`. Each key of the dictionary is a purpose key, and its value is the text of the alert. Request the permission with `CLLocationManager.requestTemporaryFullAccuracyAuthorization(withPurposeKey:)`. The flow sends no purpose key, so the app code passes one of its own keys.
 - **Android setup**: `ACCESS_COARSE_LOCATION` and `ACCESS_FINE_LOCATION`. When only approximate location is granted, request both permissions again.
 
@@ -178,22 +182,24 @@ Answer the request from the location accuracy:
 
 | OS | Native result | Answer | Section | `outcome` |
 |:---|:--------------|:-------|:--------|:----------|
+| iOS | Location `.notDetermined`, then the user allows location with **Precise** on | Granted, `granted` | **When allowed** | `granted` |
+| iOS | Location `.notDetermined`, then the user denies location access | Not granted, `denied` | **When denied** | `denied` |
 | iOS | `accuracyAuthorization` is `.fullAccuracy` before the request | Granted, `granted` | **When allowed** | `granted` |
-| iOS | `.reducedAccuracy`, then the user allows | Granted, `granted` | **When allowed** | `granted` |
-| iOS | `.reducedAccuracy`, then the user declines, or the request fails | Not granted, `denied` | **When denied** | `denied` |
-| iOS | Location access `.denied` | Not granted, `denied` | **When denied** | `denied` |
+| iOS | `.reducedAccuracy` before, `.fullAccuracy` after the request | Granted, `granted` | **When allowed** | `granted` |
+| iOS | `.reducedAccuracy` after the request | Not granted, `denied` | **When denied** | `denied` |
+| iOS | Location access `.denied` | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
 | iOS | Location access `.restricted` | Not granted, `restricted` | **When denied** | `restricted` |
-| Android 12+ | `ACCESS_FINE_LOCATION` granted | Granted, `granted` | **When allowed** | `granted` |
+| Android 12+ | `ACCESS_FINE_LOCATION` granted, including **Only this time** | Granted, `granted` | **When allowed** | `granted` |
 | Android 12+ | Only `ACCESS_COARSE_LOCATION` granted after the request | Not granted, `denied` | **When denied** | `denied` |
-| Android 12+ | No location access, Android shows the dialog again | Not granted, `denied` | **When denied** | `denied` |
-| Android 12+ | No location access, Android no longer shows the dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
+| Android 12+ | No location access, denied in the dialog | Not granted, `denied` | **When denied** | `denied` |
+| Android 12+ | No location access, and Android showed no dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
 | Android 11 and earlier | `ACCESS_FINE_LOCATION` granted | Granted, `granted` | **When allowed** | `granted` |
 
 - **Limitations**:
-  - The iOS request needs location access while the app is in use. Without it, request **Location while using the app** first: its alert has a **Precise** switch.
-  - The iOS request fails with the `promptDeclined` error when the purpose key is missing from the dictionary, the app already has precise location, or the app is in the background.
-  - Precise location on iOS is temporary: it expires on its own, and the alert can appear again in a later session.
-- **Cross-platform notes**: Android has no temporary precise location: a granted `ACCESS_FINE_LOCATION` stays until the user changes it.
+  - The iOS request needs location access while the app is in use. With location `.notDetermined`, request **Location while using the app** first: its alert has a **Precise** switch. If the user turns it off, continue with the request for precise location.
+  - After the request, read `accuracyAuthorization`. iOS reports the `promptDeclined` error when the user declines. It reports the same error when the purpose key is missing from the dictionary, the app already has precise location, or the app is in the background.
+  - Precise location from this request is temporary: it expires on its own, and iOS postpones the expiration while the app is in use. The alert can appear again in a later session. Precise location that the user chose in the location alert or in Settings doesn't expire.
+- **Cross-platform notes**: Both OSes can grant precise location for a limited time: iOS with this request, and Android with **Only this time**.
 
 ## Camera and media
 
@@ -202,7 +208,7 @@ Answer the request from the location accuracy:
 - **What the user sees**: On iOS, an alert with your purpose string. On Android 11 and later, a dialog with **While using the app**, **Only this time**, and **Don't allow**.
 - **Platforms**: iOS and Android.
 - **iOS setup**: `NSCameraUsageDescription`. Without it, a request for camera access raises an exception, and iOS terminates the app. Request the permission with `AVCaptureDevice.requestAccess(for: .video)`.
-- **Android setup**: `CAMERA`, a runtime permission. The `CAMERA` permission implies a `<uses-feature>` element for every camera feature.
+- **Android setup**: `CAMERA`, a runtime permission. `CAMERA` implies the required features `android.hardware.camera` and `android.hardware.camera.autofocus`, so Google Play doesn't offer the app to devices without a back camera. To install the app on such devices, declare `<uses-feature android:name="android.hardware.camera" android:required="false" />`.
 
 Answer the request from the camera authorization status:
 
@@ -214,8 +220,8 @@ Answer the request from the camera authorization status:
 | iOS | `.restricted` | Not granted, `restricted` | **When denied** | `restricted` |
 | iOS | `.authorized` | Granted, `granted` | **When allowed** | `granted` |
 | Android | Granted, including **Only this time** | Granted, `granted` | **When allowed** | `granted` |
-| Android | Denied, Android shows the dialog again | Not granted, `denied` | **When denied** | `denied` |
-| Android | Denied, Android no longer shows the dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
+| Android | Denied in the dialog | Not granted, `denied` | **When denied** | `denied` |
+| Android | Denied, and Android showed no dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
 | Android | The device has no camera: `FEATURE_CAMERA_ANY` is missing | Not granted, `unsupported` | **After response** | `unsupported` |
 
 - **Limitations**: Until the user allows camera access, iOS gives the app black frames. **Only this time** on Android expires shortly after the app goes to the background.
@@ -237,17 +243,17 @@ Answer the request from the microphone authorization status:
 | iOS | `.restricted` | Not granted, `restricted` | **When denied** | `restricted` |
 | iOS | `.authorized` | Granted, `granted` | **When allowed** | `granted` |
 | Android | Granted, including **Only this time** | Granted, `granted` | **When allowed** | `granted` |
-| Android | Denied, Android shows the dialog again | Not granted, `denied` | **When denied** | `denied` |
-| Android | Denied, Android no longer shows the dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
+| Android | Denied in the dialog | Not granted, `denied` | **When denied** | `denied` |
+| Android | Denied, and Android showed no dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
 
-- **Limitations**: Without the permission, recordings contain silence. The status of `AVAudioApplication` has no restricted value: with it, your app never passes `restricted`.
-- **Cross-platform notes**: On Android, **Microphone** and **Speech recognition** use the same permission, `RECORD_AUDIO`. After the user answers one of them, a request for the other one returns the same answer without a dialog.
+- **Limitations**: Without the permission, recordings contain silence. The status of `AVAudioApplication` has the values `.undetermined`, `.granted`, and `.denied`, with no restricted value: with it, your app never passes `restricted`.
+- **Cross-platform notes**: On Android, **Microphone** and **Speech recognition** use the same permission, `RECORD_AUDIO`. After the user grants one of them, or Android stops showing its dialog, a request for the other one returns the same answer without a dialog.
 
 ### Photos \{#photos\}
 
-- **What the user sees**: On iOS, an alert with **Limit Access**, **Allow Full Access**, and **Don't Allow**. On Android 14 and later, a dialog with **Select photos and videos**, **Allow all**, and **Don't allow**. **Select photos and videos** opens a system picker.
+- **What the user sees**: On iOS, an alert that offers limited access, full access, or no access. On Android 14 and later, a dialog with **Select photos and videos**, **Allow all**, and **Don't allow**. **Select photos and videos** opens a system picker. On Android 13, the dialog has no selection option.
 - **Platforms**: iOS and Android.
-- **iOS setup**: `NSPhotoLibraryUsageDescription`, or `NSPhotoLibraryAddUsageDescription` if the app only adds photos. Without the key, the app crashes when it accesses the photo library. Request the permission with `PHPhotoLibrary.requestAuthorization(for: .readWrite)`. The older `requestAuthorization(_:)` reports limited access as `.authorized`.
+- **iOS setup**: `NSPhotoLibraryUsageDescription`, and request the permission with `PHPhotoLibrary.requestAuthorization(for: .readWrite)`. If the app only adds photos, declare `NSPhotoLibraryAddUsageDescription` and request `PHPhotoLibrary.requestAuthorization(for: .addOnly)` instead: add-only access has no limited state. Without a valid purpose string, the app crashes when it accesses the photo library. The older `requestAuthorization(_:)` reports limited access as `.authorized`.
 - **Android setup**: Request `READ_MEDIA_IMAGES` and `READ_MEDIA_VIDEO` together on Android 13 and later, with `READ_MEDIA_VISUAL_USER_SELECTED` on Android 14 and later. On Android 12 and earlier, request `READ_EXTERNAL_STORAGE`. Declare all four permissions:
 
 ```xml title="AndroidManifest.xml"
@@ -269,14 +275,15 @@ Answer the request from the photo library authorization status:
 | Android 13+ | `READ_MEDIA_IMAGES` or `READ_MEDIA_VIDEO` granted | Granted, `granted` | **When allowed** | `granted` |
 | Android 14+ | Only `READ_MEDIA_VISUAL_USER_SELECTED` granted | Granted, `limited` | **When allowed** | `limited` |
 | Android 12 and earlier | `READ_EXTERNAL_STORAGE` granted | Granted, `granted` | **When allowed** | `granted` |
-| Android | Nothing granted, Android shows the dialog again | Not granted, `denied` | **When denied** | `denied` |
-| Android | Nothing granted, Android no longer shows the dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
+| Android | Nothing granted, denied in the dialog | Not granted, `denied` | **When denied** | `denied` |
+| Android | Nothing granted, and Android showed no dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
 
 - **Limitations**:
-  - Declare `READ_MEDIA_VISUAL_USER_SELECTED` to report a partial grant on Android 14. Without it, Android reports `READ_MEDIA_IMAGES` and `READ_MEDIA_VIDEO` as granted after the user selects some photos, until the app goes to the background. Your app then passes `granted` for access to a selection only.
+  - Google Play restricts `READ_MEDIA_IMAGES` and `READ_MEDIA_VIDEO` to [use cases in its policy](https://developer.android.com/training/data-storage/shared/media). Other apps use the Android photo picker, which needs no permission.
+  - Declare `READ_MEDIA_VISUAL_USER_SELECTED` to report a partial grant on Android 14. In an app that targets Android 14 or higher and doesn't declare it, Android reports `READ_MEDIA_IMAGES` and `READ_MEDIA_VIDEO` as granted after the user selects some photos. Android revokes that grant eventually after the app goes to the background. Your app then passes `granted` for access to a selection only.
   - With limited access on iOS, the system offers the user to update the selection once per app life cycle. To turn this off, set `PHPhotoLibraryPreventAutomaticLimitedAccessAlert` to `true` in `Info.plist`.
-  - Access to the selected media on Android 14 can expire.
-  - The system photo pickers, `PHPickerViewController` on iOS and the photo picker on Android, need no permission. [App Review Guideline 5.1.1](https://developer.apple.com/app-store/review/guidelines/#data-collection-and-storage) asks apps to use such a picker instead of full access where they can. Request this permission when the app shows its own gallery.
+  - Access to the selected media on Android 14 expires eventually.
+  - `PHPickerViewController` on iOS needs no permission. [App Review Guideline 5.1.1](https://developer.apple.com/app-store/review/guidelines/#data-collection-and-storage) asks apps to use such a picker instead of full access where they can. Request this permission when the app shows its own gallery.
 - **Cross-platform notes**: Both OSes report a partial grant, so pass `limited` on both.
 
 ### Media library \{#media_library\}
@@ -296,18 +303,18 @@ Answer the request from the media library authorization status:
 | iOS | `.restricted` | Not granted, `restricted` | **When denied** | `restricted` |
 | iOS | `.authorized` | Granted, `granted` | **When allowed** | `granted` |
 | Android | Granted | Granted, `granted` | **When allowed** | `granted` |
-| Android | Denied, Android shows the dialog again | Not granted, `denied` | **When denied** | `denied` |
-| Android | Denied, Android no longer shows the dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
+| Android | Denied in the dialog | Not granted, `denied` | **When denied** | `denied` |
+| Android | Denied, and Android showed no dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
 
 - **Limitations**: Android has no partial access to audio files: `READ_MEDIA_VISUAL_USER_SELECTED` covers photos and videos only.
-- **Cross-platform notes**: On iOS, **Media library** and **Apple Music** show the same purpose string, `NSAppleMusicUsageDescription`. On Android, an app that answers **Apple Music** with `READ_MEDIA_AUDIO` gets one permission for both values: the second request returns the first answer without a dialog.
+- **Cross-platform notes**: On iOS, **Media library** and **Apple Music** show the same purpose string, `NSAppleMusicUsageDescription`.
 
 ### Apple Music \{#music\}
 
 - **What the user sees**: On iOS, an alert with your purpose string for media and Apple Music.
-- **Platforms**: iOS only. Android has no Apple Music permission: answer `unsupported`, and the flow runs **After response**. If your app uses the value for the user's audio files, answer it on Android as **Media library**.
+- **Platforms**: iOS only. Android has no Apple Music permission: answer `unsupported`, and the flow runs **After response**.
 - **iOS setup**: `NSAppleMusicUsageDescription`. Without it, iOS terminates the app when the app accesses the user's music. Request the permission with MusicKit's `MusicAuthorization.request()`. Don't use `SKCloudServiceController.requestAuthorization(_:)`: it's deprecated in iOS 18.
-- **Android setup**: None: answer `unsupported` without a dialog, or request `READ_MEDIA_AUDIO` as for **Media library**.
+- **Android setup**: None: answer `unsupported` without a dialog.
 
 Answer the request from the MusicKit authorization status:
 
@@ -348,19 +355,22 @@ Answer the request from the speech recognition authorization status:
 | iOS | `.authorized` | Granted, `granted` | **When allowed** | `granted` |
 | Android | `SpeechRecognizer.isRecognitionAvailable()` returns `false` | Not granted, `unsupported` | **After response** | `unsupported` |
 | Android | `RECORD_AUDIO` granted | Granted, `granted` | **When allowed** | `granted` |
-| Android | Denied, Android shows the dialog again | Not granted, `denied` | **When denied** | `denied` |
-| Android | Denied, Android no longer shows the dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
+| Android | Denied in the dialog | Not granted, `denied` | **When denied** | `denied` |
+| Android | Denied, and Android showed no dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
 
-- **Limitations**: The iOS permission covers speech recognition with `SFSpeechRecognizer` only. The default Android recognizer can send audio to remote servers.
-- **Cross-platform notes**: On iOS, speech recognition of live audio needs two permissions. The flow sends one request at a time, so request **Microphone** and **Speech recognition** on two screens, or have your app request both before it answers. On Android, **Speech recognition** and **Microphone** share `RECORD_AUDIO`, so the second request returns the first answer without a dialog.
+- **Limitations**:
+  - iOS also reports `.denied` when the device doesn't support speech recognition.
+  - The iOS permission covers speech recognition with `SFSpeechRecognizer` only. [SpeechAnalyzer transcriber modules don't send audio to Apple](https://developer.apple.com/documentation/speech/asking-permission-to-use-speech-recognition) and don't need it.
+  - The default Android recognizer can send audio to remote servers.
+- **Cross-platform notes**: On iOS, speech recognition of live audio needs two permissions. The flow sends one request at a time, so request **Microphone** and **Speech recognition** on two screens, or have your app request both before it answers. On Android, **Speech recognition** and **Microphone** share `RECORD_AUDIO`. After the user grants one of them, or Android stops showing its dialog, a request for the other one returns the same answer without a dialog.
 
 ## Personal data
 
 ### Contacts \{#contacts\}
 
-- **What the user sees**: On iOS 18 and later, an alert with **Don't Allow** and **Continue**. **Continue** opens a second step, where the user shares all contacts or a selection. On Android, a runtime permission dialog.
+- **What the user sees**: On iOS, an alert with your purpose string. On iOS 18 and later, the user can share all contacts or a selection. On Android, a runtime permission dialog.
 - **Platforms**: iOS and Android.
-- **iOS setup**: `NSContactsUsageDescription`. Request the permission with `CNContactStore.requestAccess(for: .contacts)`.
+- **iOS setup**: `NSContactsUsageDescription`. Request the permission with `CNContactStore.requestAccess(for: .contacts)`. The request reports only whether the user gave access, so read `CNContactStore.authorizationStatus(for: .contacts)` after it, also when it throws an error. The status tells limited access from full access.
 - **Android setup**: `READ_CONTACTS`, and `WRITE_CONTACTS` if the app writes contacts.
 
 Answer the request from the contacts authorization status:
@@ -373,8 +383,8 @@ Answer the request from the contacts authorization status:
 | iOS | `.denied` before the request | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
 | iOS | `.restricted` | Not granted, `restricted` | **When denied** | `restricted` |
 | Android | Granted | Granted, `granted` | **When allowed** | `granted` |
-| Android | Denied, Android shows the dialog again | Not granted, `denied` | **When denied** | `denied` |
-| Android | Denied, Android no longer shows the dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
+| Android | Denied in the dialog | Not granted, `denied` | **When denied** | `denied` |
+| Android | Denied, and Android showed no dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
 
 - **Limitations**: With limited access on iOS, the app adds contacts to the selection later with `ContactAccessButton` or `contactAccessPicker`. [App Review Guideline 5.1.1](https://developer.apple.com/app-store/review/guidelines/#data-collection-and-storage) asks apps to use a system picker instead of full access to contacts where they can.
 - **Cross-platform notes**: The `limited` status exists only on iOS 18 and later.
@@ -383,47 +393,48 @@ Answer the request from the contacts authorization status:
 
 - **What the user sees**: On iOS, an alert with your purpose string for full access or for adding events only. On Android, a runtime permission dialog.
 - **Platforms**: iOS and Android.
-- **iOS setup**: On iOS 17 and later, `NSCalendarsFullAccessUsageDescription` for full access, or `NSCalendarsWriteOnlyAccessUsageDescription` to add events only. Request the permission with `EKEventStore.requestFullAccessToEvents()` or `requestWriteOnlyAccessToEvents()`. While the app supports iOS 16, also declare `NSCalendarsUsageDescription` and request with `requestAccess(to: .event)` on iOS 16.
+- **iOS setup**: On iOS 17 and later, `NSCalendarsFullAccessUsageDescription` for full access, or `NSCalendarsWriteOnlyAccessUsageDescription` to add events only. Request the permission with `EKEventStore.requestFullAccessToEvents()` or `requestWriteOnlyAccessToEvents()`. For iOS 16 and earlier, also declare `NSCalendarsUsageDescription`, and request with `requestAccess(to: .event)` there.
 - **Android setup**: `READ_CALENDAR`, and `WRITE_CALENDAR` to add events. Request both together.
 
 Answer the request from the calendar authorization status:
 
 | OS | Native result | Answer | Section | `outcome` |
 |:---|:--------------|:-------|:--------|:----------|
-| iOS | `.fullAccess`, or `.authorized` on iOS 16 | Granted, `granted` | **When allowed** | `granted` |
-| iOS 17+ | `.writeOnly`: the app can add events only | Granted, `limited` | **When allowed** | `limited` |
+| iOS | `.fullAccess`, or `.authorized` on iOS 16 and earlier | Granted, `granted` | **When allowed** | `granted` |
+| iOS 17+ | `.writeOnly`, and the app requested write-only access | Granted, `granted` | **When allowed** | `granted` |
+| iOS 17+ | `.writeOnly`, and the app requested full access | Granted, `limited` | **When allowed** | `limited` |
 | iOS | `.notDetermined`, then the user declines | Not granted, `denied` | **When denied** | `denied` |
 | iOS | `.denied` before the request | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
 | iOS | `.restricted` | Not granted, `restricted` | **When denied** | `restricted` |
 | iOS | The request throws an error | Not granted, no status | **After response** | `no_status` |
 | Android | Granted | Granted, `granted` | **When allowed** | `granted` |
-| Android | Denied, Android shows the dialog again | Not granted, `denied` | **When denied** | `denied` |
-| Android | Denied, Android no longer shows the dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
+| Android | Denied in the dialog | Not granted, `denied` | **When denied** | `denied` |
+| Android | Denied, and Android showed no dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
 
 - **Limitations**:
-  - On iOS 17 and later, an app with only `NSCalendarsUsageDescription` gets every request denied at once, without an alert and without a crash.
+  - On iOS 17 and later, an app with only `NSCalendarsUsageDescription` gets every request denied at once, without an alert.
   - The value `calendar` doesn't say which access to request: your app decides. iOS has no read-only access. With write-only access, the app sees one virtual calendar and no events.
-  - To add an event with `EKEventEditViewController` on iOS 17 and later, the app needs no calendar access.
+  - To add an event without calendar access, use `EKEventEditViewController` on iOS 17 and later, or a [calendar intent](https://developer.android.com/identity/providers/calendar-provider) such as `ACTION_INSERT` on Android.
 
 ### Reminders \{#reminders\}
 
 - **What the user sees**: On iOS, an alert with your purpose string.
 - **Platforms**: iOS only. Android has no system reminders store: answer `unsupported`, and the flow runs **After response**. `CalendarContract.Reminders` on Android contains the alarms of calendar events, not reminders.
-- **iOS setup**: `NSRemindersFullAccessUsageDescription` on iOS 17 and later. Request the permission with `EKEventStore.requestFullAccessToReminders()`. While the app supports iOS 16, also declare `NSRemindersUsageDescription` and request with `requestAccess(to: .reminder)` on iOS 16.
+- **iOS setup**: `NSRemindersFullAccessUsageDescription` on iOS 17 and later. Request the permission with `EKEventStore.requestFullAccessToReminders()`. For iOS 16 and earlier, also declare `NSRemindersUsageDescription`, and request with `requestAccess(to: .reminder)` there. On iOS 17 and later, iOS uses `NSRemindersUsageDescription` as a fallback when `NSRemindersFullAccessUsageDescription` is missing.
 - **Android setup**: None: answer `unsupported` without a dialog.
 
 Answer the request from the reminders authorization status:
 
 | OS | Native result | Answer | Section | `outcome` |
 |:---|:--------------|:-------|:--------|:----------|
-| iOS | `.fullAccess`, or `.authorized` on iOS 16 | Granted, `granted` | **When allowed** | `granted` |
+| iOS | `.fullAccess`, or `.authorized` on iOS 16 and earlier | Granted, `granted` | **When allowed** | `granted` |
 | iOS | `.notDetermined`, then the user declines | Not granted, `denied` | **When denied** | `denied` |
 | iOS | `.denied` before the request | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
 | iOS | `.restricted` | Not granted, `restricted` | **When denied** | `restricted` |
 | iOS | The request throws an error | Not granted, no status | **After response** | `no_status` |
 | Android | Any request | Not granted, `unsupported` | **After response** | `unsupported` |
 
-- **Limitations**: On iOS 17 and later, an app with only `NSRemindersUsageDescription` gets every request denied at once, without an alert. iOS has no write-only access to reminders.
+- **Limitations**: iOS has no write-only access to reminders.
 
 ### Health data \{#health\}
 
@@ -432,25 +443,28 @@ Answer the request from the reminders authorization status:
 - **iOS setup**:
   - The HealthKit capability.
   - `NSHealthShareUsageDescription` to read health data, and `NSHealthUpdateUsageDescription` to write it. Without these keys, the app crashes when it requests access.
-  - Request the permission with `HKHealthStore.requestAuthorization(toShare:read:)`. Call `HKHealthStore.isHealthDataAvailable()` first. The flow sends no data types, so the app code passes its own.
+  - Request the permission with `HKHealthStore.requestAuthorization(toShare:read:)`. Call `HKHealthStore.isHealthDataAvailable()` first. The flow sends no data types, so the app code passes its own. Before the request, `getRequestStatusForAuthorization(toShare:read:)` tells whether iOS will show the sheet.
   - Xcode adds `healthkit` to `UIRequiredDeviceCapabilities` with the capability, which blocks installs on devices without HealthKit. If the app works without health data, remove that entry.
 - **Android setup**:
   - The Health Connect client library, `androidx.health.connect:connect-client`.
   - A `<uses-permission>` element for each data type and access, such as `android.permission.health.READ_STEPS`. Declare the same data types in the Google Play Console.
   - An activity that shows your privacy policy for the `androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE` action. On Android 14 and later, an `<activity-alias>` for the `android.intent.action.VIEW_PERMISSION_USAGE` action, with the `android.intent.category.HEALTH_PERMISSIONS` category and `android:permission="android.permission.START_VIEW_PERMISSION_USAGE"`.
   - A `<queries>` element with the package `com.google.android.apps.healthdata`.
-  - Request the permissions with the contract from `PermissionController.createRequestPermissionResultContract()`. Android 14 and later include Health Connect. On Android 13 and earlier, the user needs the Health Connect app from Google Play.
+  - Call `HealthConnectClient.getSdkStatus()` first, then request the permissions with the contract from `PermissionController.createRequestPermissionResultContract()`. Health Connect needs Android 9 (API 28) or later. Android 14 and later include it. On Android 13 and earlier, the user needs the Health Connect app from Google Play: when `getSdkStatus()` returns `SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED`, the app can send the user to Google Play.
 
 Answer the request from the health data access:
 
 | OS | Native result | Answer | Section | `outcome` |
 |:---|:--------------|:-------|:--------|:----------|
 | iOS | `isHealthDataAvailable()` returns `false` | Not granted, `unsupported` | **After response** | `unsupported` |
+| iOS | The request fails with `errorHealthDataRestricted` | Not granted, `restricted` | **When denied** | `restricted` |
 | iOS | The request completes, and the app requested only read access | Not granted, no status | **After response** | `no_status` |
-| iOS | A requested write type is `.sharingAuthorized` | Granted, `granted` | **When allowed** | `granted` |
-| iOS | A requested write type is `.sharingDenied` | Not granted, `denied` | **When denied** | `denied` |
-| iOS | The request throws an error | Not granted, no status | **After response** | `no_status` |
-| Android | Health Connect isn't available on the device | Not granted, `unsupported` | **After response** | `unsupported` |
+| iOS | Every requested write type is `.sharingAuthorized` | Granted, `granted` | **When allowed** | `granted` |
+| iOS | Some requested write types are `.sharingAuthorized` | Granted, `limited` | **When allowed** | `limited` |
+| iOS | No requested write type is authorized, after the sheet | Not granted, `denied` | **When denied** | `denied` |
+| iOS | No requested write type is authorized, and `getRequestStatusForAuthorization` returned `.unnecessary` before the request: iOS showed no sheet | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
+| iOS | The request throws another error | Not granted, no status | **After response** | `no_status` |
+| Android | `getSdkStatus()` doesn't return `SDK_AVAILABLE` | Not granted, `unsupported` | **After response** | `unsupported` |
 | Android | All requested permissions granted | Granted, `granted` | **When allowed** | `granted` |
 | Android | Some requested permissions granted | Granted, `limited` | **When allowed** | `limited` |
 | Android | No permission granted | Not granted, `denied` | **When denied** | `denied` |
@@ -467,8 +481,8 @@ Answer the request from the health data access:
 
 - **What the user sees**: On iOS, an alert with your purpose string the first time the app accesses motion activity data. On Android 10 and later, a runtime permission dialog for physical activity.
 - **Platforms**: iOS and Android. Android 9 and earlier have no runtime permission for physical activity.
-- **iOS setup**: `NSMotionUsageDescription`. Without it, the app crashes when it accesses motion data. iOS has no request method: the first access to motion activity data shows the alert. Call `CMMotionActivityManager.isActivityAvailable()` first, and read the status with `CMMotionActivityManager.authorizationStatus()`.
-- **Android setup**: `ACTIVITY_RECOGNITION`, a runtime permission from Android 10 (API 29). It covers the step counter and step detector sensors and the Activity Recognition API.
+- **iOS setup**: `NSMotionUsageDescription`. Without it, the app crashes when it accesses motion data. iOS has no request method: the first access to motion activity data shows the alert, and the answer arrives in the handler of that access. Call `CMMotionActivityManager.isActivityAvailable()` first, and read the status with `CMMotionActivityManager.authorizationStatus()`.
+- **Android setup**: `ACTIVITY_RECOGNITION`, a runtime permission from Android 10 (API 29). It covers the step counter and step detector sensors and the Activity Recognition API. On Android 9 and earlier, Google Play services' Activity Recognition API uses the install-time permission `com.google.android.gms.permission.ACTIVITY_RECOGNITION`.
 
 Answer the request from the motion authorization status:
 
@@ -477,24 +491,25 @@ Answer the request from the motion authorization status:
 | iOS | `isActivityAvailable()` returns `false`: the device has no motion data | Not granted, `unsupported` | **After response** | `unsupported` |
 | iOS | `.notDetermined`, then the user allows | Granted, `granted` | **When allowed** | `granted` |
 | iOS | `.notDetermined`, then the user declines | Not granted, `denied` | **When denied** | `denied` |
+| iOS | Still `.notDetermined` when the timeout ends | Not granted, no status | **After response** | `no_status` |
 | iOS | `.denied` before the request | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
 | iOS | `.restricted` | Not granted, `restricted` | **When denied** | `restricted` |
 | iOS | `.authorized` | Granted, `granted` | **When allowed** | `granted` |
 | Android 10+ | Granted | Granted, `granted` | **When allowed** | `granted` |
-| Android 10+ | Denied, Android shows the dialog again | Not granted, `denied` | **When denied** | `denied` |
-| Android 10+ | Denied, Android no longer shows the dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
+| Android 10+ | Denied in the dialog | Not granted, `denied` | **When denied** | `denied` |
+| Android 10+ | Denied, and Android showed no dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
 | Android 9 and earlier | No runtime permission | Granted, `granted` | **When allowed** | `granted` |
 
-- **Limitations**: The iOS answer arrives through the motion data access that shows the alert. Wait for it with a timeout, then answer from `authorizationStatus()`. The iOS Simulator has no motion data, so the request answers `unsupported` there.
+- **Limitations**: Wait for the iOS answer with a timeout, then answer from `authorizationStatus()`.
 
 ## Device and home
 
 ### Bluetooth \{#bluetooth\}
 
-- **What the user sees**: On iOS, an alert with your purpose string the first time the app creates a Bluetooth manager. On Android 12 and later, a **Nearby devices** dialog. On Android 11 and earlier, the location dialog.
+- **What the user sees**: On iOS, an alert with your purpose string the first time the app creates a Bluetooth manager. On Android 12 and later, a **Nearby devices** dialog for apps that target Android 12 or higher. Otherwise, the Android location dialog.
 - **Platforms**: iOS and Android.
 - **iOS setup**: `NSBluetoothAlwaysUsageDescription`. Without it, the app crashes when it uses Core Bluetooth. iOS has no request method: creating a `CBCentralManager` shows the alert, and the result arrives in `centralManagerDidUpdateState(_:)`. Read `CBManager.authorization` first. Create the manager with `CBCentralManagerOptionShowPowerAlertKey` set to `false`, so that iOS doesn't also ask the user to turn on Bluetooth.
-- **Android setup**: On Android 12 (API 31) and later, `BLUETOOTH_SCAN` and `BLUETOOTH_CONNECT`, and `BLUETOOTH_ADVERTISE` if the app advertises. On Android 11 and earlier, scanning needs `ACCESS_FINE_LOCATION`. `BLUETOOTH` and `BLUETOOTH_ADMIN` are install-time permissions there:
+- **Android setup**: For apps that target Android 12 (API 31) or higher, on Android 12 and later, `BLUETOOTH_SCAN` and `BLUETOOTH_CONNECT`, and `BLUETOOTH_ADVERTISE` if the app advertises. On Android 11 and earlier, and for apps that target a lower API level, scanning needs `ACCESS_FINE_LOCATION`, and `ACCESS_BACKGROUND_LOCATION` for scans in the background on Android 10 and 11. `BLUETOOTH` and `BLUETOOTH_ADMIN` are install-time permissions there:
 
 ```xml title="AndroidManifest.xml"
 <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
@@ -510,26 +525,27 @@ Answer the request from the Bluetooth authorization status:
 |:---|:--------------|:-------|:--------|:----------|
 | iOS | `.notDetermined`, then the user allows | Granted, `granted` | **When allowed** | `granted` |
 | iOS | `.notDetermined`, then the user declines | Not granted, `denied` | **When denied** | `denied` |
+| iOS | Still `.notDetermined` when the timeout ends | Not granted, no status | **After response** | `no_status` |
 | iOS | `.denied` before the request | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
 | iOS | `.restricted` | Not granted, `restricted` | **When denied** | `restricted` |
 | iOS | `.allowedAlways` | Granted, `granted` | **When allowed** | `granted` |
-| Android | The device has no Bluetooth: `FEATURE_BLUETOOTH` is missing | Not granted, `unsupported` | **After response** | `unsupported` |
-| Android | All requested permissions granted | Granted, `granted` | **When allowed** | `granted` |
-| Android | Denied, Android shows the dialog again | Not granted, `denied` | **When denied** | `denied` |
-| Android | Denied, Android no longer shows the dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
+| Android | The device has no Bluetooth: `FEATURE_BLUETOOTH` is missing, or `FEATURE_BLUETOOTH_LE` for a BLE app | Not granted, `unsupported` | **After response** | `unsupported` |
+| Android 12+ | All requested permissions granted | Granted, `granted` | **When allowed** | `granted` |
+| Android 12+ | Denied in the dialog | Not granted, `denied` | **When denied** | `denied` |
+| Android 12+ | Denied, and Android showed no dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
+| Android 11 and earlier | Answer from `ACCESS_FINE_LOCATION`, as for **Location while using the app** | As for location | As for location | As for location |
 
 - **Limitations**:
   - Wait for `centralManagerDidUpdateState(_:)` with a timeout, then answer from `CBManager.authorization`.
   - A Bluetooth adapter that is turned off isn't a refusal. Answer from the permission only.
   - With `neverForLocation`, Android filters some BLE beacons out of scan results.
   - On Android 11 and earlier, the user sees a location dialog after a flow screen about Bluetooth. Mention location on that screen.
-  - The iOS Simulator reports Bluetooth as allowed without an alert. Test on a device.
 - **Cross-platform notes**: On Android, Bluetooth is in the **Nearby devices** group, which the user turns on and off as one in the settings.
 
 ### Local network \{#local_network\}
 
 - **What the user sees**: On iOS, an alert with your purpose string the first time the app accesses the local network. On Android 17 and later, a runtime permission dialog for apps that target Android 17.
-- **Platforms**: iOS and Android. On Android 16 and earlier, or when the app targets Android 16 or lower, apps access the local network with the `INTERNET` permission and no dialog.
+- **Platforms**: iOS and Android. An app that targets Android 16 or lower, and any app on Android 16 and earlier, accesses the local network with the `INTERNET` permission and no dialog.
 - **iOS setup**: `NSLocalNetworkUsageDescription`. For each Bonjour service type the app browses or advertises, an entry in `NSBonjourServices`, such as `_myservice._tcp`. Multicast and broadcast also need the `com.apple.developer.networking.multicast` entitlement, which Apple must approve. iOS has no request method and no status API: a local network operation, such as a Bonjour browse or a connection to a device on the network, shows the alert.
 - **Android setup**: `ACCESS_LOCAL_NETWORK`, only when the app targets Android 17 (API 37) or higher. If the app targets a lower API level, don't declare or request it. `NEARBY_WIFI_DEVICES` is a different permission.
 
@@ -537,19 +553,20 @@ Answer the request from the result of a local network operation on iOS, and from
 
 | OS | Native result | Answer | Section | `outcome` |
 |:---|:--------------|:-------|:--------|:----------|
-| iOS | A local network operation of the app succeeds | Granted, `granted` | **When allowed** | `granted` |
+| iOS | An outgoing operation that needs local network access succeeds, such as a Bonjour browse or an outgoing TCP connection | Granted, `granted` | **When allowed** | `granted` |
 | iOS | The operation fails or gets no result | Not granted, no status | **After response** | `no_status` |
 | iOS | The app has no local network feature | Not granted, `unsupported` | **After response** | `unsupported` |
-| Android 17+ | Granted | Granted, `granted` | **When allowed** | `granted` |
-| Android 17+ | Denied, Android shows the dialog again | Not granted, `denied` | **When denied** | `denied` |
-| Android 17+ | Denied, Android no longer shows the dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
-| Android 16 and earlier | No dialog: access comes with `INTERNET` | Granted, `granted` | **When allowed** | `granted` |
+| Android | The app targets Android 16 or lower, or the device runs Android 16 or earlier: access comes with `INTERNET` | Granted, `granted` | **When allowed** | `granted` |
+| Android 17+ | The app targets Android 17 or higher, and the permission is granted | Granted, `granted` | **When allowed** | `granted` |
+| Android 17+ | The app targets Android 17 or higher, denied in the dialog | Not granted, `denied` | **When denied** | `denied` |
+| Android 17+ | The app targets Android 17 or higher, denied, and Android showed no dialog | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
 
 - **Limitations**:
   - iOS doesn't report the local network status. iOS can deny the operation that shows the alert before the user answers, so a failed operation doesn't mean a refusal. Put the next step of the flow in **After response**.
   - In the background, iOS denies a local network operation without an alert and doesn't store the result. The alert appears at the next operation in the foreground.
   - The iOS Simulator doesn't apply local network privacy. Test on a device.
-  - On Android 17, `ACCESS_LOCAL_NETWORK` is in the **Nearby devices** group. If the user granted another permission of the group, such as Bluetooth, Android shows no dialog for the local network.
+  - On Android 17, `ACCESS_LOCAL_NETWORK` is in the **Nearby devices** group. If the user granted another permission of the group, such as Bluetooth, Android shows no dialog for the local network. Android can also let the app ask again after an earlier refusal.
+  - On Android 17, system pickers, such as `NsdManager` with `FLAG_SHOW_PICKER` and the Output Switcher, give the app access to the device that the user picks without this permission. See [Local network permission](https://developer.android.com/privacy-and-security/local-network-permission).
 - **Cross-platform notes**: Only Android reports a refusal, so a flow that also runs on iOS needs the next step in **After response**.
 
 ### HomeKit \{#homekit\}
@@ -559,23 +576,23 @@ Answer the request from the result of a local network operation on iOS, and from
 - **iOS setup**: The HomeKit capability, and `NSHomeKitUsageDescription`. Without the key, the app crashes the first time it uses HomeKit. iOS has no request method: creating an `HMHomeManager` shows the alert. The status arrives in `homeManager(_:didUpdate:)`, and `HMHomeManager.authorizationStatus` returns it. Keep one `HMHomeManager` for the life of the app.
 - **Android setup**: None: answer `unsupported` without a dialog.
 
-Answer the request from the HomeKit authorization status:
+The HomeKit status is a set of flags. Answer the request from them:
 
 | OS | Native result | Answer | Section | `outcome` |
 |:---|:--------------|:-------|:--------|:----------|
 | iOS | `.authorized` is set | Granted, `granted` | **When allowed** | `granted` |
 | iOS | `.determined` without `.authorized`, after the alert | Not granted, `denied` | **When denied** | `denied` |
 | iOS | `.determined` without `.authorized`, before the request | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
-| iOS | `.restricted` is set | Not granted, `restricted` | **When denied** | `restricted` |
+| iOS | `.determined` isn't set when the timeout ends | Not granted, no status | **After response** | `no_status` |
 | Android | Any request | Not granted, `unsupported` | **After response** | `unsupported` |
 
-- **Limitations**: Wait for `homeManager(_:didUpdate:)` with a timeout, then answer from `authorizationStatus`.
+- **Limitations**: Wait for `homeManager(_:didUpdate:)` with a timeout, then answer from `authorizationStatus`. Apple defines the `.restricted` flag as "The app doesn't have access to home data", not as a device policy, so don't pass `restricted` for it.
 
 ### Focus status \{#focus_status\}
 
 - **What the user sees**: On iOS, an alert with your purpose string that asks to share the Focus status.
 - **Platforms**: iOS only. Android has no such permission: answer `unsupported`, and the flow runs **After response**.
-- **iOS setup**: `NSFocusStatusUsageDescription`. Without it, the app crashes when it requests the permission. To read the Focus status after the user allows it, the app also needs the Communication Notifications capability. Request the permission with `INFocusStatusCenter.default.requestAuthorization()`.
+- **iOS setup**: `NSFocusStatusUsageDescription`: add it before the app uses `INFocusStatusCenter`. Request the permission with `INFocusStatusCenter.default.requestAuthorization()`. To read the Focus status after the user allows it, the app also needs notification authorization and the Communication Notifications capability.
 - **Android setup**: None: answer `unsupported` without a dialog. Android apps read the Do Not Disturb mode without a permission.
 
 Answer the request from the Focus status authorization status:
@@ -584,6 +601,7 @@ Answer the request from the Focus status authorization status:
 |:---|:--------------|:-------|:--------|:----------|
 | iOS | `.notDetermined`, then the user allows | Granted, `granted` | **When allowed** | `granted` |
 | iOS | `.notDetermined`, then the user declines | Not granted, `denied` | **When denied** | `denied` |
+| iOS | `.notDetermined` after the request: the user chose neither | Not granted, no status | **After response** | `no_status` |
 | iOS | `.denied` before the request | Not granted, `permanently_denied` | **When denied** | `permanently_denied` |
 | iOS | `.restricted` | Not granted, `restricted` | **When denied** | `restricted` |
 | iOS | `.authorized` | Granted, `granted` | **When allowed** | `granted` |
@@ -593,7 +611,7 @@ Answer the request from the Focus status authorization status:
 
 - **What the user sees**: On iOS, an alert with your purpose string that asks to use Siri with the app.
 - **Platforms**: iOS only. Android has no such permission: answer `unsupported`, and the flow runs **After response**.
-- **iOS setup**: The Siri capability, and `NSSiriUsageDescription`. Request the permission with `INPreferences.requestSiriAuthorization(_:)`. An app without the Siri capability crashes on any call to `INPreferences`, including a read of the status. In such an app, answer `unsupported` without a call to `INPreferences`.
+- **iOS setup**: The Siri capability, and `NSSiriUsageDescription`. Request the permission with `INPreferences.requestSiriAuthorization(_:)`. Apple requires the Siri capability for the authorization to succeed. In an app without the capability, answer `unsupported` without a call to `INPreferences`.
 - **Android setup**: None: answer `unsupported` without a dialog.
 
 Answer the request from the Siri authorization status:
@@ -607,7 +625,9 @@ Answer the request from the Siri authorization status:
 | iOS | `.authorized` | Granted, `granted` | **When allowed** | `granted` |
 | Android | Any request | Not granted, `unsupported` | **After response** | `unsupported` |
 
-- **Limitations**: Siri or Maps can ask the user for this permission on the app's behalf, the first time the user uses one of the app's intents. The status can then be decided before the flow asks.
+- **Limitations**:
+  - An app that only supports actions in the Shortcuts app doesn't need this permission.
+  - Siri or Maps can ask the user for this permission on the app's behalf, the first time the user uses one of the app's intents. The status can then be decided before the flow asks.
 
 ## Analytics events
 

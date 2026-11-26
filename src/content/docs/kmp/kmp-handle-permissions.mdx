@@ -13,7 +13,7 @@ You need:
 - **Adapty Kotlin Multiplatform SDK 4.1.0 or later**: Version 4.1.0 is the first stable release with `AdaptyUISystemRequestsHandler`.
 - **A flow with the Request permission action**: In the Flow & Paywall Builder, add the **Request permission** action to an element's **On Tap** or **On Screen Appear** trigger. In the action, select the permission in the **Permission** field, and add the actions to run after the user answers to its outcome sections, such as **Navigate Next** in **After response**. For the action settings, see [Request permission](onboarding-actions#request-permission).
 - **The declarations of the permissions that your handler requests**: A purpose string in `Info.plist` on iOS, and a permission in the Android manifest. See [Declare the permissions](#declare-the-permissions).
-- **For push notifications on Android, `targetSdk` 33 or higher**: Android 13 and later show the notification permission dialog only to apps that target Android 13 or later.
+- **For push notifications on Android, `targetSdk` 33 or higher**: Only apps that target Android 13 or later choose when the notification permission dialog appears.
 
 ## How the flow requests a permission
 
@@ -201,22 +201,23 @@ private suspend fun requestAndroidPermission(activity: ComponentActivity, permis
 
 | Value | moko-permissions | Limits |
 |:------|:-----------------|:-------|
-| `push` | `Permission.REMOTE_NOTIFICATION` | On iOS, it reports provisional authorization as granted, so your app can't pass `provisional`. On Android 12 and earlier, it shows no dialog. |
+| `push` | `Permission.REMOTE_NOTIFICATION` | On iOS, it reports provisional authorization as granted, so your app can't pass `provisional`. On Android 12 and earlier, `providePermission()` always throws `RequestCanceledException`: read `getPermissionState()` there instead. |
 | `camera` | `Permission.CAMERA` | On iOS, a restricted camera throws `IllegalStateException`. |
 | `microphone` | `Permission.RECORD_AUDIO` | On iOS, a restricted microphone throws `IllegalStateException`. |
-| `location_when_use` | `Permission.LOCATION` | On Android 12 and later, it needs both precise and approximate location, so a user who chooses approximate location gets a refusal exception. |
+| `location_when_use` | `Permission.LOCATION` | On Android 12 and later, it needs both precise and approximate location, so a user who chooses approximate location gets a refusal exception. `Permission.COARSE_LOCATION` accepts approximate location. |
 | `location_always` | `Permission.BACKGROUND_LOCATION` | On iOS, it throws `DeniedException` without a dialog when location while using the app is already granted. On Android 11 and later, it requests foreground and background location together, and Android grants neither. Use your own code for this value. |
-| `photos` | `Permission.GALLERY` | On iOS, limited or restricted access throws `IllegalStateException`. On Android 13 and later, it requests images and videos, and needs both. |
-| `contacts` | `Permission.CONTACTS` | On iOS 18 and later, it reports limited access as granted. On Android, it also requests `WRITE_CONTACTS`. |
-| `bluetooth` | `Permission.BLUETOOTH_CONNECT` | On iOS, it throws `DeniedException` when Bluetooth is turned off, and reports a restricted permission as granted. |
+| `photos` | `Permission.GALLERY` | On iOS, it reports limited access as granted, so your app can't pass `limited`, and restricted access throws `IllegalStateException`. On Android 13 and later, it requests images and videos, and needs both. |
+| `contacts` | `Permission.CONTACTS` | On iOS 18 and later, it reports limited access as granted. On Android, it also requests `WRITE_CONTACTS`: `Permission.READ_CONTACTS` requests only `READ_CONTACTS`. |
+| `bluetooth` | `Permission.BLUETOOTH_CONNECT` | On iOS, it throws `DeniedException` when Bluetooth is turned off. `getPermissionState()` reports a restricted permission as granted, while `providePermission()` throws `DeniedAlwaysException` for it. |
 | `motion` | `Permission.MOTION` | Don't use it for the flow. On iOS, it returns before the user answers. On Android, it also requests `BODY_SENSORS`, and on Android 10 and 11 it requests only `BODY_SENSORS`. |
 
 Map the results of moko-permissions to the status:
 
 - **Before the request**: Read `getPermissionState()`, so that you can tell a new refusal from an earlier one.
-- **On iOS**: `DeniedAlwaysException` after the state `NotDetermined` means that the user declined the dialog: pass `denied`. After the state `DeniedAlways`, iOS showed no dialog: pass `permanently_denied`.
+- **On iOS**: `DeniedAlwaysException` after the state `NotDetermined` means that the user declined the dialog: pass `denied`. After the state `DeniedAlways`, iOS showed no dialog: pass `permanently_denied`. `DeniedException` isn't an answer from the user, for example when Bluetooth is turned off: answer without a status.
 - **On Android**: Pass `denied` for `DeniedException`, and `permanently_denied` for `DeniedAlwaysException`. For `RequestCanceledException`, answer without a status.
 - **For `IllegalStateException`**: Catch it, and answer without a status. moko-permissions also throws it when you request a permission before you bind its `PermissionsController` to an activity.
+- **Binding on Android**: Bind the `PermissionsController` to the activity that shows the flow.
 
 moko-permissions has no `restricted`, `limited`, or `provisional` result. To pass these statuses, use your own `actual` code.
 
@@ -251,7 +252,7 @@ AdaptyUI.setSystemRequestsHandler(MySystemRequestsHandler())
 
 ## Test the permission request
 
-iOS shows each permission dialog only once per app install. Android stops showing a permission dialog after the user allows the permission or denies it twice. To see the dialog again while you test the flow, delete the app from the device and install it again. Then open the flow and reach the **Request permission** action. If the screen stays and no dialog appears, the flow got no answer: make sure that your app registers the handler before it presents the flow. If the flow moves on without a dialog, make sure that the app declares the permission on both platforms. For notifications on Android, the app must also target Android 13 or later.
+iOS shows most permission dialogs only once per app install. Android stops showing a permission dialog after the user allows the permission or denies it twice. To see the dialog again while you test the flow, delete the app from the device and install it again. Then open the flow and reach the **Request permission** action. If the screen stays and no dialog appears, the flow got no answer: make sure that your app registers the handler before it presents the flow. If the flow moves on without a dialog, make sure that the app declares the permission on both platforms. For notifications on Android, the app must also target Android 13 or later.
 
 To see how users answer permission requests, read the flow's analytics events in the `flowViewDidReceiveAnalyticEvent` method of your flows events observer. For details, see [Handle flow & paywall events](kmp-handling-events).
 
