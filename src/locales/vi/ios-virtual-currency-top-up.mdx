@@ -228,9 +228,46 @@ struct OutOfEnergyResolver: AdaptyUICustomElementsResolver {
 }
 ```
 
-### Mở flow hết năng lượng từ code ứng dụng của bạn \{#open-the-out-of-energy-flow-from-your-app-code\}
+### Mở flow hết năng lượng từ code của ứng dụng \{#open-the-out-of-energy-flow-from-your-app-code\}
 
-Khi người chơi hết năng lượng, hãy mở flow hết năng lượng bằng hàm sau. Hàm này sẽ hỏi backend của bạn về số dư trước tiên, để người chơi thấy được khi flow mở ra. Sau đó hàm gắn `OutOfEnergyResolver` vào flow và giữ controller của flow trong `outOfEnergyFlow`. Với tham chiếu này, `spendDiamonds` có thể đóng flow lại:
+Khi người chơi hết năng lượng, hãy mở flow hết năng lượng bằng hàm sau. Hàm này trước tiên sẽ hỏi backend của bạn về số dư, để người chơi thấy được khi flow mở ra. Sau đó hàm gắn `OutOfEnergyResolver` vào flow và giữ controller của flow trong `outOfEnergyFlow`. Với tham chiếu này, `spendDiamonds` có thể đóng flow lại:
+
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+```swift showLineNumbers title="Swift"
+// call when a player runs out of energy
+func openOutOfEnergyFlow() async {
+    // the balance that players see when the flow opens; without it, players see a dash
+    if let available = try? await GameBackend.shared.diamondBalance() {
+        diamondWallet.balance = available
+    }
+    do {
+        let flow = try await Adapty.getFlow(placementId: "out_of_energy")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            preferredLocales: Locale.preferredLanguages,
+            customElementsResolver: OutOfEnergyResolver(
+                spend: { [weak self] option in
+                    await self?.spendDiamonds(on: option) ?? false
+                },
+                appWideResolver: customElementsResolver // the instance that you set app-wide
+            )
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        outOfEnergyFlow = flowController
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```swift showLineNumbers title="Swift"
 // call when a player runs out of energy
@@ -262,7 +299,10 @@ func openOutOfEnergyFlow() async {
 }
 ```
 
-Là delegate của flow hết năng lượng, view controller cũng phải triển khai các [phương thức delegate](ios-handling-events#handling-events-in-uikit) cho việc mua hàng và khôi phục. Đối với `didFinishPurchase`, sử dụng code từ [bước 4](#open-the-out-of-energy-flow-again-after-a-purchase).
+</TabItem>
+</Tabs>
+
+Là delegate của flow hết năng lượng, view controller cũng phải implement các [phương thức delegate](ios-handling-events#handling-events-in-uikit) để xử lý mua hàng và khôi phục. Đối với `didFinishPurchase`, sử dụng code từ [bước 4](#open-the-out-of-energy-flow-again-after-a-purchase).
 
 Trong SwiftUI, gắn `OutOfEnergyResolver` khi bạn tải cấu hình flow. Trong closure `spend` của resolver, gọi phương thức spend của bạn. Hiển thị cấu hình flow bằng modifier `.flow`, và sử dụng các closure của nó thay vì các phương thức delegate. Các closure không nhận view controller. Để đóng flow, đặt `isPresented` thành `false`.
 
@@ -282,9 +322,40 @@ Trong SwiftUI, gắn `OutOfEnergyResolver` khi bạn tải cấu hình flow. Tro
 
 Sau bước này, những người chơi không có đủ kim cương có thể mua thêm trong flow nạp tiền, rồi tiêu chúng. Trong hướng dẫn này, một view controller đóng vai trò delegate của cả hai flow. Để phân biệt các flow trong phương thức delegate, hãy so sánh thuộc tính `controller.flowPlacementId` với placement ID của từng flow. Trong SwiftUI, hãy hiển thị flow nạp tiền bằng modifier `.flow` thứ hai, và mở flow này từ closure `didDisappear` của flow kia.
 
-### Mở flow nạp tiền khi người chơi không đủ kim cương \{#open-the-top-up-flow-when-a-player-doesnt-have-enough-diamonds\}
+### Mở flow nạp kim cương khi người chơi không đủ kim cương \{#open-the-top-up-flow-when-a-player-doesnt-have-enough-diamonds\}
 
-Hàm sau đây truyền số kim cương còn thiếu vào thẻ `diamonds_needed`, và mở flow nạp tiền. Một view controller chỉ hiển thị một flow tại một thời điểm, vì vậy hàm sẽ đóng flow hết năng lượng trước, rồi mở flow nạp tiền:
+Hàm sau truyền số kim cương còn thiếu vào tag `diamonds_needed` và mở flow nạp kim cương. Vì một view controller chỉ hiển thị một flow tại một thời điểm, hàm này sẽ đóng flow hết năng lượng trước, rồi mới mở flow nạp kim cương:
+
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+```swift showLineNumbers title="Swift"
+func openTopUpFlow(diamondsNeeded: Int) async {
+    // with no value, players see the Initial value of the tag
+    let tags = diamondsNeeded > 0 ? ["diamonds_needed": diamondsNeeded.formatted()] : [:]
+    do {
+        let flow = try await Adapty.getFlow(placementId: "out_of_diamonds")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            preferredLocales: Locale.preferredLanguages,
+            tagResolver: tags
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        // a view controller presents one flow at a time
+        outOfEnergyFlow?.dismiss(animated: true) {
+            self.present(flowController, animated: true)
+        }
+    } catch {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```swift showLineNumbers title="Swift"
 func openTopUpFlow(diamondsNeeded: Int) async {
@@ -309,6 +380,9 @@ func openTopUpFlow(diamondsNeeded: Int) async {
     }
 }
 ```
+
+</TabItem>
+</Tabs>
 
 ### Mở lại flow hết năng lượng sau khi mua hàng \{#open-the-out-of-energy-flow-again-after-a-purchase\}
 

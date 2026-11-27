@@ -14,13 +14,37 @@ Un [tag personnalisé](flow-custom-tags) est une variable personnalisée dont la
 
 <FlowCustomTagsAddToFlow />
 
-## Transmettre des valeurs de tags personnalisés \{#pass-custom-tag-values\}
+## Passer des valeurs de tags personnalisés \{#pass-custom-tag-values\}
 
-Transmettez les valeurs de votre application au paramètre `tagResolver` de `getFlowConfiguration`, sous forme de dictionnaire `[String: String]` :
+Passez les valeurs de votre application au paramètre `tagResolver` de `getFlowConfiguration`, sous forme de dictionnaire `[String: String]` :
 
 - Chaque clé correspond au nom complet d'un tag personnalisé, par exemple `user.streak`.
-- Chaque valeur est la chaîne affichée à l'utilisateur à la place du tag.
-- Chaque valeur doit être lisible par un humain, par exemple « 1 250 » et non « 1250.0 ». Adapty ne la formate ni ne la traduit.
+- Chaque valeur est la chaîne que les utilisateurs voient à la place du tag.
+- Chaque valeur doit être lisible par un humain, comme "1 250", et non "1250.0". Adapty ne la formate ni ne la traduit.
+
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 ou ultérieur" default>
+
+```swift showLineNumbers title="Swift"
+let customTags = [
+    "username": "DragonSlayer42",
+    "coins": "1,250",
+]
+
+do {
+    let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+        forFlow: flow,
+        preferredLocales: Locale.preferredLanguages,
+        tagResolver: customTags
+    )
+    // present the flow
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```swift showLineNumbers title="Swift"
 let customTags = [
@@ -38,6 +62,9 @@ do {
     // handle the error
 }
 ```
+
+</TabItem>
+</Tabs>
 
 Le modificateur SwiftUI [`.flow` et `AdaptyFlowView`](ios-present-paywalls#present-flows-and-paywalls-in-swiftui) ainsi que le [contrôleur de flow UIKit](ios-present-paywalls#present-flows-and-paywalls-in-uikit) n'ont pas de paramètre pour les valeurs de tags personnalisés. Ils affichent les valeurs issues de la configuration du flow que vous leur fournissez.
 
@@ -65,7 +92,77 @@ Pour afficher la projection de poids de l'utilisateur sous forme de graphique, c
 
 Collectez le poids et la taille à partir des événements `flow_user_input` du flow d'onboarding, comme décrit dans [Traiter les données des flows](ios-flow-input). Pour savoir que l'utilisateur a atteint le dernier écran, surveillez un événement `flow_screen_showed` avec `is_last_screen` défini à `true`, comme décrit dans [Suivre les affichages d'écrans du flow](ios-flow-screen-views). Quand l'utilisateur ferme le flow d'onboarding après cet écran, calculez l'IMC. Récupérez ensuite la configuration du flow du paywall et transmettez l'IMC pour la balise personnalisée `bmi`.
 
-Le code suivant est pour UIKit. Il implémente les méthodes `AdaptyFlowControllerDelegate` sur un seul contrôleur de vue, qui est le délégué à la fois du contrôleur de flow d'onboarding et du contrôleur de paywall. Le contrôleur de vue doit également implémenter les méthodes d'achat et de restauration du délégué, que cet exemple ne détaille pas. Pour les consulter, rendez-vous sur [Présenter les flows et les paywalls dans UIKit](ios-present-paywalls#present-flows-and-paywalls-in-uikit).
+Le code suivant concerne UIKit. Il implémente les méthodes `AdaptyFlowControllerDelegate` sur un seul contrôleur de vue, qui est le délégué à la fois du contrôleur de flow onboarding et du contrôleur du paywall. Le contrôleur de vue doit également implémenter les méthodes d'achat et de restauration du délégué, que cet exemple ne montre pas. Pour les consulter, rendez-vous sur [Présenter les flows et paywalls dans UIKit](ios-present-paywalls#present-flows-and-paywalls-in-uikit).
+
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 ou version ultérieure" default>
+
+```swift showLineNumbers title="Swift"
+private var bodyAnswers: [String: String] = [:]
+private var reachedLastScreen = false
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveAnalyticEvent name: String,
+    params: [String: any Sendable]
+) {
+    if name == "flow_screen_showed", params["is_last_screen"] as? Bool == true {
+        reachedLastScreen = true
+        return
+    }
+    guard name == "flow_user_input",
+          let elementId = params["element_id"] as? String,
+          let value = params["value"] as? String
+    else { return }
+
+    bodyAnswers[elementId] = value
+}
+
+func flowControllerDidDisappear(_ controller: AdaptyFlowController) {
+    // This delegate receives events from both flows. Reset `bodyAnswers` and
+    // `reachedLastScreen` whenever a flow disappears, so that the paywall
+    // doesn't open again when the user closes it.
+    let answers = bodyAnswers
+    let finished = reachedLastScreen
+    bodyAnswers.removeAll()
+    reachedLastScreen = false
+
+    // Number inputs send their values as strings.
+    guard finished,
+          let weight = answers["weight"].flatMap({ Double($0) }),
+          let height = answers["height"].flatMap({ Double($0) }),
+          height > 0
+    else { return }
+
+    let heightInMeters = height / 100
+    let bmi = weight / (heightInMeters * heightInMeters)
+
+    Task {
+        await showBMIPaywall(bmi: bmi.formatted(.number.precision(.fractionLength(1))))
+    }
+}
+
+func showBMIPaywall(bmi: String) async {
+    do {
+        let flow = try await Adapty.getFlow(placementId: "bmi_paywall")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            preferredLocales: Locale.preferredLanguages,
+            tagResolver: ["bmi": bmi]
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```swift showLineNumbers title="Swift"
 private var bodyAnswers: [String: String] = [:]
@@ -130,12 +227,15 @@ func showBMIPaywall(bmi: String) async {
 }
 ```
 
+</TabItem>
+</Tabs>
+
 `formatted` utilise le séparateur décimal de la locale de l'utilisateur : « 22.7 » en anglais, « 22,7 » en allemand.
 
 Dans SwiftUI, utilisez les closures du modificateur `.flow` du flow d'onboarding plutôt que les méthodes du délégué :
 
-- `didReceiveAnalyticEvent` : collectez le poids et la taille, et guettez l'événement `flow_screen_showed` du dernier écran.
-- `didDisappear` : si l'utilisateur est arrivé au dernier écran, calculez l'IMC. Récupérez ensuite la configuration du flow du paywall et passez l'IMC pour le custom tag `bmi`. Présentez cette configuration avec un second modificateur `.flow`.
+- `didReceiveAnalyticEvent` : récupérez le poids et la taille, et observez l'événement `flow_screen_showed` du dernier écran.
+- `didDisappear` : si l'utilisateur a atteint le dernier écran, calculez l'IMC. Récupérez ensuite la configuration du flow du paywall, passez l'IMC pour le tag personnalisé `bmi`. Présentez cette configuration avec un second modificateur `.flow`.
 
 ### Enregistrer l'IMC dans le profil de l'utilisateur \{#save-the-bmi-to-the-users-profile\}
 

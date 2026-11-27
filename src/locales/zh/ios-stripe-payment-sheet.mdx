@@ -41,7 +41,37 @@ App Store 要求数字内容和功能必须使用应用内购买（[指南 3.1.1
 3. 在应用中，在加载 flow 之前从后端获取价格。
 4. 在 `getFlowConfiguration` 的 `tagResolver` 参数中传入价格。
 
-以下函数加载带有 Stripe 价格的流程，同时返回流程的 `variationId`，因为您的后端会将此 ID 写入 Stripe 订阅。您可以在[从流程打开 PaymentSheet](#open-paymentsheet-from-the-flow) 中展示该流程。
+以下函数会加载带有 Stripe 价格的流程，同时返回流程的 `variationId`，因为您的后端会将该 ID 写入 Stripe 订阅。您可以在[从流程中打开 PaymentSheet](#open-paymentsheet-from-the-flow) 中展示该流程。
+
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+```swift showLineNumbers title="Swift"
+struct StripeFlow {
+    let configuration: AdaptyUI.FlowConfiguration
+    let variationId: String
+}
+
+@MainActor
+func loadStripeFlow() async throws -> StripeFlow {
+    // If the prices fail to load, the flow shows the tags' initial values
+    let prices = (try? await Backend.fetchPrices()) ?? [:]
+
+    let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
+    let configuration = try await AdaptyUI.getFlowConfiguration(
+        forFlow: flow,
+        preferredLocales: Locale.preferredLanguages,
+        tagResolver: [
+            "stripe_monthly_price": prices["monthly"],
+            "stripe_annual_price": prices["annual"],
+        ].compactMapValues { $0 }
+    )
+    return StripeFlow(configuration: configuration, variationId: flow.variationId)
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```swift showLineNumbers title="Swift"
 struct StripeFlow {
@@ -65,6 +95,9 @@ func loadStripeFlow() async throws -> StripeFlow {
     return StripeFlow(configuration: configuration, variationId: flow.variationId)
 }
 ```
+
+</TabItem>
+</Tabs>
 
 `Backend` 是您后端接口的客户端，来自[在您的后端创建订阅](#create-the-subscription-on-your-backend)。
 

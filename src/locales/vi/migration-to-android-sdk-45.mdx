@@ -1,0 +1,98 @@
+---
+title: "Migrate Adapty Android SDK to v4.5"
+description: "Migrate to Adapty Android SDK v4.5: pass the user's languages to getFlowConfiguration instead of one locale, and check what users see differently."
+metadataTitle: "Migrating to Adapty Android SDK v4.5 | Tài liệu Adapty"
+---
+
+Để cập nhật ứng dụng từ Adapty Android SDK 4.4 lên 4.5, hãy đặt phiên bản `adapty-bom` thành `4.5.0` và áp dụng mọi thay đổi trong hướng dẫn này. Nếu ứng dụng đang dùng phiên bản 4.3 hoặc cũ hơn, hãy thực hiện [các thay đổi v4.4](migration-to-android-sdk-44) trước.
+
+Trong 4.5, `getFlowConfiguration` yêu cầu danh sách ngôn ngữ trong `preferredLocales`, thay vì mã ngôn ngữ tùy chọn trong `locale`. SDK [chọn bản bản địa hóa của flow từ danh sách này](android-localizations-and-locale-codes).
+
+:::warning
+Cập nhật mọi lời gọi `getFlowConfiguration` để truyền [`preferredLocales`](#replace-locale-with-the-users-languages). Sau khi cập nhật, SDK 4.5 có thể hiển thị cho người dùng [bản bản địa hóa khác của cùng một flow](#what-users-see-after-the-update) so với SDK 4.4.
+:::
+
+## Tham khảo nhanh \{#quick-reference\}
+
+| Trước | Sau |
+|---|---|
+| `getFlowConfiguration(flow, locale = "fr")` | `getFlowConfiguration(flow, preferredLocales)`, với `preferredLocales` lấy từ `LocaleListCompat.getAdjustedDefault()` |
+| `locale`: tùy chọn | `preferredLocales`: bắt buộc |
+| Không có `locale`: người dùng thấy `en`, dù ngôn ngữ mặc định của flow là ngôn ngữ khác. Nếu flow không có `en`, người dùng thấy ngôn ngữ mặc định | `preferredLocales = emptyList()`: tất cả người dùng đều thấy flow theo ngôn ngữ mặc định của nó, bất kể ngôn ngữ trên thiết bị |
+| Không có tham số strategy | `localizationStrategy`, tùy chọn. Mặc định là `AdaptyUiLocalizationStrategy.Auto`, phù hợp với hầu hết các ứng dụng. |
+
+## Thay thế `locale` bằng ngôn ngữ của người dùng \{#replace-locale-with-the-users-languages\}
+
+Trong 4.5, `getFlowConfiguration` nhận danh sách `preferredLocales` thay vì `locale`. Tham số `preferredLocales` là bắt buộc. Với lệnh gọi Kotlin dùng `locale` hoặc thiếu cả hai tham số, Android Studio sẽ báo lỗi với thông báo:
+
+```text
+Pass preferredLocales: LocaleListCompat.getAdjustedDefault().toLanguageTags().split(",") to show the flow in the app's languages, or emptyList() to use the flow's default localization.
+```
+
+Trong Java, lệnh gọi với `locale` hoặc không có tham số nào vẫn biên dịch được, kèm cảnh báo deprecation. Với lệnh gọi Java không có `locale`, người dùng sẽ thấy flow theo ngôn ngữ mặc định của nó thay vì `en`.
+
+Cập nhật mọi lệnh gọi `getFlowConfiguration`, trong cả Kotlin lẫn Java. Tham số `locale` của `getOnboarding` không thay đổi.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```diff showLineNumbers
+  AdaptyUI.getFlowConfiguration(
+      flow,
+-     locale = "fr",
++     preferredLocales = LocaleListCompat.getAdjustedDefault().toLanguageTags().split(","),
+  ) { result ->
+      // handle the result
+  }
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```diff showLineNumbers
+- AdaptyUI.getFlowConfiguration(flow, "fr", result -> {
++ List<String> preferredLocales =
++     Arrays.asList(LocaleListCompat.getAdjustedDefault().toLanguageTags().split(","));
++ AdaptyUI.getFlowConfiguration(flow, preferredLocales, result -> {
+      // handle the result
+  });
+```
+
+</TabItem>
+</Tabs>
+
+Những gì ứng dụng của bạn đã truyền vào ở bước 4.4 sẽ quyết định những gì cần truyền vào ở bước 4.5:
+
+- Nếu ứng dụng của bạn truyền giá trị từ thiết bị, chẳng hạn như `Locale.getDefault().toLanguageTag()`, hãy thay bằng danh sách từ `LocaleListCompat.getAdjustedDefault()`. Xóa mọi đoạn code chuyển đổi giá trị đó: chữ hoa/thường và ký tự phân cách không quan trọng trong 4.5.
+- Nếu ứng dụng của bạn truyền ngôn ngữ mà người dùng đã chọn trong ứng dụng, hãy đặt nó lên đầu: `listOf(selectedLanguage)`, rồi đến danh sách từ `LocaleListCompat.getAdjustedDefault()`. Khi một flow từ Flow & Paywall Builder không có ngôn ngữ đó, SDK sẽ thử các ngôn ngữ của thiết bị.
+- Nếu ứng dụng của bạn gọi `getFlowConfiguration` mà không có `locale`, hãy thêm `preferredLocales` với danh sách từ `LocaleListCompat.getAdjustedDefault()`.
+
+Để hiển thị flow theo ngôn ngữ của thiết bị, ngay cả khi người dùng đã chọn ngôn ngữ khác cho ứng dụng của bạn, hãy truyền danh sách từ `LocaleManagerCompat.getSystemLocales(context)`. Để so sánh các danh sách, hãy đọc [Truyền ngôn ngữ của người dùng vào SDK](android-localizations-and-locale-codes#pass-the-users-languages-to-the-sdk).
+
+Để hiển thị flow theo ngôn ngữ mặc định cho tất cả người dùng, hãy truyền một danh sách rỗng: `preferredLocales = emptyList()`.
+
+Bạn không cần truyền `localizationStrategy`. Nếu không có tham số này, SDK sẽ dùng `AdaptyUiLocalizationStrategy.Auto`, phù hợp với các flow từ Flow & Paywall Builder và các paywall từ Paywall Builder cũ. Các [chiến lược khác](android-localizations-and-locale-codes#select-a-localization-strategy) thay đổi cách SDK khớp ngôn ngữ.
+
+## Người dùng thấy gì sau khi cập nhật \{#what-users-see-after-the-update\}
+
+Với `localizationStrategy` mặc định, SDK 4.5 có thể hiển thị cho người dùng một bản ngôn ngữ khác của cùng một flow so với SDK 4.4:
+
+| Ứng dụng truyền | Flow có | 4.4 | 4.5 |
+|---|---|---|---|
+| Không có ngôn ngữ: không có `locale` trong 4.4, `emptyList()` trong 4.5 | Bất kỳ locale nào | `en`, nếu flow có; nếu không, dùng locale mặc định | Locale mặc định |
+| Mã có cách viết hoặc dấu phân cách khác, chẳng hạn `pt_BR` | `pt-BR` | Locale mặc định | `pt-BR` |
+| Mã khu vực, chẳng hạn `pt-BR` | Ngôn ngữ không có khu vực, chẳng hạn `pt` | Locale mặc định | `pt` |
+| Mã khu vực ngụ ý script, chẳng hạn `zh-TW` | Script, chẳng hạn `zh-hant` | Locale mặc định | `zh-hant`; trên các paywall từ Paywall Builder cũ, dùng locale mặc định |
+| Nhiều ngôn ngữ, chẳng hạn `fr`, rồi `de` | Ngôn ngữ sau, chẳng hạn `de`, nhưng không phải ngôn ngữ đầu tiên | Locale mặc định | Ngôn ngữ sau; trên các paywall từ Paywall Builder cũ, dùng locale mặc định |
+
+Các phiên bản app dùng SDK 4.0–4.4 vẫn giữ nguyên cơ chế khớp chính xác với các flow cho đến khi người dùng cập nhật app. Chiến lược `Legacy` không khôi phục lại cơ chế khớp chính xác của phiên bản 4.4.
+
+Để xem localization nào đang hiển thị trên thiết bị, hãy đặt [mức độ log](sdk-installation-android#logging) thành `AdaptyLogLevel.VERBOSE`, rồi tìm dòng `getFlowConfiguration` trong Logcat. Để biết quy trình kiểm tra, hãy đọc [Kiểm tra localization nào người dùng thấy](android-localizations-and-locale-codes#test-which-localization-a-user-sees).
+
+## Xem lại các ngôn ngữ của flow \{#review-the-locales-of-your-flows\}
+
+SDK 4.5 hiển thị các flow đã xuất bản của bạn với ngôn ngữ hiện tại. Để hiển thị cho người dùng mỗi flow bằng ngôn ngữ họ đọc được, hãy tuân theo ba quy tắc sau:
+
+- Dịch đầy đủ locale mặc định. Người dùng sẽ thấy locale này khi flow không có ngôn ngữ nào phù hợp với họ. Để xem hoặc thay đổi locale mặc định, đọc [Đặt locale mặc định](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale).
+- Với các ứng dụng sử dụng Adapty SDK từ 4.0 đến 4.4, giữ nguyên mọi mã locale mà chúng truyền vào. Các ứng dụng đó khớp mã theo đúng nghĩa đen.
+- Để phủ sóng nhiều người dùng hơn, hãy thêm [các locale mà 4.5 khớp tốt hơn](android-localizations-and-locale-codes#select-which-locales-to-add-to-a-flow), chẳng hạn như `zh-hans` và `zh-hant` ngoài `zh`.

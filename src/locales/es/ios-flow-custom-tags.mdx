@@ -19,8 +19,32 @@ Un [custom tag](flow-custom-tags) es una variable personalizada con un valor pro
 Pasa los valores de tu app al parámetro `tagResolver` de `getFlowConfiguration`, como un diccionario `[String: String]`:
 
 - Cada clave es el nombre completo de una etiqueta personalizada, como `user.streak`.
-- Cada valor es el texto que verán los usuarios en lugar de la etiqueta.
-- Cada valor debe ser legible para personas, como "1.250", no "1250.0". Adapty no lo formatea ni traduce.
+- Cada valor es el texto que los usuarios ven en lugar de la etiqueta.
+- Cada valor debe ser legible por humanos, como "1.250", no "1250.0". Adapty no lo formatea ni traduce.
+
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 o posterior" default>
+
+```swift showLineNumbers title="Swift"
+let customTags = [
+    "username": "DragonSlayer42",
+    "coins": "1,250",
+]
+
+do {
+    let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+        forFlow: flow,
+        preferredLocales: Locale.preferredLanguages,
+        tagResolver: customTags
+    )
+    // present the flow
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```swift showLineNumbers title="Swift"
 let customTags = [
@@ -38,6 +62,9 @@ do {
     // handle the error
 }
 ```
+
+</TabItem>
+</Tabs>
 
 El modificador SwiftUI [`.flow` y `AdaptyFlowView`](ios-present-paywalls#present-flows-and-paywalls-in-swiftui) y el [controlador de flow](ios-present-paywalls#present-flows-and-paywalls-in-uikit) de UIKit no tienen un parámetro para valores de etiqueta personalizados. Muestran los valores de la configuración del flow que les proporciones.
 
@@ -65,7 +92,77 @@ Para mostrar a los usuarios su peso proyectado en un gráfico, consulta [Mostrar
 
 Recoge el peso y la altura de los eventos `flow_user_input` del flow de onboarding, como se explica en [Procesar datos de flows](ios-flow-input). Para saber que el usuario llegó a la última pantalla, observa el evento `flow_screen_showed` con `is_last_screen` en `true`, como se explica en [Rastrear vistas de pantalla del flow](ios-flow-screen-views). Cuando el usuario cierre el flow de onboarding después de esa pantalla, calcula el IMC. Luego obtén la configuración del flow del paywall y pasa el IMC para la etiqueta personalizada `bmi`.
 
-El siguiente código es para UIKit. Implementa los métodos de `AdaptyFlowControllerDelegate` en un único view controller, que actúa como delegado tanto del controlador del flow de onboarding como del controlador del paywall. El view controller también debe implementar los métodos de compra y restauración del delegado, que este ejemplo omite. Para verlos, consulta [Presentar flows y paywalls en UIKit](ios-present-paywalls#present-flows-and-paywalls-in-uikit).
+El siguiente código es para UIKit. Implementa los métodos `AdaptyFlowControllerDelegate` en un único controlador de vista, que actúa como delegado tanto del controlador del flow de onboarding como del controlador del paywall. El controlador de vista también debe implementar los métodos de compra y restauración del delegado, que en este ejemplo se omiten. Para verlos, consulta [Presenta flows y paywalls en UIKit](ios-present-paywalls#present-flows-and-paywalls-in-uikit).
+
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 o posterior" default>
+
+```swift showLineNumbers title="Swift"
+private var bodyAnswers: [String: String] = [:]
+private var reachedLastScreen = false
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveAnalyticEvent name: String,
+    params: [String: any Sendable]
+) {
+    if name == "flow_screen_showed", params["is_last_screen"] as? Bool == true {
+        reachedLastScreen = true
+        return
+    }
+    guard name == "flow_user_input",
+          let elementId = params["element_id"] as? String,
+          let value = params["value"] as? String
+    else { return }
+
+    bodyAnswers[elementId] = value
+}
+
+func flowControllerDidDisappear(_ controller: AdaptyFlowController) {
+    // This delegate receives events from both flows. Reset `bodyAnswers` and
+    // `reachedLastScreen` whenever a flow disappears, so that the paywall
+    // doesn't open again when the user closes it.
+    let answers = bodyAnswers
+    let finished = reachedLastScreen
+    bodyAnswers.removeAll()
+    reachedLastScreen = false
+
+    // Number inputs send their values as strings.
+    guard finished,
+          let weight = answers["weight"].flatMap({ Double($0) }),
+          let height = answers["height"].flatMap({ Double($0) }),
+          height > 0
+    else { return }
+
+    let heightInMeters = height / 100
+    let bmi = weight / (heightInMeters * heightInMeters)
+
+    Task {
+        await showBMIPaywall(bmi: bmi.formatted(.number.precision(.fractionLength(1))))
+    }
+}
+
+func showBMIPaywall(bmi: String) async {
+    do {
+        let flow = try await Adapty.getFlow(placementId: "bmi_paywall")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            preferredLocales: Locale.preferredLanguages,
+            tagResolver: ["bmi": bmi]
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```swift showLineNumbers title="Swift"
 private var bodyAnswers: [String: String] = [:]
@@ -130,12 +227,15 @@ func showBMIPaywall(bmi: String) async {
 }
 ```
 
-`formatted` usa el separador decimal de la configuración regional del usuario: "22.7" en inglés, "22,7" en alemán.
+</TabItem>
+</Tabs>
 
-En SwiftUI, usa los closures del modificador `.flow` del onboarding en lugar de los métodos del delegado:
+`formatted` utiliza el separador decimal de la configuración regional del usuario: "22.7" en inglés, "22,7" en alemán.
+
+En SwiftUI, usa los closures del modificador `.flow` del flow de onboarding en lugar de los métodos del delegado:
 
 - `didReceiveAnalyticEvent`: Recoge el peso y la altura, y espera el evento `flow_screen_showed` de la última pantalla.
-- `didDisappear`: Si el usuario llegó a la última pantalla, calcula el IMC. Luego obtén la configuración del flow del paywall y pasa el IMC para el tag personalizado `bmi`. Presenta esa configuración con un segundo modificador `.flow`.
+- `didDisappear`: Si el usuario llegó a la última pantalla, calcula el IMC. Luego obtén la configuración de flow del paywall y pasa el IMC para la etiqueta personalizada `bmi`. Presenta esa configuración con un segundo modificador `.flow`.
 
 ### Guardar el IMC en el perfil del usuario \{#save-the-bmi-to-the-users-profile\}
 

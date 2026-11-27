@@ -102,7 +102,7 @@ Flow veya paywall'ı aldıktan sonra, `flow.hasViewConfiguration` ile bir view k
 - **`false`** — placement, Builder arayüzü olmayan özel bir paywall'dır. [Kendiniz oluşturun](present-remote-config-paywalls-android).
 
 :::important
-[Flow'u yayınladığınızdan](builder-save-publish) emin olun. Yayınlanmamış düzenlemeleri olan bir flow **Dirty** (Kirli) durumuna sahiptir ve bu flow'un placement'ı en son yayınlanan sürümü sunmaya devam eder.
+[Flow'u yayınladığınızdan](builder-save-publish) emin olun. Yayınlanmamış düzenlemeleri olan bir flow **Dirty** statüsünde görünür ve bu flow'un placement'ı en son yayınlanan sürümü sunmaya devam eder.
 :::
 
 <Tabs groupId="current-os" queryString>
@@ -110,6 +110,34 @@ Flow veya paywall'ı aldıktan sonra, `flow.hasViewConfiguration` ile bir view k
 <TabItem value="kotlin" label="Kotlin" default>
 
 Görünüm yapılandırmasını yüklemek için `getFlowConfiguration` metodunu kullanın.
+
+<Tabs groupId="android-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+```kotlin showLineNumbers
+if (!flow.hasViewConfiguration) {
+    // use your custom logic
+    return
+}
+
+val preferredLocales = LocaleListCompat.getAdjustedDefault().toLanguageTags().split(",")
+
+AdaptyUI.getFlowConfiguration(flow, preferredLocales, loadTimeout = 10.seconds) { result ->
+    when(result) {
+        is AdaptyResult.Success -> {
+            val flowConfiguration = result.value
+            // use loaded configuration
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```kotlin showLineNumbers
 if (!flow.hasViewConfiguration) {
@@ -130,17 +158,50 @@ AdaptyUI.getFlowConfiguration(flow, loadTimeout = 10.seconds) { result ->
     }
 }
 ```
-| Parametre       | Zorunluluk       | Açıklama                                                  |
+
+</TabItem>
+</Tabs>
+
+| Parametre       | Varlık         | Açıklama                                                     |
 | :-------------- | :------------- | :----------------------------------------------------------- |
-| **flow**        | zorunlu       | `Adapty.getFlow` aracılığıyla elde edilen bir `AdaptyFlow` nesnesi. |
-| **locale**      | isteğe bağlı | Görünümün hangi [flow yerelleştirmesiyle](add-paywall-locale-in-adapty-paywall-builder) render edileceğini belirten tanımlayıcı; `-` ile ayrılmış bir veya iki alt etiket içeren dil kodu olarak beklenir (örn. `en`, `pt-BR`). Belirtilmezse görünüm `en` dilinde, ya da flow'da `en` yoksa flow'un varsayılan yerelleştirmesinde render edilir. Bkz. [Yerelleştirmeler ve yerel ayar kodları](android-localizations-and-locale-codes). |
-| **customLayoutId** | <p>isteğe bağlı</p><p>varsayılan: `null`</p><p>SDK 4.1+</p> | Flow'un düzen yapılandırmasındaki bir düzene ait özel kimlik. Bunu ileterek SDK'nın cihaz türü ve ekran boyutuna göre otomatik olarak seçtiği düzen yerine belirli bir düzeni render edebilirsiniz. Kimlikle eşleşen düzen bulunamazsa çağrı, no-view-configuration hatasıyla başarısız olur. Flow & Paywall Builder henüz özel düzen kimliği atamadığından bu alanı boş bırakın. |
-| **loadTimeout** | varsayılan: 5 sn | Bu değer, metodun zaman aşımını sınırlar. Zaman aşımına ulaşılırsa önbelleğe alınmış veriler veya yerel yedek döndürülür. Arka planda işlem farklı isteklerden oluşabileceğinden, bu metodun zaman aşımı nadir durumlarda `loadTimeout` içinde belirtilenden biraz daha geç gerçekleşebilir. |
+| **flow**        | zorunlu        | `Adapty.getFlow` aracılığıyla elde edilen bir `AdaptyFlow` nesnesi. |
+| **preferredLocales** | <p>zorunlu</p><p>SDK 4.5+</p> | Kullanıcının dilleri, en çok tercih edilenden başlayarak sıralanır; örneğin `LocaleListCompat.getAdjustedDefault()` listesi. SDK bu dilleri sırayla dener ve flow'un sahip olduğu ilk dille eşleşir. Liste boşsa veya eşleşme bulunamazsa kullanıcı flow'u [varsayılan yerel ayarında](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) görür. Eski Paywall Builder'dan gelen paywall'lar için SDK yalnızca en yüksek öncelikli kullanıcı diliyle eşleşir. SDK 4.0–4.4'teki `locale` parametresinin yerini alır. Hangi listeyi geçireceğinizi öğrenmek için bkz. [Kullanıcının dillerini SDK'ya aktarma](android-localizations-and-locale-codes#pass-the-users-languages-to-the-sdk). |
+| **locale**      | <p>isteğe bağlı</p><p>SDK 4.0–4.4</p> | Görünümün hangi [flow yerelleştirmesiyle](add-paywall-locale-in-adapty-paywall-builder) oluşturulacağını belirten tanımlayıcı; `-` ile ayrılmış bir veya iki alt etiket içeren dil kodu olarak beklenir (örn. `en`, `pt-BR`). Belirtilmezse görünüm `en` dilinde; flow'da `en` yoksa flow'un varsayılan yerelleştirmesinde oluşturulur. Bkz. [Yerelleştirmeler ve yerel ayar kodları](android-localizations-and-locale-codes). |
+| **localizationStrategy** | <p>isteğe bağlı</p><p>varsayılan: `AdaptyUiLocalizationStrategy.Auto`</p><p>SDK 4.5+</p> | SDK'nın kullanıcı dillerini flow'un yerel ayarlarıyla nasıl eşleştireceğini belirler. Varsayılan değer çoğu uygulama için uygundur. Diğer değerler için bkz. [Yerelleştirme stratejisi seçme](android-localizations-and-locale-codes#select-a-localization-strategy). |
+| **customLayoutId** | <p>isteğe bağlı</p><p>varsayılan: `null`</p><p>SDK 4.1+</p> | Flow'un düzen yapılandırmasındaki bir düzene ait özel kimlik. SDK'nın cihaz türü ve ekran boyutuna göre otomatik seçtiği düzen yerine belirli bir düzeni oluşturmak için kullanın. Kimlikle eşleşen düzen bulunamazsa çağrı, no-view-configuration hatasıyla başarısız olur. Flow & Paywall Builder henüz özel düzen kimliği atamamaktadır, bu nedenle bu alanı ayarlamayın. |
+| **loadTimeout** | varsayılan: 5 sn | Bu değer, metodun zaman aşımı süresini sınırlar. Zaman aşımına ulaşılırsa önbelleğe alınmış veriler veya yerel yedek döndürülür. Nadir durumlarda bu metod, `loadTimeout` içinde belirtilenden biraz daha geç zaman aşımına uğrayabilir; bunun nedeni işlemin arka planda farklı isteklerden oluşabilmesidir. |
 
 </TabItem>
 <TabItem value="java" label="Java" default>
 
 Görünüm yapılandırmasını yüklemek için `getFlowConfiguration` metodunu kullanın.
+
+<Tabs groupId="android-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+```java showLineNumbers
+if (!flow.hasViewConfiguration()) {
+    // use your custom logic
+    return;
+}
+
+List<String> preferredLocales =
+    Arrays.asList(LocaleListCompat.getAdjustedDefault().toLanguageTags().split(","));
+
+AdaptyUI.getFlowConfiguration(flow, preferredLocales, AdaptyUiLocalizationStrategy.Auto, TimeInterval.seconds(10), result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyUI.FlowConfiguration flowConfiguration =
+          ((AdaptyResult.Success<AdaptyUI.FlowConfiguration>) result).getValue();
+        // use loaded configuration
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```java showLineNumbers
 if (!flow.hasViewConfiguration()) {
@@ -159,12 +220,18 @@ AdaptyUI.getFlowConfiguration(flow, null, TimeInterval.seconds(10), result -> {
     }
 });
 ```
-| Parametre       | Zorunluluk     | Açıklama                                                     |
+
+</TabItem>
+</Tabs>
+
+| Parametre       | Varlık         | Açıklama                                                     |
 | :-------------- | :------------- | :----------------------------------------------------------- |
 | **flow**        | zorunlu        | `Adapty.getFlow` aracılığıyla elde edilen bir `AdaptyFlow` nesnesi. |
-| **locale**      | isteğe bağlı | Görünümün hangi [flow yerelleştirmesiyle](add-paywall-locale-in-adapty-paywall-builder) render edileceğini belirleyen tanımlayıcı; `-` ile ayrılmış bir veya iki alt etiket içeren dil kodu olarak beklenir (örn. `en`, `pt-BR`). Belirtilmezse görünüm `en` dilinde render edilir; flow'un `en` yerelleştirmesi yoksa flow'un varsayılan yerelleştirmesi kullanılır. Bkz. [Yerelleştirmeler ve yerel ayar kodları](android-localizations-and-locale-codes). |
-| **customLayoutId** | <p>isteğe bağlı</p><p>varsayılan: `null`</p><p>SDK 4.1+</p> | Flow'un düzen yapılandırmasındaki bir düzene ait özel kimlik. Bunu ileterek SDK'nın cihaz tipi ve ekran boyutuna göre otomatik seçtiği düzen yerine belirttiğiniz düzenin render edilmesini sağlayabilirsiniz. Kimlikle eşleşen düzen bulunamazsa çağrı, no-view-configuration hatasıyla başarısız olur. Flow & Paywall Builder henüz özel düzen kimliği atamadığından bu parametreyi ayarlamadan bırakın. |
-| **loadTimeout** | varsayılan: 5 sn | Bu değer, metodun zaman aşımını sınırlandırır. Zaman aşımına ulaşıldığında önbelleğe alınmış veriler veya yerel yedek döndürülür. Nadir durumlarda bu metod, `loadTimeout` içinde belirtilenden biraz daha geç zaman aşımına uğrayabilir; bunun nedeni işlemin arka planda farklı isteklerden oluşuyor olabilmesidir. |
+| **preferredLocales** | <p>zorunlu</p><p>SDK 4.5+</p> | Kullanıcının dilleri, en çok tercih edilenden başlayarak; örneğin `LocaleListCompat.getAdjustedDefault()` listesi gibi. SDK bu dilleri sırayla dener ve flow'un sahip olduğu ilk eşleşmeyi kullanır. Liste boşsa veya eşleşme yoksa kullanıcı flow'u [varsayılan yerel ayarında](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) görür. Eski Paywall Builder'dan gelen paywalllar için SDK yalnızca en yüksek öncelikli kullanıcı diliyle eşleşme yapar. SDK 4.0–4.4'teki `locale` parametresinin yerini almıştır. Hangi listeyi geçireceğinizi öğrenmek için [Kullanıcının dillerini SDK'ya geçirme](android-localizations-and-locale-codes#pass-the-users-languages-to-the-sdk) konusunu okuyun. |
+| **locale**      | <p>isteğe bağlı</p><p>SDK 4.0–4.4</p> | Görünümü oluşturmak için kullanılacak [flow yerelleştirmesinin](add-paywall-locale-in-adapty-paywall-builder) tanımlayıcısı; `-` ile ayrılmış bir veya iki alt etiket içeren dil kodu olarak beklenir (örn. `en`, `pt-BR`). Belirtilmezse görünüm `en` dilinde, flow'da `en` yoksa flow'un varsayılan yerelleştirmesinde oluşturulur. Bkz. [Yerelleştirmeler ve yerel ayar kodları](android-localizations-and-locale-codes). |
+| **localizationStrategy** | <p>isteğe bağlı</p><p>varsayılan: `AdaptyUiLocalizationStrategy.Auto`</p><p>SDK 4.5+</p> | SDK'nın kullanıcının dillerini flow'un yerel ayarlarıyla nasıl eşleştireceğini belirler. Varsayılan değer çoğu uygulama için uygundur. Diğer değerler için [Yerelleştirme stratejisi seçme](android-localizations-and-locale-codes#select-a-localization-strategy) konusunu okuyun. |
+| **customLayoutId** | <p>isteğe bağlı</p><p>varsayılan: `null`</p><p>SDK 4.1+</p> | Flow'un düzen yapılandırmasındaki bir düzene ait özel kimlik. SDK'nın cihaz türü ve ekran boyutuna göre otomatik seçmek yerine belirtilen düzeni oluşturması için bu değeri geçirin. Kimlikle eşleşen düzen bulunamazsa çağrı, no-view-configuration hatasıyla başarısız olur. Flow & Paywall Builder henüz özel düzen kimliği atamadığından bu değeri ayarlamayın. |
+| **loadTimeout** | varsayılan: 5 sn | Bu değer, metodun zaman aşımını sınırlar. Zaman aşımına ulaşılırsa önbelleğe alınmış veriler veya yerel yedek döndürülür. Arka planda farklı isteklerden oluşabileceğinden bu metodun zaman zaman `loadTimeout`'ta belirtilenden biraz daha geç zaman aşımına uğrayabileceğini unutmayın. |
 
 </TabItem>
 

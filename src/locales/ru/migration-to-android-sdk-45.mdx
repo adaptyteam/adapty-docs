@@ -1,0 +1,98 @@
+---
+title: "Миграция Adapty Android SDK до v4.5"
+description: "Миграция на Adapty Android SDK v4.5: передайте список языков пользователя в getFlowConfiguration вместо одной локали и проверьте, что видят пользователи."
+metadataTitle: "Миграция на Adapty Android SDK v4.5 | Документация Adapty"
+---
+
+Чтобы обновить приложение с Adapty Android SDK 4.4 до 4.5, установите версию `adapty-bom` на `4.5.0` и примените все изменения из этого гайда. Если вы используете версию 4.3 или ниже, сначала выполните [изменения для v4.4](migration-to-android-sdk-44).
+
+В версии 4.5 метод `getFlowConfiguration` принимает список языков в `preferredLocales` вместо необязательного кода языка в `locale`. SDK [выбирает локализацию флоу из этого списка](android-localizations-and-locale-codes).
+
+:::warning
+Обновите каждый вызов `getFlowConfiguration`, чтобы передавать [`preferredLocales`](#replace-locale-with-the-users-languages). После обновления SDK 4.5 может показывать пользователям [другую локализацию того же флоу](#what-users-see-after-the-update), чем SDK 4.4.
+:::
+
+## Краткий справочник \{#quick-reference\}
+
+| До | После |
+|---|---|
+| `getFlowConfiguration(flow, locale = "fr")` | `getFlowConfiguration(flow, preferredLocales)`, где `preferredLocales` из `LocaleListCompat.getAdjustedDefault()` |
+| `locale`: необязательный | `preferredLocales`: обязательный |
+| Без `locale`: пользователи видят `en`, даже если язык флоу по умолчанию другой. Если `en` в флоу нет — пользователи видят локаль по умолчанию | `preferredLocales = emptyList()`: все пользователи видят флоу на его локали по умолчанию, независимо от языка устройства |
+| Параметр стратегии отсутствует | `localizationStrategy`, необязательный. Значение по умолчанию, `AdaptyUiLocalizationStrategy.Auto`, подходит большинству приложений. |
+
+## Замените `locale` на языки пользователя \{#replace-locale-with-the-users-languages\}
+
+В версии 4.5 функция `getFlowConfiguration` принимает список `preferredLocales` вместо `locale`. Параметр `preferredLocales` обязателен. Если в Kotlin-вызове используется `locale` или ни один из параметров не передан, Android Studio выведет ошибку со следующим сообщением:
+
+```text
+Pass preferredLocales: LocaleListCompat.getAdjustedDefault().toLanguageTags().split(",") to show the flow in the app's languages, or emptyList() to use the flow's default localization.
+```
+
+В Java вызов с `locale` или без обоих параметров всё равно компилируется, с предупреждением об устаревании. При вызове Java без `locale` пользователь видит флоу в локале по умолчанию, а не в `en`.
+
+Обновите каждый вызов `getFlowConfiguration` в Kotlin и Java. Параметр `locale` у `getOnboarding` не меняется.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```diff showLineNumbers
+  AdaptyUI.getFlowConfiguration(
+      flow,
+-     locale = "fr",
++     preferredLocales = LocaleListCompat.getAdjustedDefault().toLanguageTags().split(","),
+  ) { result ->
+      // handle the result
+  }
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```diff showLineNumbers
+- AdaptyUI.getFlowConfiguration(flow, "fr", result -> {
++ List<String> preferredLocales =
++     Arrays.asList(LocaleListCompat.getAdjustedDefault().toLanguageTags().split(","));
++ AdaptyUI.getFlowConfiguration(flow, preferredLocales, result -> {
+      // handle the result
+  });
+```
+
+</TabItem>
+</Tabs>
+
+То, что ваше приложение передавало в версии 4.4, определяет, что нужно передавать в версии 4.5:
+
+- Если ваше приложение передавало значение устройства, например `Locale.getDefault().toLanguageTag()`, передайте вместо него список из `LocaleListCompat.getAdjustedDefault()`. Удалите любой код, преобразовывавший это значение: регистр и разделители не имеют значения в версии 4.5.
+- Если ваше приложение передавало язык, выбранный пользователем в приложении, поставьте его первым: `listOf(selectedLanguage)`, затем список из `LocaleListCompat.getAdjustedDefault()`. Если флоу из Flow & Paywall Builder не поддерживает этот язык, SDK перебирает языки устройства.
+- Если ваше приложение вызывало `getFlowConfiguration` без `locale`, добавьте `preferredLocales` со списком из `LocaleListCompat.getAdjustedDefault()`.
+
+Чтобы показывать флоу на языке устройства, даже если пользователь выбрал другой язык для вашего приложения, передайте список из `LocaleManagerCompat.getSystemLocales(context)`. Для сравнения списков смотрите раздел [Передача языков пользователя в SDK](android-localizations-and-locale-codes#pass-the-users-languages-to-the-sdk).
+
+Чтобы показывать флоу всем пользователям на языке по умолчанию, передайте пустой список: `preferredLocales = emptyList()`.
+
+Вам не нужно передавать `localizationStrategy`. Без него SDK использует `AdaptyUiLocalizationStrategy.Auto`, который подходит для флоу из Flow & Paywall Builder и для пейволов из старого Paywall Builder. [Другие стратегии](android-localizations-and-locale-codes#select-a-localization-strategy) меняют то, как SDK подбирает язык.
+
+## Что видят пользователи после обновления \{#what-users-see-after-the-update\}
+
+С настройкой `localizationStrategy` по умолчанию SDK 4.5 может показывать пользователям другую локализацию того же флоу, чем SDK 4.4:
+
+| Приложение передаёт | Флоу содержит | 4.4 | 4.5 |
+|---|---|---|---|
+| Нет языков: нет `locale` в 4.4, `emptyList()` в 4.5 | Любые локали | `en`, если флоу содержит его; иначе локаль по умолчанию | Локаль по умолчанию |
+| Код с другим регистром или разделителем, например `pt_BR` | `pt-BR` | Локаль по умолчанию | `pt-BR` |
+| Региональный код, например `pt-BR` | Язык без региона, например `pt` | Локаль по умолчанию | `pt` |
+| Региональный код, подразумевающий скрипт, например `zh-TW` | Скрипт, например `zh-hant` | Локаль по умолчанию | `zh-hant`; для пейволов из старого Paywall Builder — локаль по умолчанию |
+| Несколько языков, например `fr`, затем `de` | Более поздний язык, например `de`, но не первый | Локаль по умолчанию | Более поздний язык; для пейволов из старого Paywall Builder — локаль по умолчанию |
+
+Версии приложения на SDK 4.0–4.4 сохраняют точное сопоставление с вашими флоу до обновления приложения пользователем. Стратегия `Legacy` не возвращает точное сопоставление, которое было в версии 4.4.
+
+Чтобы узнать, какая локализация отображается на устройстве, установите [уровень логирования](sdk-installation-android#logging) `AdaptyLogLevel.VERBOSE` и найдите строку `getFlowConfiguration` в Logcat. О процедуре тестирования читайте в разделе [Тестирование локализации, которую видит пользователь](android-localizations-and-locale-codes#test-which-localization-a-user-sees).
+
+## Просматривайте локали ваших флоу \{#review-the-locales-of-your-flows\}
+
+SDK 4.5 отображает опубликованные флоу с их текущими локалями. Чтобы показывать пользователям каждый флоу на понятном им языке, следуйте трём правилам:
+
+- Переведите локаль по умолчанию полностью. Пользователи видят её, когда ни один из языков флоу не совпадает с их языком. Чтобы просмотреть или изменить локаль по умолчанию, читайте [Установить локаль по умолчанию](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale).
+- Для приложений на любой версии Adapty SDK от 4.0 до 4.4 сохраняйте все коды локалей, которые они передают. Такие приложения сверяют код точно.
+- Чтобы охватить больше пользователей, добавьте [локали, которые версия 4.5 распознаёт точнее](android-localizations-and-locale-codes#select-which-locales-to-add-to-a-flow), например `zh-hans` и `zh-hant` в дополнение к `zh`.

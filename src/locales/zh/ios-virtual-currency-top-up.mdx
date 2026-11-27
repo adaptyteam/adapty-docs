@@ -230,7 +230,44 @@ struct OutOfEnergyResolver: AdaptyUICustomElementsResolver {
 
 ### 从应用代码中打开能量耗尽流程 \{#open-the-out-of-energy-flow-from-your-app-code\}
 
-当玩家能量耗尽时，使用以下函数打开能量耗尽流程。该函数会先向后端请求余额，确保玩家在流程打开时能看到余额信息。随后，函数将 `OutOfEnergyResolver` 附加到流程上，并将流程控制器保存在 `outOfEnergyFlow` 中。通过这个引用，`spendDiamonds` 可以关闭该流程：
+当玩家能量耗尽时，使用以下函数打开能量耗尽流程。该函数会先向后端请求余额，以便玩家在流程打开时看到余额信息。然后，该函数将 `OutOfEnergyResolver` 附加到流程，并将流程控制器保存在 `outOfEnergyFlow` 中。有了这个引用，`spendDiamonds` 就可以关闭该流程：
+
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+```swift showLineNumbers title="Swift"
+// call when a player runs out of energy
+func openOutOfEnergyFlow() async {
+    // the balance that players see when the flow opens; without it, players see a dash
+    if let available = try? await GameBackend.shared.diamondBalance() {
+        diamondWallet.balance = available
+    }
+    do {
+        let flow = try await Adapty.getFlow(placementId: "out_of_energy")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            preferredLocales: Locale.preferredLanguages,
+            customElementsResolver: OutOfEnergyResolver(
+                spend: { [weak self] option in
+                    await self?.spendDiamonds(on: option) ?? false
+                },
+                appWideResolver: customElementsResolver // the instance that you set app-wide
+            )
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        outOfEnergyFlow = flowController
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```swift showLineNumbers title="Swift"
 // call when a player runs out of energy
@@ -262,7 +299,10 @@ func openOutOfEnergyFlow() async {
 }
 ```
 
-作为低电量流程的委托，视图控制器还必须实现用于购买和恢复的[委托方法](ios-handling-events#handling-events-in-uikit)。对于 `didFinishPurchase`，请使用[步骤 4](#open-the-out-of-energy-flow-again-after-a-purchase) 中的代码。
+</TabItem>
+</Tabs>
+
+作为缺能量流程的代理，视图控制器还必须实现用于购买和恢复操作的[代理方法](ios-handling-events#handling-events-in-uikit)。对于 `didFinishPurchase`，请使用[第 4 步](#open-the-out-of-energy-flow-again-after-a-purchase)中的代码。
 
 在 SwiftUI 中，获取流程配置时附加 `OutOfEnergyResolver`。在解析器的 `spend` 闭包中，调用你的消耗方法。使用 `.flow` 修饰符展示流程配置，并使用其闭包替代委托方法。闭包不接收视图控制器。若要关闭流程，将 `isPresented` 设置为 `false`。
 
@@ -284,7 +324,38 @@ func openOutOfEnergyFlow() async {
 
 ### 当玩家钻石不足时打开充值流程 \{#open-the-top-up-flow-when-a-player-doesnt-have-enough-diamonds\}
 
-以下函数将缺少的钻石数量传递给 `diamonds_needed` 标签，并打开充值流程。由于视图控制器每次只能呈现一个流程，该函数会先关闭能量不足流程，再打开充值流程：
+以下函数将缺少的钻石数量传递给 `diamonds_needed` 标签，并打开充值流程。视图控制器每次只能呈现一个流程，因此该函数会先关闭能量不足的流程，再打开充值流程：
+
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+```swift showLineNumbers title="Swift"
+func openTopUpFlow(diamondsNeeded: Int) async {
+    // with no value, players see the Initial value of the tag
+    let tags = diamondsNeeded > 0 ? ["diamonds_needed": diamondsNeeded.formatted()] : [:]
+    do {
+        let flow = try await Adapty.getFlow(placementId: "out_of_diamonds")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            preferredLocales: Locale.preferredLanguages,
+            tagResolver: tags
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        // a view controller presents one flow at a time
+        outOfEnergyFlow?.dismiss(animated: true) {
+            self.present(flowController, animated: true)
+        }
+    } catch {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```swift showLineNumbers title="Swift"
 func openTopUpFlow(diamondsNeeded: Int) async {
@@ -309,6 +380,9 @@ func openTopUpFlow(diamondsNeeded: Int) async {
     }
 }
 ```
+
+</TabItem>
+</Tabs>
 
 ### 购买后重新打开能量不足流程 \{#open-the-out-of-energy-flow-again-after-a-purchase\}
 

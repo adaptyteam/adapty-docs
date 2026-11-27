@@ -102,7 +102,7 @@ Tras obtener el flow o el paywall, comprueba si incluye una configuración de vi
 - **`false`** — el placement es un paywall personalizado sin interfaz de Builder. [Renderízalo tú mismo](present-remote-config-paywalls-android).
 
 :::important
-Asegúrate de [publicar el flow](builder-save-publish). Un flow con ediciones sin publicar tiene el estado **Dirty**, y su placement seguirá sirviendo la última versión publicada.
+Asegúrate de [publicar el flow](builder-save-publish). Un flow con ediciones sin publicar tiene el estado **Dirty**, y su placement sigue sirviendo la última versión publicada.
 :::
 
 <Tabs groupId="current-os" queryString>
@@ -110,6 +110,34 @@ Asegúrate de [publicar el flow](builder-save-publish). Un flow con ediciones si
 <TabItem value="kotlin" label="Kotlin" default>
 
 Usa el método `getFlowConfiguration` para cargar la configuración de la vista.
+
+<Tabs groupId="android-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 o posterior" default>
+
+```kotlin showLineNumbers
+if (!flow.hasViewConfiguration) {
+    // use your custom logic
+    return
+}
+
+val preferredLocales = LocaleListCompat.getAdjustedDefault().toLanguageTags().split(",")
+
+AdaptyUI.getFlowConfiguration(flow, preferredLocales, loadTimeout = 10.seconds) { result ->
+    when(result) {
+        is AdaptyResult.Success -> {
+            val flowConfiguration = result.value
+            // use loaded configuration
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```kotlin showLineNumbers
 if (!flow.hasViewConfiguration) {
@@ -130,17 +158,50 @@ AdaptyUI.getFlowConfiguration(flow, loadTimeout = 10.seconds) { result ->
     }
 }
 ```
-| Parámetro       | Presencia      | Descripción                                                  |
+
+</TabItem>
+</Tabs>
+
+| Parámetro       | Presencia       | Descripción                                                  |
 | :-------------- | :------------- | :----------------------------------------------------------- |
-| **flow**        | obligatorio    | Un objeto `AdaptyFlow` obtenido mediante `Adapty.getFlow`. |
-| **locale**      | opcional | El identificador de la [localización del flow](add-paywall-locale-in-adapty-paywall-builder) con la que se renderizará la vista, en formato de código de idioma con una o dos subetiquetas separadas por `-` (p. ej., `en`, `pt-BR`). Si se omite, la vista se renderiza en `en`, o en la localización predeterminada del flow cuando este no tiene `en`. Consulta [Localizaciones y códigos de idioma](android-localizations-and-locale-codes). |
-| **customLayoutId** | <p>opcional</p><p>por defecto: `null`</p><p>SDK 4.1+</p> | El ID personalizado de un layout en la configuración de layouts del flow. Pásalo para renderizar ese layout concreto en lugar del que el SDK selecciona automáticamente según el tipo de dispositivo y el tamaño de pantalla. Si ningún layout coincide con el ID, la llamada falla con un error de no-view-configuration. El Flow & Paywall Builder no asigna IDs de layout personalizados todavía, así que deja este parámetro sin definir. |
-| **loadTimeout** | por defecto: 5 seg | Este valor limita el tiempo de espera de este método. Si se alcanza el límite, se devolverán los datos en caché o el fallback local. Ten en cuenta que en casos excepcionales este método puede superar ligeramente el tiempo indicado en `loadTimeout`, ya que la operación puede estar compuesta de distintas solicitudes internamente. |
+| **flow**        | obligatorio       | Un objeto `AdaptyFlow` obtenido mediante `Adapty.getFlow`. |
+| **preferredLocales** | <p>obligatorio</p><p>SDK 4.5+</p> | Los idiomas del usuario, del más preferido al menos preferido, como la lista de `LocaleListCompat.getAdjustedDefault()`. El SDK los prueba en orden y usa el primero que el flow tenga disponible. Si la lista está vacía o no hay coincidencia, el usuario ve el flow en su [idioma predeterminado](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale). Para paywalls del antiguo Paywall Builder, el SDK solo compara el idioma con mayor prioridad del usuario. Reemplaza a `locale` de las SDK 4.0–4.4. Para saber qué lista pasar, consulta [Pasa los idiomas del usuario al SDK](android-localizations-and-locale-codes#pass-the-users-languages-to-the-sdk). |
+| **locale**      | <p>opcional</p><p>SDK 4.0–4.4</p> | El identificador de la [localización del flow](add-paywall-locale-in-adapty-paywall-builder) con la que se renderiza la vista, expresado como un código de idioma con una o dos subetiquetas separadas por `-` (p. ej., `en`, `pt-BR`). Si se omite, la vista se muestra en `en`, o en la localización predeterminada del flow si no existe `en`. Consulta [Localizaciones y códigos de idioma](android-localizations-and-locale-codes). |
+| **localizationStrategy** | <p>opcional</p><p>por defecto: `AdaptyUiLocalizationStrategy.Auto`</p><p>SDK 4.5+</p> | Define cómo el SDK relaciona los idiomas del usuario con las localizaciones del flow. El valor predeterminado es adecuado para la mayoría de las apps. Para conocer los demás valores, consulta [Selecciona una estrategia de localización](android-localizations-and-locale-codes#select-a-localization-strategy). |
+| **customLayoutId** | <p>opcional</p><p>por defecto: `null`</p><p>SDK 4.1+</p> | El ID personalizado de un layout en la configuración de layouts del flow. Pásalo para renderizar ese layout concreto en lugar del que el SDK selecciona automáticamente según el tipo de dispositivo y el tamaño de pantalla. Si ningún layout coincide con el ID, la llamada falla con un error de configuración de vista no encontrada. El Flow & Paywall Builder aún no asigna IDs de layout personalizados, así que déjalo sin configurar. |
+| **loadTimeout** | por defecto: 5 s | Este valor limita el tiempo de espera de este método. Si se supera el tiempo límite, se devuelven los datos en caché o el fallback local. Ten en cuenta que en casos excepcionales este método puede superar ligeramente el tiempo indicado en `loadTimeout`, ya que la operación puede comprender distintas solicitudes internamente. |
 
 </TabItem>
 <TabItem value="java" label="Java" default>
 
 Usa el método `getFlowConfiguration` para cargar la configuración de la vista.
+
+<Tabs groupId="android-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+```java showLineNumbers
+if (!flow.hasViewConfiguration()) {
+    // use your custom logic
+    return;
+}
+
+List<String> preferredLocales =
+    Arrays.asList(LocaleListCompat.getAdjustedDefault().toLanguageTags().split(","));
+
+AdaptyUI.getFlowConfiguration(flow, preferredLocales, AdaptyUiLocalizationStrategy.Auto, TimeInterval.seconds(10), result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyUI.FlowConfiguration flowConfiguration =
+          ((AdaptyResult.Success<AdaptyUI.FlowConfiguration>) result).getValue();
+        // use loaded configuration
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```java showLineNumbers
 if (!flow.hasViewConfiguration()) {
@@ -159,12 +220,18 @@ AdaptyUI.getFlowConfiguration(flow, null, TimeInterval.seconds(10), result -> {
     }
 });
 ```
-| Parámetro       | Presencia      | Descripción                                                  |
+
+</TabItem>
+</Tabs>
+
+| Parámetro       | Presencia       | Descripción                                                  |
 | :-------------- | :------------- | :----------------------------------------------------------- |
-| **flow**        | obligatorio    | Un objeto `AdaptyFlow` obtenido mediante `Adapty.getFlow`. |
-| **locale**      | opcional | El identificador de la [localización del flow](add-paywall-locale-in-adapty-paywall-builder) con la que se renderizará la vista, expresado como un código de idioma con una o dos subetiquetas separadas por `-` (p. ej., `en`, `pt-BR`). Si se omite, la vista se renderiza en `en`, o en la localización predeterminada del flow cuando este no tiene `en`. Consulta [Localizaciones y códigos de idioma](android-localizations-and-locale-codes). |
-| **customLayoutId** | <p>opcional</p><p>por defecto: `null`</p><p>SDK 4.1+</p> | El ID personalizado de un layout en la configuración de layouts del flow. Pásalo para renderizar ese layout específico en lugar del que el SDK selecciona automáticamente según el tipo de dispositivo y el tamaño de pantalla. Si ningún layout coincide con el ID, la llamada falla con un error de no-view-configuration. El Flow & Paywall Builder todavía no asigna IDs de layout personalizados, así que deja este parámetro sin establecer. |
-| **loadTimeout** | por defecto: 5 seg | Este valor limita el tiempo de espera para este método. Si se alcanza el tiempo límite, se devolverán los datos en caché o el fallback local. Ten en cuenta que en casos excepcionales este método puede superar ligeramente el tiempo especificado en `loadTimeout`, ya que la operación puede estar compuesta de distintas solicitudes internamente. |
+| **flow**        | obligatorio       | Un objeto `AdaptyFlow` obtenido a través de `Adapty.getFlow`. |
+| **preferredLocales** | <p>obligatorio</p><p>SDK 4.5+</p> | Los idiomas del usuario, del más preferido al menos, como la lista de `LocaleListCompat.getAdjustedDefault()`. El SDK los prueba en orden y usa el primero que tenga el flow. Si la lista está vacía o no hay coincidencia, el usuario ve el flow en su [idioma predeterminado](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale). Para paywalls del antiguo Paywall Builder, el SDK solo compara el idioma con mayor prioridad del usuario. Reemplaza `locale` de SDK 4.0–4.4. Para saber qué lista pasar, consulta [Pasa los idiomas del usuario al SDK](android-localizations-and-locale-codes#pass-the-users-languages-to-the-sdk). |
+| **locale**      | <p>opcional</p><p>SDK 4.0–4.4</p> | El identificador de la [localización del flow](add-paywall-locale-in-adapty-paywall-builder) con la que renderizar la vista, en formato de código de idioma con una o dos subetiquetas separadas por `-` (p. ej., `en`, `pt-BR`). Si se omite, la vista se renderiza en `en`, o en la localización predeterminada del flow si este no tiene `en`. Consulta [Localizaciones y códigos de idioma](android-localizations-and-locale-codes). |
+| **localizationStrategy** | <p>opcional</p><p>predeterminado: `AdaptyUiLocalizationStrategy.Auto`</p><p>SDK 4.5+</p> | Define cómo el SDK relaciona los idiomas del usuario con los idiomas disponibles en el flow. El valor predeterminado es adecuado para la mayoría de las apps. Para los demás valores, consulta [Selecciona una estrategia de localización](android-localizations-and-locale-codes#select-a-localization-strategy). |
+| **customLayoutId** | <p>opcional</p><p>predeterminado: `null`</p><p>SDK 4.1+</p> | El ID personalizado de un layout en la configuración de layouts del flow. Pásalo para renderizar ese layout concreto en lugar del que el SDK selecciona automáticamente según el tipo de dispositivo y el tamaño de pantalla. Si ningún layout coincide con el ID, la llamada falla con un error de configuración de vista no encontrada. El Flow & Paywall Builder aún no asigna IDs de layout personalizados, así que deja este campo sin definir. |
+| **loadTimeout** | predeterminado: 5 seg | Este valor limita el tiempo de espera de este método. Si se alcanza el límite, se devolverán los datos en caché o el fallback local. Ten en cuenta que en casos excepcionales este método puede superar ligeramente el tiempo indicado en `loadTimeout`, ya que la operación puede componer diferentes solicitudes internamente. |
 
 </TabItem>
 

@@ -102,7 +102,7 @@ Adapty.getFlow("YOUR_PLACEMENT_ID", AdaptyPlacementFetchPolicy.Default, TimeInte
 - **`false`** — плейсмент является кастомным пейволом без UI от Builder. [Отрисуйте его самостоятельно](present-remote-config-paywalls-android).
 
 :::important
-Убедитесь, что вы [опубликовали флоу](builder-save-publish). Флоу с неопубликованными изменениями имеет статус **Dirty**, и его плейсмент продолжает отдавать последнюю опубликованную версию.
+Убедитесь, что вы [опубликовали флоу](builder-save-publish). Флоу с несохранёнными изменениями имеет статус **Dirty**, и его плейсмент продолжает показывать последнюю опубликованную версию.
 :::
 
 <Tabs groupId="current-os" queryString>
@@ -110,6 +110,34 @@ Adapty.getFlow("YOUR_PLACEMENT_ID", AdaptyPlacementFetchPolicy.Default, TimeInte
 <TabItem value="kotlin" label="Kotlin" default>
 
 Используйте метод `getFlowConfiguration` для загрузки конфигурации представления.
+
+<Tabs groupId="android-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 или новее" default>
+
+```kotlin showLineNumbers
+if (!flow.hasViewConfiguration) {
+    // use your custom logic
+    return
+}
+
+val preferredLocales = LocaleListCompat.getAdjustedDefault().toLanguageTags().split(",")
+
+AdaptyUI.getFlowConfiguration(flow, preferredLocales, loadTimeout = 10.seconds) { result ->
+    when(result) {
+        is AdaptyResult.Success -> {
+            val flowConfiguration = result.value
+            // use loaded configuration
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```kotlin showLineNumbers
 if (!flow.hasViewConfiguration) {
@@ -130,17 +158,50 @@ AdaptyUI.getFlowConfiguration(flow, loadTimeout = 10.seconds) { result ->
     }
 }
 ```
+
+</TabItem>
+</Tabs>
+
 | Параметр        | Наличие        | Описание                                                     |
 | :-------------- | :------------- | :----------------------------------------------------------- |
 | **flow**        | обязательный   | Объект `AdaptyFlow`, полученный через `Adapty.getFlow`. |
-| **locale**      | необязательный | Идентификатор [локализации флоу](add-paywall-locale-in-adapty-paywall-builder) для отображения, задаётся как код языка с одним или двумя подтегами через `-` (например, `en`, `pt-BR`). Если не указан, отображение происходит на `en` или в локализации флоу по умолчанию, если флоу не содержит `en`. См. [Локализации и коды локалей](android-localizations-and-locale-codes). |
-| **customLayoutId** | <p>необязательный</p><p>по умолчанию: `null`</p><p>SDK 4.1+</p> | Пользовательский ID макета в конфигурации макетов флоу. Передайте его, чтобы использовать конкретный макет вместо того, который SDK выбирает автоматически исходя из типа устройства и размера экрана. Если макет с таким ID не найден, вызов завершится ошибкой отсутствия конфигурации отображения. Flow & Paywall Builder пока не поддерживает назначение пользовательских ID макетов, поэтому оставьте это поле пустым. |
-| **loadTimeout** | по умолчанию: 5 сек | Ограничивает таймаут для этого метода. При истечении таймаута будут возвращены кешированные данные или локальный резервный пейвол. Обратите внимание, что в редких случаях метод может завершиться чуть позже указанного в `loadTimeout` значения, поскольку операция может включать несколько запросов под капотом. |
+| **preferredLocales** | <p>обязательный</p><p>SDK 4.5+</p> | Языки пользователя в порядке приоритета, например список из `LocaleListCompat.getAdjustedDefault()`. SDK перебирает языки по порядку и выбирает первый, который поддерживает флоу. Если список пуст или совпадений нет, пользователь видит флоу на [языке по умолчанию](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale). Для пейволов из старого Paywall Builder SDK учитывает только язык с наивысшим приоритетом. Заменяет `locale` из SDK 4.0–4.4. О том, какой список передавать, читайте в [Передача языков пользователя в SDK](android-localizations-and-locale-codes#pass-the-users-languages-to-the-sdk). |
+| **locale**      | <p>необязательный</p><p>SDK 4.0–4.4</p> | Идентификатор [локализации флоу](add-paywall-locale-in-adapty-paywall-builder) для отображения, указывается в виде языкового кода с одним или двумя субтегами через `-` (например, `en`, `pt-BR`). Если не указан, отображение будет на `en` или на локализации флоу по умолчанию, если флоу не содержит `en`. См. [Локализации и коды локалей](android-localizations-and-locale-codes). |
+| **localizationStrategy** | <p>необязательный</p><p>по умолчанию: `AdaptyUiLocalizationStrategy.Auto`</p><p>SDK 4.5+</p> | Определяет, как SDK сопоставляет языки пользователя с локалями флоу. Значение по умолчанию подходит для большинства приложений. Об остальных значениях читайте в [Выбор стратегии локализации](android-localizations-and-locale-codes#select-a-localization-strategy). |
+| **customLayoutId** | <p>необязательный</p><p>по умолчанию: `null`</p><p>SDK 4.1+</p> | Пользовательский идентификатор макета в конфигурации макетов флоу. Передайте его, чтобы отобразить конкретный макет вместо того, который SDK выбирает автоматически исходя из типа устройства и размера экрана. Если макет с таким идентификатором не найден, вызов завершится ошибкой отсутствия конфигурации отображения. Flow & Paywall Builder пока не поддерживает назначение пользовательских идентификаторов макетов, поэтому оставьте это поле пустым. |
+| **loadTimeout** | по умолчанию: 5 сек | Это значение ограничивает таймаут для данного метода. По истечении таймаута будут возвращены кэшированные данные или локальный резервный вариант. Обратите внимание, что в редких случаях метод может завершиться чуть позже указанного в `loadTimeout` значения, поскольку операция может включать несколько запросов под капотом. |
 
 </TabItem>
 <TabItem value="java" label="Java" default>
 
 Используйте метод `getFlowConfiguration` для загрузки конфигурации представления.
+
+<Tabs groupId="android-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+```java showLineNumbers
+if (!flow.hasViewConfiguration()) {
+    // use your custom logic
+    return;
+}
+
+List<String> preferredLocales =
+    Arrays.asList(LocaleListCompat.getAdjustedDefault().toLanguageTags().split(","));
+
+AdaptyUI.getFlowConfiguration(flow, preferredLocales, AdaptyUiLocalizationStrategy.Auto, TimeInterval.seconds(10), result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyUI.FlowConfiguration flowConfiguration =
+          ((AdaptyResult.Success<AdaptyUI.FlowConfiguration>) result).getValue();
+        // use loaded configuration
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```java showLineNumbers
 if (!flow.hasViewConfiguration()) {
@@ -159,12 +220,18 @@ AdaptyUI.getFlowConfiguration(flow, null, TimeInterval.seconds(10), result -> {
     }
 });
 ```
+
+</TabItem>
+</Tabs>
+
 | Параметр        | Наличие        | Описание                                                     |
 | :-------------- | :------------- | :----------------------------------------------------------- |
 | **flow**        | обязательный   | Объект `AdaptyFlow`, полученный через `Adapty.getFlow`. |
-| **locale**      | необязательный | Идентификатор [локализации флоу](add-paywall-locale-in-adapty-paywall-builder) для отображения представления — языковой код с одним или двумя субтегами, разделёнными через `-` (например, `en`, `pt-BR`). Если не указан, представление отображается на `en` или в локализации флоу по умолчанию, если `en` отсутствует. См. [Локализации и коды языков](android-localizations-and-locale-codes). |
-| **customLayoutId** | <p>необязательный</p><p>по умолчанию: `null`</p><p>SDK 4.1+</p> | Пользовательский идентификатор макета в конфигурации макетов флоу. Укажите его, чтобы отобразить конкретный макет вместо того, который SDK выбирает автоматически исходя из типа устройства и размера экрана. Если ни один макет не соответствует идентификатору, вызов завершится ошибкой отсутствия конфигурации представления. Flow & Paywall Builder пока не назначает пользовательские идентификаторы макетов, поэтому оставьте это поле пустым. |
-| **loadTimeout** | по умолчанию: 5 сек | Это значение ограничивает таймаут данного метода. При достижении таймаута будут возвращены кэшированные данные или локальный резервный вариант. Обратите внимание, что в редких случаях метод может завершиться чуть позже указанного в `loadTimeout` значения, поскольку операция может включать несколько последовательных запросов. |
+| **preferredLocales** | <p>обязательный</p><p>SDK 4.5+</p> | Языки пользователя в порядке убывания приоритета, например список из `LocaleListCompat.getAdjustedDefault()`. SDK перебирает их по порядку и выбирает первый язык, доступный во флоу. Если список пуст или ни один язык не совпал, флоу отображается на [языке по умолчанию](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale). Для пейволов из старого Paywall Builder SDK учитывает только язык с наивысшим приоритетом. Заменяет `locale` из SDK 4.0–4.4. Подробнее о том, какой список передавать, читайте в разделе [Передача языков пользователя в SDK](android-localizations-and-locale-codes#pass-the-users-languages-to-the-sdk). |
+| **locale**      | <p>необязательный</p><p>SDK 4.0–4.4</p> | Идентификатор [локализации флоу](add-paywall-locale-in-adapty-paywall-builder), в которой будет отображено представление. Ожидается в виде кода языка с одним или двумя подтегами через `-` (например, `en`, `pt-BR`). Если не указан, представление отображается на `en`, либо в локализации флоу по умолчанию, если `en` во флоу отсутствует. См. [Локализации и коды локалей](android-localizations-and-locale-codes). |
+| **localizationStrategy** | <p>необязательный</p><p>по умолчанию: `AdaptyUiLocalizationStrategy.Auto`</p><p>SDK 4.5+</p> | Определяет, как SDK сопоставляет языки пользователя с локалями флоу. Значение по умолчанию подходит для большинства приложений. О других значениях читайте в разделе [Выбор стратегии локализации](android-localizations-and-locale-codes#select-a-localization-strategy). |
+| **customLayoutId** | <p>необязательный</p><p>по умолчанию: `null`</p><p>SDK 4.1+</p> | Пользовательский идентификатор макета в конфигурации макетов флоу. Передайте его, чтобы отобразить конкретный макет вместо того, который SDK выбирает автоматически исходя из типа устройства и размера экрана. Если макет с таким идентификатором не найден, вызов завершится ошибкой отсутствия конфигурации представления. Flow & Paywall Builder пока не поддерживает назначение пользовательских идентификаторов макетов, поэтому оставьте этот параметр пустым. |
+| **loadTimeout** | по умолчанию: 5 сек | Ограничивает таймаут для этого метода. При достижении таймаута будут возвращены кэшированные данные или локальный резервный вариант. Обратите внимание, что в редких случаях метод может завершиться чуть позже указанного в `loadTimeout` значения, поскольку операция может включать несколько запросов под капотом. |
 
 </TabItem>
 

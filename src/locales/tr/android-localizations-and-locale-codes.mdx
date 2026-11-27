@@ -1,67 +1,237 @@
 ---
-title: "Android SDK'da yerelleştirmeleri ve yerel ayar kodlarını kullanma"
-description: "Global bir kitleye ulaşmak için uygulama yerelleştirmelerini ve yerel ayar kodlarını yönetin (Android)."
+title: "Android SDK'da yerelleştirmeleri ve yerel ayar kodlarını kullanın"
+description: "Küresel bir kitleye ulaşmak için uygulama yerelleştirmelerini ve yerel ayar kodlarını yönetin (Android)."
 metadataTitle: "Yerelleştirmeleri ve Yerel Ayar Kodlarını Yönetme | Adapty Dokümanları"
 displayed_sidebar: sdkandroid
 ---
 
 <SDKv4>
 
-## Bu neden önemli \{#why-this-is-important\}
+Her kullanıcıya anladığı dilde bir flow göstermek için, dillerini Adapty Android SDK 4.5 veya sonraki bir sürüme iletin. Kullanıcılar, flow'un desteklediği en tercih ettikleri dilde flow'u görürler. Bu dillerden hiçbirini içermeyen bir flow, varsayılan yerel ayarında görünür.
 
-Adapty bir flow veya onboarding için lokalizasyonu seçerken ve özel bir paywall için remote config okurken locale kodları devreye girer.
+SDK 4.0–4.4 sürümlerinde uygulamanız `getFlowConfiguration` fonksiyonuna tek bir yerel kod iletir ve SDK [bunu tam olarak eşleştirir](#pass-the-users-languages-to-the-sdk). Kodunuzu güncellemek için [Adapty Android SDK'yı v4.5'e Taşıma](migration-to-android-sdk-45) bölümünü okuyun.
 
-Locale kodları karmaşık olabilir ve platformdan platforma farklılık gösterebilir; bu nedenle Adapty desteklediği her platformda tek bir dahili standarda dayanır. Bu standardı anlamak, kullanıcının hangi lokalizasyonu alacağını öngörmenizi sağlar.
+SDK 4.5 veya sonrasında, üç durum farklı kurallara tabidir:
+
+- Kendi kodlarında bir flow'ın yerelleştirmesini seçen uygulamalar [özel bir çözümleyici kullanır](#pick-a-flows-localization-in-your-own-code).
+- Eski Paywall Builder'dan gelen paywalllar [yalnızca kullanıcının dilini en yüksek öncelikle eşleştirir](#select-a-localization-strategy).
+- Özel paywalllar ve onboardinglar [SDK 4.4'teki gibi çalışır](#localize-custom-paywalls-and-onboardings).
+
+## Kullanıcının dillerini SDK'ya aktarın \{#pass-the-users-languages-to-the-sdk\}
+
+<Tabs groupId="android-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+[`AdaptyUI.getFlowConfiguration`](android-get-pb-paywalls#fetch-the-view-configuration), `preferredLocales` parametresini gerektirir. Kullanıcının dillerini en çok tercih edilenden başlayarak bu parametreye aktarın. Hangi dillerin aktarılacağına uygulamanız karar verir; örneğin cihaz dilleri veya uygulamanızdaki bir dil seçicisinden gelen dil kullanılabilir.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+val preferredLocales = LocaleListCompat.getAdjustedDefault().toLanguageTags().split(",")
+
+AdaptyUI.getFlowConfiguration(flow, preferredLocales) { result ->
+    // handle the result
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers
+List<String> preferredLocales =
+    Arrays.asList(LocaleListCompat.getAdjustedDefault().toLanguageTags().split(","));
+
+AdaptyUI.getFlowConfiguration(flow, preferredLocales, result -> {
+    // handle the result
+});
+```
+
+</TabItem>
+</Tabs>
+
+Kullanıcıların hangi yerelleştirmeyi göreceğini üç kural belirler:
+
+- SDK, kullanıcının dillerini sırayla dener ve flow'un sahip olduğu ilk dille eşleştirir. Bu, Android kaynak eşleştirmesidir: Android'in bir uygulamanın çevirilerini seçmek için kullandığı kurallardır. SDK, bir dilin yakın varyantlarını eşleştirir: `de-AT`, `de` ile eşleşir; `zh-TW` ise `zh-hant` ile eşleşir. Android 6 ve öncesinde SDK, kullanıcının dil ve yazı sistemindeki ilk flow yerelleştirmesiyle bölgeden bağımsız olarak eşleşir. Eski Paywall Builder'dan gelen paywall'lar yalnızca kullanıcının en yüksek öncelikli dilini kullanır.
+- Büyük/küçük harf ve ayırıcılar önemli değildir: `pt_BR`, `pt-BR` ve `pt-br` aynı yerel ayarla eşleşir. Değerleri Android'in döndürdüğü şekilde geçirin.
+- Boş bir liste veya flow'un yerel ayarlarından hiçbiriyle eşleşmeyen bir liste durumunda SDK, varsayılan yerel ayarı kullanır.
+
+Üç listeden birini geçirin. Bu liste, SDK'nın dilleri deneyeceği sırayı belirler; ancak flow'un sahip olmadığı bir dil eklenemez.
+
+| Değer | Flow şurada görünür | Takas |
+|---|---|---|
+| `LocaleListCompat.getAdjustedDefault()` | Kullanıcının Android ayarlarında veya uygulamanızda seçtiği dil. Seçilmemişse, flow'un sahip olduğu ilk cihaz dili | Android 13'ün altında, `AppCompatDelegate.setApplicationLocales` ile uygulamanızın ayarladığı dil yalnızca ilk `AppCompatActivity` oluşturulduktan sonra uygulanır. Listeyi bundan sonra okuyun, `Application.onCreate` içinde değil. |
+| `LocaleManagerCompat.getSystemLocales(context)` | Kullanıcı uygulamanız için başka bir dil seçmiş olsa bile flow'un sahip olduğu ilk cihaz dili | Flow, uygulamanızın kullanıcı arayüzünden farklı bir dilde görünebilir |
+| `selectedLanguage`, ardından `LocaleListCompat.getAdjustedDefault()` | Uygulamanızdaki dil seçiciden gelen dil, ardından cihaz dilleri | — |
+
+Bir liste iletmek için yerel ayar kodlarına dönüştürün:
+
+```kotlin showLineNumbers
+// The language selected for your app, then the device languages
+val appLocales = LocaleListCompat.getAdjustedDefault().toLanguageTags().split(",")
+
+// The device languages
+val deviceLocales = LocaleManagerCompat.getSystemLocales(context).toLanguageTags().split(",")
+
+// The language from the language picker in your app, then the other languages
+val pickerLocales = listOf(selectedLanguage) + appLocales
+```
+
+Kullanıcının uygulama için farklı bir dil seçmesi durumunda ilk iki liste farklı sonuçlar verir. Örneğin, cihaz dili İngilizce olarak ayarlanmış bir kullanıcı uygulamanız için İspanyolca'yı seçerse: bu kullanıcı `getAdjustedDefault()` ile İspanyolca, `getSystemLocales()` ile İngilizce görür.
+
+`AppCompatDelegate.setApplicationLocales` ile dili kaydeden bir dil seçici, üçüncü listeye ihtiyaç duymaz. Böyle bir seçicide ilk liste, seçilen dille başlar.
+
+:::tip
+`Locale.getDefault().toLanguageTag()` değerini tek başına geçirmeyin. Yalnızca bir dil içerdiğinden SDK'nın deneyeceği başka bir dil kalmaz.
+:::
+
+Çoğu uygulama `localizationStrategy` parametresini geçmez. Bu parametre olmadan SDK, [`AdaptyUiLocalizationStrategy.Auto`](#select-a-localization-strategy) stratejisini kullanır; bu strateji Flow & Paywall Builder'daki flow'lar ve eski Paywall Builder'daki paywalllar için uygundur.
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
+
+[`AdaptyUI.getFlowConfiguration`](android-get-pb-paywalls#fetch-the-view-configuration) metodunun `locale` parametresine tek bir yerel ayar kodu geçirin. Hangi kodu geçeceğinize uygulamanız karar verir; örneğin cihazın yerel ayarı veya uygulamanızdaki bir dil seçicisinden gelen dil olabilir.
+
+```kotlin showLineNumbers
+AdaptyUI.getFlowConfiguration(flow, locale = "pt-BR") { result ->
+    // handle the result
+}
+```
+
+Eşleşme birebir gerçekleşir. SDK, ilettiğiniz kodu flow'un yerelleştirme kodlarıyla karakter karakter karşılaştırır: büyük-küçük harf dönüşümü yapmaz, alt çizgileri (`_`) kısa çizgilerle (`-`) değiştirmez ve dil alt etiketine geri dönmez. `pt-BR` yerelleştirmesine sahip bir flow için yalnızca `pt-BR` eşleşir: `pt-br`, `pt_BR` ve `pt-PT` hiçbiri eşleşmez.
+
+Kod hiçbir lokalizasyonla eşleşmediğinde, flow sessizce [varsayılan lokalizasyonunda](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) render edilir — SDK hata döndürmez ve uyarı loglamaz.
+
+Lokalizasyon kodunu atlamak, flow'un varsayılan lokalizasyonunu istemekle aynı şey değildir: SDK sabit olarak `en` değerini kullanır. Varsayılan lokalizasyonu `de` olan bir flow'un `en` lokalizasyonu varsa `en` olarak render edilir; `en` lokalizasyonu yoksa ancak `de`'ye geri döner. Bu durum Android SDK 4.0.1 ve sonrası için geçerlidir — 4.0.0'da kodu atlamak flow'un varsayılan lokalizasyonunu render eder.
+
+:::warning
+Locale kodunu tam olarak yayınlanan flow'da göründüğü şekilde geçirin: **Select languages** alanından `pt-BR` değil, `pt-BR`. Eski Paywall Builder'dan gelen paywalllar için küçük harf kodlar kullanın, örneğin `pt-br`.
+
+Sistem yerel tanımlayıcısını olduğu gibi geçirmeyin. Portekizce (Brezilya) olarak ayarlanmış bir cihazda `Locale.getDefault().toString()` ifadesi `pt_BR` döndürür; bu değer hiçbir yerelleştirmeyle eşleşmez. İngilizce (Amerika Birleşik Devletleri) olarak ayarlanmış bir cihazda ise `Locale.getDefault().toLanguageTag()` ifadesi `en-US` döndürür; bu değer yalnızca `en` koduna sahip bir flow'u kaçırır. Sistem yerel tanımlayıcısını geçirmeden önce, flow'un sahip olduğu bir koda dönüştürün.
+:::
+
+</TabItem>
+</Tabs>
+
+## Kullanıcının hangi lokalizasyonu gördüğünü test etme \{#test-which-localization-a-user-sees\}
+
+<Tabs groupId="android-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 veya üzeri" default>
+
+Flow, kullanıcının dillerinden hiçbirini içermediğinde SDK, hata vermeden varsayılan yerel ayarı kullanır. Kullanıcının hangi lokalizasyonu gördüğünü öğrenmek için flow'u bir cihazda test edin:
+
+1. [Log seviyesini](sdk-installation-android#logging) `AdaptyLogLevel.VERBOSE` olarak ayarlayın.
+2. Cihaz ayarlarında, test dilini dil listesinin en üstüne taşıyın.
+3. Uygulamanızda flow'u açın.
+4. Logcat'te `getFlowConfiguration: preferredLocales` satırını bulun. Bu satır, `strategy = Auto -> pt-BR` gibi görüntülenen yerelleştirmenin koduyla biter. Kontrol paneli bu kodu küçük harfle gösterir: `pt-BR` için `pt-br`.
+
+Cihaz ayarlarını değiştirmeden bir dili test etmek için, debug derlemesinde `listOf("pt-PT")` gibi sabit bir `preferredLocales` listesi geçirin.
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
+
+When the code you pass matches no localization of the flow, the SDK uses the default locale without raising an error or logging a warning. To find out which localization a user sees, test the flow on a device:
+
+1. In the device settings, select the test language and region.
+2. Open the flow in your app.
+3. Compare the flow on the device with its localizations in the Flow & Paywall Builder. When the flow shows its default locale, the flow has no localization with exactly the code you passed.
+
+Cihaz ayarlarını değiştirmeden bir kodu test etmek için hata ayıklama derlemesinde `"pt-BR"` gibi sabit bir `locale` değeri geçin.
+
+</TabItem>
+</Tabs>
+
+Flow'un bir kısmı hâlâ varsayılan locale'de görünüyorsa, görüntülenen yerelleştirmede o kısım için çeviri yoktur. Eksikleri doldurmak için Flow & Paywall Builder'da [eksik satırları çevirin](add-paywall-locale-in-adapty-paywall-builder#manage-localizations-and-translations).
+
+## Bir flow'a eklenecek dilleri seçin \{#select-which-locales-to-add-to-a-flow\}
+
+Kullanıcıların büyük çoğunluğunu en az dille kapsayabilmek için, **Select languages** alanında [dil eklerken](add-paywall-locale-in-adapty-paywall-builder#add-and-set-up-a-locale) şu üç kurala uyun:
+
+- Bölge belirtmeden bir dil ekleyin. Örneğin, `de` Almanya, Avusturya ve İsviçre'deki Almanca konuşanları kapsar.
+- Bir dilin ikinci çevirisi için bölgesel yerel ayar ekleyin; örneğin `fr`'ye ek olarak `fr-ca`.
+- Kullanıcılarınızın okuduğu her dili ekleyin. SDK, Katalanca ile İspanyolca gibi bir dili diğeriyle eşleştirmez. Katalanca konuşanlar, flow'un sahip olduğu bir sonraki tercih ettikleri dili veya varsayılan yerel ayarı görür.
+
+:::important
+Bu kurallar, Android veya iOS SDK 4.5 veya sonraki bir sürümünü gerektirir. 4.0'dan 4.4'e kadar herhangi bir Adapty SDK sürümünü kullanan uygulamalar tek bir yerel ayar kodu iletir. Bu uygulamaların kullanıcıları, SDK 4.5 kullanan kullanıcılardan farklı bir flow yerelleştirmesi görebilir. Söz konusu uygulamaların ilettiği her kodu, örneğin mevcut bir `zh` veya `pt-br` gibi, olduğu gibi koruyun.
+:::
+
+### Çince, İspanyolca ve Portekizce için kodları seçin \{#select-codes-for-chinese-spanish-and-portuguese\}
+
+**Select languages** alanında Çince, İspanyolca ve Portekizce için birden fazla kod bulunmaktadır. Tablodaki kodları ekleyin:
+
+| Dil | Ekle | Kullanıcılar şunu görür |
+|---|---|---|
+| Çince | `zh-hans` ve `zh-hant`, yeni bir `zh` değil. Yalnızca ayrı bir Hong Kong çevirisi için `zh-hk` ekleyin. | Çin ve Singapur'da `zh-hans`, Tayvan, Hong Kong ve Makao'da `zh-hant`. |
+| Kantonce | `yue`, her zaman `zh-hant` ile birlikte | Kantonce'ye ayarlı cihazlarda `yue`, Geleneksel Çince'ye ayarlı cihazlarda `zh-hant`. SDK, Kantonce'ye ayarlı kullanıcılara `zh-hant` göstermez; Geleneksel Çince'ye ayarlı kullanıcılara da `yue` göstermez. |
+| İspanyolca | `es` ve `es-419`, yeni bir `es-mx` değil | İspanya'da `es`, Latin Amerika ve Amerika Birleşik Devletleri'nde `es-419`. |
+| Portekizce | Brezilya Portekizcesi için `pt-br`, Avrupa Portekizcesi için `pt` | Brezilya'da `pt-br`, Portekiz'de `pt`. |
+
+Flow'unuzda `es-ar` ve `es-co` gibi bir dilin birden fazla bölgesel varyantı varsa, `es-419` ekleyin. Böylece Meksika gibi diğer Latin Amerika ülkelerindeki kullanıcılar `es-419`'u görür.
+
+### Önerilen yerel ayar gruplarından birini seçerek başlayın \{#start-from-a-recommended-set-of-locales\}
+
+Çevirileri aşamalı olarak planlamak için üç gruptan birini seçin. Her grup, bir öncekini de kapsar.
+
+| Grup | Yerel Ayarlar | Toplam |
+|---|---|---|
+| Minimal | `en`, `es`, `pt-br`, `fr`, `de`, `it`, `ru`, `ja`, `ko`, `zh-hans`, `zh-hant` | 11 |
+| Extended | Minimal grup ve `tr`, `pl`, `nl`, `sv`, `da`, `no`, `fi`, `uk`, `ar`, `he`, `hi`, `id`, `th`, `vi`, `es-419`, `pt` | 27 |
+| Broad | Extended grup ve `cs`, `sk`, `hu`, `ro`, `el`, `bg`, `hr`, `sl`, `lt`, `lv`, `et`, `ca`, `kk`, `ms`, `fil`, `fa`, `ur`, `bn`, `ta`, `te`, `mr`, `fr-ca` | 49 |
+
+Bu kümelerde, kullanıcılar şu dilleri görür:
+
+- Minimal kümede, `es` her ülkedeki İspanyolca konuşanları kapsar ve `pt-br` Portekiz'deki Portekizce konuşanları da kapsar.
+- Genişletilmiş kümede, `es-419` ve `pt` ikinci çevirilerdir. Bu sayede `es` İspanya'ya, `pt` ise Portekiz'e hizmet eder. `pt`'yi Avrupa Portekizcesine çevirin.
+- Katalanca ve Malayca konuşanlar yalnızca kendi dillerini kendi yerel ayarlarında görür: `ca` veya `ms`. SDK onlara bunun yerine İspanyolca veya Endonezce göstermez.
+
+### Varsayılan dili seçin \{#select-the-default-locale\}
+
+Kullanıcılar, flow'da kendi dilleri bulunmadığında varsayılan dili görür. Yeni bir flow, yalnızca `en` diliyle başlar ve bu dil varsayılan olarak ayarlıdır. Değiştirmek için [başka bir dili varsayılan olarak ayarlayın](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale).
+
+Varsayılan dil için şu üç kurala uyun:
+
+- Eşleşen bir yerel ayarı olmayan kullanıcılar için, çoğunluğun anladığı dili seçin. Bu genellikle ana pazarınızın dili değil, İngilizcedir.
+- Varsayılan yerel ayarı tamamen çevirin. Eşleşen yerel ayarı olmayan kullanıcılar flow'un tamamını varsayılan yerel ayarda görür. Eşleşen yerel ayarı olan kullanıcılar flow'u kendi dillerinde görür. Çevrilmemiş herhangi bir kısım varsayılan yerel ayarda görünür.
+- Çince gibi iki alfabesi olan bir dil seçmeyin. Diğer alfabeyi kullanan kullanıcılar varsayılan yerel ayarı okuyamayabilir.
+
+## Yerelleştirme stratejisi seçin \{#select-a-localization-strategy\}
+
+Çoğu uygulama `localizationStrategy` parametresini geçmez, bu nedenle SDK `AdaptyUiLocalizationStrategy.Auto` stratejisini kullanır. Bu strateji, Flow & Paywall Builder'dan gelen flow'lara Android kaynak eşleştirmesini, eski Paywall Builder'dan gelen paywall'lara ise tek dil kuralını uygular.
+
+Tek dil kuralı kapsamında SDK, `preferredLocales` içindeki en yüksek öncelikli dili okur. Önce tam kodu dener, ardından daha kısa kodları (`pt-br`, sonra `pt`) ve bunların hiçbiri eşleşmezse varsayılan yerel ayarı gösterir. Eski Paywall Builder'dan bir paywall, yeniden yayımlasanız bile bu kural kapsamında çalışmaya devam eder. SDK'nın `preferredLocales` içindeki tüm dilleri denemesini sağlamak için [paywall'ı Flow & Paywall Builder'a taşıyın](convert-paywall-to-flow). Ardından yeni flow'u bir flow placement'ından sunun.
+
+SDK'nın kullanıcının dillerini flow'un yerel ayarlarıyla eşleştirme şeklini değiştirmek için `localizationStrategy` parametresinde aşağıdaki değerlerden birini geçin:
+
+- `AdaptyUiLocalizationStrategy.System`: her flow Android kaynak eşleşmesini kullanır, eski Paywall Builder'dan gelen paywalllar dahil.
+- `AdaptyUiLocalizationStrategy.Legacy`: her flow, SDK 4.4'ün tam eşleşmesi yerine tek dil kuralını kullanır. Flow & Paywall Builder'dan gelen flow'lar için `Legacy` kullanmayın: `pt-BR` gibi bölge veya yazı sistemi içeren yerel ayarları atlar.
+- `AdaptyUiLocalizationStrategy.Custom(resolver, fallbackResolver)`: [yerelleştirmeyi siz seçersiniz](#pick-a-flows-localization-in-your-own-code).
+
+### Kendi kodunuzda bir flow'un yerelleştirmesini seçin \{#pick-a-flows-localization-in-your-own-code\}
+
+Android kaynak eşleştirmesi her komut dosyasını kapsamaz. Örneğin, bir cihaz Kiril alfabesiyle Azerice (`az-Cyrl`) listeler ancak Latin alfabesiyle listelemezse, `az` içeren bir flow varsayılan yerel ayarında görünür. `az` yerelleştirmesini göstermek veya yerelleştirmeyi kendi kurallarınıza göre seçmek için `AdaptyUiCustomLocalizationResolver` uygulayın. Ardından bunu `localizationStrategy` parametresindeki `AdaptyUiLocalizationStrategy.Custom` öğesine aktarın.
+
+Diğer Adapty SDK'ları dilleri farklı kurallara göre eşleştirdiğinden, aynı kullanıcı Android ve iOS'ta bir flow'un farklı yerelleştirmelerini görebilir. Her platformda aynı yerelleştirmeyi göstermek için, diğer platformlardaki uygulamanızla aynı yerel ayar kodunu döndüren bir resolver yazın.
+
+Aşağıdaki kurallar resolver için geçerlidir:
+
+- SDK, tek yerelleştirmesi olan bir flow için resolver'ı çağırmaz. Flow o yerelleştirmede görünür.
+- SDK, `resolve` fonksiyonunu uygulamanızın ilettiği liste, flow'un `locales` ve `defaultLocale` bilgilerini içeren bir `AdaptyUiLocalizationSource` ve bir `callback` ile çağırır. `locales`, flow'un yerelleştirme sırasına göre gelir.
+- Bir yerelleştirmeyi göstermek için `locales` ya da `defaultLocale` içindeki kodu tam olarak aynı şekilde, büyük/küçük harf dahil `callback`'e iletin: `AR` değil, `ar`.
+- `callback` başka bir kod veya `null` alırsa SDK, `fallbackResolver` içindeki resolver'ı kullanır. `fallbackResolver` yoksa SDK, `AdaptyUiLocalizationResolver.Auto` kullanır.
+- SDK, `resolve` fonksiyonunu ana iş parçacığında çağırır. `callback`'i herhangi bir iş parçacığından, yalnızca bir kez çağırın.
+- `callback`'i ağ istekleri veya diğer yavaş işlemler olmadan hemen çağırın. SDK, `callback` için süre sınırı olmaksızın bekler; flow ancak kodunuz `callback`'i çağırdıktan sonra görünür.
 
 ## Adapty'de yerel ayar kodu standardı \{#locale-code-standard-at-adapty\}
 
-Adapty yerel ayar kodları [BCP 47 standardını](https://en.wikipedia.org/wiki/IETF_language_tag) takip eder: bir dil alt etiketi, ardından isteğe bağlı bir komut dosyası veya bölge alt etiketi, kısa çizgilerle ayrılmış olarak. Kodun nerede göründüğü, harf büyüklüğünü belirler:
+Adapty yerel ayar kodları [BCP 47 standardını](https://en.wikipedia.org/wiki/IETF_language_tag) takip eder: bir dil alt etiketi ve ardından isteğe bağlı bir komut dosyası ya da bölge alt etiketi, kısa çizgilerle ayrılmış. **Select languages** alanı kodları küçük harfle gösterir: `en` (İngilizce), `pt-br` (Portekizce, Brezilya), `zh-hans` (Basitleştirilmiş Çince) ve `zh-hant` (Geleneksel Çince).
 
-- **Select languages** alanı tüm kodları küçük harfle gösterir: `pt-br`, `zh-hant`.
-- Flow & Paywall Builder'dan yayınlanan flow'lar, büyük harfli bölge ve baş harfi büyük komut dosyasıyla kodlar içerir: `pt-BR`, `zh-Hant`.
-- Eski Paywall Builder'dan gelen paywalllar tüm kodları küçük harfle saklar: `pt-br`, `zh-hant`.
+## Özel paywall ve onboarding'leri yerelleştirme \{#localize-custom-paywalls-and-onboardings\}
 
-`en`, `pt` ve `es-419` gibi kodlar her yerde aynı görünür.
+SDK 4.5 yalnızca flow'lar için yerelleştirme kurallarını değiştirir. Özel paywall ve onboarding'ler SDK 4.4'teki gibi çalışır.
 
-## Yerel dil kodu eşleştirme \{#locale-code-matching\}
+### Özel bir paywall'un remote config'ini dile göre seçme \{#pick-a-custom-paywalls-remote-config-by-language\}
 
-SDK v4'te, flow'lar ve onboarding'ler yerel dil kodlarını farklı şekilde eşleştirir: flow'lar SDK tarafından cihazda yerelleştirilir, onboarding'ler ise Adapty sunucusu tarafından.
-
-### Flow'lar ve paywalllar
-
-Adapty'nin render ettiği bir paywall, SDK v4'te flow olarak sunulur; dolayısıyla aşağıdaki kural her ikisini de kapsar.
-
-Eşleşme birebir yapılır. SDK, ilettiğiniz kodu flow'un yerelleştirme kodlarıyla karakter karakter karşılaştırır: büyük/küçük harf dönüşümü yapmaz, alt çizgileri (`_`) kısa çizgilerle (`-`) değiştirmez ve dil alt etiketine geri dönmez. `pt-BR` yerelleştirmesine sahip bir flow için yalnızca `pt-BR` eşleşir: `pt-br`, `pt_BR` ve `pt-PT` hiçbiri eşleşmez.
-
-Kod hiçbir yerelleştirmeyle eşleşmediğinde, flow sessizce [varsayılan yerel ayarında](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) görüntülenir — SDK hata döndürmez ve uyarı kaydetmez.
-
-Kod eşleştiğinde ise Adapty, eşleşen yerelleştirmeyi varsayılan olanla birleştirir: eşleşen yerelleştirmede tanımlanmayan metin ve görseller varsayılan yerelleştirmeden gelir.
-
-Locale kodunu atlamak, flow'un varsayılan yerelleştirmesini istemekle aynı şey değildir: SDK sabit olarak `en` kullanır. Varsayılan dili `de` olan bir flow, `en` yerelleştirmesi varsa `en` dilinde görüntülenir; yalnızca `en` yerelleştirmesi yoksa `de` diline geri döner. Bu durum Android SDK 4.0.1 ve sonrası için geçerlidir — 4.0.0 sürümünde locale kodu atlandığında flow'un varsayılan yerelleştirmesi kullanılır.
-
-:::warning
-Locale kodunu, yayımlanmış flow'da göründüğü şekliyle tam olarak girin: **Select languages** alanındaki `pt-br` yerine `pt-BR` kullanın. Eski Paywall Builder'dan gelen paywall'lar için ise `pt-br` gibi küçük harfli kodlar kullanın.
-
-Sistem yerel tanımlayıcısını olduğu gibi geçirmeyin. Portekizce (Brezilya) olarak ayarlanmış bir cihazda `Locale.getDefault().toString()` ifadesi `pt_BR` döndürür; bu hiçbir yerelleştirmeyle eşleşmez. İngilizce (Amerika Birleşik Devletleri) olarak ayarlanmış bir cihazda ise `Locale.getDefault().toLanguageTag()` ifadesi `en-US` döndürür; bu da yalnızca `en` içeren bir flow'u kaçırır. Sistem yerel tanımlayıcısını geçirmeden önce onu flow'un sahip olduğu bir koda dönüştürün.
-:::
-
-### Onboardinglar \{#onboardings\}
-
-Onboardinglar sunucuda yerelleştirilir ve sunucu kuralları farklı biçimleri de kabul eder. [`getOnboarding`](android-get-onboardings) fonksiyonuna bir `locale` değeri ilettiğinizde:
-
-1. Locale dizesi küçük harfe dönüştürülür ve tüm alt çizgiler (`_`) kısa çizgiyle (`-`) değiştirilir
-2. Adapty, tam olarak eşleşen locale koduyla kayıtlı yerelleştirmeyi arar
-3. Eşleşme bulunamazsa, Adapty ilk kısa çizgiden önceki alt dizeyi alır (`pt-br` için `pt`) ve eşleşen yerelleştirmeyi arar
-4. Yine eşleşme bulunamazsa, Adapty onboarding'in varsayılan locale'i için içeriği döndürür
-
-Bu sayede `pt_BR`, `pt-BR` ve `pt-br` hepsi aynı onboarding yerelleştirmesine çözümlenir.
-
-## Yerelleştirmeleri uygulama \{#implementing-localizations\}
-
-SDK v4'te bir flow yüklerken yerel ayar kodu göndermezsiniz; SDK, `AdaptyUI.getFlowConfiguration` çağrısı yaptığınızda tüm yerelleştirmeleri otomatik olarak yükler.
-
-- **Builder'da oluşturulan flow'lar**: SDK cihaz dilini okumaz; bu nedenle uygulamanızda dili kendiniz belirleyip `AdaptyUI.getFlowConfiguration` fonksiyonunun `locale` argümanı olarak geçin. Bu argüman isteğe bağlıdır — belirtmezseniz flow `en` dilinde görüntülenir ya da flow'un `en` yerelleştirmesi yoksa [varsayılan dilde](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) görüntülenir.
-- **Özel (remote config) paywall'lar**: `getFlow`, yapılandırılmış tüm yerelleştirmeleri `flow.remoteConfigs` içinde döndürür. Her girdinin bir `locale` kodu ve config içeriği (`jsonString` veya ayrıştırılmış `dataMap`) bulunur. Kullanıcıya uyan girdiyi kendi yedekleme mantığınızla seçin:
+`getFlow` metodunun locale parametresi yoktur. Özel bir paywall için bu metot, `flow.remoteConfigs` içindeki tüm yapılandırılmış yerelleştirmeleri döndürür. Her giriş bir `locale` kodu ve config içeriğini (`jsonString` veya ayrıştırılmış `dataMap`) barındırır. Kullanıcıya uygun girişi kendi yedek mantığınızla seçin:
 
 ```kotlin showLineNumbers
 Adapty.getFlow("YOUR_PLACEMENT_ID") { result ->
@@ -79,7 +249,20 @@ Adapty.getFlow("YOUR_PLACEMENT_ID") { result ->
 }
 ```
 
-Adapty, bu `locale` kodlarını [Adapty'deki locale kodu standardı](#locale-code-standard-at-adapty) bölümünde açıklanan formatta saklar. SDK, remote config'leri bir locale ile eşleştirmez; dolayısıyla hangi kaydın uygulanacağına uygulamanız karar verir.
+Adapty, bu `locale` kodlarını [Adapty'deki locale kodu standardı](#locale-code-standard-at-adapty) bölümünde açıklanan formatta saklar. SDK, remote config'leri bir locale ile eşleştirmez; dolayısıyla hangi girişin uygulanacağına uygulamanız karar verir.
+
+### Onboarding'e dil seçeneği geçin \{#pass-a-locale-to-an-onboarding\}
+
+<OnboardingDeprecation />
+
+`getOnboarding`, SDK 4.5'te `locale` parametresini korur. [`getOnboarding`](android-get-onboardings) fonksiyonuna bir `locale` geçtiğinizde, sunucu yerelleştirmeyi seçer:
+
+1. Yerel ayar dizesi küçük harfe dönüştürülür ve tüm alt çizgiler (`_`) kısa çizgi (`-`) ile değiştirilir
+2. Adapty, tam olarak eşleşen yerel ayar koduyla bir yerelleştirme arar
+3. Eşleşme bulunamazsa, Adapty ilk kısa çizgiden önceki alt dizeyi alır (`pt-br` için `pt`) ve eşleşen yerelleştirmeyi arar
+4. Yine eşleşme bulunamazsa, Adapty onboarding'in varsayılan yerel ayarı için içeriği döndürür
+
+Bu şekilde `pt_BR`, `pt-BR` ve `pt-br` hepsi aynı onboarding yerelleştirmesine çözümlenir.
 
 </SDKv4>
 
@@ -87,13 +270,13 @@ Adapty, bu `locale` kodlarını [Adapty'deki locale kodu standardı](#locale-cod
 
 ## Bu neden önemli \{#why-this-is-important\}
 
-Yerel ayar kodlarının devreye girdiği birkaç senaryo vardır — örneğin, uygulamanızın mevcut yerelleştirmesi için doğru paywall'ı getirmeye çalıştığınızda.
+Yerel ayar kodlarının devreye girdiği birkaç senaryo vardır — örneğin, uygulamanızın mevcut yerelleştirmesi için doğru paywall'ı almaya çalışırken.
 
-Yerel ayar kodları karmaşık olabilir ve platformdan platforma farklılık gösterebilir; bu nedenle desteklediğimiz tüm platformlar için dahili bir standarda güveniyoruz. Ancak bu kodlar karmaşık olduğundan, sunucumuza doğru yerelleştirmeyi almak için tam olarak ne gönderdiğinizi ve bundan sonra ne olduğunu anlamanız son derece önemlidir — böylece her zaman beklediğinizi alırsınız.
+Yerel ayar kodları karmaşık olup platformdan platforma farklılık gösterebildiğinden, desteklediğimiz tüm platformlar için dahili bir standarda dayanıyoruz. Ancak bu kodlar karmaşık olduğundan, sunucumuza doğru yerelleştirmeyi almak için tam olarak ne gönderdiğinizi ve bundan sonra ne olduğunu anlamanız gerçekten önemlidir — böylece her zaman beklediğinizi alırsınız.
 
 ## Adapty'de yerel ayar kodu standardı \{#locale-code-standard-at-adapty\}
 
-Adapty, yerel ayar kodları için hafifçe değiştirilmiş bir [BCP 47 standardı](https://en.wikipedia.org/wiki/IETF_language_tag) kullanır: her kod, kısa çizgilerle ayrılmış küçük harfli alt etiketlerden oluşur. Bazı örnekler: `en` (İngilizce), `pt-br` (Portekizce (Brezilya)), `zh` (Basitleştirilmiş Çince), `zh-hant` (Geleneksel Çince).
+Yerel ayar kodları için Adapty, [BCP 47 standardının](https://en.wikipedia.org/wiki/IETF_language_tag) hafifçe değiştirilmiş bir versiyonunu kullanır: her kod, tire ile ayrılmış küçük harfli alt etiketlerden oluşur. Bazı örnekler: `en` (İngilizce), `pt-br` (Portekizce (Brezilya)), `zh` (Basitleştirilmiş Çince), `zh-hant` (Geleneksel Çince).
 
 ## Yerel ayar kodu eşleştirme \{#locale-code-matching\}
 

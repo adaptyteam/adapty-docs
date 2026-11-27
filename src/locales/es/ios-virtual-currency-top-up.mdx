@@ -228,9 +228,46 @@ struct OutOfEnergyResolver: AdaptyUICustomElementsResolver {
 }
 ```
 
-### Abre el flow de energía agotada desde el código de tu app
+### Abre el flow de energía agotada desde el código de tu app \{#open-the-out-of-energy-flow-from-your-app-code\}
 
-Cuando un jugador se quede sin energía, abre el flow de energía agotada con la siguiente función. La función primero consulta tu backend para obtener el saldo, de modo que los jugadores lo vean cuando se abra el flow. Luego, la función adjunta `OutOfEnergyResolver` al flow y mantiene el controlador del flow en `outOfEnergyFlow`. Con esta referencia, `spendDiamonds` puede cerrar el flow:
+Cuando un jugador se queda sin energía, abre el flow de energía agotada con la siguiente función. La función primero consulta tu backend para obtener el saldo, de modo que los jugadores lo vean cuando se abra el flow. Luego, la función adjunta `OutOfEnergyResolver` al flow y mantiene el controlador del flow en `outOfEnergyFlow`. Con esta referencia, `spendDiamonds` puede cerrar el flow:
+
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 o posterior" default>
+
+```swift showLineNumbers title="Swift"
+// call when a player runs out of energy
+func openOutOfEnergyFlow() async {
+    // the balance that players see when the flow opens; without it, players see a dash
+    if let available = try? await GameBackend.shared.diamondBalance() {
+        diamondWallet.balance = available
+    }
+    do {
+        let flow = try await Adapty.getFlow(placementId: "out_of_energy")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            preferredLocales: Locale.preferredLanguages,
+            customElementsResolver: OutOfEnergyResolver(
+                spend: { [weak self] option in
+                    await self?.spendDiamonds(on: option) ?? false
+                },
+                appWideResolver: customElementsResolver // the instance that you set app-wide
+            )
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        outOfEnergyFlow = flowController
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```swift showLineNumbers title="Swift"
 // call when a player runs out of energy
@@ -262,7 +299,10 @@ func openOutOfEnergyFlow() async {
 }
 ```
 
-Como delegado del flow sin energía, el controlador de vistas también debe implementar los [métodos de delegado](ios-handling-events#handling-events-in-uikit) para compras y restauraciones. Para `didFinishPurchase`, usa el código del [paso 4](#open-the-out-of-energy-flow-again-after-a-purchase).
+</TabItem>
+</Tabs>
+
+Como delegado del flow sin energía, el view controller también debe implementar los [métodos de delegado](ios-handling-events#handling-events-in-uikit) para compras y restauraciones. Para `didFinishPurchase`, usa el código del [paso 4](#open-the-out-of-energy-flow-again-after-a-purchase).
 
 En SwiftUI, adjunta `OutOfEnergyResolver` al obtener la configuración del flow. En el closure `spend` del resolver, llama a tu método de gasto. Presenta la configuración del flow con el modificador `.flow`, y usa sus closures en lugar de los métodos del delegado. Los closures no reciben ningún view controller. Para cerrar el flow, establece `isPresented` en `false`.
 
@@ -282,9 +322,40 @@ En SwiftUI, adjunta `OutOfEnergyResolver` al obtener la configuración del flow.
 
 Tras este paso, los jugadores que no tengan suficientes diamantes podrán comprar más en el flow de recarga y luego gastarlos. En esta receta, un único view controller actúa como delegado de ambos flows. Para distinguirlos en un método delegado, compara la propiedad `controller.flowPlacementId` con el placement ID de cada flow. En SwiftUI, presenta el flow de recarga con un segundo modificador `.flow` y abre un flow desde el closure `didDisappear` del otro.
 
-### Abrir el flow de recarga cuando al jugador le faltan diamantes \{#open-the-top-up-flow-when-a-player-doesnt-have-enough-diamonds\}
+### Abre el flow de recarga cuando al jugador le faltan diamantes \{#open-the-top-up-flow-when-a-player-doesnt-have-enough-diamonds\}
 
-La siguiente función pasa el número de diamantes que faltan al tag `diamonds_needed` y abre el flow de recarga. Un view controller presenta un flow a la vez, por lo que la función primero cierra el flow de falta de energía y luego abre el flow de recarga:
+La siguiente función pasa el número de diamantes que faltan a la etiqueta `diamonds_needed` y abre el flow de recarga. Un view controller presenta un flow a la vez, por lo que la función primero cierra el flow de falta de energía y luego abre el flow de recarga:
+
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+```swift showLineNumbers title="Swift"
+func openTopUpFlow(diamondsNeeded: Int) async {
+    // with no value, players see the Initial value of the tag
+    let tags = diamondsNeeded > 0 ? ["diamonds_needed": diamondsNeeded.formatted()] : [:]
+    do {
+        let flow = try await Adapty.getFlow(placementId: "out_of_diamonds")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            preferredLocales: Locale.preferredLanguages,
+            tagResolver: tags
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        // a view controller presents one flow at a time
+        outOfEnergyFlow?.dismiss(animated: true) {
+            self.present(flowController, animated: true)
+        }
+    } catch {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```swift showLineNumbers title="Swift"
 func openTopUpFlow(diamondsNeeded: Int) async {
@@ -309,6 +380,9 @@ func openTopUpFlow(diamondsNeeded: Int) async {
     }
 }
 ```
+
+</TabItem>
+</Tabs>
 
 ### Vuelve a abrir el flow de sin energía después de una compra
 

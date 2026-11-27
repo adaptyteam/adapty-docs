@@ -16,11 +16,35 @@ metadataTitle: "フローにデータを渡す | iOS SDK | Adapty ドキュメ�
 
 ## カスタムタグの値を渡す \{#pass-custom-tag-values\}
 
-アプリの値を`getFlowConfiguration`の`tagResolver`パラメータに、`[String: String]`ディクショナリとして渡します：
+`getFlowConfiguration` の `tagResolver` パラメーターに、`[String: String]` 辞書としてアプリの値を渡します：
 
-- 各キーは`user.streak`など、カスタムタグのフル名です。
-- 各値は、タグの代わりにユーザーに表示される文字列です。
-- 各値は「1250.0」ではなく「1,250」のように、人間が読める形式である必要があります。Adaptyはフォーマットや翻訳を行いません。
+- 各キーは、`user.streak` のようなカスタムタグのフルネームです。
+- 各値は、タグの代わりにユーザーが見る文字列です。
+- 各値は「1,250」のように人が読める形式にしてください（「1250.0」ではありません）。Adapty は値のフォーマットや翻訳を行いません。
+
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+```swift showLineNumbers title="Swift"
+let customTags = [
+    "username": "DragonSlayer42",
+    "coins": "1,250",
+]
+
+do {
+    let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+        forFlow: flow,
+        preferredLocales: Locale.preferredLanguages,
+        tagResolver: customTags
+    )
+    // present the flow
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```swift showLineNumbers title="Swift"
 let customTags = [
@@ -38,6 +62,9 @@ do {
     // handle the error
 }
 ```
+
+</TabItem>
+</Tabs>
 
 SwiftUI の [`.flow` モディファイアと `AdaptyFlowView`](ios-present-paywalls#present-flows-and-paywalls-in-swiftui) および UIKit の [フローコントローラー](ios-present-paywalls#present-flows-and-paywalls-in-uikit) には、カスタムタグ値を指定するパラメーターがありません。これらはフロー設定から取得した値を表示します。
 
@@ -65,7 +92,77 @@ SwiftUI の [`.flow` モディファイアと `AdaptyFlowView`](ios-present-payw
 
 [フローからデータを処理する](ios-flow-input)で説明したように、オンボーディングフローの `flow_user_input` イベントから体重と身長を収集してください。ユーザーが最後の画面に到達したことを知るには、[フロー画面のビューを追跡する](ios-flow-screen-views)で説明したように、`is_last_screen` が `true` に設定された `flow_screen_showed` イベントを監視してください。ユーザーがその画面の後にオンボーディングフローを閉じたら、BMI を計算します。次に、ペイウォールのフロー設定を取得し、`bmi` カスタムタグに BMI を渡してください。
 
-The following code is for UIKit. It implements the `AdaptyFlowControllerDelegate` methods on one view controller, which is the delegate of both the onboarding flow's controller and the paywall's controller. The view controller must also implement the delegate's purchase and restore methods, which this example leaves out. To see them, go to [UIKit でフローとペイウォールを表示する](ios-present-paywalls#present-flows-and-paywalls-in-uikit).
+以下のコードはUIKit向けです。`AdaptyFlowControllerDelegate`のメソッドを1つのビューコントローラーに実装しており、このビューコントローラーはオンボーディングフローのコントローラーとペイウォールのコントローラー、両方のデリゲートとして機能します。ビューコントローラーにはデリゲートの購入・リストアメソッドも実装する必要がありますが、このサンプルでは省略しています。詳細は[UIKitでフローとペイウォールを表示する](ios-present-paywalls#present-flows-and-paywalls-in-uikit)を参照してください。
+
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+```swift showLineNumbers title="Swift"
+private var bodyAnswers: [String: String] = [:]
+private var reachedLastScreen = false
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveAnalyticEvent name: String,
+    params: [String: any Sendable]
+) {
+    if name == "flow_screen_showed", params["is_last_screen"] as? Bool == true {
+        reachedLastScreen = true
+        return
+    }
+    guard name == "flow_user_input",
+          let elementId = params["element_id"] as? String,
+          let value = params["value"] as? String
+    else { return }
+
+    bodyAnswers[elementId] = value
+}
+
+func flowControllerDidDisappear(_ controller: AdaptyFlowController) {
+    // This delegate receives events from both flows. Reset `bodyAnswers` and
+    // `reachedLastScreen` whenever a flow disappears, so that the paywall
+    // doesn't open again when the user closes it.
+    let answers = bodyAnswers
+    let finished = reachedLastScreen
+    bodyAnswers.removeAll()
+    reachedLastScreen = false
+
+    // Number inputs send their values as strings.
+    guard finished,
+          let weight = answers["weight"].flatMap({ Double($0) }),
+          let height = answers["height"].flatMap({ Double($0) }),
+          height > 0
+    else { return }
+
+    let heightInMeters = height / 100
+    let bmi = weight / (heightInMeters * heightInMeters)
+
+    Task {
+        await showBMIPaywall(bmi: bmi.formatted(.number.precision(.fractionLength(1))))
+    }
+}
+
+func showBMIPaywall(bmi: String) async {
+    do {
+        let flow = try await Adapty.getFlow(placementId: "bmi_paywall")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            preferredLocales: Locale.preferredLanguages,
+            tagResolver: ["bmi": bmi]
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```swift showLineNumbers title="Swift"
 private var bodyAnswers: [String: String] = [:]
@@ -130,12 +227,15 @@ func showBMIPaywall(bmi: String) async {
 }
 ```
 
-`formatted` はユーザーのロケールの小数点区切り文字を使用します：英語では "22.7"、ドイツ語では "22,7"。
+</TabItem>
+</Tabs>
 
-SwiftUI では、デリゲートメソッドの代わりにオンボーディングフローの `.flow` モディファイアのクロージャを使用してください：
+`formatted` はユーザーのロケールの小数点区切り文字を使用します。英語では "22.7"、ドイツ語では "22,7" となります。
 
-- `didReceiveAnalyticEvent`：体重と身長を収集し、最後の画面の `flow_screen_showed` イベントを監視します。
-- `didDisappear`：ユーザーが最後の画面に到達した場合、BMI を計算します。次に、ペイウォールのフロー設定を取得し、`bmi` カスタムタグに BMI を渡します。その設定を2番目の `.flow` モディファイアで表示します。
+SwiftUI では、デリゲートメソッドの代わりにオンボーディングフローの `.flow` モディファイアのクロージャを使用してください。
+
+- `didReceiveAnalyticEvent`: 体重と身長を収集し、最後の画面の `flow_screen_showed` イベントを監視します。
+- `didDisappear`: ユーザーが最後の画面に到達した場合は BMI を計算します。次に、ペイウォールのフロー設定を取得し、`bmi` カスタムタグに BMI の値を渡します。その設定を 2 つ目の `.flow` モディファイアで表示します。
 
 ### BMIをユーザーのプロファイルに保存する \{#save-the-bmi-to-the-users-profile\}
 

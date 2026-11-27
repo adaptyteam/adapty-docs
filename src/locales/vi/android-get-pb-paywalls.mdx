@@ -102,14 +102,42 @@ Sau khi tải flow hoặc paywall, hãy kiểm tra xem nó có chứa cấu hìn
 - **`false`** — placement là một paywall tùy chỉnh không có giao diện Builder. [Tự render nó](present-remote-config-paywalls-android).
 
 :::important
-Đảm bảo rằng bạn đã [xuất bản flow](builder-save-publish). Một flow có chỉnh sửa chưa được xuất bản sẽ có trạng thái **Dirty**, và placement của nó vẫn tiếp tục hiển thị phiên bản đã xuất bản lần cuối.
+Hãy nhớ [xuất bản flow](builder-save-publish). Flow có các chỉnh sửa chưa xuất bản sẽ có trạng thái **Dirty**, và placement của nó vẫn phục vụ phiên bản đã xuất bản lần cuối.
 :::
 
 <Tabs groupId="current-os" queryString>
 
 <TabItem value="kotlin" label="Kotlin" default>
 
-Dùng phương thức `getFlowConfiguration` để tải cấu hình view.
+Sử dụng phương thức `getFlowConfiguration` để tải cấu hình view.
+
+<Tabs groupId="android-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+```kotlin showLineNumbers
+if (!flow.hasViewConfiguration) {
+    // use your custom logic
+    return
+}
+
+val preferredLocales = LocaleListCompat.getAdjustedDefault().toLanguageTags().split(",")
+
+AdaptyUI.getFlowConfiguration(flow, preferredLocales, loadTimeout = 10.seconds) { result ->
+    when(result) {
+        is AdaptyResult.Success -> {
+            val flowConfiguration = result.value
+            // use loaded configuration
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```kotlin showLineNumbers
 if (!flow.hasViewConfiguration) {
@@ -130,17 +158,50 @@ AdaptyUI.getFlowConfiguration(flow, loadTimeout = 10.seconds) { result ->
     }
 }
 ```
-| Tham số         | Bắt buộc       | Mô tả                                                        |
+
+</TabItem>
+</Tabs>
+
+| Tham số | Bắt buộc | Mô tả |
 | :-------------- | :------------- | :----------------------------------------------------------- |
 | **flow**        | bắt buộc       | Đối tượng `AdaptyFlow` lấy được qua `Adapty.getFlow`. |
-| **locale**      | tùy chọn | Mã định danh của [bản địa hóa flow](add-paywall-locale-in-adapty-paywall-builder) dùng để hiển thị giao diện, được truyền dưới dạng mã ngôn ngữ với một hoặc hai thẻ phụ cách nhau bằng `-` (ví dụ: `en`, `pt-BR`). Nếu bỏ qua, giao diện sẽ hiển thị bằng `en`, hoặc theo bản địa hóa mặc định của flow nếu flow không có `en`. Xem [Bản địa hóa và mã locale](android-localizations-and-locale-codes). |
-| **customLayoutId** | <p>tùy chọn</p><p>mặc định: `null`</p><p>SDK 4.1+</p> | ID tùy chỉnh của một layout trong cấu hình layout của flow. Truyền giá trị này để hiển thị layout cụ thể đó thay vì layout mà SDK tự động chọn dựa trên loại thiết bị và kích thước màn hình. Nếu không có layout nào khớp với ID, lệnh gọi sẽ thất bại với lỗi no-view-configuration. Flow & Paywall Builder hiện chưa gán ID layout tùy chỉnh, vì vậy hãy để trống tham số này. |
-| **loadTimeout** | mặc định: 5 giây | Giá trị này giới hạn thời gian chờ cho phương thức này. Nếu hết thời gian chờ, dữ liệu được lưu trong cache hoặc fallback cục bộ sẽ được trả về. Lưu ý rằng trong một số trường hợp hiếm gặp, phương thức này có thể hết thời gian chờ muộn hơn một chút so với giá trị được chỉ định trong `loadTimeout`, do thao tác có thể bao gồm nhiều yêu cầu khác nhau bên dưới. |
+| **preferredLocales** | <p>bắt buộc</p><p>SDK 4.5+</p> | Danh sách ngôn ngữ của người dùng, ưu tiên từ cao đến thấp, ví dụ như danh sách từ `LocaleListCompat.getAdjustedDefault()`. SDK thử từng ngôn ngữ theo thứ tự và khớp với ngôn ngữ đầu tiên mà flow có. Nếu danh sách rỗng hoặc không có ngôn ngữ nào khớp, người dùng sẽ xem flow ở [ngôn ngữ mặc định](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale). Với các paywall từ Paywall Builder cũ, SDK chỉ khớp ngôn ngữ có độ ưu tiên cao nhất của người dùng. Thay thế `locale` từ SDK 4.0–4.4. Để biết nên truyền danh sách nào, hãy đọc [Truyền ngôn ngữ của người dùng vào SDK](android-localizations-and-locale-codes#pass-the-users-languages-to-the-sdk). |
+| **locale**      | <p>tùy chọn</p><p>SDK 4.0–4.4</p> | Mã định danh của [bản địa hóa flow](add-paywall-locale-in-adapty-paywall-builder) để render view, dạng mã ngôn ngữ với một hoặc hai subtag cách nhau bằng `-` (ví dụ: `en`, `pt-BR`). Bỏ qua tham số này thì view sẽ render bằng `en`, hoặc bằng bản địa hóa mặc định của flow nếu flow không có `en`. Xem [Bản địa hóa và mã locale](android-localizations-and-locale-codes). |
+| **localizationStrategy** | <p>tùy chọn</p><p>mặc định: `AdaptyUiLocalizationStrategy.Auto`</p><p>SDK 4.5+</p> | Xác định cách SDK khớp ngôn ngữ của người dùng với các locale của flow. Giá trị mặc định phù hợp với hầu hết các ứng dụng. Để biết các giá trị khác, hãy đọc [Chọn chiến lược bản địa hóa](android-localizations-and-locale-codes#select-a-localization-strategy). |
+| **customLayoutId** | <p>tùy chọn</p><p>mặc định: `null`</p><p>SDK 4.1+</p> | ID tùy chỉnh của một layout trong cấu hình layout của flow. Truyền vào để render layout đó thay vì layout mà SDK tự động chọn dựa trên loại thiết bị và kích thước màn hình. Nếu không có layout nào khớp với ID, lệnh gọi sẽ thất bại với lỗi no-view-configuration. Flow & Paywall Builder hiện chưa hỗ trợ gán ID layout tùy chỉnh, vì vậy hãy để trống tham số này. |
+| **loadTimeout** | mặc định: 5 giây | Giá trị này giới hạn thời gian chờ cho phương thức này. Nếu hết thời gian chờ, dữ liệu đã cache hoặc fallback cục bộ sẽ được trả về. Lưu ý rằng trong một số trường hợp hiếm gặp, phương thức này có thể hết thời gian chờ muộn hơn một chút so với giá trị được chỉ định trong `loadTimeout`, do thao tác có thể bao gồm nhiều request khác nhau bên dưới. |
 
 </TabItem>
 <TabItem value="java" label="Java" default>
 
 Sử dụng phương thức `getFlowConfiguration` để tải cấu hình view.
+
+<Tabs groupId="android-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+```java showLineNumbers
+if (!flow.hasViewConfiguration()) {
+    // use your custom logic
+    return;
+}
+
+List<String> preferredLocales =
+    Arrays.asList(LocaleListCompat.getAdjustedDefault().toLanguageTags().split(","));
+
+AdaptyUI.getFlowConfiguration(flow, preferredLocales, AdaptyUiLocalizationStrategy.Auto, TimeInterval.seconds(10), result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyUI.FlowConfiguration flowConfiguration =
+          ((AdaptyResult.Success<AdaptyUI.FlowConfiguration>) result).getValue();
+        // use loaded configuration
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```java showLineNumbers
 if (!flow.hasViewConfiguration()) {
@@ -159,12 +220,18 @@ AdaptyUI.getFlowConfiguration(flow, null, TimeInterval.seconds(10), result -> {
     }
 });
 ```
-| Tham số         | Bắt buộc       | Mô tả                                                        |
+
+</TabItem>
+</Tabs>
+
+| Tham số | Sự hiện diện | Mô tả |
 | :-------------- | :------------- | :----------------------------------------------------------- |
-| **flow**        | bắt buộc       | Đối tượng `AdaptyFlow` lấy được thông qua `Adapty.getFlow`. |
-| **locale**      | tùy chọn | Mã định danh của [bản địa hóa flow](add-paywall-locale-in-adapty-paywall-builder) dùng để hiển thị giao diện, nhận vào dưới dạng mã ngôn ngữ với một hoặc hai thẻ con phân cách bằng `-` (ví dụ: `en`, `pt-BR`). Nếu bỏ qua, giao diện sẽ hiển thị bằng `en`, hoặc theo bản địa hóa mặc định của flow nếu flow không có `en`. Xem [Bản địa hóa và mã ngôn ngữ](android-localizations-and-locale-codes). |
-| **customLayoutId** | <p>tùy chọn</p><p>mặc định: `null`</p><p>SDK 4.1+</p> | ID tùy chỉnh của một layout trong cấu hình layout của flow. Truyền vào để hiển thị layout cụ thể đó thay vì layout SDK tự chọn dựa trên loại thiết bị và kích thước màn hình. Nếu không có layout nào khớp với ID, lệnh gọi sẽ thất bại với lỗi no-view-configuration. Flow & Paywall Builder hiện chưa hỗ trợ gán ID layout tùy chỉnh, vì vậy hãy để trống tham số này. |
-| **loadTimeout** | mặc định: 5 giây | Giá trị này giới hạn thời gian chờ cho phương thức này. Nếu hết thời gian chờ, dữ liệu được lưu cache hoặc fallback cục bộ sẽ được trả về. Lưu ý rằng trong một số trường hợp hiếm gặp, phương thức này có thể timeout muộn hơn một chút so với giá trị chỉ định trong `loadTimeout`, vì thao tác có thể bao gồm nhiều yêu cầu khác nhau bên dưới. |
+| **flow**        | bắt buộc       | Đối tượng `AdaptyFlow` lấy được qua `Adapty.getFlow`. |
+| **preferredLocales** | <p>bắt buộc</p><p>SDK 4.5+</p> | Các ngôn ngữ của người dùng, ưu tiên nhất đặt trước, chẳng hạn như danh sách từ `LocaleListCompat.getAdjustedDefault()`. SDK thử lần lượt các ngôn ngữ này và chọn ngôn ngữ đầu tiên mà flow hỗ trợ. Nếu danh sách trống hoặc không có ngôn ngữ nào khớp, người dùng sẽ thấy flow theo [ngôn ngữ mặc định](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale). Với các paywall từ Paywall Builder cũ, SDK chỉ khớp ngôn ngữ có độ ưu tiên cao nhất của người dùng. Thay thế `locale` từ SDK 4.0–4.4. Để biết nên truyền danh sách nào, hãy đọc [Truyền ngôn ngữ của người dùng vào SDK](android-localizations-and-locale-codes#pass-the-users-languages-to-the-sdk). |
+| **locale**      | <p>tùy chọn</p><p>SDK 4.0–4.4</p> | Mã định danh của [bản địa hóa flow](add-paywall-locale-in-adapty-paywall-builder) để hiển thị view, dưới dạng mã ngôn ngữ với một hoặc hai subtag phân cách bằng `-` (ví dụ: `en`, `pt-BR`). Nếu bỏ qua, view sẽ hiển thị bằng `en`, hoặc theo bản địa hóa mặc định của flow nếu flow không có `en`. Xem [Localizations và mã locale](android-localizations-and-locale-codes). |
+| **localizationStrategy** | <p>tùy chọn</p><p>mặc định: `AdaptyUiLocalizationStrategy.Auto`</p><p>SDK 4.5+</p> | Đặt cách SDK khớp ngôn ngữ của người dùng với các locale của flow. Giá trị mặc định phù hợp với hầu hết các ứng dụng. Để biết các giá trị khác, hãy đọc [Chọn chiến lược bản địa hóa](android-localizations-and-locale-codes#select-a-localization-strategy). |
+| **customLayoutId** | <p>tùy chọn</p><p>mặc định: `null`</p><p>SDK 4.1+</p> | ID tùy chỉnh của một layout trong cấu hình layout của flow. Truyền giá trị này để hiển thị layout cụ thể đó thay vì layout mà SDK tự động chọn dựa trên loại thiết bị và kích thước màn hình. Nếu không có layout nào khớp với ID, lệnh gọi sẽ thất bại với lỗi no-view-configuration. Flow & Paywall Builder hiện chưa hỗ trợ gán custom layout ID, vì vậy hãy để trống tham số này. |
+| **loadTimeout** | mặc định: 5 giây | Giá trị này giới hạn timeout cho phương thức này. Nếu đạt đến timeout, dữ liệu đã cache hoặc fallback cục bộ sẽ được trả về. Lưu ý rằng trong một số trường hợp hiếm gặp, phương thức này có thể timeout muộn hơn một chút so với giá trị được chỉ định trong `loadTimeout`, vì thao tác có thể bao gồm nhiều request khác nhau bên dưới. |
 
 </TabItem>
 

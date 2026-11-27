@@ -1,0 +1,98 @@
+---
+title: "Adapty Android SDK v4.5への移行"
+description: "Adapty Android SDK v4.5への移行: getFlowConfigurationにロケールを1つではなくユーザーの言語リストを渡す方法と、ユーザーに表示される内容の確認方法について説明します。"
+metadataTitle: "Adapty Android SDK v4.5への移行 | Adapty ドキュメント"
+---
+
+Adapty Android SDK 4.4から4.5へアップデートするには、`adapty-bom`のバージョンを`4.5.0`に設定し、このガイドのすべての変更を適用してください。4.3以前のバージョンをお使いの場合は、先に[v4.4の変更](migration-to-android-sdk-44)を適用してください。
+
+4.5では、`getFlowConfiguration`は`locale`のオプションのロケールコードの代わりに、`preferredLocales`に言語リストを必要とします。SDKは[このリストからフローのローカライゼーションを選択します](android-localizations-and-locale-codes)。
+
+:::warning
+すべての`getFlowConfiguration`の呼び出しを更新して、[`preferredLocales`](#replace-locale-with-the-users-languages)を渡すようにしてください。更新後、SDK 4.5はSDK 4.4とは[同じフローの異なるローカライゼーション](#what-users-see-after-the-update)をユーザーに表示する可能性があります。
+:::
+
+## クイックリファレンス \{#quick-reference\}
+
+| 変更前 | 変更後 |
+|---|---|
+| `getFlowConfiguration(flow, locale = "fr")` | `getFlowConfiguration(flow, preferredLocales)`、`preferredLocales` は `LocaleListCompat.getAdjustedDefault()` から取得 |
+| `locale`: 任意 | `preferredLocales`: 必須 |
+| `locale` なし: デバイスのデフォルトロケールに関わらず、ユーザーには `en` が表示される。フローに `en` がない場合はデフォルトロケールが表示される | `preferredLocales = emptyList()`: デバイスの言語設定に関わらず、すべてのユーザーにフローのデフォルトロケールが表示される |
+| ストラテジーパラメーターなし | `localizationStrategy`、任意。デフォルトの `AdaptyUiLocalizationStrategy.Auto` はほとんどのアプリに適している |
+
+## `locale` をユーザーの言語に置き換える \{#replace-locale-with-the-users-languages\}
+
+4.5 では、`getFlowConfiguration` は `locale` の代わりに `preferredLocales` リストを受け取ります。`preferredLocales` パラメータは必須です。`locale` を指定した Kotlin の呼び出し、またはいずれのパラメータも指定しない呼び出しに対して、Android Studio は次のメッセージとともにエラーを報告します:
+
+```text
+Pass preferredLocales: LocaleListCompat.getAdjustedDefault().toLanguageTags().split(",") to show the flow in the app's languages, or emptyList() to use the flow's default localization.
+```
+
+In Java, a call with `locale` or without either parameter still compiles, with a deprecation warning. For a Java call without `locale`, users see the flow in its default locale instead of `en`.
+
+Update every `getFlowConfiguration` call, in Kotlin and in Java. The `locale` parameter of `getOnboarding` doesn't change.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```diff showLineNumbers
+  AdaptyUI.getFlowConfiguration(
+      flow,
+-     locale = "fr",
++     preferredLocales = LocaleListCompat.getAdjustedDefault().toLanguageTags().split(","),
+  ) { result ->
+      // handle the result
+  }
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```diff showLineNumbers
+- AdaptyUI.getFlowConfiguration(flow, "fr", result -> {
++ List<String> preferredLocales =
++     Arrays.asList(LocaleListCompat.getAdjustedDefault().toLanguageTags().split(","));
++ AdaptyUI.getFlowConfiguration(flow, preferredLocales, result -> {
+      // handle the result
+  });
+```
+
+</TabItem>
+</Tabs>
+
+4.4で渡した内容が、4.5で渡す内容を決定します：
+
+- アプリが `Locale.getDefault().toLanguageTag()` などのデバイスの値を渡していた場合は、代わりに `LocaleListCompat.getAdjustedDefault()` のリストを渡してください。値を変換していたコードは削除してください。4.5 ではケースや区切り文字は関係ありません。
+- アプリ内でユーザーが選択した言語を渡していた場合は、`listOf(selectedLanguage)` を先頭に置き、その後に `LocaleListCompat.getAdjustedDefault()` のリストを続けてください。Flow & Paywall Builder のフローにその言語がない場合、SDK はデバイスの言語を試みます。
+- `getFlowConfiguration` を `locale` なしで呼び出していた場合は、`LocaleListCompat.getAdjustedDefault()` のリストを指定した `preferredLocales` を追加してください。
+
+デバイスの言語でフローを表示するには（ユーザーがアプリ別の言語を選択している場合でも）、`LocaleManagerCompat.getSystemLocales(context)` からリストを渡してください。リストの比較方法については、[ユーザーの言語をSDKに渡す](android-localizations-and-locale-codes#pass-the-users-languages-to-the-sdk)を参照してください。
+
+すべてのユーザーにデフォルトロケールでフローを表示するには、空のリストを渡してください: `preferredLocales = emptyList()`。
+
+`localizationStrategy` を渡す必要はありません。指定しない場合、SDKは `AdaptyUiLocalizationStrategy.Auto` を使用します。これはフロービルダー・ペイウォールビルダーのフローや、旧ペイウォールビルダーのペイウォールに適しています。[その他のストラテジー](android-localizations-and-locale-codes#select-a-localization-strategy)は、SDKの言語マッチング方法を変更します。
+
+## アップデート後にユーザーが見るもの \{#what-users-see-after-the-update\}
+
+デフォルトの `localizationStrategy` を使用している場合、SDK 4.5 では SDK 4.4 とは異なるローカライズ版のフローがユーザーに表示されることがあります。
+
+| アプリが渡す値 | フローが持つロケール | 4.4 | 4.5 |
+|---|---|---|---|
+| 言語なし：4.4では`locale`なし、4.5では`emptyList()` | 任意のロケール | フローに`en`があればそれを使用；なければデフォルトロケール | デフォルトロケール |
+| `pt_BR`のように異なるケースや区切り文字を使ったコード | `pt-BR` | デフォルトロケール | `pt-BR` |
+| `pt-BR`のような地域コード | `pt`のように地域なしの言語コード | デフォルトロケール | `pt` |
+| `zh-TW`のようにスクリプトを含む地域コード | `zh-hant`のようなスクリプトコード | デフォルトロケール | `zh-hant`；旧ペイウォールビルダーのペイウォールではデフォルトロケール |
+| `fr`、次に`de`のような複数の言語 | 最初ではなく後の言語（`de`など） | デフォルトロケール | 後の言語；旧ペイウォールビルダーのペイウォールではデフォルトロケール |
+
+SDK 4.0〜4.4 のアプリバージョンは、ユーザーがアップデートするまでフローに対して完全一致を維持します。`Legacy` ストラテジーは 4.4 の完全一致の動作を復元するものではありません。
+
+デバイスに表示されるローカライゼーションを確認するには、[ログレベル](sdk-installation-android#logging) を `AdaptyLogLevel.VERBOSE` に設定し、Logcat で `getFlowConfiguration` の行を探してください。テスト手順については、[ユーザーに表示されるローカライゼーションのテスト](android-localizations-and-locale-codes#test-which-localization-a-user-sees) をご参照ください。
+
+## フローのロケールを確認する \{#review-the-locales-of-your-flows\}
+
+SDK 4.5 では、公開済みフローが現在のロケールで表示されます。ユーザーが読める言語でフローを表示するには、次の3つのルールに従ってください。
+
+- デフォルトロケールは必ず翻訳してください。フローにユーザーの言語が含まれていない場合、このロケールが表示されます。デフォルトの確認や変更方法については、[デフォルトロケールの設定](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale)をご覧ください。
+- Adapty SDK 4.0〜4.4 を使用しているアプリでは、渡されたすべてのロケールコードをそのまま維持してください。これらのアプリはコードを完全一致で照合します。
+- より多くのユーザーをカバーするために、[4.5 がより精度よくマッチするロケール](android-localizations-and-locale-codes#select-which-locales-to-add-to-a-flow)（例：`zh` に加えて `zh-hans` や `zh-hant`）を追加してください。

@@ -102,14 +102,42 @@ The input is empty — there is no content to translate.
 - **`false`** — プレースメントはBuilderのUIを持たないカスタムペイウォールです。[自分でレンダリング](present-remote-config-paywalls-android)してください。
 
 :::important
-[フローを公開](builder-save-publish)してください。編集が未公開のフローは **Dirty** ステータスとなり、そのプレースメントは最後に公開されたバージョンを引き続き提供します。
+必ず[フローを公開](builder-save-publish)してください。未公開の編集があるフローは **Dirty** ステータスになり、そのプレースメントは最後に公開されたバージョンを配信し続けます。
 :::
 
 <Tabs groupId="current-os" queryString>
 
 <TabItem value="kotlin" label="Kotlin" default>
 
-`getFlowConfiguration` メソッドを使用して、ビューの設定を読み込みます。
+ビューの設定を読み込むには、`getFlowConfiguration` メソッドを使用します。
+
+<Tabs groupId="android-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+```kotlin showLineNumbers
+if (!flow.hasViewConfiguration) {
+    // use your custom logic
+    return
+}
+
+val preferredLocales = LocaleListCompat.getAdjustedDefault().toLanguageTags().split(",")
+
+AdaptyUI.getFlowConfiguration(flow, preferredLocales, loadTimeout = 10.seconds) { result ->
+    when(result) {
+        is AdaptyResult.Success -> {
+            val flowConfiguration = result.value
+            // use loaded configuration
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```kotlin showLineNumbers
 if (!flow.hasViewConfiguration) {
@@ -130,17 +158,50 @@ AdaptyUI.getFlowConfiguration(flow, loadTimeout = 10.seconds) { result ->
     }
 }
 ```
+
+</TabItem>
+</Tabs>
+
 | パラメーター       | 必須/任意       | 説明                                                  |
 | :-------------- | :------------- | :----------------------------------------------------------- |
 | **flow**        | 必須       | `Adapty.getFlow` で取得した `AdaptyFlow` オブジェクト。 |
-| **locale**      | 任意 | レンダリングに使用する[フローのローカライズ](add-paywall-locale-in-adapty-paywall-builder)の識別子。`-` で区切られた1つまたは2つのサブタグを持つ言語コード（例: `en`、`pt-BR`）で指定します。省略した場合、ビューは `en` でレンダリングされます。フローに `en` のローカライズが存在しない場合は、フローのデフォルトのローカライズが使用されます。詳しくは[ローカライズとロケールコード](android-localizations-and-locale-codes)を参照してください。 |
-| **customLayoutId** | <p>任意</p><p>デフォルト: `null`</p><p>SDK 4.1+</p> | フローのレイアウト設定内にあるレイアウトのカスタム ID。SDK がデバイスの種類や画面サイズから自動的に選択するのではなく、特定のレイアウトをレンダリングしたい場合に指定します。指定した ID に一致するレイアウトが存在しない場合、no-view-configuration エラーで失敗します。Flow & ペイウォールビルダーはまだカスタムレイアウト ID を割り当てていないため、現時点では未設定のままにしてください。 |
-| **loadTimeout** | デフォルト: 5秒 | このメソッドのタイムアウト時間を制限します。タイムアウトに達した場合、キャッシュされたデータまたはローカルのフォールバックが返されます。内部で複数のリクエストが発生する場合があるため、実際のタイムアウトが `loadTimeout` で指定した時間よりわずかに遅くなることがまれにあります。 |
+| **preferredLocales** | <p>必須</p><p>SDK 4.5+</p> | ユーザーの言語リスト（優先度が高い順）。`LocaleListCompat.getAdjustedDefault()` から取得したリストなどを渡します。SDK はこれらの言語を順番に試し、フローが対応している最初の言語を使用します。リストが空または一致する言語がない場合、ユーザーはフローの[デフォルトロケール](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale)で表示されます。旧ペイウォールビルダーのペイウォールでは、最優先言語のみが照合されます。SDK 4.0〜4.4 の `locale` の代替パラメーターです。渡すリストについては、[ユーザーの言語を SDK に渡す](android-localizations-and-locale-codes#pass-the-users-languages-to-the-sdk)を参照してください。 |
+| **locale**      | <p>任意</p><p>SDK 4.0–4.4</p> | ビューのレンダリングに使用する[フローのローカライズ](add-paywall-locale-in-adapty-paywall-builder)の識別子。`-` で区切られた 1 つまたは 2 つのサブタグを持つ言語コード（例：`en`、`pt-BR`）を指定します。省略すると `en` でレンダリングされ、フローに `en` がない場合はフローのデフォルトのローカライズが使用されます。[ローカライズとロケールコード](android-localizations-and-locale-codes)を参照してください。 |
+| **localizationStrategy** | <p>任意</p><p>デフォルト: `AdaptyUiLocalizationStrategy.Auto`</p><p>SDK 4.5+</p> | ユーザーの言語とフローのロケールをどのように照合するかを設定します。デフォルト値はほとんどのアプリに適しています。他の値については、[ローカライズ戦略を選択する](android-localizations-and-locale-codes#select-a-localization-strategy)を参照してください。 |
+| **customLayoutId** | <p>任意</p><p>デフォルト: `null`</p><p>SDK 4.1+</p> | フローのレイアウト設定内にあるレイアウトのカスタム ID。SDK がデバイスの種類と画面サイズから自動的に選択するレイアウトではなく、特定のレイアウトをレンダリングする場合に指定します。ID に一致するレイアウトがない場合、ビュー設定なしエラーで呼び出しが失敗します。フロー＆ペイウォールビルダーはまだカスタムレイアウト ID を割り当てていないため、未設定のままにしてください。 |
+| **loadTimeout** | デフォルト: 5 秒 | このメソッドのタイムアウト時間を制限します。タイムアウトに達した場合、キャッシュされたデータまたはローカルのフォールバックが返されます。内部で複数のリクエストが発生する場合があるため、まれに `loadTimeout` で指定した時間より若干遅れてタイムアウトすることがあります。 |
 
 </TabItem>
 <TabItem value="java" label="Java" default>
 
 `getFlowConfiguration` メソッドを使用して、ビュー設定を読み込みます。
+
+<Tabs groupId="android-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+```java showLineNumbers
+if (!flow.hasViewConfiguration()) {
+    // use your custom logic
+    return;
+}
+
+List<String> preferredLocales =
+    Arrays.asList(LocaleListCompat.getAdjustedDefault().toLanguageTags().split(","));
+
+AdaptyUI.getFlowConfiguration(flow, preferredLocales, AdaptyUiLocalizationStrategy.Auto, TimeInterval.seconds(10), result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyUI.FlowConfiguration flowConfiguration =
+          ((AdaptyResult.Success<AdaptyUI.FlowConfiguration>) result).getValue();
+        // use loaded configuration
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```java showLineNumbers
 if (!flow.hasViewConfiguration()) {
@@ -159,12 +220,18 @@ AdaptyUI.getFlowConfiguration(flow, null, TimeInterval.seconds(10), result -> {
     }
 });
 ```
-| パラメータ       | 必須/任意       | 説明                                                  |
+
+</TabItem>
+</Tabs>
+
+| パラメーター       | 必須/任意       | 説明                                                  |
 | :-------------- | :------------- | :----------------------------------------------------------- |
 | **flow**        | 必須       | `Adapty.getFlow` で取得した `AdaptyFlow` オブジェクト。 |
-| **locale**      | 任意 | レンダリングに使用する[フローのローカライゼーション](add-paywall-locale-in-adapty-paywall-builder)の識別子。`-` で区切られた 1 つまたは 2 つのサブタグを含む言語コードで指定します（例: `en`、`pt-BR`）。省略した場合、ビューは `en` でレンダリングされます。ただし、フローに `en` のローカライゼーションがない場合はフローのデフォルトのローカライゼーションが使用されます。詳しくは[ローカライゼーションとロケールコード](android-localizations-and-locale-codes)を参照してください。 |
-| **customLayoutId** | <p>任意</p><p>デフォルト: `null`</p><p>SDK 4.1+</p> | フローのレイアウト設定におけるレイアウトのカスタム ID。SDK がデバイスの種類と画面サイズから自動的に選択するレイアウトではなく、特定のレイアウトをレンダリングする場合に指定します。指定した ID に一致するレイアウトがない場合、no-view-configuration エラーで呼び出しが失敗します。Flow & ペイウォールビルダーはまだカスタムレイアウト ID を割り当てないため、この値は設定しないままにしてください。 |
-| **loadTimeout** | デフォルト: 5 秒 | このメソッドのタイムアウト上限を設定します。タイムアウトに達した場合、キャッシュされたデータまたはローカルのフォールバックが返されます。なお、このメソッドは内部で複数のリクエストを実行することがあるため、まれに `loadTimeout` で指定した時間よりわずかに遅れてタイムアウトする場合があります。 |
+| **preferredLocales** | <p>必須</p><p>SDK 4.5+</p> | ユーザーの言語リスト（優先度が高い順）。`LocaleListCompat.getAdjustedDefault()` のリストなどを渡します。SDK はこの順に言語を試み、フローが対応している最初の言語を使用します。リストが空または一致する言語がない場合、ユーザーにはフローの[デフォルトロケール](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale)で表示されます。旧ペイウォールビルダーのペイウォールでは、最優先言語のみが照合されます。SDK 4.0〜4.4 の `locale` パラメーターに替わるものです。渡すリストの詳細は [SDK にユーザーの言語を渡す](android-localizations-and-locale-codes#pass-the-users-languages-to-the-sdk) を参照してください。 |
+| **locale**      | <p>任意</p><p>SDK 4.0〜4.4</p> | ビューのレンダリングに使用する[フローのローカライゼーション](add-paywall-locale-in-adapty-paywall-builder)の識別子。`-` で区切られた 1〜2 つのサブタグを持つ言語コード（例: `en`、`pt-BR`）で指定します。省略すると `en` でレンダリングされ、フローに `en` がない場合はフローのデフォルトのローカライゼーションが使用されます。[ローカライゼーションとロケールコード](android-localizations-and-locale-codes) を参照してください。 |
+| **localizationStrategy** | <p>任意</p><p>デフォルト: `AdaptyUiLocalizationStrategy.Auto`</p><p>SDK 4.5+</p> | ユーザーの言語とフローのロケールをどのように照合するかを設定します。デフォルト値はほとんどのアプリに適しています。その他の値については [ローカライゼーション戦略の選択](android-localizations-and-locale-codes#select-a-localization-strategy) を参照してください。 |
+| **customLayoutId** | <p>任意</p><p>デフォルト: `null`</p><p>SDK 4.1+</p> | フローのレイアウト設定内のレイアウトのカスタム ID。SDK がデバイスの種類や画面サイズから自動的に選択するレイアウトではなく、特定のレイアウトをレンダリングする場合に渡します。ID に一致するレイアウトがない場合、ビュー設定なしエラーで呼び出しが失敗します。フロー＆ペイウォールビルダーはまだカスタムレイアウト ID を割り当てないため、未設定のままにしてください。 |
+| **loadTimeout** | デフォルト: 5 秒 | このメソッドのタイムアウト上限を設定します。タイムアウトに達した場合、キャッシュデータまたはローカルフォールバックが返されます。内部で複数のリクエストが実行されるため、まれに `loadTimeout` で指定した時間よりわずかに遅くタイムアウトする場合があります。 |
 
 </TabItem>
 

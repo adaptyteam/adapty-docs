@@ -102,7 +102,7 @@ The input is empty — there is no content to translate.
 - **`false`** — 该版位是一个没有编辑工具 UI 的自定义付费墙。请[自行渲染](present-remote-config-paywalls-android)。
 
 :::important
-确保[发布流程](builder-save-publish)。有未发布修改的流程会显示 **Dirty** 状态，其版位将继续使用上次发布的版本。
+请确保[发布流程](builder-save-publish)。带有未发布编辑内容的流程状态显示为 **Dirty**，其版位将继续显示上次已发布的版本。
 :::
 
 <Tabs groupId="current-os" queryString>
@@ -110,6 +110,34 @@ The input is empty — there is no content to translate.
 <TabItem value="kotlin" label="Kotlin" default>
 
 使用 `getFlowConfiguration` 方法加载视图配置。
+
+<Tabs groupId="android-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+```kotlin showLineNumbers
+if (!flow.hasViewConfiguration) {
+    // use your custom logic
+    return
+}
+
+val preferredLocales = LocaleListCompat.getAdjustedDefault().toLanguageTags().split(",")
+
+AdaptyUI.getFlowConfiguration(flow, preferredLocales, loadTimeout = 10.seconds) { result ->
+    when(result) {
+        is AdaptyResult.Success -> {
+            val flowConfiguration = result.value
+            // use loaded configuration
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```kotlin showLineNumbers
 if (!flow.hasViewConfiguration) {
@@ -130,17 +158,50 @@ AdaptyUI.getFlowConfiguration(flow, loadTimeout = 10.seconds) { result ->
     }
 }
 ```
-| 参数       | 是否必填       | 描述                                                  |
+
+</TabItem>
+</Tabs>
+
+| 参数 | 是否必填 | 描述 |
 | :-------------- | :------------- | :----------------------------------------------------------- |
-| **flow**        | 必填       | 通过 `Adapty.getFlow` 获取的 `AdaptyFlow` 对象。 |
-| **locale**      | 可选 | 用于渲染视图的[流程本地化](add-paywall-locale-in-adapty-paywall-builder)标识符，格式为语言代码，可包含一或两个以 `-` 分隔的子标签（例如 `en`、`pt-BR`）。若省略，视图将以 `en` 渲染；若流程没有 `en` 本地化，则使用该流程的默认本地化。详见[本地化与语言代码](android-localizations-and-locale-codes)。 |
-| **customLayoutId** | <p>可选</p><p>默认值：`null`</p><p>SDK 4.1+</p> | 流程布局配置中某个布局的自定义 ID。传入此参数可渲染指定布局，而非由 SDK 根据设备类型和屏幕尺寸自动选择的布局。若没有布局与该 ID 匹配，调用将以 no-view-configuration 错误失败。Flow & 付费墙编辑工具目前尚未分配自定义布局 ID，请保持此参数不设置。 |
-| **loadTimeout** | 默认：5 秒 | 该值用于限制此方法的超时时间。若超时，将返回缓存数据或本地备用数据。请注意，在极少数情况下，此方法的实际超时时间可能略晚于 `loadTimeout` 中指定的时间，因为该操作在底层可能由多个不同请求组成。 |
+| **flow** | 必填 | 通过 `Adapty.getFlow` 获取的 `AdaptyFlow` 对象。 |
+| **preferredLocales** | <p>必填</p><p>SDK 4.5+</p> | 用户的语言列表，按优先级从高到低排列，例如从 `LocaleListCompat.getAdjustedDefault()` 获取的列表。SDK 会按顺序依次尝试这些语言，匹配流程中第一个支持的语言。若列表为空或无匹配项，用户将看到该流程的[默认语言](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale)版本。对于旧版付费墙编辑工具创建的付费墙，SDK 仅匹配优先级最高的语言。此参数替代了 SDK 4.0–4.4 中的 `locale`。关于应传入哪个列表，请参阅[向 SDK 传入用户语言](android-localizations-and-locale-codes#pass-the-users-languages-to-the-sdk)。 |
+| **locale** | <p>可选</p><p>SDK 4.0–4.4</p> | 用于渲染视图的[流程本地化](add-paywall-locale-in-adapty-paywall-builder)标识符，格式为由 `-` 分隔的一个或两个子标签的语言代码（例如 `en`、`pt-BR`）。若省略，视图将以 `en` 渲染；若流程中没有 `en`，则使用流程的默认本地化语言。详见[本地化与语言代码](android-localizations-and-locale-codes)。 |
+| **localizationStrategy** | <p>可选</p><p>默认值：`AdaptyUiLocalizationStrategy.Auto`</p><p>SDK 4.5+</p> | 设置 SDK 将用户语言与流程语言区域进行匹配的方式。默认值适用于大多数应用。其他可选值请参阅[选择本地化策略](android-localizations-and-locale-codes#select-a-localization-strategy)。 |
+| **customLayoutId** | <p>可选</p><p>默认值：`null`</p><p>SDK 4.1+</p> | 流程布局配置中某个布局的自定义 ID。传入此参数可渲染指定布局，而非 SDK 根据设备类型和屏幕尺寸自动选择的布局。若无布局与该 ID 匹配，调用将以 no-view-configuration 错误失败。Flow & Paywall Builder 目前尚未支持指定自定义布局 ID，建议保持此参数不设置。 |
+| **loadTimeout** | 默认值：5 秒 | 该值限制此方法的超时时间。若超时，将返回缓存数据或本地备用数据。请注意，在极少数情况下，此方法的实际超时时间可能略晚于 `loadTimeout` 中指定的值，因为底层操作可能由多个请求组成。 |
 
 </TabItem>
 <TabItem value="java" label="Java" default>
 
 使用 `getFlowConfiguration` 方法加载视图配置。
+
+<Tabs groupId="android-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+```java showLineNumbers
+if (!flow.hasViewConfiguration()) {
+    // use your custom logic
+    return;
+}
+
+List<String> preferredLocales =
+    Arrays.asList(LocaleListCompat.getAdjustedDefault().toLanguageTags().split(","));
+
+AdaptyUI.getFlowConfiguration(flow, preferredLocales, AdaptyUiLocalizationStrategy.Auto, TimeInterval.seconds(10), result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyUI.FlowConfiguration flowConfiguration =
+          ((AdaptyResult.Success<AdaptyUI.FlowConfiguration>) result).getValue();
+        // use loaded configuration
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```java showLineNumbers
 if (!flow.hasViewConfiguration()) {
@@ -159,12 +220,18 @@ AdaptyUI.getFlowConfiguration(flow, null, TimeInterval.seconds(10), result -> {
     }
 });
 ```
-| 参数            | 是否必填       | 描述                                                         |
+
+</TabItem>
+</Tabs>
+
+| 参数       | 必要性       | 描述                                                  |
 | :-------------- | :------------- | :----------------------------------------------------------- |
-| **flow**        | 必填           | 通过 `Adapty.getFlow` 获取的 `AdaptyFlow` 对象。 |
-| **locale**      | 可选 | [流程本地化](add-paywall-locale-in-adapty-paywall-builder)的标识符，用于指定渲染视图时使用的语言，格式为一个或两个子标签的语言代码，以 `-` 分隔（例如 `en`、`pt-BR`）。若不填，视图将以 `en` 渲染；若流程没有 `en` 本地化，则使用流程的默认本地化。请参阅[本地化与语言代码](android-localizations-and-locale-codes)。 |
-| **customLayoutId** | <p>可选</p><p>默认值：`null`</p><p>SDK 4.1+</p> | 流程布局配置中某个布局的自定义 ID。传入该参数后，SDK 将渲染指定布局，而非根据设备类型和屏幕尺寸自动选择。若没有布局与该 ID 匹配，调用将以 no-view-configuration 错误失败。Flow & Paywall Builder 目前尚未支持自定义布局 ID，请暂时不要设置此参数。 |
-| **loadTimeout** | 默认：5 秒 | 该值用于限制此方法的超时时间。超时后将返回缓存数据或本地备用数据。请注意，在极少数情况下，此方法的实际超时时间可能略晚于 `loadTimeout` 中指定的值，因为底层操作可能包含多个请求。 |
+| **flow**        | 必填       | 通过 `Adapty.getFlow` 获取的 `AdaptyFlow` 对象。 |
+| **preferredLocales** | <p>必填</p><p>SDK 4.5+</p> | 用户的语言列表，按优先级从高到低排列，例如通过 `LocaleListCompat.getAdjustedDefault()` 获取的列表。SDK 会按顺序依次尝试这些语言，并匹配流程中第一个支持的语言。若列表为空或没有匹配项，用户将看到流程的[默认语言版本](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale)。对于旧版付费墙编辑工具创建的付费墙，SDK 只会匹配优先级最高的用户语言。该参数取代了 SDK 4.0–4.4 中的 `locale`。关于应传入哪个列表，请阅读[向 SDK 传递用户语言](android-localizations-and-locale-codes#pass-the-users-languages-to-the-sdk)。 |
+| **locale**      | <p>可选</p><p>SDK 4.0–4.4</p> | 用于渲染视图的[流程本地化](add-paywall-locale-in-adapty-paywall-builder)标识符，格式为语言代码，可包含一个或两个以 `-` 分隔的子标签（例如 `en`、`pt-BR`）。若不传入，视图将以 `en` 渲染；若流程没有 `en` 版本，则使用流程的默认本地化。详见[本地化与语言代码](android-localizations-and-locale-codes)。 |
+| **localizationStrategy** | <p>可选</p><p>默认值：`AdaptyUiLocalizationStrategy.Auto`</p><p>SDK 4.5+</p> | 设置 SDK 将用户语言与流程语言版本进行匹配的方式。默认值适用于大多数应用。其他可选值请阅读[选择本地化策略](android-localizations-and-locale-codes#select-a-localization-strategy)。 |
+| **customLayoutId** | <p>可选</p><p>默认值：`null`</p><p>SDK 4.1+</p> | 流程布局配置中某个布局的自定义 ID。传入该参数可渲染指定布局，而非 SDK 根据设备类型和屏幕尺寸自动选择的布局。若没有布局与该 ID 匹配，调用将以 no-view-configuration 错误失败。Flow & Paywall Builder 目前尚不支持分配自定义布局 ID，建议保持不设置。 |
+| **loadTimeout** | 默认值：5 秒 | 该值限制此方法的超时时间。若超时，将返回缓存数据或本地备用数据。请注意，在极少数情况下，此方法的实际超时时间可能略晚于 `loadTimeout` 中指定的时间，因为底层操作可能由多个请求组成。 |
 
 </TabItem>
 

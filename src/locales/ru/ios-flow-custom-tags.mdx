@@ -16,11 +16,35 @@ metadataTitle: "Передача данных во флоу | iOS SDK | Доку
 
 ## Передача значений кастомных тегов \{#pass-custom-tag-values\}
 
-Передайте значения вашего приложения в параметр `tagResolver` метода `getFlowConfiguration` в виде словаря `[String: String]`:
+Передайте значения из вашего приложения в параметр `tagResolver` метода `getFlowConfiguration` в виде словаря `[String: String]`:
 
 - Каждый ключ — это полное имя кастомного тега, например `user.streak`.
-- Каждое значение — это строка, которую пользователи видят вместо тега.
-- Каждое значение должно быть удобочитаемым, например "1 250", а не "1250.0". Adapty не форматирует и не переводит его.
+- Каждое значение — строка, которую увидят пользователи вместо тега.
+- Значения должны быть читаемыми для человека, например "1 250", а не "1250.0". Adapty не форматирует и не переводит их.
+
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 или новее" default>
+
+```swift showLineNumbers title="Swift"
+let customTags = [
+    "username": "DragonSlayer42",
+    "coins": "1,250",
+]
+
+do {
+    let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+        forFlow: flow,
+        preferredLocales: Locale.preferredLanguages,
+        tagResolver: customTags
+    )
+    // present the flow
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```swift showLineNumbers title="Swift"
 let customTags = [
@@ -38,6 +62,9 @@ do {
     // handle the error
 }
 ```
+
+</TabItem>
+</Tabs>
 
 Модификатор SwiftUI [`.flow` и `AdaptyFlowView`](ios-present-paywalls#present-flows-and-paywalls-in-swiftui) и [контроллер флоу](ios-present-paywalls#present-flows-and-paywalls-in-uikit) для UIKit не имеют параметра для пользовательских значений тегов. Они отображают значения из конфигурации флоу, которую вы им передаёте.
 
@@ -65,7 +92,77 @@ do {
 
 Соберите вес и рост пользователя из событий `flow_user_input` флоу онбординга, как описано в [Обработка данных из флоу](ios-flow-input). Чтобы определить, что пользователь дошёл до последнего экрана, отслеживайте событие `flow_screen_showed` с `is_last_screen` равным `true`, как описано в [Отслеживание просмотров экранов флоу](ios-flow-screen-views). Когда пользователь закрывает флоу онбординга после этого экрана, вычислите BMI. Затем загрузите конфигурацию флоу пейвола и передайте BMI для кастомного тега `bmi`.
 
-Следующий код написан для UIKit. В нём реализованы методы `AdaptyFlowControllerDelegate` в одном контроллере представления, который является делегатом как контроллера флоу онбординга, так и контроллера пейвола. Контроллер представления также должен реализовывать методы делегата для покупки и восстановления — в этом примере они опущены. Чтобы их увидеть, перейдите в раздел [Отображение флоу и пейволов в UIKit](ios-present-paywalls#present-flows-and-paywalls-in-uikit).
+Следующий код написан для UIKit. Он реализует методы `AdaptyFlowControllerDelegate` в одном контроллере представления, который является делегатом как контроллера флоу онбординга, так и контроллера пейвола. Контроллер представления также должен реализовывать методы делегата для покупки и восстановления, которые в этом примере опущены. Чтобы их увидеть, перейдите к [Отображение флоу и пейволов в UIKit](ios-present-paywalls#present-flows-and-paywalls-in-uikit).
+
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+```swift showLineNumbers title="Swift"
+private var bodyAnswers: [String: String] = [:]
+private var reachedLastScreen = false
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveAnalyticEvent name: String,
+    params: [String: any Sendable]
+) {
+    if name == "flow_screen_showed", params["is_last_screen"] as? Bool == true {
+        reachedLastScreen = true
+        return
+    }
+    guard name == "flow_user_input",
+          let elementId = params["element_id"] as? String,
+          let value = params["value"] as? String
+    else { return }
+
+    bodyAnswers[elementId] = value
+}
+
+func flowControllerDidDisappear(_ controller: AdaptyFlowController) {
+    // This delegate receives events from both flows. Reset `bodyAnswers` and
+    // `reachedLastScreen` whenever a flow disappears, so that the paywall
+    // doesn't open again when the user closes it.
+    let answers = bodyAnswers
+    let finished = reachedLastScreen
+    bodyAnswers.removeAll()
+    reachedLastScreen = false
+
+    // Number inputs send their values as strings.
+    guard finished,
+          let weight = answers["weight"].flatMap({ Double($0) }),
+          let height = answers["height"].flatMap({ Double($0) }),
+          height > 0
+    else { return }
+
+    let heightInMeters = height / 100
+    let bmi = weight / (heightInMeters * heightInMeters)
+
+    Task {
+        await showBMIPaywall(bmi: bmi.formatted(.number.precision(.fractionLength(1))))
+    }
+}
+
+func showBMIPaywall(bmi: String) async {
+    do {
+        let flow = try await Adapty.getFlow(placementId: "bmi_paywall")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            preferredLocales: Locale.preferredLanguages,
+            tagResolver: ["bmi": bmi]
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```swift showLineNumbers title="Swift"
 private var bodyAnswers: [String: String] = [:]
@@ -130,12 +227,15 @@ func showBMIPaywall(bmi: String) async {
 }
 ```
 
-`formatted` использует десятичный разделитель из локали пользователя: "22.7" в английской, "22,7" в немецкой.
+</TabItem>
+</Tabs>
 
-В SwiftUI используйте замыкания модификатора `.flow` онбординг-флоу вместо методов делегата:
+`formatted` использует разделитель дробной части согласно локали пользователя: «22.7» в английской, «22,7» в немецкой.
 
-- `didReceiveAnalyticEvent`: собирайте вес и рост, а также отслеживайте событие `flow_screen_showed` последнего экрана.
-- `didDisappear`: если пользователь дошёл до последнего экрана, вычислите ИМТ. Затем получите конфигурацию флоу пейвола и передайте ИМТ в кастомный тег `bmi`. Отобразите эту конфигурацию с помощью второго модификатора `.flow`.
+В SwiftUI вместо методов делегата используйте замыкания модификатора `.flow` у флоу онбординга:
+
+- `didReceiveAnalyticEvent`: собирайте вес и рост, отслеживая событие `flow_screen_showed` на последнем экране.
+- `didDisappear`: если пользователь дошёл до последнего экрана, рассчитайте ИМТ. Затем получите конфигурацию флоу пейвола и передайте ИМТ в кастомный тег `bmi`. Отобразите эту конфигурацию с помощью второго модификатора `.flow`.
 
 ### Сохранение ИМТ в профиль пользователя \{#save-the-bmi-to-the-users-profile\}
 

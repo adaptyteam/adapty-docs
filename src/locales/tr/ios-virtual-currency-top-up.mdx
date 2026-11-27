@@ -228,9 +228,46 @@ struct OutOfEnergyResolver: AdaptyUICustomElementsResolver {
 }
 ```
 
-### Enerji bitti flow'unu uygulama kodunuzdan açın \{#open-the-out-of-energy-flow-from-your-app-code\}
+### Oyununuzun kodundan enerji bitti flow'unu açın \{#open-the-out-of-energy-flow-from-your-app-code\}
 
-Bir oyuncunun enerjisi bittiğinde, aşağıdaki fonksiyonla enerji bitti flow'unu açın. Fonksiyon önce bakiyeyi almak için backend'inize sorgu yapar; böylece oyuncular flow açıldığında bakiyelerini görebilir. Ardından fonksiyon, `OutOfEnergyResolver`'ı flow'a ekler ve flow controller'ı `outOfEnergyFlow`'da tutar. Bu referans sayesinde `spendDiamonds`, flow'u kapatabilir:
+Bir oyuncu enerjisi bittiğinde, aşağıdaki fonksiyonu kullanarak enerji bitti flow'unu açın. Fonksiyon önce arka ucunuzdan bakiyeyi sorgular; böylece oyuncular flow açıldığında bakiyelerini görebilir. Ardından fonksiyon, flow'a `OutOfEnergyResolver` ekler ve flow denetleyicisini `outOfEnergyFlow` içinde tutar. Bu referans sayesinde `spendDiamonds`, flow'u kapatabilir:
+
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+```swift showLineNumbers title="Swift"
+// call when a player runs out of energy
+func openOutOfEnergyFlow() async {
+    // the balance that players see when the flow opens; without it, players see a dash
+    if let available = try? await GameBackend.shared.diamondBalance() {
+        diamondWallet.balance = available
+    }
+    do {
+        let flow = try await Adapty.getFlow(placementId: "out_of_energy")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            preferredLocales: Locale.preferredLanguages,
+            customElementsResolver: OutOfEnergyResolver(
+                spend: { [weak self] option in
+                    await self?.spendDiamonds(on: option) ?? false
+                },
+                appWideResolver: customElementsResolver // the instance that you set app-wide
+            )
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        outOfEnergyFlow = flowController
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```swift showLineNumbers title="Swift"
 // call when a player runs out of energy
@@ -262,7 +299,10 @@ func openOutOfEnergyFlow() async {
 }
 ```
 
-Enerji bitti flow'unun delegate'i olarak, view controller aynı zamanda satın alma ve geri yüklemeler için [delegate metodlarını](ios-handling-events#handling-events-in-uikit) da uygulamalıdır. `didFinishPurchase` için [4. adımdaki](#open-the-out-of-energy-flow-again-after-a-purchase) kodu kullanın.
+</TabItem>
+</Tabs>
+
+Enerjisi biten flow'un delegate'i olarak, view controller aynı zamanda satın almalar ve geri yüklemeler için [delegate metodlarını](ios-handling-events#handling-events-in-uikit) da uygulamalıdır. `didFinishPurchase` için [4. adımdaki](#open-the-out-of-energy-flow-again-after-a-purchase) kodu kullanın.
 
 SwiftUI'de, flow yapılandırmasını çekerken `OutOfEnergyResolver` ekleyin. Resolver'ın `spend` closure'ında spend metodunuzu çağırın. Flow yapılandırmasını `.flow` modifier'ı ile sunun ve delegate metodları yerine onun closure'larını kullanın. Closure'lar herhangi bir view controller almaz. Flow'u kapatmak için `isPresented` değerini `false` yapın.
 
@@ -282,9 +322,40 @@ SwiftUI'de, flow yapılandırmasını çekerken `OutOfEnergyResolver` ekleyin. R
 
 Bu adımın ardından, yeterli elması olmayan oyuncular top-up flow'undan daha fazla elmas satın alabilir ve ardından harcayabilir. Bu tarifde, tek bir view controller her iki flow'un da delegate'idir. Delegate metodunda flow'ları birbirinden ayırt etmek için `controller.flowPlacementId` özelliğini her flow'un placement ID'siyle karşılaştırın. SwiftUI'da, top-up flow'unu ikinci bir `.flow` modifier ile sunun ve bir flow'u diğerinin `didDisappear` closure'ından açın.
 
-### Bir oyuncunun yeterli elması olmadığında yenileme flow'unu açın \{#open-the-top-up-flow-when-a-player-doesnt-have-enough-diamonds\}
+### Bir oyuncunun yeterli elması olmadığında yükleme flow'unu açma \{#open-the-top-up-flow-when-a-player-doesnt-have-enough-diamonds\}
 
-Aşağıdaki fonksiyon, eksik elmas sayısını `diamonds_needed` etiketine iletir ve yenileme flow'unu açar. Bir view controller aynı anda yalnızca bir flow gösterebildiğinden, fonksiyon önce enerji bitti flow'unu kapatır, ardından yenileme flow'unu açar:
+Aşağıdaki fonksiyon, eksik elmas sayısını `diamonds_needed` etiketine geçirir ve yükleme flow'unu açar. Bir view controller aynı anda yalnızca bir flow gösterebildiğinden, fonksiyon önce enerji bitti flow'unu kapatır, ardından yükleme flow'unu açar:
+
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+```swift showLineNumbers title="Swift"
+func openTopUpFlow(diamondsNeeded: Int) async {
+    // with no value, players see the Initial value of the tag
+    let tags = diamondsNeeded > 0 ? ["diamonds_needed": diamondsNeeded.formatted()] : [:]
+    do {
+        let flow = try await Adapty.getFlow(placementId: "out_of_diamonds")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            preferredLocales: Locale.preferredLanguages,
+            tagResolver: tags
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        // a view controller presents one flow at a time
+        outOfEnergyFlow?.dismiss(animated: true) {
+            self.present(flowController, animated: true)
+        }
+    } catch {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```swift showLineNumbers title="Swift"
 func openTopUpFlow(diamondsNeeded: Int) async {
@@ -309,6 +380,9 @@ func openTopUpFlow(diamondsNeeded: Int) async {
     }
 }
 ```
+
+</TabItem>
+</Tabs>
 
 ### Satın alma sonrasında enerji bitti flow'unu yeniden açma \{#open-the-out-of-energy-flow-again-after-a-purchase\}
 

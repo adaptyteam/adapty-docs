@@ -1,0 +1,98 @@
+---
+title: "迁移 Adapty Android SDK 至 v4.5"
+description: "迁移至 Adapty Android SDK v4.5：向 getFlowConfiguration 传入用户语言列表（而非单一语言），并以新方式检查用户所见内容。"
+metadataTitle: "迁移至 Adapty Android SDK v4.5 | Adapty 文档"
+---
+
+要将应用从 Adapty Android SDK 4.4 升级至 4.5，请将 `adapty-bom` 版本设为 `4.5.0`，并按照本指南完成所有变更。如果应用当前使用 4.3 或更早版本，请先完成 [v4.4 的迁移](migration-to-android-sdk-44)。
+
+在 4.5 版本中，`getFlowConfiguration` 在 `preferredLocales` 中需要一个语言列表，而不是 `locale` 中的可选语言代码。SDK [从此列表中选择流程的本地化版本](android-localizations-and-locale-codes)。
+
+:::warning
+更新每一个 `getFlowConfiguration` 调用，使其传入 [`preferredLocales`](#replace-locale-with-the-users-languages)。更新后，SDK 4.5 向用户展示的[同一流程的本地化版本](#what-users-see-after-the-update)可能与 SDK 4.4 不同。
+:::
+
+## 快速参考 \{#quick-reference\}
+
+| 变更前 | 变更后 |
+|---|---|
+| `getFlowConfiguration(flow, locale = "fr")` | `getFlowConfiguration(flow, preferredLocales)`，其中 `preferredLocales` 来自 `LocaleListCompat.getAdjustedDefault()` |
+| `locale`：可选 | `preferredLocales`：必填 |
+| 不传 `locale`：用户看到 `en`，即使流程的默认语言是其他语言。若流程中没有 `en`，用户则看到默认语言 | `preferredLocales = emptyList()`：所有用户均以流程的默认语言查看，无论设备语言为何 |
+| 无 strategy 参数 | `localizationStrategy`，可选。默认值 `AdaptyUiLocalizationStrategy.Auto` 适用于大多数应用。 |
+
+## 将 `locale` 替换为用户语言 \{#replace-locale-with-the-users-languages\}
+
+在 4.5 版本中，`getFlowConfiguration` 接受 `preferredLocales` 列表，而不再使用 `locale`。`preferredLocales` 参数为必填项。如果 Kotlin 调用时使用了 `locale` 或未传入任何相关参数，Android Studio 将报错，错误信息如下：
+
+```text
+Pass preferredLocales: LocaleListCompat.getAdjustedDefault().toLanguageTags().split(",") to show the flow in the app's languages, or emptyList() to use the flow's default localization.
+```
+
+在 Java 中，不传 `locale` 参数（或不传任何参数）的调用仍可编译，但会产生弃用警告。对于 Java 中不传 `locale` 的调用，用户看到的流程将使用其默认语言，而非 `en`。
+
+请更新所有 `getFlowConfiguration` 调用，包括 Kotlin 和 Java 版本。`getOnboarding` 的 `locale` 参数不变。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```diff showLineNumbers
+  AdaptyUI.getFlowConfiguration(
+      flow,
+-     locale = "fr",
++     preferredLocales = LocaleListCompat.getAdjustedDefault().toLanguageTags().split(","),
+  ) { result ->
+      // handle the result
+  }
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```diff showLineNumbers
+- AdaptyUI.getFlowConfiguration(flow, "fr", result -> {
++ List<String> preferredLocales =
++     Arrays.asList(LocaleListCompat.getAdjustedDefault().toLanguageTags().split(","));
++ AdaptyUI.getFlowConfiguration(flow, preferredLocales, result -> {
+      // handle the result
+  });
+```
+
+</TabItem>
+</Tabs>
+
+您在 4.4 中传递的内容决定了在 4.5 中需要传递的内容：
+
+- 如果你的应用传入了设备语言值（例如 `Locale.getDefault().toLanguageTag()`），请改用 `LocaleListCompat.getAdjustedDefault()` 返回的列表。删除所有转换值的代码：在 4.5 版本中，大小写和分隔符已不再有影响。
+- 如果你的应用传入了用户在应用内选择的语言，请将其放在首位：`listOf(selectedLanguage)`，后面再跟 `LocaleListCompat.getAdjustedDefault()` 的列表。当 Flow & Paywall Builder 中的流程不支持该语言时，SDK 会依次尝试设备语言。
+- 如果你的应用调用 `getFlowConfiguration` 时未传入 `locale`，请添加 `preferredLocales` 参数，值为 `LocaleListCompat.getAdjustedDefault()` 返回的列表。
+
+要以设备语言显示流程（即使用户为您的应用选择了其他语言），请传入 `LocaleManagerCompat.getSystemLocales(context)` 中的列表。如需对比两种方式，请参阅[将用户语言传递给 SDK](android-localizations-and-locale-codes#pass-the-users-languages-to-the-sdk)。
+
+要为每位用户以默认语言显示流程，请传入空列表：`preferredLocales = emptyList()`。
+
+您无需传入 `localizationStrategy`。不传时，SDK 默认使用 `AdaptyUiLocalizationStrategy.Auto`，适用于 Flow & Paywall Builder 中的流程以及旧版付费墙编辑工具中的付费墙。[其他策略](android-localizations-and-locale-codes#select-a-localization-strategy)可改变 SDK 匹配语言的方式。
+
+## 用户更新后看到的内容 \{#what-users-see-after-the-update\}
+
+使用默认 `localizationStrategy` 时，SDK 4.5 可能会向用户展示与 SDK 4.4 不同的流程本地化版本：
+
+| 应用传入 | 流程包含 | 4.4 | 4.5 |
+|---|---|---|---|
+| 无语言：4.4 中不传 `locale`，4.5 中传 `emptyList()` | 任意语言 | `en`（如果流程包含该语言）；否则使用默认语言 | 默认语言 |
+| 大小写或分隔符不同的代码，如 `pt_BR` | `pt-BR` | 默认语言 | `pt-BR` |
+| 带地区的代码，如 `pt-BR` | 不带地区的语言代码，如 `pt` | 默认语言 | `pt` |
+| 隐含文字的地区代码，如 `zh-TW` | 对应文字代码，如 `zh-hant` | 默认语言 | `zh-hant`；对于旧版付费墙编辑工具创建的付费墙，使用默认语言 |
+| 多种语言，如先传 `fr`，再传 `de` | 靠后的语言，如 `de`，但不含第一个 | 默认语言 | 靠后的语言；对于旧版付费墙编辑工具创建的付费墙，使用默认语言 |
+
+使用 SDK 4.0–4.4 的应用版本将继续对您的流程执行精确匹配，直到用户更新应用。`Legacy` 策略不会恢复 4.4 版本的精确匹配行为。
+
+如需查看设备上显示的本地化内容，请将[日志级别](sdk-installation-android#logging)设置为 `AdaptyLogLevel.VERBOSE`，然后在 Logcat 中查找 `getFlowConfiguration` 行。如需了解测试流程，请参阅[测试用户看到的本地化内容](android-localizations-and-locale-codes#test-which-localization-a-user-sees)。
+
+## 检查你的流程语言设置 \{#review-the-locales-of-your-flows\}
+
+SDK 4.5 会以当前语言设置展示你已发布的流程。要让用户看到其可读语言的流程，请遵循以下三条规则：
+
+- 请完整翻译默认语言区域。当流程不包含用户的语言时，用户将看到默认语言区域的内容。如需查看或更改默认语言区域，请参阅[设置默认语言区域](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale)。
+- 对于使用任意 Adapty SDK 4.0 至 4.4 版本的应用，请保留它们传入的每个语言区域代码。这些应用会进行精确匹配。
+- 为了覆盖更多用户，请添加 [4.5 版本匹配效果更好的语言区域](android-localizations-and-locale-codes#select-which-locales-to-add-to-a-flow)，例如在 `zh` 的基础上额外添加 `zh-hans` 和 `zh-hant`。

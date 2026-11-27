@@ -228,9 +228,46 @@ struct OutOfEnergyResolver: AdaptyUICustomElementsResolver {
 }
 ```
 
-### アプリのコードからエネルギー切れのフローを開く \{#open-the-out-of-energy-flow-from-your-app-code\}
+### アプリのコードからエネルギー切れフローを開く \{#open-the-out-of-energy-flow-from-your-app-code\}
 
-プレイヤーのエネルギーが切れたとき、次の関数を使ってエネルギー切れのフローを開きます。この関数はまずバックエンドに残高を問い合わせ、フローが開いたときにプレイヤーがその残高を確認できるようにします。次に、`OutOfEnergyResolver` をフローに紐付け、フローコントローラーを `outOfEnergyFlow` に保持します。この参照により、`spendDiamonds` がフローを閉じられるようになります：
+プレイヤーのエネルギーが切れたとき、以下の関数でエネルギー切れフローを開きます。この関数はまずバックエンドに残高を問い合わせ、フローが開いたときにプレイヤーが残高を確認できるようにします。次に、フローに `OutOfEnergyResolver` をアタッチし、フローコントローラーを `outOfEnergyFlow` に保持します。この参照により、`spendDiamonds` がフローを閉じられるようになります。
+
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+```swift showLineNumbers title="Swift"
+// call when a player runs out of energy
+func openOutOfEnergyFlow() async {
+    // the balance that players see when the flow opens; without it, players see a dash
+    if let available = try? await GameBackend.shared.diamondBalance() {
+        diamondWallet.balance = available
+    }
+    do {
+        let flow = try await Adapty.getFlow(placementId: "out_of_energy")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            preferredLocales: Locale.preferredLanguages,
+            customElementsResolver: OutOfEnergyResolver(
+                spend: { [weak self] option in
+                    await self?.spendDiamonds(on: option) ?? false
+                },
+                appWideResolver: customElementsResolver // the instance that you set app-wide
+            )
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        outOfEnergyFlow = flowController
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```swift showLineNumbers title="Swift"
 // call when a player runs out of energy
@@ -262,7 +299,10 @@ func openOutOfEnergyFlow() async {
 }
 ```
 
-エネルギー切れフローのデリゲートとして、ビューコントローラーは購入とリストアのための[デリゲートメソッド](ios-handling-events#handling-events-in-uikit)も実装する必要があります。`didFinishPurchase` については、[ステップ4](#open-the-out-of-energy-flow-again-after-a-purchase)のコードを使用してください。
+</TabItem>
+</Tabs>
+
+エネルギー切れフローのデリゲートとして、ビューコントローラーはサブスクリプションの購入とリストアのための[デリゲートメソッド](ios-handling-events#handling-events-in-uikit)も実装する必要があります。`didFinishPurchase` については、[ステップ4](#open-the-out-of-energy-flow-again-after-a-purchase)のコードを使用してください。
 
 SwiftUIでは、フロー設定を取得する際に`OutOfEnergyResolver`をアタッチします。リゾルバーの`spend`クロージャー内で、spendメソッドを呼び出します。フロー設定を`.flow`モディファイアーで表示し、デリゲートメソッドの代わりにクロージャーを使用します。クロージャーはビューコントローラーを受け取りません。フローを閉じるには、`isPresented`を`false`に設定します。
 
@@ -282,9 +322,40 @@ SwiftUIでは、フロー設定を取得する際に`OutOfEnergyResolver`をア�
 
 このステップが完了すると、ダイヤモンドが足りないプレイヤーはトップアップフローで購入し、その後消費できるようになります。このレシピでは、1つのビューコントローラーが両方のフローのデリゲートを担います。デリゲートメソッド内でフローを区別するには、`controller.flowPlacementId` プロパティを各フローのプレースメント ID と比較してください。SwiftUI の場合は、2つ目の `.flow` モディファイアでトップアップフローを表示し、一方のフローの `didDisappear` クロージャからもう一方のフローを開きます。
 
-### プレイヤーのダイヤモンドが不足しているときにチャージフローを開く \{#open-the-top-up-flow-when-a-player-doesnt-have-enough-diamonds\}
+### ダイヤモンドが不足しているときにチャージフローを開く \{#open-the-top-up-flow-when-a-player-doesnt-have-enough-diamonds\}
 
-以下の関数は、不足しているダイヤモンドの数を `diamonds_needed` タグに渡し、チャージフローを開きます。ビューコントローラーは一度に1つのフローしか表示できないため、この関数はまずエネルギー不足フローを閉じてから、チャージフローを開きます：
+以下の関数は、不足しているダイヤモンドの数を `diamonds_needed` タグに渡し、チャージフローを開きます。ビューコントローラーは一度に1つのフローしか表示できないため、この関数ではまずエネルギー不足フローを閉じてからチャージフローを開きます:
+
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+```swift showLineNumbers title="Swift"
+func openTopUpFlow(diamondsNeeded: Int) async {
+    // with no value, players see the Initial value of the tag
+    let tags = diamondsNeeded > 0 ? ["diamonds_needed": diamondsNeeded.formatted()] : [:]
+    do {
+        let flow = try await Adapty.getFlow(placementId: "out_of_diamonds")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            preferredLocales: Locale.preferredLanguages,
+            tagResolver: tags
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        // a view controller presents one flow at a time
+        outOfEnergyFlow?.dismiss(animated: true) {
+            self.present(flowController, animated: true)
+        }
+    } catch {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```swift showLineNumbers title="Swift"
 func openTopUpFlow(diamondsNeeded: Int) async {
@@ -309,6 +380,9 @@ func openTopUpFlow(diamondsNeeded: Int) async {
     }
 }
 ```
+
+</TabItem>
+</Tabs>
 
 ### 購入後にエネルギー不足フローを再表示する \{#open-the-out-of-energy-flow-again-after-a-purchase\}
 

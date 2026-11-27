@@ -1,0 +1,98 @@
+---
+title: "Migrer le SDK Android Adapty vers la v4.5"
+description: "Migration vers le SDK Android Adapty v4.5 : passez les langues de l'utilisateur à getFlowConfiguration au lieu d'un seul paramètre de locale, et vérifiez différemment ce que voient les utilisateurs."
+metadataTitle: "Migration vers le SDK Android Adapty v4.5 | Documentation Adapty"
+---
+
+Pour mettre à jour votre application depuis le SDK Android Adapty 4.4 vers la version 4.5, définissez la version `adapty-bom` sur `4.5.0` et appliquez chaque modification décrite dans ce guide. Si votre application est en version 4.3 ou antérieure, commencez par les [modifications v4.4](migration-to-android-sdk-44).
+
+Dans la version 4.5, `getFlowConfiguration` requiert une liste de langues dans `preferredLocales`, au lieu d'un code de langue optionnel dans `locale`. Le SDK [sélectionne une localisation du flow à partir de cette liste](android-localizations-and-locale-codes).
+
+:::warning
+Mettez à jour chaque appel `getFlowConfiguration` pour qu'il transmette [`preferredLocales`](#replace-locale-with-the-users-languages). Après la mise à jour, le SDK 4.5 peut afficher aux utilisateurs [une localisation différente du même flow](#what-users-see-after-the-update) par rapport au SDK 4.4.
+:::
+
+## Référence rapide \{#quick-reference\}
+
+| Avant | Après |
+|---|---|
+| `getFlowConfiguration(flow, locale = "fr")` | `getFlowConfiguration(flow, preferredLocales)`, avec `preferredLocales` issu de `LocaleListCompat.getAdjustedDefault()` |
+| `locale` : optionnel | `preferredLocales` : requis |
+| Sans `locale` : les utilisateurs voient `en`, même si la langue par défaut du flow est différente. Si `en` n'est pas dans le flow, les utilisateurs voient la langue par défaut | `preferredLocales = emptyList()` : tous les utilisateurs voient le flow dans sa langue par défaut, quelle que soit la langue de leur appareil |
+| Pas de paramètre de stratégie | `localizationStrategy`, optionnel. La valeur par défaut, `AdaptyUiLocalizationStrategy.Auto`, convient à la plupart des applications. |
+
+## Remplacer `locale` par les langues de l'utilisateur \{#replace-locale-with-the-users-languages\}
+
+Dans la version 4.5, `getFlowConfiguration` prend une liste `preferredLocales` à la place de `locale`. Le paramètre `preferredLocales` est obligatoire. Pour un appel Kotlin utilisant `locale` ou sans aucun de ces paramètres, Android Studio signale une erreur avec ce message :
+
+```text
+Pass preferredLocales: LocaleListCompat.getAdjustedDefault().toLanguageTags().split(",") to show the flow in the app's languages, or emptyList() to use the flow's default localization.
+```
+
+En Java, un appel avec `locale` ou sans aucun paramètre compile toujours, avec un avertissement de dépréciation. Pour un appel Java sans `locale`, les utilisateurs voient le flow dans sa locale par défaut plutôt qu'en `en`.
+
+Mettez à jour chaque appel `getFlowConfiguration`, en Kotlin et en Java. Le paramètre `locale` de `getOnboarding` ne change pas.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```diff showLineNumbers
+  AdaptyUI.getFlowConfiguration(
+      flow,
+-     locale = "fr",
++     preferredLocales = LocaleListCompat.getAdjustedDefault().toLanguageTags().split(","),
+  ) { result ->
+      // handle the result
+  }
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```diff showLineNumbers
+- AdaptyUI.getFlowConfiguration(flow, "fr", result -> {
++ List<String> preferredLocales =
++     Arrays.asList(LocaleListCompat.getAdjustedDefault().toLanguageTags().split(","));
++ AdaptyUI.getFlowConfiguration(flow, preferredLocales, result -> {
+      // handle the result
+  });
+```
+
+</TabItem>
+</Tabs>
+
+Ce que votre application transmettait en 4.4 détermine ce qu'il faut transmettre en 4.5 :
+
+- Si votre application passait une valeur de l'appareil, comme `Locale.getDefault().toLanguageTag()`, passez plutôt la liste issue de `LocaleListCompat.getAdjustedDefault()`. Supprimez tout code qui convertissait la valeur : la casse et les séparateurs n'ont plus d'importance depuis la version 4.5.
+- Si votre application passait une langue sélectionnée par l'utilisateur dans l'app, placez-la en premier : `listOf(selectedLanguage)`, puis la liste issue de `LocaleListCompat.getAdjustedDefault()`. Si un flow du Flow & Paywall Builder ne prend pas en charge cette langue, le SDK essaie les langues de l'appareil.
+- Si votre application appelait `getFlowConfiguration` sans `locale`, ajoutez `preferredLocales` avec la liste issue de `LocaleListCompat.getAdjustedDefault()`.
+
+Pour afficher le flow dans les langues du système, même si l'utilisateur a sélectionné une autre langue pour votre application, transmettez la liste depuis `LocaleManagerCompat.getSystemLocales(context)`. Pour comparer les listes, consultez [Transmettre les langues de l'utilisateur au SDK](android-localizations-and-locale-codes#pass-the-users-languages-to-the-sdk).
+
+Pour afficher le flow dans sa langue par défaut pour tous les utilisateurs, transmettez une liste vide : `preferredLocales = emptyList()`.
+
+Vous n'avez pas besoin de passer `localizationStrategy`. Sans ce paramètre, le SDK utilise `AdaptyUiLocalizationStrategy.Auto`, qui convient aux flows du Flow & Paywall Builder et aux paywalls de l'ancien Paywall Builder. Les [autres stratégies](android-localizations-and-locale-codes#select-a-localization-strategy) modifient la façon dont le SDK fait correspondre les langues.
+
+## Ce que voient les utilisateurs après la mise à jour \{#what-users-see-after-the-update\}
+
+Avec la stratégie `localizationStrategy` par défaut, le SDK 4.5 peut afficher aux utilisateurs une localisation différente du même flow par rapport au SDK 4.4 :
+
+| L'appli transmet | Le flow possède | 4.4 | 4.5 |
+|---|---|---|---|
+| Aucune langue : pas de `locale` en 4.4, `emptyList()` en 4.5 | N'importe quelle locale | `en`, si le flow la possède ; sinon, la locale par défaut | La locale par défaut |
+| Un code avec une casse ou un séparateur différent, comme `pt_BR` | `pt-BR` | La locale par défaut | `pt-BR` |
+| Un code régional, comme `pt-BR` | La langue sans région, comme `pt` | La locale par défaut | `pt` |
+| Un code régional impliquant un script, comme `zh-TW` | Le script, comme `zh-hant` | La locale par défaut | `zh-hant` ; sur les paywalls de l'ancien Paywall Builder, la locale par défaut |
+| Plusieurs langues, comme `fr` puis `de` | Une langue ultérieure, comme `de`, mais pas la première | La locale par défaut | La langue ultérieure ; sur les paywalls de l'ancien Paywall Builder, la locale par défaut |
+
+Les versions d'application utilisant le SDK 4.0–4.4 conservent la correspondance exacte avec vos flows jusqu'à ce que les utilisateurs mettent à jour l'application. La stratégie `Legacy` ne rétablit pas la correspondance exacte du SDK 4.4.
+
+Pour voir quelle localisation s'affiche sur un appareil, définissez le [niveau de log](sdk-installation-android#logging) sur `AdaptyLogLevel.VERBOSE` et recherchez la ligne `getFlowConfiguration` dans Logcat. Pour une procédure de test, consultez [Tester quelle localisation voit un utilisateur](android-localizations-and-locale-codes#test-which-localization-a-user-sees).
+
+## Vérifiez les langues de vos flows \{#review-the-locales-of-your-flows\}
+
+Le SDK 4.5 affiche vos flows publiés avec leurs langues actuelles. Pour montrer à chaque utilisateur un flow dans sa langue, suivez ces trois règles :
+
+- Traduisez intégralement la locale par défaut. Les utilisateurs la voient quand le flow ne prend pas en charge leur langue. Pour la consulter ou la modifier, lisez [Définir la locale par défaut](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale).
+- Pour les applications utilisant n'importe quelle version du SDK Adapty de 4.0 à 4.4, conservez chaque code de locale qu'elles transmettent. Ces applications effectuent une correspondance exacte sur le code.
+- Pour couvrir davantage d'utilisateurs, ajoutez [les locales que 4.5 fait correspondre mieux](android-localizations-and-locale-codes#select-which-locales-to-add-to-a-flow), comme `zh-hans` et `zh-hant` en plus de `zh`.

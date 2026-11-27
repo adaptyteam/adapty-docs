@@ -14,13 +14,37 @@ metadataTitle: "Flow'lara veri aktarma | iOS SDK | Adapty Dokümanları"
 
 <FlowCustomTagsAddToFlow />
 
-## Özel etiket değerlerini aktarma \{#pass-custom-tag-values\}
+## Özel etiket değerlerini aktarın \{#pass-custom-tag-values\}
 
-`getFlowConfiguration` metodunun `tagResolver` parametresine, uygulamanızın değerlerini `[String: String]` sözlüğü olarak aktarın:
+Uygulamanızın değerlerini `getFlowConfiguration` metodunun `tagResolver` parametresine `[String: String]` sözlüğü olarak aktarın:
 
 - Her anahtar, `user.streak` gibi özel bir etiketin tam adıdır.
-- Her değer, kullanıcıların etiket yerine gördüğü metindir.
-- Her değer, "1250.0" değil "1,250" gibi okunabilir bir formatta olmalıdır. Adapty bu değerleri biçimlendirmez veya çevirmez.
+- Her değer, kullanıcıların etiketi yerine gördüğü metindir.
+- Her değer, "1250.0" değil "1,250" gibi okunabilir formatta olmalıdır. Adapty bunu biçimlendirmez veya çevirmez.
+
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
+
+```swift showLineNumbers title="Swift"
+let customTags = [
+    "username": "DragonSlayer42",
+    "coins": "1,250",
+]
+
+do {
+    let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+        forFlow: flow,
+        preferredLocales: Locale.preferredLanguages,
+        tagResolver: customTags
+    )
+    // flow'u göster
+} catch {
+    // hatayı işle
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```swift showLineNumbers title="Swift"
 let customTags = [
@@ -33,11 +57,14 @@ do {
         forFlow: flow,
         tagResolver: customTags
     )
-    // present the flow
+    // flow'u göster
 } catch {
-    // handle the error
+    // hatayı yönet
 }
 ```
+
+</TabItem>
+</Tabs>
 
 SwiftUI [`.flow` modifier ve `AdaptyFlowView`](ios-present-paywalls#present-flows-and-paywalls-in-swiftui) ve UIKit [flow controller](ios-present-paywalls#present-flows-and-paywalls-in-uikit), özel tag değerleri için herhangi bir parametre içermez. Bu bileşenler, kendilerine verdiğiniz flow yapılandırmasındaki değerleri görüntüler.
 
@@ -65,7 +92,77 @@ Kullanıcılara hedef kilolarını bir grafik olarak göstermek için [Paywall'd
 
 Onboarding flow'unun `flow_user_input` etkinliklerinden ağırlık ve boy bilgilerini toplayın; bunun nasıl yapıldığını [Flow'lardan veri işleme](ios-flow-input) bölümünde bulabilirsiniz. Kullanıcının son ekrana ulaştığını anlamak için `is_last_screen` değeri `true` olan bir `flow_screen_showed` etkinliğini izleyin; bkz. [Flow ekran görüntülemelerini takip etme](ios-flow-screen-views). Kullanıcı o ekranın ardından onboarding flow'unu kapattığında BMI'yi hesaplayın. Ardından paywall'ın flow yapılandırmasını çekin ve `bmi` özel etiketi için BMI değerini aktarın.
 
-Aşağıdaki kod UIKit içindir. `AdaptyFlowControllerDelegate` metodlarını tek bir view controller üzerinde uygular; bu view controller, hem onboarding flow'unun controller'ının hem de paywall controller'ının delegate'idir. View controller aynı zamanda delegate'in satın alma ve geri yükleme metodlarını da uygulamalıdır; bu örnek onları dışarıda bırakmıştır. Bunları görmek için [UIKit'te flow ve paywall sunma](ios-present-paywalls#present-flows-and-paywalls-in-uikit) sayfasına gidin.
+Aşağıdaki kod UIKit içindir. `AdaptyFlowControllerDelegate` metodlarını tek bir view controller üzerinde uygular; bu view controller hem onboarding flow'unun controller'ının hem de paywall'ın controller'ının delegate'idir. View controller aynı zamanda delegate'in satın alma ve geri yükleme metodlarını da uygulamalıdır; bu örnek bunları dışarıda bırakmıştır. Onları görmek için [UIKit'te flow ve paywall sunma](ios-present-paywalls#present-flows-and-paywalls-in-uikit) sayfasına gidin.
+
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 veya üzeri" default>
+
+```swift showLineNumbers title="Swift"
+private var bodyAnswers: [String: String] = [:]
+private var reachedLastScreen = false
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveAnalyticEvent name: String,
+    params: [String: any Sendable]
+) {
+    if name == "flow_screen_showed", params["is_last_screen"] as? Bool == true {
+        reachedLastScreen = true
+        return
+    }
+    guard name == "flow_user_input",
+          let elementId = params["element_id"] as? String,
+          let value = params["value"] as? String
+    else { return }
+
+    bodyAnswers[elementId] = value
+}
+
+func flowControllerDidDisappear(_ controller: AdaptyFlowController) {
+    // This delegate receives events from both flows. Reset `bodyAnswers` and
+    // `reachedLastScreen` whenever a flow disappears, so that the paywall
+    // doesn't open again when the user closes it.
+    let answers = bodyAnswers
+    let finished = reachedLastScreen
+    bodyAnswers.removeAll()
+    reachedLastScreen = false
+
+    // Number inputs send their values as strings.
+    guard finished,
+          let weight = answers["weight"].flatMap({ Double($0) }),
+          let height = answers["height"].flatMap({ Double($0) }),
+          height > 0
+    else { return }
+
+    let heightInMeters = height / 100
+    let bmi = weight / (heightInMeters * heightInMeters)
+
+    Task {
+        await showBMIPaywall(bmi: bmi.formatted(.number.precision(.fractionLength(1))))
+    }
+}
+
+func showBMIPaywall(bmi: String) async {
+    do {
+        let flow = try await Adapty.getFlow(placementId: "bmi_paywall")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            preferredLocales: Locale.preferredLanguages,
+            tagResolver: ["bmi": bmi]
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
 
 ```swift showLineNumbers title="Swift"
 private var bodyAnswers: [String: String] = [:]
@@ -130,12 +227,15 @@ func showBMIPaywall(bmi: String) async {
 }
 ```
 
+</TabItem>
+</Tabs>
+
 `formatted`, kullanıcının yerel ayarına göre ondalık ayırıcı kullanır: İngilizce'de "22.7", Almanca'da "22,7".
 
 SwiftUI'da, delegate metotları yerine onboarding flow'unun `.flow` modifier'ının closure'larını kullanın:
 
-- `didReceiveAnalyticEvent`: Ağırlığı ve boyu toplayın ve son ekranın `flow_screen_showed` eventini izleyin.
-- `didDisappear`: Kullanıcı son ekrana ulaştıysa BMI'yı hesaplayın. Ardından paywall'ın flow yapılandırmasını çekin ve `bmi` custom tag'i için BMI değerini geçirin. Bu yapılandırmayı ikinci bir `.flow` modifier ile gösterin.
+- `didReceiveAnalyticEvent`: Ağırlığı ve boyu toplayın ve son ekranın `flow_screen_showed` olayını izleyin.
+- `didDisappear`: Kullanıcı son ekrana ulaştıysa BMI'ı hesaplayın. Ardından paywall'un flow yapılandırmasını alın ve `bmi` özel etiketi için BMI'ı geçirin. Bu yapılandırmayı ikinci bir `.flow` modifier'ı ile sunun.
 
 ### BMI'ı kullanıcı profiline kaydedin \{#save-the-bmi-to-the-users-profile\}
 
