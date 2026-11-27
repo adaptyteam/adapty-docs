@@ -1,0 +1,96 @@
+---
+title: "Migrate Adapty Android SDK to v4.5"
+description: "Migrate to Adapty Android SDK v4.5: pass the user's languages to getFlowConfiguration instead of one locale, and check what users see differently."
+metadataTitle: "Migrating to Adapty Android SDK v4.5 | Adapty Docs"
+---
+
+To update your app from Adapty Android SDK 4.4 to 4.5, set the `adapty-bom` version to `4.5.0`, and apply every change in this guide. An app on 4.3 or earlier needs the [v4.4 changes](migration-to-android-sdk-44) first.
+
+In 4.5, `getFlowConfiguration` requires a list of languages in `preferredLocales`, instead of an optional locale code in `locale`. The SDK [selects a localization of the flow from this list](android-localizations-and-locale-codes).
+
+:::warning
+Update every `getFlowConfiguration` call so that it passes [`preferredLocales`](#replace-locale-with-the-users-languages). After the update, SDK 4.5 can show users [a different localization of the same flow](#what-users-see-after-the-update) than SDK 4.4 did.
+:::
+
+## Quick reference
+
+| Before | After |
+|---|---|
+| `getFlowConfiguration(flow, locale = "fr")` | `getFlowConfiguration(flow, preferredLocales)`, with `preferredLocales` from `LocaleListCompat.getAdjustedDefault()` |
+| `locale`: optional | `preferredLocales`: required |
+| No `locale`: users see `en`, even when the default locale of the flow is another language. Without `en` in the flow, users see the default locale | `preferredLocales = emptyList()`: all users see the flow in its default locale, whatever their device languages |
+| No strategy parameter | `localizationStrategy`, optional. The default, `AdaptyUiLocalizationStrategy.Auto`, fits most apps. |
+
+## Replace `locale` with the user's languages
+
+In 4.5, `getFlowConfiguration` takes a `preferredLocales` list instead of `locale`. The `preferredLocales` parameter is required. For a Kotlin call with `locale` or without either parameter, Android Studio reports an error with this message:
+
+```text
+Pass preferredLocales: LocaleListCompat.getAdjustedDefault().toLanguageTags().split(",") to show the flow in the app's languages, or emptyList() to use the flow's default localization.
+```
+
+Update every `getFlowConfiguration` call, in Kotlin and in Java. The `locale` parameter of `getOnboarding` doesn't change.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```diff showLineNumbers
+  AdaptyUI.getFlowConfiguration(
+      flow,
+-     locale = "fr",
++     preferredLocales = LocaleListCompat.getAdjustedDefault().toLanguageTags().split(","),
+  ) { result ->
+      // handle the result
+  }
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```diff showLineNumbers
+- AdaptyUI.getFlowConfiguration(flow, "fr", result -> {
++ List<String> preferredLocales =
++     Arrays.asList(LocaleListCompat.getAdjustedDefault().toLanguageTags().split(","));
++ AdaptyUI.getFlowConfiguration(flow, preferredLocales, result -> {
+      // handle the result
+  });
+```
+
+</TabItem>
+</Tabs>
+
+What your app passed in 4.4 determines what to pass in 4.5:
+
+- If your app passed a device value, such as `Locale.getDefault().toLanguageTag()`, pass the list from `LocaleListCompat.getAdjustedDefault()` instead. Delete any code that converted the value: case and separators don't matter in 4.5.
+- If your app passed a language that the user selected in the app, put it first: `listOf(selectedLanguage)`, then the list from `LocaleListCompat.getAdjustedDefault()`. When a flow from the Flow & Paywall Builder lacks that language, the SDK tries the device's languages.
+- If your app called `getFlowConfiguration` without `locale`, add `preferredLocales` with the list from `LocaleListCompat.getAdjustedDefault()`.
+
+To show the flow in the device languages, even when the user selected another language for your app, pass the list from `LocaleManagerCompat.getSystemLocales(context)`. To compare the lists, read [Pass the user's languages to the SDK](android-localizations-and-locale-codes#pass-the-users-languages-to-the-sdk).
+
+To show every user the flow in its default locale, pass an empty list: `preferredLocales = emptyList()`.
+
+You don't need to pass `localizationStrategy`. Without it, the SDK uses `AdaptyUiLocalizationStrategy.Auto`, which is suitable for flows from the Flow & Paywall Builder and for paywalls from the old Paywall Builder. The [other strategies](android-localizations-and-locale-codes#select-a-localization-strategy) change how the SDK matches languages.
+
+## What users see after the update
+
+With the default `localizationStrategy`, SDK 4.5 can show users a different localization of the same flow than SDK 4.4:
+
+| The app passes | The flow has | 4.4 | 4.5 |
+|---|---|---|---|
+| No languages: no `locale` in 4.4, `emptyList()` in 4.5 | Any locales | `en`, if the flow has it; otherwise, the default locale | The default locale |
+| A code with another case or separator, such as `pt_BR` | `pt-BR` | The default locale | `pt-BR` |
+| A regional code, such as `pt-BR` | The language without a region, such as `pt` | The default locale | `pt` |
+| A regional code that implies a script, such as `zh-TW` | The script, such as `zh-hant` | The default locale | `zh-hant`; on paywalls from the old Paywall Builder, the default locale |
+| Several languages, such as `fr`, then `de` | A later language, such as `de`, but not the first one | The default locale | The later language; on paywalls from the old Paywall Builder, the default locale |
+
+App versions on SDK 4.0–4.4 keep exact matching against your flows until users update the app. The `Legacy` strategy doesn't bring back the exact matching of 4.4.
+
+To see which localization appears on a device, set the [log level](sdk-installation-android#logging) to `AdaptyLogLevel.VERBOSE`, and find the `getFlowConfiguration` line in Logcat. For a test procedure, read [Test which localization a user sees](android-localizations-and-locale-codes#test-which-localization-a-user-sees).
+
+## Review the locales of your flows
+
+SDK 4.5 displays your published flows with their current locales. To show users each flow in a language they read, follow three rules:
+
+- Translate the default locale fully. Users see it when the flow has none of their languages. To view or change the default, read [Set the default locale](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale).
+- For apps on any Adapty SDK from 4.0 to 4.4, keep every locale code that they pass. Those apps match the code exactly.
+- To cover more users, add [the locales that 4.5 matches better](android-localizations-and-locale-codes#select-which-locales-to-add-to-a-flow), such as `zh-hans` and `zh-hant` in addition to `zh`.

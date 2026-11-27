@@ -7,35 +7,100 @@ displayed_sidebar: sdkandroid
 
 <SDKv4>
 
-## Why this is important
+To show each user a flow in a language they read, pass their languages to Adapty Android SDK 4.5 or later. Users see a flow in their most preferred language that the flow has. A flow with none of these languages appears in its default locale.
 
-Locale codes come into play when Adapty picks the localization for a flow or an onboarding, and when you read a remote config for a custom paywall.
+On SDK 4.0–4.4, your app passes one locale code to `getFlowConfiguration`, and the SDK [matches it exactly](#pass-the-users-languages-to-the-sdk). To update your code, read [Migrate Adapty Android SDK to v4.5](migration-to-android-sdk-45).
 
-Locale codes are complicated and can vary from platform to platform, so Adapty relies on one internal standard across every platform it supports. Understanding that standard helps you predict which localization a user receives.
+On SDK 4.5 or later, three cases follow other rules:
 
-## Locale code standard at Adapty
+- Apps that pick a flow's localization in their own code [use a custom resolver](#pick-a-flows-localization-in-your-own-code).
+- Paywalls from the old Paywall Builder [only match the user's language with the highest priority](#select-a-localization-strategy).
+- Custom paywalls and onboardings [work as in SDK 4.4](#localize-custom-paywalls-and-onboardings).
 
-Adapty locale codes follow the [BCP 47 standard](https://en.wikipedia.org/wiki/IETF_language_tag): a language subtag, then an optional script or region subtag, separated by hyphens. Where a code appears determines its letter case:
+## Pass the user's languages to the SDK
 
-- The **Select languages** field shows all codes in lowercase: `pt-br`, `zh-hant`.
-- Published flows from the Flow & Paywall Builder have codes with an uppercase region and a capitalized script: `pt-BR`, `zh-Hant`.
-- Paywalls from the old Paywall Builder keep all codes in lowercase: `pt-br`, `zh-hant`.
+<Tabs groupId="android-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
 
-Codes such as `en`, `pt`, and `es-419` look the same everywhere.
+[`AdaptyUI.getFlowConfiguration`](android-get-pb-paywalls#fetch-the-view-configuration) requires the `preferredLocales` parameter. Pass the user's languages in it, most preferred first. Your app decides which languages to pass, such as the device languages or the language from a picker in your app.
 
-## Locale code matching
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
 
-In SDK v4, flows and onboardings match locale codes differently: flows are localized by the SDK on the device, onboardings by the Adapty server.
+```kotlin showLineNumbers
+val preferredLocales = LocaleListCompat.getAdjustedDefault().toLanguageTags().split(",")
 
-### Flows and Paywall Builder paywalls
+AdaptyUI.getFlowConfiguration(flow, preferredLocales) { result ->
+    // handle the result
+}
+```
 
-A paywall built in the Paywall Builder is delivered as a flow in SDK v4, so the rule below covers both.
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers
+List<String> preferredLocales =
+    Arrays.asList(LocaleListCompat.getAdjustedDefault().toLanguageTags().split(","));
+
+AdaptyUI.getFlowConfiguration(flow, preferredLocales, result -> {
+    // handle the result
+});
+```
+
+</TabItem>
+</Tabs>
+
+Three rules decide which localization users see:
+
+- The SDK tries the user's languages in order and matches the first one that the flow has. This is Android resource matching: the rules Android uses to select an app's translations. The SDK matches close variants of a language: `de-AT` matches `de`, and `zh-TW` matches `zh-hant`. On Android 6 and earlier, the SDK matches the first localization of the flow in the user's language and script, whatever its region. Paywalls from the old Paywall Builder only use the user's language with the highest priority.
+- Case and separators don't matter: `pt_BR`, `pt-BR`, and `pt-br` match the same locale. Pass the values as Android returns them.
+- With an empty list, or a list that matches none of the flow's locales, the SDK uses the default locale.
+
+Pass one of three lists. The list sets the order in which the SDK tries languages, but it can't add a language that the flow lacks.
+
+| Value | The flow appears in | Trade-off |
+|---|---|---|
+| `LocaleListCompat.getAdjustedDefault()` | The language that the user selected for your app, in the Android settings or in your app. Without one, the first device language that the flow has | Below Android 13, a language that your app sets with `AppCompatDelegate.setApplicationLocales` only applies after the first `AppCompatActivity` is created. Read the list after that, not in `Application.onCreate`. |
+| `LocaleManagerCompat.getSystemLocales(context)` | The first device language that the flow has, even when the user selected another language for your app | The flow can appear in another language than your app's UI |
+| `selectedLanguage`, then `LocaleListCompat.getAdjustedDefault()` | The language from the language picker in your app, then the device languages | — |
+
+To pass a list, convert it to locale codes:
+
+```kotlin showLineNumbers
+// The language selected for your app, then the device languages
+val appLocales = LocaleListCompat.getAdjustedDefault().toLanguageTags().split(",")
+
+// The device languages
+val deviceLocales = LocaleManagerCompat.getSystemLocales(context).toLanguageTags().split(",")
+
+// The language from the language picker in your app, then the other languages
+val pickerLocales = listOf(selectedLanguage) + appLocales
+```
+
+The first two lists give different results when the user selects a language for your app. For example, on a device set to English, a user selects Spanish for your app. This user sees Spanish with `getAdjustedDefault()`, and English with `getSystemLocales()`.
+
+A language picker that saves the language with `AppCompatDelegate.setApplicationLocales` doesn't need the third list. With such a picker, the first list starts with the selected language.
+
+:::tip
+Don't pass `Locale.getDefault().toLanguageTag()` on its own. It contains one language, so the SDK has no other language to try.
+:::
+
+Most apps don't pass `localizationStrategy`. Without it, the SDK uses [`AdaptyUiLocalizationStrategy.Auto`](#select-a-localization-strategy), which fits flows from the Flow & Paywall Builder and paywalls from the old Paywall Builder.
+
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
+
+Pass one locale code in the `locale` parameter of [`AdaptyUI.getFlowConfiguration`](android-get-pb-paywalls#fetch-the-view-configuration). Your app decides which code to pass, such as the device locale or the language from a picker in your app.
+
+```kotlin showLineNumbers
+AdaptyUI.getFlowConfiguration(flow, locale = "pt-BR") { result ->
+    // handle the result
+}
+```
 
 The match is exact. The SDK compares the code you pass with the localization codes of the flow character by character: it doesn't change the case, doesn't replace underscores (`_`) with hyphens (`-`), and doesn't fall back to the language subtag. For a flow with a `pt-BR` localization, only `pt-BR` matches: `pt-br`, `pt_BR`, and `pt-PT` all miss.
 
 When the code matches no localization, the flow silently renders in its [default locale](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) — the SDK doesn't return an error and doesn't log a warning.
-
-When the code matches, Adapty merges the localization with the default one: the strings and assets that the matched localization doesn't define come from the default localization.
 
 Omitting the locale code is not the same as asking for the flow's default localization: the SDK substitutes a fixed `en`. A flow whose default locale is `de` still renders in `en` when it has an `en` localization, and falls back to `de` only when it doesn't. This applies to Android SDK 4.0.1 and later — in 4.0.0, omitting the code renders the flow's default localization.
 
@@ -45,23 +110,128 @@ Pass the locale code exactly as the published flow has it: `pt-BR`, not `pt-br` 
 Don't pass a system locale identifier as is. On a device set to Portuguese (Brazil), `Locale.getDefault().toString()` returns `pt_BR`, which matches no localization. On a device set to English (United States), `Locale.getDefault().toLanguageTag()` returns `en-US`, which misses a flow that has only `en`. Before you pass a system locale identifier, convert it to a code that the flow has.
 :::
 
-### Onboardings
+</TabItem>
+</Tabs>
 
-Onboardings are localized on the server, and the server rules tolerate other formats. When you pass a `locale` to [`getOnboarding`](android-get-onboardings):
+## Test which localization a user sees
 
-1. The locale string is converted to lowercase and all the underscores (`_`) are replaced with hyphens (`-`)
-2. Adapty looks for the localization with the fully matching locale code
-3. If no match is found, Adapty takes the substring before the first hyphen (`pt` for `pt-br`) and looks for the matching localization
-4. If no match is found again, Adapty returns the content for the onboarding's default locale
+<Tabs groupId="android-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 or later" default>
 
-This way `pt_BR`, `pt-BR`, and `pt-br` all resolve to the same onboarding localization.
+When the flow has none of the user's languages, the SDK uses the default locale without raising an error. To find out which localization a user sees, test the flow on a device:
 
-## Implementing localizations
+1. Set the [log level](sdk-installation-android#logging) to `AdaptyLogLevel.VERBOSE`.
+2. In the device settings, move the test language to the top of the language list.
+3. Open the flow in your app.
+4. In Logcat, find the line with `getFlowConfiguration: preferredLocales`. It ends with the code of the displayed localization, such as `strategy = Auto -> pt-BR`. The dashboard shows this code in lowercase: `pt-br` for `pt-BR`.
 
-In SDK v4, you don't pass a locale code when you fetch a flow — the SDK loads all of its localizations when you call `AdaptyUI.getFlowConfiguration`.
+To test a language without a change to the device settings, pass a fixed `preferredLocales` list, such as `listOf("pt-PT")`, in a debug build.
 
-- **Flows built in the builder**: the SDK doesn't read the device locale, so resolve it in your app and pass it as the `locale` argument of `AdaptyUI.getFlowConfiguration`. The argument is optional — omit it and the flow renders in `en`, or in its [default locale](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) when the flow has no `en` localization.
-- **Custom (remote config) paywalls**: `getFlow` returns every configured localization in `flow.remoteConfigs`. Each entry has a `locale` code and the config content (`jsonString`, or the parsed `dataMap`). Select the entry that matches the user, with your own fallback:
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
+
+When the code you pass matches no localization of the flow, the SDK uses the default locale without raising an error or logging a warning. To find out which localization a user sees, test the flow on a device:
+
+1. In the device settings, select the test language and region.
+2. Open the flow in your app.
+3. Compare the flow on the device with its localizations in the Flow & Paywall Builder. When the flow shows its default locale, the flow has no localization with exactly the code you passed.
+
+To test a code without a change to the device settings, pass a fixed `locale`, such as `"pt-BR"`, in a debug build.
+
+</TabItem>
+</Tabs>
+
+When part of the flow still appears in the default locale, the displayed localization has no translation for that part. To fill the gaps, [translate the missing rows](add-paywall-locale-in-adapty-paywall-builder#manage-localizations-and-translations) in the Flow & Paywall Builder.
+
+## Select which locales to add to a flow
+
+To cover the majority of users with the fewest locales, follow three rules when you [add locales](add-paywall-locale-in-adapty-paywall-builder#add-and-set-up-a-locale) in the **Select languages** field:
+
+- Add a language without a region. For example, `de` covers German speakers in Germany, Austria, and Switzerland.
+- Only add a regional locale for a second translation of a language, such as `fr-ca` in addition to `fr`.
+- Add every language that your users read. The SDK doesn't match one language to another, such as Catalan to Spanish. Catalan speakers see their next preferred language that the flow has, or the default locale.
+
+:::important
+These rules need Android or iOS SDK 4.5 or later. Apps on any Adapty SDK from 4.0 to 4.4 pass one locale code. Their users can see a different localization of the same flow than users on SDK 4.5. Keep every code that those apps pass, such as an existing `zh` or `pt-br`.
+:::
+
+### Select codes for Chinese, Spanish, and Portuguese
+
+The **Select languages** field has more than one code for Chinese, Spanish, and Portuguese. Add the codes from the table:
+
+| Language | Add | Users see |
+|---|---|---|
+| Chinese | `zh-hans` and `zh-hant`, not a new `zh`. Only add `zh-hk` for a separate Hong Kong translation. | `zh-hans` in China and Singapore, and `zh-hant` in Taiwan, Hong Kong, and Macau. |
+| Cantonese | `yue`, always with `zh-hant` | `yue` on devices set to Cantonese, and `zh-hant` on devices set to Traditional Chinese. The SDK doesn't show `zh-hant` to users on devices set to Cantonese, or `yue` to users on devices set to Traditional Chinese. |
+| Spanish | `es` and `es-419`, not a new `es-mx` | `es` in Spain, and `es-419` in Latin America and the United States. |
+| Portuguese | `pt-br` for Brazilian Portuguese, and `pt` for European Portuguese | `pt-br` in Brazil, and `pt` in Portugal. |
+
+If your flow has several regional variants of one language, such as `es-ar` and `es-co`, add `es-419` as well. Users in other Latin American countries, such as Mexico, then see `es-419`.
+
+### Start from a recommended set of locales
+
+To plan translations in stages, start from one of three sets. Each set contains the previous one.
+
+| Set | Locales | Total |
+|---|---|---|
+| Minimal | `en`, `es`, `pt-br`, `fr`, `de`, `it`, `ru`, `ja`, `ko`, `zh-hans`, `zh-hant` | 11 |
+| Extended | The minimal set and `tr`, `pl`, `nl`, `sv`, `da`, `no`, `fi`, `uk`, `ar`, `he`, `hi`, `id`, `th`, `vi`, `es-419`, `pt` | 27 |
+| Broad | The extended set and `cs`, `sk`, `hu`, `ro`, `el`, `bg`, `hr`, `sl`, `lt`, `lv`, `et`, `ca`, `kk`, `ms`, `fil`, `fa`, `ur`, `bn`, `ta`, `te`, `mr`, `fr-ca` | 49 |
+
+In these sets, users see the following locales:
+
+- In the minimal set, `es` covers Spanish speakers in every country, and `pt-br` covers Portuguese speakers in Portugal too.
+- In the extended set, `es-419` and `pt` are second translations. With them, `es` serves Spain, and `pt` serves Portugal. Translate `pt` into European Portuguese.
+- Catalan and Malay speakers only see their language in its own locale: `ca` or `ms`. The SDK doesn't show them Spanish or Indonesian instead.
+
+### Select the default locale
+
+Users see the default locale when the flow has none of their languages. A new flow starts with `en` as its only locale and its default. To change it, [set another locale as default](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale).
+
+Follow three rules for the default locale:
+
+- For users without a matching locale, select the language that most of them understand. Usually, that's English, not the language of your main market.
+- Translate the default locale fully. Users without a matching locale see the whole flow in the default locale. Users with a matching locale see the flow in their language. Any untranslated part appears in the default locale.
+- Don't select a language with two scripts, such as Chinese. Users of the other script may not read the default locale.
+
+## Select a localization strategy
+
+Most apps don't pass `localizationStrategy`, so the SDK uses `AdaptyUiLocalizationStrategy.Auto`. This strategy applies Android resource matching to flows from the Flow & Paywall Builder, and the single-language rule to paywalls from the old Paywall Builder.
+
+Under the single-language rule, the SDK only reads the language with the highest priority in `preferredLocales`. It tries the full code, then shorter codes (`pt-br`, then `pt`), and otherwise shows the default locale. A paywall from the old Paywall Builder keeps working under this rule, even after you republish it. To make the SDK try every language in `preferredLocales`, [move the paywall to the Flow & Paywall Builder](convert-paywall-to-flow). Then serve the new flow from a flow placement.
+
+To change how the SDK matches the user's languages with the locales of the flow, pass one of the following values in the `localizationStrategy` parameter:
+
+- `AdaptyUiLocalizationStrategy.System`: every flow uses Android resource matching, paywalls from the old Paywall Builder included.
+- `AdaptyUiLocalizationStrategy.Legacy`: every flow uses the single-language rule, not the exact matching of SDK 4.4. Don't pass `Legacy` for flows from the Flow & Paywall Builder: it misses their locales with a region or a script, such as `pt-BR`.
+- `AdaptyUiLocalizationStrategy.Custom(resolver, fallbackResolver)`: [your code picks the localization](#pick-a-flows-localization-in-your-own-code).
+
+### Pick a flow's localization in your own code
+
+Android resource matching doesn't cover every script. For example, when a device lists Azerbaijani in Cyrillic script (`az-Cyrl`) but not in Latin, a flow with `az` appears in its default locale. To show `az` instead, or to pick the localization by other rules of your own, implement `AdaptyUiCustomLocalizationResolver`. Then pass it to `AdaptyUiLocalizationStrategy.Custom` in the `localizationStrategy` parameter.
+
+Other Adapty SDKs match languages by other rules, so the same user can see different localizations of a flow on Android and iOS. To show the same localization on every platform, write a resolver that returns the same locale code as your app on the other platforms.
+
+The following rules apply to the resolver:
+
+- The SDK doesn't call the resolver for a flow with one localization. The flow appears in that localization.
+- The SDK calls `resolve` with the list that your app passed, an `AdaptyUiLocalizationSource` with the flow's `locales` and `defaultLocale`, and a `callback`. The `locales` come in the order of the flow's localizations.
+- To show a localization, pass a code from `locales` or `defaultLocale` to `callback`, spelled exactly the same, case included: `ar`, not `AR`.
+- If `callback` receives any other code or `null`, the SDK uses the resolver in `fallbackResolver`. Without `fallbackResolver`, the SDK uses `AdaptyUiLocalizationResolver.Auto`.
+- The SDK calls `resolve` on the main thread. Call `callback` once, from any thread.
+- Call `callback` right away, without network requests or other slow work. The SDK waits for `callback` without a time limit, and the flow only appears after your code calls `callback`.
+
+## Locale code standard at Adapty
+
+Adapty locale codes follow the [BCP 47 standard](https://en.wikipedia.org/wiki/IETF_language_tag): a language subtag, then an optional script or region subtag, separated by hyphens. The **Select languages** field shows the codes in lowercase: `en` (English), `pt-br` (Portuguese, Brazil), `zh-hans` (Simplified Chinese), and `zh-hant` (Traditional Chinese).
+
+## Localize custom paywalls and onboardings
+
+SDK 4.5 only changes the localization rules for flows. Custom paywalls and onboardings work as in SDK 4.4.
+
+### Pick a custom paywall's remote config by language
+
+`getFlow` has no locale parameter. For a custom paywall, it returns every configured localization in `flow.remoteConfigs`. Each entry has a `locale` code and the config content (`jsonString`, or the parsed `dataMap`). Pick the entry that matches the user, with your own fallback:
 
 ```kotlin showLineNumbers
 Adapty.getFlow("YOUR_PLACEMENT_ID") { result ->
@@ -80,6 +250,19 @@ Adapty.getFlow("YOUR_PLACEMENT_ID") { result ->
 ```
 
 Adapty stores those `locale` codes in the format described in [Locale code standard at Adapty](#locale-code-standard-at-adapty). The SDK doesn't match remote configs against a locale, so which entry to apply is up to your app.
+
+### Pass a locale to an onboarding
+
+<OnboardingDeprecation />
+
+`getOnboarding` keeps its `locale` parameter in SDK 4.5. When you pass a `locale` to [`getOnboarding`](android-get-onboardings), the server picks the localization:
+
+1. The locale string is converted to lowercase and all the underscores (`_`) are replaced with hyphens (`-`)
+2. Adapty looks for the localization with the fully matching locale code
+3. If no match is found, Adapty takes the substring before the first hyphen (`pt` for `pt-br`) and looks for the matching localization
+4. If no match is found again, Adapty returns the content for the onboarding's default locale
+
+This way `pt_BR`, `pt-BR`, and `pt-br` all resolve to the same onboarding localization.
 
 </SDKv4>
 

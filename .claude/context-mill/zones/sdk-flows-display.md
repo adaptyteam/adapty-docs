@@ -146,7 +146,22 @@ default localization; no code asked for `en`). iOS 4.5.0 picks with a resolver (
 server rule (first language only, lowercased, prefix truncation) to old Paywall Builder paywalls served
 from a paywall placement (format below 4.8). `AdaptyLocale.normalizedIdentifier` still exists
 (`Sources/Placements/Entities/AdaptyLocale.swift`) but no longer decides a flow's localization on 4.5.
-Other platforms weren't re-checked: read their SDK before stating their outcome.
+Other platforms except Android weren't re-checked: read their SDK before stating their outcome.
+Android 4.5.0 (SDK source, 2026-11-26) has the same shape: `preferredLocales: List<String>` is required,
+and `AdaptyUiLocalizationStrategy` offers `Auto`, `System`, `Legacy`, and `Custom(resolver, fallbackResolver)`.
+`System` asks Android resource selection: language and script must match, then the closest region wins
+(`es-MX` > `es-419` > `es`), with the synonyms `tl`/`fil`, `no`/`nb`, `mo`/`ro`. Below API 24 it takes
+the first flow localization with the same language and script, in the flow's order. `Auto` uses
+`Legacy` below schema format 5.0.0, the same split as iOS in practice (old Paywall Builder paywalls only).
+`Legacy` lowercases the passed code and drops subtags from the end, but compares the flow's IDs as
+written. Android differs from iOS on Cantonese and Norwegian: `yue` gets no `zh-Hant`, `zh-Hant-HK`
+gets no `yue`, and `nn`/`nb` don't match each other. A custom resolver runs on the main thread,
+answers through a callback, and gets the flow's locales in the flow's order. Native Android still can't
+read the displayed localization (`FlowConfiguration.localizationId` is internal), but a VERBOSE log line
+`getFlowConfiguration: preferredLocales = …, strategy = … -> <id>` names it.
+The recommended list is `LocaleListCompat.getAdjustedDefault()` (the app language that the user set,
+else the device languages); `LocaleManagerCompat.getSystemLocales(context)` gives the device languages
+on every Android version (androidx.core bytecode, 2026-11-26).
 
 Asset, timer, and custom-tag **IDs** (`hero_image`, `hero_video`, dashboard-assigned custom media IDs,
 Timer IDs) are authored in the builder — the SDK only keys off the strings. A claim about which IDs
@@ -411,7 +426,7 @@ and are deliberately not repeated here.
 | "the flow closed after the user cancelled", "a cancelled purchase ran our success code", "Ask to Buy closed the paywall" | `handling-events`. On iOS, `didFinishPurchase` fires for `.success`, `.userCancelled`, and `.pending`, so the handler checks `purchaseResult` (for example, `isPurchaseSuccess`) before it closes the flow or acts on a purchase (2026-11-18; see What we document). |
 | "`flowControllerDidDisappear` fired but the flow is still open", "the flow 'closed' when the ad appeared", "`flowControllerDidAppear` fires twice", "how do I know the user closed the flow" | `handling-events`, iOS: the note under the UIKit lifecycle callbacks (2026-11-18). `AdaptyFlowController` presents with `.fullScreen`, so any `.fullScreen` view controller over it, such as a rewarded ad or another flow, fires `flowControllerDidDisappear`, then `flowControllerDidAppear` when it closes (AdaptySDK-iOS 4.4.0 `Sources.AdaptyUI/Paywalls/Rendering/AdaptyFlowController.swift:75`, `:104-129`). The flow keeps its screen and variables, and its timers pause and resume. To detect a close, handle `.close`: it arrives when a **Close flow** action runs, while the flow is still on screen. In SwiftUI, covering the flow doesn't fire `didDisappear` (medium-high: `AdaptyFlowView` has `.onAppear` and no `.onDisappear`). Not run on a device with an ad SDK. |
 | "own purchase logic with Adapty's UI", "bring my own IAP handling" | `present-flows-in-observer-mode` (iOS: `present-paywall-builder-paywalls-in-observer-mode`). Reporting the transaction afterwards is mandatory, not optional. |
-| "wrong language shown", "not translated for the user's locale", "pt-BR vs pt_BR" | `localizations-and-locale-codes`. Locale-code normalization and fallback resolution are the answer to nearly every phrasing here. On iOS 4.5+ the app passes a list (`preferredLocales`), and case and separators don't matter; before 4.5, and on every other platform, the code has to match exactly, and the dashboard's lowercase spelling misses canonical-cased flows (see Gaps and misses, 2026-11-23). |
+| "wrong language shown", "not translated for the user's locale", "pt-BR vs pt_BR" | `localizations-and-locale-codes`. Locale-code normalization and fallback resolution are the answer to nearly every phrasing here. On iOS and Android 4.5+ the app passes a list (`preferredLocales`), and case and separators don't matter; before 4.5, and on every other platform, the code has to match exactly, and the dashboard's lowercase spelling misses canonical-cased flows (see Gaps and misses, 2026-11-23). |
 | "offline paywall", "Adapty servers unreachable", "bundled backup config" | `use-fallback-paywalls`. Two constraints do the work: the fallback must be set *before* the fetch, and Android's `res/raw` restricts the file name. React Native splits Expo and bare. |
 | "avoid Apple/Google commission", "external checkout", "Stripe or Paddle from the app" | `web-paywall` (Unity and KMP: `web-paywalls`). Commission avoidance is the business phrasing of what the docs call a web paywall. |
 | "custom hero image per user", "swap the video remotely", "asset override" | `get-pb-paywalls` — custom asset override, not a builder-side edit. |
