@@ -12,11 +12,11 @@ Ces règles supposent que `adapty.activate()` et `adapty.identify()` ont déjà 
 
 ## Règles et pièges \{#rules-and-pitfalls\}
 
-| Faites ceci | Évitez cela | Pourquoi |
+| À faire | À ne pas faire | Pourquoi |
 |---|---|---|
-| Récupérez le placement que vous vous apprêtez à afficher, ou préchauffez le cache avec [`preloadFlows`](#preload-placements) (SDK 4.3.0+). | Multipliez vos propres appels `getFlow` concurrents au démarrage. | Un burst de prefetch manuel bloque le thread JS et provoque un écran noir. `preloadFlows` est conçu pour ça et envoie le lot au SDK natif en un seul appel. |
-| Appelez `getFlow` après que l'attribution a eu le temps de se résoudre — par exemple, 1 à 2 secondes après `activate` ou après le déclenchement de `onLatestProfileLoad`. | Appelez `getFlow` au montage du composant racine. | L'attribution n'est pas encore arrivée. Le flow se résout contre l'audience par défaut et contourne silencieusement les segments et la personnalisation ASA. |
-| Définissez un `loadTimeoutMs` et configurez un [paywall de secours](fallback-paywalls) pour chaque placement. | Attendez `getFlow` indéfiniment. | Sans timeout, les utilisateurs avec une mauvaise connexion voient un écran vide jusqu'à ce que le réseau réponde — ou ferment l'application. |
+| Récupérez le placement que vous êtes sur le point d'afficher, ou préchauffez le cache avec [`preloadFlows`](#preload-placements) (SDK 4.3.0+). | Multipliez vos propres appels `getFlow` concurrents au démarrage. | Un burst de pré-chargement artisanal bloque le thread JS et provoque un écran noir. `preloadFlows` est conçu pour ça et envoie le lot au SDK natif en un seul appel. |
+| Appelez `getFlow` une fois que l'attribution a eu le temps de se résoudre — par exemple, 1 à 2 secondes après `activate` ou après le déclenchement de `onLatestProfileLoad`. | Appelez `getFlow` au montage du composant racine. | L'attribution n'est pas encore arrivée. Le flow se résout sur l'audience par défaut et contourne silencieusement les segments et la personnalisation ASA. |
+| Conservez la valeur par défaut de `loadTimeoutMs` à 5000 millisecondes ou définissez une autre valeur, et configurez un [paywall de secours](fallback-paywalls) pour chaque placement. | Passez à `getFlow` un `loadTimeoutMs` si grand qu'il ne se déclenche jamais. | Si le timeout ne se déclenche jamais, les utilisateurs avec une mauvaise connexion voient un écran blanc jusqu'à ce que le réseau se rétablisse — ou ferment l'application. |
 
 Consultez [Récupérer les paywalls et produits personnalisés](fetch-paywalls-and-products-react-native) pour la référence des paramètres `fetchPolicy` et `loadTimeoutMs`, et [Placements](placements) pour choisir le bon placement.
 
@@ -74,7 +74,13 @@ Un flow s'affiche à l'écran par couches. Un préchargement couvre la première
 | Images, y compris l'image fixe qui remplace un élément vidéo | `createFlowView`, en arrière-plan | Non |
 | Fichiers vidéo | Le lecteur système, lors du rendu de l'écran | Non mis en cache par le SDK |
 
-Ainsi, le premier `createFlowView` pour un layout donné implique quand même un aller-retour réseau après un préchargement. Le SDK natif conserve ensuite ce layout dans son cache disque, qui survit aux redémarrages de l'application — le coût est donc supporté par la première requête, et non par chacune d'elles.
+`createFlowView` recherche la mise en page dans trois endroits, dans cet ordre :
+
+1. Le cache disque du SDK natif, qui persiste après les redémarrages de l'application.
+2. Votre [fichier de secours](react-native-use-fallback-paywalls) pour le SDK 4.4 ou ultérieur, si vous l'avez téléchargé après la dernière publication du flow.
+3. Adapty, via le réseau. Cela implique un aller-retour, même après un préchargement. La première fois que l'application affiche chaque version publiée du flow, le SDK natif effectue cette requête. Il enregistre ensuite la mise en page dans le cache disque.
+
+Lorsque le `loadTimeoutMs` de `createFlowView` expire, le SDK natif ne bascule pas sur un fallback : il redemande la mise en page à l'API Adapty. `loadTimeoutMs` ne limite pas cette seconde requête.
 
 ### Ignorer la segmentation d'audience \{#skip-audience-segmentation\}
 
@@ -109,15 +115,18 @@ const view = await createFlowView(flow, { customAssets: bundledAssets });
 
 Les fichiers embarqués augmentent la taille de téléchargement de votre application, donc n'embarquez que les médias que les utilisateurs voient en premier.
 
-Les médias que vous ne regroupez pas s'affichent quand même immédiatement : la mise en page du flow inclut une petite copie basse résolution de chaque image, y compris la vignette d'une vidéo, et l'affiche jusqu'au chargement complet du fichier.
+Une image intégrée s'affiche instantanément, mais le SDK continue de télécharger l'image uploadée en arrière-plan.
 
-Pour la référence complète de `customAssets`, consultez [Personnaliser les ressources](react-native-get-pb-paywalls#customize-assets).
+Les médias non intégrés s'affichent également sans délai : la mise en page du flow contient une petite copie basse résolution de chaque image, y compris l'image fixe d'une vidéo, et l'affiche jusqu'au chargement du fichier complet.
 
-## Optimiser pour les connexions faibles \{#tune-for-poor-connectivity\}
+Pour la référence complète de `customAssets`, consultez [Personnaliser les assets](react-native-get-pb-paywalls#customize-assets).
 
-Pour les marchés où la connectivité est régulièrement mauvaise (zones rurales, transports, régions affectées par le routage) :
+## Optimisation pour les connexions de mauvaise qualité \{#tune-for-poor-connectivity\}
 
-- Définissez `fetchPolicy: 'return_cache_data_else_load'` sur chaque requête, sauf la toute première.
+Pour les marchés où la connectivité est régulièrement médiocre (zones rurales, transports, régions touchées par des problèmes de routage) :
+
+- Définissez `fetchPolicy: 'return_cache_data_else_load'` sur chaque appel sauf le premier.
 - Configurez un [paywall de secours](fallback-paywalls) pour chaque placement dans l'Adapty Dashboard.
-- Définissez `loadTimeoutMs` à 3–5 secondes et acceptez le paywall de secours quand le délai expire.
-- Ne conditionnez pas l'affichage du flow à `getProfile()`. Appelez `getFlow` indépendamment pour qu'un profil lent ne bloque pas l'interface.
+- Trouvez le bon équilibre pour `loadTimeoutMs` entre rapidité et ciblage. Avec un timeout court, les utilisateurs voient le secours plus vite. Avec un timeout long, le flow ciblé a plus de temps pour se charger.
+- [Gardez le flow léger](flow-size), pour que sa mise en page se télécharge plus vite.
+- Ne bloquez pas l'affichage du flow sur `getProfile()`. Appelez `getFlow` indépendamment pour qu'un profil lent ne bloque pas l'interface.

@@ -12,11 +12,11 @@ Các quy tắc này yêu cầu `Adapty.Activate()` và `Adapty.Identify()` đã 
 
 ## Quy tắc và những lỗi thường gặp \{#rules-and-pitfalls\}
 
-| Làm điều này | Không làm điều này | Lý do |
+| Nên làm | Không nên làm | Lý do |
 |---|---|---|
-| Fetch placement bạn sắp hiển thị, hoặc làm ấm cache bằng [`PreloadFlows`](#preload-placements) (SDK 4.3.0+). | Tự tạo các lệnh gọi `GetFlow` đồng thời khi khởi động. | Một loạt prefetch tự tạo sẽ chặn luồng chính và tạo ra màn hình đen. `PreloadFlows` được xây dựng cho mục đích này và gửi toàn bộ batch đến SDK native trong một lần gọi. |
-| Fetch `GetFlow` sau khi attribution đã có cơ hội resolve — ví dụ: 1–2 giây sau `Activate` hoặc sau khi `OnLoadLatestProfile` kích hoạt. | Gọi `GetFlow` trong `Awake()`. | Attribution chưa được xử lý xong. Flow resolve dựa trên đối tượng mặc định và âm thầm bỏ qua các phân khúc cũng như cá nhân hóa ASA. |
-| Đặt `loadTimeout` và cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement. | Chờ `GetFlow` vô thời hạn. | Nếu không có timeout, người dùng có kết nối kém sẽ thấy màn hình trắng cho đến khi mạng resolve — hoặc đóng ứng dụng. |
+| Fetch placement bạn sắp hiển thị, hoặc làm nóng cache bằng [`PreloadFlows`](#preload-placements) (SDK 4.3.0+). | Tự khởi chạy nhiều lệnh gọi `GetFlow` đồng thời khi khởi động. | Một prefetch burst tự tạo sẽ chặn luồng chính và gây màn hình đen. `PreloadFlows` được thiết kế riêng cho việc này và gửi toàn bộ batch đến native SDK trong một lần gọi. |
+| Gọi `GetFlow` sau khi attribution đã có cơ hội resolve — ví dụ, 1–2 giây sau `Activate` hoặc sau khi `OnLoadLatestProfile` kích hoạt. | Gọi `GetFlow` trong `Awake()`. | Attribution chưa được xác định. Flow sẽ resolve theo đối tượng mặc định và âm thầm bỏ qua các phân khúc cũng như cá nhân hóa ASA. |
+| Giữ nguyên `loadTimeout` mặc định 5 giây hoặc đặt giá trị khác, và cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement. | Truyền vào `GetFlow` một `loadTimeout` lớn đến mức không bao giờ kích hoạt. | Nếu timeout không bao giờ kích hoạt, người dùng có kết nối kém sẽ thấy màn hình trống cho đến khi mạng phục hồi — hoặc đóng ứng dụng. |
 
 Xem [Tải paywall tùy chỉnh và sản phẩm](fetch-paywalls-and-products-unity) để tham khảo thông số `fetchPolicy` và `loadTimeout`, và [Placements](placements) để chọn placement phù hợp.
 
@@ -83,7 +83,13 @@ Một flow hiển thị trên màn hình theo từng lớp. Preload bao gồm l�
 | Products | `CreateFlowView` or `GetPaywallProducts` | No |
 | Video files | The system player, as the screen renders | Not cached by the SDK |
 
-Vì vậy, lần `CreateFlowView` đầu tiên cho một layout nhất định vẫn tốn một lượt round trip sau khi preload. SDK native sau đó lưu layout đó vào bộ nhớ cache trên đĩa, tồn tại qua các lần khởi động lại ứng dụng, nên chi phí chỉ rơi vào lần yêu cầu đầu tiên chứ không phải mỗi lần.
+`CreateFlowView` tìm kiếm layout ở ba nơi, theo thứ tự sau:
+
+1. Bộ nhớ cache trên đĩa của SDK gốc, tồn tại qua các lần khởi động lại ứng dụng.
+2. [Tệp dự phòng](unity-use-fallback-paywalls) của bạn dành cho SDK 4.4 trở lên, nếu bạn đã tải xuống sau lần cuối bạn xuất bản flow.
+3. Adapty, qua mạng. Điều này tốn một lượt kết nối, ngay cả sau khi đã tải trước. Lần đầu tiên ứng dụng hiển thị từng phiên bản đã xuất bản của flow, SDK gốc sẽ thực hiện yêu cầu này. Sau đó nó lưu bố cục vào bộ nhớ cache trên đĩa.
+
+Khi `LoadTimeout` của `CreateFlowView` kích hoạt, SDK không tự chuyển sang dự phòng mà sẽ gửi lại yêu cầu layout đến Adapty API. `LoadTimeout` không giới hạn yêu cầu thứ hai này.
 
 ### Bỏ qua phân khúc đối tượng \{#skip-audience-segmentation\}
 
@@ -125,15 +131,18 @@ AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
 
 Các file đính kèm sẽ làm tăng dung lượng tải xuống của ứng dụng, vì vậy chỉ nên đính kèm những media mà người dùng nhìn thấy đầu tiên.
 
-Nội dung media không được đóng gói vẫn hiển thị ngay lập tức: layout của flow bao gồm một bản sao độ phân giải thấp nhỏ của mỗi hình ảnh, kể cả frame tĩnh của video, và hiển thị bản đó cho đến khi file đầy đủ tải xong.
+Hình ảnh được đóng gói sẵn hiển thị ngay lập tức mà không cần chờ, nhưng SDK vẫn tải xuống hình ảnh đã upload trong nền.
+
+Các media không được đóng gói vẫn hiển thị ngay: layout của flow chứa một bản sao độ phân giải thấp của mỗi hình ảnh, bao gồm cả khung tĩnh của video, và hiển thị nó cho đến khi file đầy đủ được tải xong.
 
 Để xem tài liệu tham khảo đầy đủ về `customAssets`, hãy xem [Tùy chỉnh assets](unity-get-pb-paywalls#customize-assets).
 
-## Điều chỉnh cho kết nối kém
+## Điều chỉnh cho kết nối kém \{#tune-for-poor-connectivity\}
 
-Đối với các thị trường có kết nối kém ổn định (vùng nông thôn, phương tiện di chuyển, khu vực bị ảnh hưởng bởi định tuyến mạng):
+Đối với các thị trường có kết nối kém liên tục (vùng nông thôn, phương tiện giao thông, khu vực bị ảnh hưởng bởi định tuyến):
 
 - Đặt `fetchPolicy` thành `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` cho mọi lần fetch trừ lần đầu tiên.
-- Cấu hình [paywall dự phòng](fallback-paywalls) cho mọi placement trên Adapty Dashboard.
-- Đặt `loadTimeout` từ 3–5 giây và chấp nhận paywall dự phòng khi hết thời gian chờ.
-- Đừng chặn việc hiển thị flow bởi `GetProfile`. Gọi `GetFlow` độc lập để tránh tình trạng profile chậm làm chặn giao diện.
+- Cấu hình [paywall dự phòng](fallback-paywalls) cho mọi placement trong Adapty Dashboard.
+- Cân bằng `loadTimeout` giữa tốc độ và targeting. Timeout ngắn hơn thì người dùng thấy paywall dự phòng sớm hơn. Timeout dài hơn thì flow được nhắm mục tiêu có thêm thời gian để tải.
+- [Giữ flow nhẹ](flow-size) để layout tải xuống nhanh hơn.
+- Đừng chặn việc hiển thị flow bởi `GetProfile`. Gọi `GetFlow` độc lập để hồ sơ người dùng chậm không làm chặn UI.

@@ -12,11 +12,11 @@ metadataTitle: "优化流程与付费墙获取 | Kotlin Multiplatform SDK | Adap
 
 ## 规则与注意事项 \{#rules-and-pitfalls\}
 
-| 建议做法 | 避免做法 | 原因 |
+| 应做 | 不应做 | 原因 |
 |---|---|---|
-| 仅获取即将展示的版位。 | 在启动时并发预取所有版位。 | 批量预取会阻塞主线程，导致启动时出现黑屏。 |
-| 在归因数据有机会解析后再调用 `getFlow`——例如，在 `activate` 之后等待 1–2 秒，或在 `setOnProfileUpdatedListener` 触发后再调用。 | 在应用启动时立即调用 `getFlow`。 | 此时归因数据尚未落地，流程会基于默认目标受众进行解析，静默跳过市场细分和 ASA 个性化逻辑。 |
-| 设置 `loadTimeout` 并为每个版位配置[备用付费墙](fallback-paywalls)。 | 无限期等待 `getFlow` 返回。 | 若不设置超时，网络较差的用户将一直看到空白屏幕，直到网络恢复——或直接关闭应用。 |
+| 仅获取即将展示的版位。                                                                                                                | 在启动时并发预获取所有版位。        | 批量预获取会阻塞主线程，并在请求爆发期间产生黑屏。                                                                  |
+| 在归因有机会解析后再获取 `getFlow`——例如，在 `activate` 后 1–2 秒，或在 `setOnProfileUpdatedListener` 触发后。 | 在应用启动时调用 `getFlow`。                       | 归因数据尚未到达。流程将按默认目标受众解析，悄无声息地绕过市场细分和 ASA 个性化设置。 |
+| 保留默认的 5 秒 `loadTimeout`（或设置其他值），并为每个版位配置[备用付费墙](fallback-paywalls)。 | 给 `getFlow` 传入一个永远不会触发的超大 `loadTimeout`。 | 如果超时永远不触发，网络较差的用户将看到空白屏幕直到网络恢复——或者直接关闭应用。 |
 
 请参阅[获取自定义付费墙和产品](fetch-paywalls-and-products-kmp)以了解 `fetchPolicy` 和 `loadTimeout` 参数说明，以及[版位](placements)以选择合适的版位。
 
@@ -48,15 +48,18 @@ AdaptyUI.createFlowView(
 
 内置文件会增加应用的下载体积，因此只打包用户首屏看到的媒体资源。
 
-未捆绑的媒体文件也会立即显示：流程布局中包含每张图片（包括视频静帧）的低分辨率缩略图，在完整文件加载完成前会先展示该缩略图。
+捆绑的图片会立即显示，但 SDK 仍会在后台下载已上传的图片。
 
-完整的 `customAssets` 参考，请参阅[自定义资源](kmp-get-pb-paywalls#customize-assets)。
+未捆绑的媒体文件同样会立刻显示：流程布局中包含每张图片（包括视频的静态帧）的低分辨率缩略图，并在完整文件加载完成前持续展示。
 
-## 针对网络不佳环境的调优 \{#tune-for-poor-connectivity\}
+有关 `customAssets` 的完整参考，请参阅[自定义资源](kmp-get-pb-paywalls#customize-assets)。
 
-适用于网络持续不稳定的市场（偏远地区、交通沿线、受路由问题影响的地区）：
+## 针对弱网环境进行优化 \{#tune-for-poor-connectivity\}
 
-- 除首次请求外，每次获取均设置 `fetchPolicy = AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad`。
+对于网络连接持续较差的市场（农村地区、交通枢纽、受路由问题影响的地区）：
+
+- 对除首次以外的所有请求设置 `fetchPolicy = AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad`。
 - 在 Adapty 看板中为每个版位配置[备用付费墙](fallback-paywalls)。
-- 将 `loadTimeout` 设置为 3–5 秒，超时后接受备用付费墙。
-- 不要让流程显示依赖 `Adapty.getProfile()` 的结果。独立调用 `getFlow`，避免因用户画像加载缓慢而阻塞 UI。
+- 在速度与精准定向之间合理权衡 `loadTimeout`。超时时间越短，用户越快看到备用内容；超时时间越长，定向流程就有更多时间加载。
+- [保持流程轻量化](flow-size)，让布局更快完成下载。
+- 不要将流程显示挂起在 `Adapty.getProfile()` 上。独立调用 `getFlow`，避免因用户画像加载缓慢而阻塞 UI。

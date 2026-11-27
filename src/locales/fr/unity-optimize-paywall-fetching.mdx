@@ -12,11 +12,11 @@ Les règles supposent que `Adapty.Activate()` et `Adapty.Identify()` ont déjà 
 
 ## Règles et pièges \{#rules-and-pitfalls\}
 
-| Faites ceci | Ne faites pas cela | Pourquoi |
+| À faire | À ne pas faire | Pourquoi |
 |---|---|---|
-| Récupérez le placement que vous allez afficher, ou préchauffez le cache avec [`PreloadFlows`](#preload-placements) (SDK 4.3.0+). | Lancez vos propres appels `GetFlow` concurrents au démarrage. | Un burst de préchargement fait maison bloque le thread principal et produit un écran noir. `PreloadFlows` est conçu pour ça et envoie le lot au SDK natif en un seul appel. |
-| Appelez `GetFlow` après que l'attribution a eu le temps de se résoudre — par exemple, 1 à 2 secondes après `Activate` ou après le déclenchement de `OnLoadLatestProfile`. | Appelez `GetFlow` dans `Awake()`. | L'attribution n'est pas encore arrivée. Le flow se résout selon l'audience par défaut et contourne silencieusement les segments et la personnalisation ASA. |
-| Définissez un `loadTimeout` et configurez un [paywall de secours](fallback-paywalls) pour chaque placement. | Attendez `GetFlow` indéfiniment. | Sans timeout, les utilisateurs avec une mauvaise connexion voient un écran blanc jusqu'à ce que le réseau réponde — ou ferment l'application. |
+| Récupérez le placement que vous allez afficher, ou préchauffez le cache avec [`PreloadFlows`](#preload-placements) (SDK 4.3.0+). | Lancez vos propres appels `GetFlow` concurrents au démarrage. | Un burst de préchargement maison bloque le thread principal et provoque un écran noir. `PreloadFlows` est conçu pour ça et envoie le lot au SDK natif en un seul appel. |
+| Appelez `GetFlow` après que l'attribution a eu le temps de se résoudre — par exemple, 1 à 2 secondes après `Activate` ou après le déclenchement de `OnLoadLatestProfile`. | Appelez `GetFlow` dans `Awake()`. | L'attribution n'est pas encore arrivée. Le flow se résout sur l'audience par défaut et contourne silencieusement les segments et la personnalisation ASA. |
+| Conservez le `loadTimeout` par défaut de 5 secondes ou définissez une autre valeur, et configurez un [paywall de secours](fallback-paywalls) pour chaque placement. | Passez à `GetFlow` un `loadTimeout` tellement grand qu'il ne se déclenche jamais. | Si le timeout ne se déclenche jamais, les utilisateurs avec une mauvaise connexion voient un écran blanc jusqu'à ce que le réseau réponde — ou ferment l'application. |
 
 Consultez [Récupérer les paywalls personnalisés et les produits](fetch-paywalls-and-products-unity) pour la référence des paramètres `fetchPolicy` et `loadTimeout`, et [Placements](placements) pour choisir le bon placement.
 
@@ -75,15 +75,21 @@ Adapty.GetFlow(
 
 Un flow s'affiche à l'écran en plusieurs couches. Un préchargement couvre la première, exactement comme `GetFlow` le fait :
 
-| Couche | Récupérée par | Préchauffée par un préchargement |
+| Couche | Récupérée par | Préchargée |
 |---|---|---|
-| JSON du flow — la variante choisie, ses identifiants de produits et la Remote Config | `GetFlow` | Oui |
-| Mise en page UI — la structure, le style et le texte de l'écran | `CreateFlowView` | Non |
-| Images, y compris la miniature qui remplace un élément vidéo | `CreateFlowView`, en arrière-plan | Non |
+| JSON du flow — la variante choisie, ses IDs de produit et la Remote Config | `GetFlow` | Oui |
+| Mise en page UI — structure, style et texte de l'écran | `CreateFlowView` | Non |
+| Images, y compris la miniature remplaçant un élément vidéo | `CreateFlowView`, en arrière-plan | Non |
 | Produits | `CreateFlowView` ou `GetPaywallProducts` | Non |
 | Fichiers vidéo | Le lecteur système, au moment du rendu de l'écran | Non mis en cache par le SDK |
 
-Ainsi, le premier `CreateFlowView` pour un layout donné implique toujours un aller-retour réseau après un préchargement. Le SDK natif conserve ensuite ce layout dans son cache disque, qui survit aux redémarrages de l'application, de sorte que ce coût ne tombe que sur la première requête et non sur chacune d'elles.
+`CreateFlowView` cherche la mise en page dans trois endroits, dans cet ordre :
+
+1. Le cache disque du SDK natif, qui persiste après les redémarrages de l'application.
+2. Votre [fichier de secours](unity-use-fallback-paywalls) pour SDK 4.4 ou ultérieur, si vous l'avez téléchargé après votre dernière publication du flow.
+3. Adapty, via le réseau. Cela implique un aller-retour, même après un préchargement. La première fois que l'application affiche chaque version publiée du flow, le SDK natif effectue cette requête. Il enregistre ensuite la mise en page dans le cache disque.
+
+Lorsque le `LoadTimeout` de `CreateFlowView` expire, le SDK natif ne bascule pas sur un fallback : il redemande la mise en page à l'API Adapty. `LoadTimeout` ne limite pas cette seconde requête.
 
 ### Ignorer la segmentation d'audience \{#skip-audience-segmentation\}
 
@@ -125,15 +131,18 @@ AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
 
 Les fichiers intégrés augmentent la taille de téléchargement de votre application, alors n'intégrez que les médias visibles dès le premier écran.
 
-Les médias non intégrés s'affichent quand même immédiatement : la mise en page du flow inclut une petite copie basse résolution de chaque image, y compris l'image fixe d'une vidéo, et l'affiche jusqu'au chargement complet du fichier.
+Une image intégrée s'affiche instantanément, mais le SDK continue de télécharger l'image uploadée en arrière-plan.
+
+Les médias non intégrés s'affichent également tout de suite : la mise en page du flow inclut une copie basse résolution de chaque image, y compris l'image fixe d'une vidéo, et l'affiche jusqu'au chargement du fichier complet.
 
 Pour la référence complète de `customAssets`, consultez [Personnaliser les assets](unity-get-pb-paywalls#customize-assets).
 
-## Optimiser pour les connexions défaillantes \{#tune-for-poor-connectivity\}
+## Optimiser pour une mauvaise connectivité \{#tune-for-poor-connectivity\}
 
-Pour les marchés où la connectivité est régulièrement mauvaise (zones rurales, transports en commun, régions touchées par des problèmes de routage) :
+Pour les marchés où la connectivité est régulièrement mauvaise (zones rurales, transports, régions touchées par des problèmes de routage) :
 
-- Définissez `fetchPolicy` sur `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` à chaque requête, sauf la toute première.
+- Définissez `fetchPolicy` sur `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` pour chaque appel sauf le tout premier.
 - Configurez un [paywall de secours](fallback-paywalls) pour chaque placement dans l'Adapty Dashboard.
-- Définissez `loadTimeout` entre 3 et 5 secondes et acceptez le paywall de secours si le délai expire.
+- Trouvez le bon équilibre pour `loadTimeout` entre rapidité et ciblage. Avec un timeout court, l'utilisateur voit le paywall de secours plus vite. Avec un timeout long, le flow ciblé a plus de temps pour se charger.
+- [Gardez le flow léger](flow-size), pour que sa mise en page se télécharge plus rapidement.
 - Ne bloquez pas l'affichage du flow sur `GetProfile`. Appelez `GetFlow` indépendamment pour qu'un profil lent ne bloque pas l'interface.
