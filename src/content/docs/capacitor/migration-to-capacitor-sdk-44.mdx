@@ -1,0 +1,64 @@
+---
+title: "Migrate Adapty Capacitor SDK to v4.4"
+description: "Migrate to Adapty Capacitor SDK v4.4: replace both fallback files, and handle the new flow errors on iOS and Android."
+metadataTitle: "Migrating to Adapty Capacitor SDK v4.4 | Adapty Docs"
+---
+
+Adapty Capacitor SDK 4.4 changes the fallback file format, requires iOS 16 for flows, and reports flow script errors to your app on Android. In 4.4, `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString`, and `AdaptySubscription.billingPlan` are no longer optional in TypeScript. To update your app to 4.4, install the latest `@adapty/capacitor` package, and replace both fallback files in the same build. Earlier SDK versions reject the new files. Then review the other changes in this guide.
+
+If you're still on 4.2 or earlier, start with [Migrate to v4.3](migration-to-capacitor-sdk-43) and then follow this guide.
+
+:::warning
+The fallback file format changed in 4.4, and the compiler can't detect a fallback file for SDK 4.1–4.3. Without [new fallback files](#replace-the-fallback-files), every placement loses its fallback.
+:::
+
+## Quick reference
+
+| v4.3 | v4.4 |
+|---|---|
+| Fallback files downloaded for 4.1–4.3 | New fallback file format; download both files again |
+| Flows open on iOS 15 | Flows require iOS 16 |
+| On Android, the SDK only logs flow script errors | They reach `onError` as `jsException` |
+| `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString`, and `AdaptySubscription.billingPlan` are optional | They're required |
+
+## Installation
+
+Update the `@adapty/capacitor` package, and sync the native projects:
+
+```bash showLineNumbers
+npm install @adapty/capacitor@latest
+npx cap sync
+```
+
+The requirements are unchanged: **iOS 15.0** and **Capacitor 8**. Flows are the exception: see [Flows require iOS 16](#flows-require-ios-16). See [Install Adapty SDK](sdk-installation-capacitor) for the full setup.
+
+## Replace the fallback files
+
+To download the [fallback files](capacitor-use-fallback-paywalls) again, in **[Placements](https://app.adapty.io/placements)**, click **Fallbacks** > **Download iOS Fallback**. In the **Adapty SDK v4.4.0 and higher** row, click **Download**. Repeat with **Download Android Fallback**.
+
+The downloaded files are named `ios_4_4_0_fallback.json` and `android_4_4_0_fallback.json`. Use them in place of your fallback files for SDK 4.1–4.3, as in [Use fallback paywalls](capacitor-use-fallback-paywalls):
+
+- **iOS**: Add the file to your Xcode project.
+- **Android**: Put the file in the folder of the Android fallback file for 4.1–4.3.
+
+Give each file the name that your app passes to `adapty.setFallback`, or update the names in that call.
+
+With a fallback file for SDK 4.1–4.3, `adapty.setFallback` throws an `AdaptyError`. To verify the new files, run the app on iOS and on Android, and make sure that this call throws no error.
+
+## Flows require iOS 16
+
+Starting from 4.4, flows require iOS 16 or later. On iOS 15, `createFlowView` throws an `AdaptyError` with the `platformNotSupported` code. Other SDK features, such as purchases and custom paywalls, still work on iOS 15.
+
+When your app receives this error, show your own content instead, such as a [custom paywall](capacitor-implement-paywalls-manually).
+
+## Flow script errors reach `onError` on Android
+
+On Android, the flow script can throw an exception while it handles an SDK event. Starting from 4.4, this exception reaches the `onError` handler as an `AdaptyError` with the `jsException` code, the same as on iOS. Before, the SDK only logged it.
+
+If you don't set `onError`, the flow closes on this error. To keep the flow open, set `onError`, and return `false` for this error.
+
+## Price and subscription properties are required
+
+In TypeScript, `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString`, and `AdaptySubscription.billingPlan` are no longer optional. If your code creates these objects, such as mocks in tests, set these properties in them.
+
+In 4.4, every subscription has `billingPlan`: `up_front`, unless the user bought a [commitment plan](set-up-12-month-commitment). Before 4.4, only App Store subscriptions had `billingPlan`.
