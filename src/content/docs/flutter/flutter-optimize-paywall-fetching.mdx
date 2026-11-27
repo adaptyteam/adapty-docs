@@ -16,7 +16,7 @@ The rules assume `Adapty().activate()` and `Adapty().identify()` have already re
 |---|---|---|
 | Fetch the placement you're about to show, or warm the cache with [`preloadFlows`](#preload-placements) (SDK 4.3.0+). | Fan out your own concurrent `getFlow` calls on launch. | A hand-rolled prefetch burst blocks the main thread and produces a black screen. `preloadFlows` is built for this and sends the batch to the native SDK in one call. |
 | Fetch `getFlow` after attribution has had a chance to resolve — for example, 1–2 seconds after `activate` or after `didUpdateProfileStream` fires. | Call `getFlow` in `main()` before `runApp`.         | Attribution hasn't landed yet. The flow resolves against the default audience and silently bypasses segments and ASA personalization. |
-| Set a `loadTimeout` and configure a [fallback paywall](fallback-paywalls) for every placement.                             | Wait on `getFlow` indefinitely.                     | Without a timeout, users on poor connectivity see a blank screen until the network resolves — or close the app.     |
+| Keep the default `loadTimeout` of 5 seconds or set another value, and configure a [fallback paywall](fallback-paywalls) for every placement. | Pass `getFlow` a `loadTimeout` so large that it never fires. | If the timeout never fires, users on poor connectivity see a blank screen until the network resolves — or close the app. |
 
 See [Fetch custom paywalls and products](fetch-paywalls-and-products-flutter) for the `fetchPolicy` and `loadTimeout` parameter reference, and [Placements](placements) for picking the right placement.
 
@@ -75,9 +75,15 @@ A flow reaches the screen in layers. A preload covers the first, exactly as `get
 | UI layout — the screen's structure, styling, and text | `createFlowView` | No |
 | Images, including the still frame that stands in for a video element | `createFlowView`, in the background | No |
 | Products | `createFlowView` or `getPaywallProducts` | No |
-| Video files | The system player, as the screen renders | Not cached by the SDK |
+| Video files | The system player on iOS and ExoPlayer on Android, as the screen renders | No. On Android, the native SDK caches up to 50 MB of played video |
 
-So the first `createFlowView` for a given layout still costs a round trip after a preload. The native SDK then keeps that layout in its disk cache, which survives app restarts, so the cost falls on the first request rather than on every one.
+`createFlowView` looks for the layout in three places, in this order:
+
+1. The disk cache of the native SDK, which survives app restarts.
+2. Your [fallback file](flutter-use-fallback-paywalls) for SDK 4.4 or later, if you downloaded it after you last published the flow.
+3. Adapty, over the network. This costs a round trip, even after a preload. The first time the app shows each published version of the flow, the native SDK makes this request. Then it saves the layout to the disk cache.
+
+When the `loadTimeout` of `createFlowView` fires, the native SDK doesn't fall back: it requests the layout again from the Adapty API. `loadTimeout` doesn't limit that second request.
 
 ### Skip audience segmentation
 
@@ -117,6 +123,8 @@ try {
 
 Bundled files add to your app's download size, so bundle only the media users see first.
 
+A bundled image appears without a wait, but the native SDK still downloads the uploaded image in the background.
+
 Media you don't bundle still appears right away: the flow's layout includes a small low-resolution copy of each image, including a video's still frame, and shows it until the full file loads.
 
 For the full `customAssets` reference, see [Customize assets](flutter-get-pb-paywalls#customize-assets).
@@ -127,5 +135,6 @@ For markets with consistently poor connectivity (rural areas, transit, regions a
 
 - Set `fetchPolicy: AdaptyFlowFetchPolicy.returnCacheDataElseLoad` on every fetch except the very first.
 - Configure a [fallback paywall](fallback-paywalls) for every placement in the Adapty dashboard.
-- Set `loadTimeout` to 3–5 seconds and accept the fallback when the timeout fires.
+- Balance `loadTimeout` between speed and targeting. With a shorter timeout, users see the fallback sooner. With a longer timeout, the targeted flow has more time to load.
+- [Keep the flow light](flow-size), so its layout downloads sooner.
 - Don't gate flow display on `getProfile()`. Call `getFlow` independently so a slow profile doesn't block the UI.
