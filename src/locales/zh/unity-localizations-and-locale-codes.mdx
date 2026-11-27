@@ -12,9 +12,15 @@ metadataTitle: "付费墙本地化 | Unity SDK | Adapty 文档"
 
 语言区域代码较为复杂，在不同平台之间可能存在差异，因此 Adapty 在所有支持的平台上统一采用一套内部标准。了解该标准有助于你预判用户最终会收到哪种本地化内容。
 
-## Adapty 的语言代码标准 \{#locale-code-standard-at-adapty\}
+## Adapty 中的区域语言代码标准 \{#locale-code-standard-at-adapty\}
 
-在语言代码方面，Adapty 采用了经过少量调整的 [BCP 47 标准](https://en.wikipedia.org/wiki/IETF_language_tag)：每个代码由小写子标签组成，以连字符分隔。例如：`en`（英语）、`pt-br`（葡萄牙语（巴西））、`zh`（简体中文）、`zh-hant`（繁体中文）。
+Adapty 的区域语言代码遵循 [BCP 47 标准](https://en.wikipedia.org/wiki/IETF_language_tag)：由语言子标签和可选的文字或地区子标签组成，以连字符分隔。代码出现的位置决定其大小写形式：
+
+- **Select languages** 字段中所有代码均为小写：`pt-br`、`zh-hant`。
+- 通过 Flow & Paywall Builder 发布的流程，代码中地区部分大写、文字部分首字母大写：`pt-BR`、`zh-Hant`。
+- 旧版付费墙编辑工具生成的付费墙，所有代码均保持小写：`pt-br`、`zh-hant`。
+
+`en`、`pt`、`es-419` 等语言代码在任何地方看起来都一样。
 
 ## 语言代码匹配 \{#locale-code-matching\}
 
@@ -22,18 +28,20 @@ metadataTitle: "付费墙本地化 | Unity SDK | Adapty 文档"
 
 ### 流程与付费墙 \{#flows-and-paywalls\}
 
-Adapty 渲染的付费墙在 SDK v4 中以流程形式提供，因此以下规则同时适用于两者。
+在 SDK v4 中，Adapty 渲染的付费墙以流程的形式下发，因此以下规则同样适用于两者。
 
-匹配是精确的。SDK 会将你传入的代码与流程的本地化代码逐字符比较：不会改变大小写，不会将下划线（`_`）替换为连字符（`-`），也不会回退到语言子标签。对于带有 `pt-br` 本地化的流程，只有 `pt-br` 能匹配：`pt-BR`、`pt_BR` 和 `pt-PT` 均无法匹配。
+匹配规则为精确匹配。SDK 会逐字符对比你传入的代码与流程本地化代码：不会转换大小写，不会将下划线（`_`）替换为连字符（`-`），也不会回退到语言子标签。对于包含 `pt-BR` 本地化的流程，只有 `pt-BR` 能匹配：`pt-br`、`pt_BR` 和 `pt-PT` 均无法匹配。
 
 当代码未匹配到任何本地化语言时，流程会静默地以其[默认语言](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale)渲染——SDK 不会返回错误，也不会记录警告。
 
 当代码匹配到某个本地化语言时，Adapty 会将该本地化语言与默认本地化语言合并：匹配到的本地化语言中未定义的字符串和资源会从默认本地化语言中获取。
 
-省略语言区域代码与请求流程的默认本地化并不相同：SDK 会固定替换为 `en`。如果一个流程的默认语言区域是 `de`，但它包含 `en` 本地化，则仍会以 `en` 渲染；只有在没有 `en` 本地化时，才会回退到 `de`。
+省略语言区域代码并不等同于请求流程的默认本地化：SDK 会固定替换为 `en`。如果一个流程的默认语言区域为 `de`，但同时包含 `en` 本地化，则仍会以 `en` 渲染；只有在没有 `en` 本地化时，才会回退到 `de`。
 
 :::warning
-请严格按照看板中配置的格式传入语言区域代码——小写子标签之间用连字符分隔。不要直接传入系统语言区域标识符：`CultureInfo.CurrentCulture.Name` 返回的是 `pt-BR`，这会导致回退到默认本地化。请在应用中先转换该值再传入。
+传入的语言区域代码必须与已发布流程中的写法完全一致：应使用 `pt-BR`，而非 **Select languages** 字段中的 `pt-br`。对于旧版付费墙编辑工具创建的付费墙，请传入小写代码，例如 `pt-br`。
+
+不要直接传递系统语言区域标识符。在设置为"英语（美国）"的设备上，`CultureInfo.CurrentCulture.Name` 返回 `en-US`，但这会匹配不到只有 `en` 的流程。在传递系统语言区域标识符之前，请将其转换为流程中实际存在的语言代码。
 :::
 
 ### 用户引导 \{#onboardings\}
@@ -49,7 +57,7 @@ Adapty 渲染的付费墙在 SDK v4 中以流程形式提供，因此以下规�
 
 ## 实现本地化 \{#implementing-localizations\}
 
-在 SDK v4 中，获取流程时无需传入语言区域代码——流程在创建视图时完成本地化。
+在 SDK v4 中，当你创建流程视图时，SDK 会加载该流程的所有本地化内容，并在同一次调用中选择要显示的语言。
 
 - **由 Adapty 渲染的流程和付费墙**：SDK 不会读取设备语言，请在应用中自行解析语言设置，并在[创建视图时传入](#choose-the-localization-of-a-flow)。语言区域代码为可选项——省略时流程以 `en` 渲染；若流程未配置 `en` 本地化，则以其默认语言区域渲染。
 - **自定义（远程配置）付费墙**：`GetFlow` 会在 `flow.RemoteConfigs` 中返回所有已配置的本地化内容。每个条目均为 `AdaptyRemoteConfig`，包含 `Locale` 代码和 `Dictionary` 键值对。请自行选择与用户匹配的条目，并设置相应的回退逻辑：
@@ -78,7 +86,7 @@ Adapty 使用 [Adapty 的语言区域代码标准](#locale-code-standard-at-adap
 
 ```csharp showLineNumbers
 var parameters = new AdaptyUICreateFlowViewParameters()
-    .SetLocale("pt-br");
+    .SetLocale("pt-BR");
 
 AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
     if (error != null) {
@@ -102,9 +110,9 @@ AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
 
 由于语言区域代码较为复杂，且在不同平台之间可能存在差异，我们在所支持的所有平台上统一采用内部标准。正因为这些代码比较复杂，了解你向服务器发送的具体内容、以及后续处理流程就显得尤为重要——这样你才能始终获得预期的本地化结果。
 
-## Adapty 中的语言代码标准 \{#locale-code-standard-at-adapty\}
+## Adapty 的语言代码标准 \{#locale-code-standard-at-adapty\}
 
-在语言代码方面，Adapty 使用略经修改的 [BCP 47 标准](https://en.wikipedia.org/wiki/IETF_language_tag)：每个代码由小写子标签组成，以连字符分隔。示例：`en`（英语）、`pt-br`（葡萄牙语（巴西））、`zh`（简体中文）、`zh-hant`（繁体中文）。
+在语言代码方面，Adapty 采用了经过少量调整的 [BCP 47 标准](https://en.wikipedia.org/wiki/IETF_language_tag)：每个代码由小写子标签组成，以连字符分隔。例如：`en`（英语）、`pt-br`（葡萄牙语（巴西））、`zh`（简体中文）、`zh-hant`（繁体中文）。
 
 ## 语言区域代码匹配 \{#locale-code-matching\}
 

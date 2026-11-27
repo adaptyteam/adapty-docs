@@ -12,11 +12,11 @@ Các quy tắc này yêu cầu `Adapty.activate()` và `Adapty.identify()` đã 
 
 ## Quy tắc và lưu ý \{#rules-and-pitfalls\}
 
-| Nên làm | Không nên làm | Lý do |
+| Nên làm thế này | Không nên làm thế này | Lý do |
 |---|---|---|
-| Fetch placement mà bạn sắp hiển thị. | Prefetch tất cả các placement đồng thời khi khởi động. | Prefetch hàng loạt làm chặn main thread và gây màn hình đen trong lúc burst. |
-| Fetch `getFlow` sau khi attribution đã có cơ hội resolve — ví dụ, 1–2 giây sau `activate` hoặc sau khi `setOnProfileUpdatedListener` kích hoạt. | Gọi `getFlow` khi khởi động app. | Attribution chưa được ghi nhận. Flow sẽ resolve theo đối tượng mặc định và âm thầm bỏ qua các phân khúc cũng như cá nhân hóa ASA. |
-| Đặt `loadTimeout` và cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement. | Chờ `getFlow` vô thời hạn. | Không có timeout, người dùng có kết nối kém sẽ thấy màn hình trắng cho đến khi mạng phục hồi — hoặc họ sẽ đóng app. |
+| Fetch placement mà bạn sắp hiển thị.                                                                                                                | Prefetch tất cả các placement đồng thời lúc khởi động.        | Bulk prefetch chặn main thread và gây màn hình đen trong quá trình burst.                                  |
+| Fetch `getFlow` sau khi attribution đã có thời gian resolve — ví dụ, 1–2 giây sau `activate` hoặc sau khi `setOnProfileUpdatedListener` kích hoạt. | Gọi `getFlow` ngay khi khởi động ứng dụng.                       | Attribution chưa kịp load. Flow sẽ resolve theo đối tượng mặc định và âm thầm bỏ qua các phân khúc và cá nhân hóa ASA. |
+| Giữ `loadTimeout` mặc định là 5 giây hoặc đặt giá trị khác, và cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement. | Truyền `getFlow` một `loadTimeout` lớn đến mức không bao giờ kích hoạt. | Nếu timeout không bao giờ kích hoạt, người dùng có kết nối kém sẽ thấy màn hình trống cho đến khi mạng ổn định — hoặc họ sẽ đóng ứng dụng. |
 
 Xem [Lấy paywall và sản phẩm tùy chỉnh](fetch-paywalls-and-products-kmp) để tham khảo thông số `fetchPolicy` và `loadTimeout`, và [Placements](placements) để chọn placement phù hợp.
 
@@ -48,15 +48,18 @@ AdaptyUI.createFlowView(
 
 Các file đi kèm sẽ làm tăng dung lượng tải về của ứng dụng, vì vậy chỉ đóng gói các media mà người dùng nhìn thấy đầu tiên.
 
-Nội dung media bạn không đóng gói vẫn hiển thị ngay lập tức: layout của flow bao gồm một bản sao độ phân giải thấp nhỏ của mỗi hình ảnh, kể cả khung tĩnh của video, và hiển thị bản đó cho đến khi file đầy đủ tải xong.
+Hình ảnh được đóng gói sẵn hiển thị ngay lập tức mà không cần chờ, nhưng SDK vẫn tải xuống hình ảnh đã upload trong nền.
 
-Để xem tài liệu tham khảo đầy đủ về `customAssets`, xem [Tùy chỉnh assets](kmp-get-pb-paywalls#customize-assets).
+Các media không được đóng gói vẫn hiển thị ngay: layout của flow bao gồm một bản sao độ phân giải thấp của mỗi hình ảnh, kể cả khung tĩnh của video, và hiển thị bản đó cho đến khi file đầy đủ được tải xong.
+
+Để xem tài liệu tham khảo đầy đủ về `customAssets`, hãy xem [Tùy chỉnh assets](kmp-get-pb-paywalls#customize-assets).
 
 ## Điều chỉnh cho kết nối kém \{#tune-for-poor-connectivity\}
 
-Đối với các thị trường có kết nối kém liên tục (khu vực nông thôn, phương tiện giao thông công cộng, khu vực bị ảnh hưởng bởi định tuyến):
+Đối với các thị trường có kết nối kém liên tục (vùng nông thôn, phương tiện giao thông, các khu vực bị ảnh hưởng bởi định tuyến):
 
-- Đặt `fetchPolicy = AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` cho mọi lần fetch ngoại trừ lần đầu tiên.
-- Cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement trong Adapty dashboard.
-- Đặt `loadTimeout` từ 3–5 giây và chấp nhận fallback khi timeout kích hoạt.
-- Đừng chặn việc hiển thị flow khi chờ `Adapty.getProfile()`. Gọi `getFlow` độc lập để một profile chậm không làm chặn UI.
+- Đặt `fetchPolicy = AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` cho mọi lần fetch trừ lần đầu tiên.
+- Cấu hình [paywall dự phòng](fallback-paywalls) cho mọi placement trong Adapty Dashboard.
+- Cân bằng `loadTimeout` giữa tốc độ và targeting. Timeout ngắn hơn thì người dùng thấy fallback sớm hơn. Timeout dài hơn thì flow được nhắm mục tiêu có thêm thời gian để tải.
+- [Giữ flow nhẹ](flow-size), để layout tải nhanh hơn.
+- Đừng chặn việc hiển thị flow ở `Adapty.getProfile()`. Gọi `getFlow` độc lập để một profile chậm không làm chặn UI.

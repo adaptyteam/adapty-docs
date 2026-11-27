@@ -111,24 +111,25 @@ adapty analytics cohort --app <app-id> --date-from 2026-07-01 --date-to 2026-09-
 - **对比周期**：只有 `chart` 和 `conversion` 支持 `--compare-from` 和 `--compare-to`。对比周期拥有独立的汇总行和分组，表格会将其作为第二张表打印。
 - **归因数据**：请勿将这些数字与[归因](developer-cli-attribution)中的数字相加，Adapty 对二者的计算方式不同。
 
-CLI 返回的数字与看板一致，但有两个例外：
+CLI 返回的数字与看板一致。如果看板忽略某个筛选条件，CLI 会直接拒绝：
 
-- `funnel` 会应用 `cancellation_reason` 过滤器，而看板的漏斗图会忽略该过滤器。因此，这两个数字可能存在差异。
-- `retention` 提供的分组列表与看板不同。请以目录中的列表为准。
+- 若某个命令不支持某个筛选条件或分组维度，将以退出码 4 结束，并列出该命令支持的选项。各命令的分组维度和筛选条件请参考 `adapty analytics catalog`。
+- `funnel` 会拒绝 `cancellation_reason` 筛选条件，而看板的漏斗图会忽略该条件。
 
 ## 限制 \{#limits\}
 
-每个分析命令每个应用每秒最多接受 2 次请求，每分钟总计最多 360 次请求。CLI 不会自动重试请求。当请求发送过快时，命令会以退出码 4 退出。使用 `--json` 时，错误信息中会包含 `retry_after_seconds` 字段：等待该时长后，重新运行命令即可。
+每个分析命令每个应用每 10 秒最多接受 25 次请求，每分钟总计最多 360 次请求。CLI 每条数据命令只发送一次，不会重试。`catalog` 和 `values` 命令最多重试 3 次后才会失败。如果请求发送过快，命令将以退出码 4 退出。使用 `--json` 时，错误信息中会包含 `retry_after_seconds` 字段：等待该字段指定的时间后，重新运行命令即可。
 
 ## 错误 \{#errors\}
 
 每个错误都会以一个错误代码退出，帮助你定位问题：
 
-| 退出码 | 原因 | 处理方法 |
+| 退出码 | 原因 | 解决方法 |
 |---|---|---|
-| 2 | CLI 在发送请求前拒绝了输入：无效的应用 UUID、格式错误或日期区间首尾颠倒、对比周期缺少某一端、`--renewal-days` 未搭配 `--period-type days`、`--filter` 缺少 `=`，或同时使用了 `--csv` 和 `--json`。 | 根据提示信息修复对应的参数标志。 |
-| 3 | 您尚未登录，或您的 Adapty 账号无权访问该应用。 | 使用 `adapty auth login` 登录。若已登录，请通过 `adapty apps list` 查找应用 ID，该命令仅列出您有读取权限的应用。 |
-| 4 | Adapty 拒绝了请求：未知的数据图表、转化方式、分组方式、过滤条件或时区；在不显示金额的数据图表上使用了 `--revenue-basis`；或请求过于频繁。 | 通过 `adapty analytics catalog` 核对名称。使用 `--json` 时，错误信息中包含 API 错误码。请求频率超限的处理方式，请参见[限制](#limits)。 |
+| 2 | CLI 在发送请求前拒绝了输入：无效的应用 UUID、格式错误或首尾颠倒的日期范围、比较周期只填了一端、`--renewal-days` 未搭配 `--period-type days`、`--filter` 缺少 `=`，或 `--csv` 与 `--json` 同时使用。 | 根据提示信息修复对应的参数。 |
+| 3 | 未登录，或您的 Adapty 账号无权访问该应用。 | 使用 `adapty auth login` 登录。若已登录，请通过 `adapty apps list` 查找应用 ID，该命令仅列出您有权读取的应用。 |
+| 4 | Adapty 拒绝了请求：未知的数据图表、转化方式、分组方式、筛选条件或时区；在不显示金额的数据图表上使用了 `--revenue-basis`；或请求次数过多。 | 参照 `adapty analytics catalog` 修正名称。使用 `--json` 时，错误信息中会包含 API 错误码。请求次数限制请参阅[限制](#limits)。 |
+| 5 | CLI 无法连接到 Adapty：网络不通，或连接在收到响应前中断。 | 恢复网络连接后重新执行命令。使用 `--json` 时，错误码为 `network_error`。 |
 
 ## 命令参考 \{#command-reference\}
 

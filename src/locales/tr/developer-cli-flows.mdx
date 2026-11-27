@@ -1,10 +1,10 @@
 ---
-title: "Flow komutları"
-description: "Flow oluşturan, builder yapılandırmalarını okuyup yazan, doğrulayan ve önizleyen, medya yükleyen, yayımlayan, sürümlerini listeleyen ve geri yükleyen, kopyalayan, metriklerini ve ekran hunisini okuyan Adapty CLI komutları."
-metadataTitle: "Flow CLI Komutları | Adapty Dokümanları"
+title: "Flows komutları"
+description: "Flow oluşturan, builder yapılandırmalarını okuyup yazan, doğrulayan ve önizleyen, medya ve özel yazı tiplerini yükleyen, yayımlayan, sürümlerini listeleyen ve geri yükleyen, kopyalayan, metriklerini ve ekran hunisini okuyan Adapty CLI komutları."
+metadataTitle: "Flows CLI Komutları | Adapty Dokümanları"
 ---
 
-[Flow'lar](adapty-flow-builder), Flow & Paywall Builder'da oluşturduğunuz paywall'lar ve onboarding'lerdir. CLI, flow kaydını, builder config'ini, yayını ve [versiyon geçmişini](flow-version-history) yönetir. Builder config, Flow & Paywall Builder'ın normalde ürettiği büyük bir JSON belgesidir; CLI bu belgeyi oluşturmaz. Terminalden bir config yazmak veya düzenlemek için bu komutları sizin adınıza çalıştıran [flow-generator skill](flow-generator-skill)'ini kullanın. Yayınlamadan önce [flow-audit skill](flow-audit-skill), flow'un production'a hazır olup olmadığını kontrol eder. `flows metrics` komutları [flow metrikleri](flow-metrics) sayfasındaki verileri okur ve CLI 0.15.0 veya üzeri bir sürüm gerektirir. `flows funnel` komutları ise [flow funnel](flow-funnel)'ını okur ve CLI 0.19.0 veya üzeri bir sürüm gerektirir. Komutlar burada referans olarak listelenmiştir.
+[Flow'lar](adapty-flow-builder), Flow & Paywall Builder'da oluşturduğunuz paywall'lar ve onboarding'lerdir. CLI, flow kaydını, builder config'ini, yayınlamayı ve [versiyon geçmişini](flow-version-history) yönetir. Builder config, Flow & Paywall Builder'ın normalde ürettiği büyük bir JSON belgesidir ve CLI bunu kendisi oluşturmaz. Terminalden bir config yazmak veya düzenlemek için, bu komutları sizin adınıza çalıştıran [flow-generator skill'ini](flow-generator-skill) kullanın. Yayınlamadan önce [flow-audit skill'i](flow-audit-skill), flow'un production'a hazır olup olmadığını kontrol eder. [`fonts` komutları](#custom-fonts), flow'ların kullandığı özel fontları yükler ve yönetir; bunun için CLI 0.33.0 veya daha yeni bir sürüm gerekir. `flows metrics` komutları, [flow metrics](flow-metrics) sayfasındaki verileri okur ve CLI 0.15.0 veya daha yeni bir sürüm gerektirir. `flows funnel` komutları ise [flow funnel'ını](flow-funnel) okur ve CLI 0.19.0 veya daha yeni bir sürüm gerektirir. Komutlar burada referans olarak listelenmiştir.
 
 ## adapty flows list
 
@@ -96,9 +96,17 @@ adapty flows publish --app <app-id> <flow-id>
 
 Değişiklikleri yayımlamak kullanıcılarınızın gördüğü içeriği etkilediğinden, komut flow adını ekrana yazdırır ve onay ister. `y` dışındaki her yanıt, komutu çıkış kodu 1 ile iptal eder. `--json` bayrağı kullanılırken veya bir pipe içinde çalıştırılırken komut, yanıt beklemek yerine çıkış kodu 2 ile reddeder; bu nedenle script'lerde ve agent oturumlarında `--yes` parametresini kullanın.
 
-Yayımlama işlemi asenkrondur: yanıt `status: publishing` döner ve flow henüz yayında değildir. Durum `published` ya da `publication_failed` olana kadar [`flows get`](#adapty-flows-get) ile sorgulama yapın. `publication_failed` durumunda, [`flows config get`](#adapty-flows-config-get) nedenini raporlar.
+CLI'nin 0.33.0 veya sonraki sürümlerinde, yapılandırma [özel bir font](#custom-fonts) kullanıyorsa, komut uygulamanın mevcut fontlarını okur. Yapılandırmadaki kopya güncel değilse, komut yapılandırmayı mevcut fontlarla kaydeder ve ardından yayımlar. Kaydetme işlemi remote config'leri korur ve komut yapılandırmayı okuduktan sonra birisi yapılandırmayı değiştirdiyse başarısız olur. Kaydetme başarılı olur ve yayımlama başlarsa, okunabilir çıktı `Fonts refreshed` ifadesini içerir.
 
-Flow'un config'i yoksa, config yayımlanabilir değilse veya mevcut sürüm zaten yayındaysa yayımlama HTTP 400 hatasıyla başarısız olur. Yayımlamadan önce bir config'i kontrol etmek için [`flows config validate`](#adapty-flows-config-validate) kullanın.
+Komut, fontları okuyamazsa herhangi bir yazma işleminden önce durur. Yapılandırmadaki bir font ailesi adı birden fazla aileyle eşleşiyorsa, çıkış kodu 2 ile sonlanır. Eşleşmeyi çözmek için bir aileyi yeniden adlandırın ya da yapılandırmada aile ID'sini kullanın.
+
+Yapılandırma yanıtı, kaydetmeye gerek olmasa bile bir `config` nesnesi ve bir `updated_at` tam sayısı içermelidir. Komutun yapılandırmayı kaydetmesi gerekiyorsa, yanıt ayrıca bir `remote_configs` listesi de içermelidir. Bu gereksinimler karşılanmazsa, komut çıkış kodu 4 ve `malformed_response` ile herhangi bir yazma işleminden önce durur.
+
+Başarısız veya belirsiz bir kayıt, komutun yayımlama isteği göndermeden önce durmasına neden olur. CLI kaydetme yanıtını okuyamazsa veya kaydetme sırasında bağlantı kesilirse, kaydetme işlemi tamamlanmış olabilir. Yeniden yayımlamadan önce [`flows config get`](#adapty-flows-config-get) komutuyla depolanan yapılandırmayı okuyun. Başarılı bir kaydetmenin ardından yayımlama başarısız olursa, kaydedilen yapılandırma korunur.
+
+Yayımlama işlemi asenkroniktir: yanıt `status: publishing` döndürür ve flow henüz yayında değildir. Durum `published` veya `publication_failed` olana kadar [`flows get`](#adapty-flows-get) ile yoklama yapın. `publication_failed` durumunda, [`flows config get`](#adapty-flows-config-get) nedenini raporlar.
+
+Flow'un config'i yoksa, config yayınlanabilir değilse veya mevcut sürüm zaten yayındaysa yayımlama HTTP 400 ile başarısız olur. Bir config'i yayımlamadan önce doğrulamak için [`flows config validate`](#adapty-flows-config-validate) komutunu kullanın. Flow mevcut değilse komut, 4 koduyla çıkar. CLI 0.33.0 sürümünden önce ise 1 koduyla çıkıyordu.
 
 ## adapty flows config get
 
@@ -239,6 +247,251 @@ adapty flows media upload-video --app <app-id> ./intro.mp4
 Kabul edilen formatlar: MP4 ve WebM. Video en fazla 30 saniye uzunluğunda ve en fazla 50 MB boyutunda olmalı; genişlik ve yükseklik değerlerinin her biri en az 640 piksel olmalıdır. GIF desteklenmez ve komut, animasyonlu bir görüntüyü videoya dönüştürmez.
 
 Yanıt; video URL'sini (bir HLS playlist), önizleme görüntüsü URL'sini ve videonun `width` ile `height` değerlerini içerir. Config'de bir video öğesi bunları `videoUrl`, `previewUrl`, `width` ve `height` olarak alır.
+
+## Özel fontlar \{#custom-fonts\}
+
+`adapty fonts` komutları, bir uygulamanın [özel fontlarını](using-custom-fonts-in-flow-builder) yükler ve yönetir. Uygulamanın tüm flow'ları, Flow & Paywall Builder'a yüklediğiniz fontlarla aynı fontları kullanır. Bir font ailesi bir veya daha fazla yüze sahiptir. Yüz, bir `.ttf` veya `.otf` dosyasının bir ağırlık ve stil kombinasyonudur. `fonts` komutları için CLI sürümü 0.33.0 veya üzeri gereklidir. Sürümünüzü görmek için `adapty --version` komutunu çalıştırın.
+
+:::warning
+Adapty, font dosyalarını kullanıcıların cihazlarına göndermez. Uygulamanızda özel bir font göstermek için [aynı font dosyalarını uygulamanızın paketine ekleyin](using-custom-fonts-in-flow-builder#add-the-font-files-to-your-apps-bundle); Adapty'de yüzlerin sahip olduğu iOS ve Android font adlarını kullanın.
+:::
+
+Bir flow config'inde özel yazı tipi kullanmak için yazı tipini font family ve ağırlık belirterek ayarlayın. Bir metin öğesinde font, `props.font` içindedir: `"font": {"family": {"type": "user", "id": "<font-family-id>"}, "weight": "bold"}`. `theme.typography` içindeki bir metin stilinde ise `family` ve `weight`, stilin `settings` anahtarlarıdır; etraflarında `font` nesnesi bulunmaz. Family, kendi family adıyla da belirtilebilir. İtalik, zengin metin span'ı üzerinde ayarlanır. Flow'u yayımladığınızda Adapty, o ağırlık ve stile sahip yüzü kullanır. Family'de bu yüz yoksa Adapty, önce aynı stilde en yakın ağırlıktaki yüzü, ardından herhangi bir stildeki yüzü kullanır. İki yüz eşit derecede yakınsa daha hafif olan yüz öncelik kazanır.
+
+Flow'ların kullandığı bir yazı tipi ailesini değiştiren komut, bu flow'ları `flows_to_publish` içinde listeler. Değişikliği kullanıcılarınıza göndermek için her birini [`flows publish`](#adapty-flows-publish) ile yayınlayın. `flows_to_publish` iki durumda `null` olur ve komut bir uyarı yazdırır. `--json` ile `flows_to_publish_error`, nedeni ve sonraki adımı verir:
+
+- **Yükleme bir dosyada durdu**, son veya tek dahil edilen dosya: Adapty bu dosyayı depolamış olabilir, bu yüzden hangi font ailelerinin değiştiğini bilmiyoruz. Bunları bulmak için [`fonts list`](#adapty-fonts-list) komutunu, ardından her biri için [`fonts usage`](#adapty-fonts-usage) komutunu çalıştırın.
+- **Yalnızca flow'ların okunması başarısız oldu**: Her dosyanın bir sonucu var. Komutun değiştirdiği her font ailesi için [`fonts usage`](#adapty-fonts-usage) komutunu çalıştırın.
+
+## adapty fonts list
+
+Bir uygulamanın özel font ailelerini ve yüzlerini listeler.
+
+```bash
+adapty fonts list --app <app-id>
+```
+
+| Flag | Gerekli | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+
+Her yüz için yanıt; ağırlık, italik, iOS ve Android font adları, ailenin varsayılan yüzü ve dosya formatını içerir. `metadata_status`, yüzün ağırlık ve italik bilgisinin bilinip bilinmediğini gösterir: `detected` ve `confirmed` bilindiği anlamına gelir; `needs_review` ve `legacy_unconfirmed` ise bilinmediği anlamına gelir. Bunları ayarlamak için [`fonts faces update`](#adapty-fonts-faces-update) komutunu kullanın.
+
+## adapty fonts get
+
+Bir font ailesini ve yüzlerini getir.
+
+```bash
+adapty fonts get --app <app-id> <font-family-id>
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `font-family-id` | Font ailesi ID'si (UUID) |
+
+| Bayrak | Gerekli | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+
+## Adapty font yükleme \{#adapty-fonts-upload\}
+
+Font dosyalarını yükleyin. Adapty, her dosyada saklanan aile adını uygulamanın font aile adlarıyla büyük/küçük harf duyarlılığı olmadan karşılaştırır. Bir aile eşleşirse dosya o aileye eklenir. Hiçbiri eşleşmezse Adapty yeni bir aile oluşturur.
+
+`Brand` ve `brand` gibi iki veya daha fazla aile eşleşirse, CLI `font_family_name_ambiguous` ile `refused` raporlar. Bu durum `--choice` olsun ya da olmasın geçerlidir. `--json` ile `families` dizisi her eşleşme için `family_id` ve `family_name` içerir. Dosyayı o aileye eklemek için bir aile ID'siyle [`fonts add`](#adapty-fonts-add) komutunu kullanın. Ya da yalnızca bir aile eşleşene kadar [`fonts rename`](#adapty-fonts-rename) komutunu kullanın. Ardından dosyayı tekrar yükleyin.
+
+```bash
+adapty fonts upload --app <app-id> ./Brand-Regular.otf ./Brand-Bold.otf ./Brand-Italic.otf
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `file` | `.ttf` veya `.otf` dosyasının yolu. Birden fazla dosya yüklemek için her birini listeleyin |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--choice` | No | Use `replace` to replace colliding faces, or `keep` to leave existing faces as they are. The command can still upload new faces |
+| `--replace-face-id` | No | With `--choice replace` and one file only: replace exactly these faces, the ones a refusal listed. Give the face IDs as a comma-separated list, or repeat the flag. Adapty refuses the replacement when these faces no longer match the collisions |
+
+Statik bir font dosyası tek bir yüz oluşturur. Değişken bir font dosyası, dosyadaki her adlandırılmış stil için bir yüz oluşturur. WOFF ve WOFF2 gibi diğer formatlar desteklenmez. Komut, ilk dosyayı göndermeden önce tüm dosyaları okur: bir dosyayı okuyamazsa, 2 çıkış koduyla durur ve hiçbir şey göndermez.
+
+Komut, istek başına bir dosya gönderir. Son dosyanın ardından her dosyanın sonucunu yazdırır. `--json` ile sonuçlar `files` içinde yer alır:
+
+| Sonuç | Anlam |
+|---|---|
+| `created` | Dosya yeni bir font ailesi oluşturdu |
+| `added` | Dosyanın yüzleri mevcut bir aileye katıldı |
+| `partly_added` | Dosyanın bazı yüzleri aileye katıldı. `kept_faces` ailenin zaten sahip olduğu yüzleri listeler |
+| `replaced` | Dosya, `--choice replace` seçeneğinden sonra çakışan yüzlerin dosyasının yerini aldı. `replaced_faces` bunları listeler |
+| `kept` | `--choice keep` seçeneği, dosyayı depolanan bir yüzle çakıştığı için atladı |
+| `refused` | Adapty dosyayı reddetti. `error_code` ve `message` nedenini açıklar |
+| `failed` | Bir ağ veya kimlik doğrulama hatası ya da CLI'ın okuyamadığı bir yanıt, yüklemeyi bu dosyada durdurdu. Bir ağ hatasından veya okunamayan bir yanıttan sonra Adapty dosyayı depolamış olabilir: tekrar göndermeden önce [`fonts list`](#adapty-fonts-list) komutunu çalıştırın |
+| `not_sent` | Dosya gönderilmedi çünkü yükleme daha önceki bir dosyada durdu |
+
+Statik bir font dosyası iki durumda bir face ile çakışır: dosyanın katıldığı ailenin aynı ağırlık ve italic değerine sahip bir face'i varsa ya da uygulamanın herhangi bir face'i aynı iOS font adına sahipse. Değişken bir font dosyasının sonuçları için bu paragrafın ardındaki listeye bakın. İki farklı ailenin her birinin bir Regular face'i olabilir. Adapty, rapordaki `conflicts` ve `choices` ile çakışan bir dosyayı reddedebilir. `next_step` bir değiştirme önerdiğinde, ilgili dosya için yazdırılan komutu `--choice replace` ve `--replace-face-id` ile çalıştırın. Bu komut tek bir yükleme isteği yapar ve yalnızca listelenen face'lerin yerini alır. Değişken bir font aynı zamanda yeni face'ler de ekleyebilir. Dosyanın tamamını dışarıda bırakmak için yeniden denemeyi atlayın. Yazdırılan `--choice keep` komutu, çakışmalar değişirse yeni face'leri kaydedebilir.
+
+- Listelenen yüzler hâlâ mevcutsa ve çakışma kümesi değişmişse, Adapty HTTP 409 ve mevcut `conflicts` ile reddedebilir. Yeni değiştirme komutunu çalıştırmadan önce bu listeyi inceleyin.
+- Listelenen bir yüz artık yoksa, Adapty `font_face_not_found` (HTTP 404) ile reddeder. Hiçbir şey çakışmıyorsa, Adapty HTTP 400 ile reddedebilir. Bu yanıtların hiçbiri herhangi bir yüzün yerini almaz. Dosyayı hiçbir yüzü değiştirmeden yüklemek için aynı komutu söz konusu dosyaya `--choice` veya `--replace-face-id` olmadan çalıştırın ve yeni sonucu inceleyin.
+
+:::warning
+`--choice replace` tek başına kullanıldığında, CLI önce dosyayı seçim göndermeksizin yükler. Bir çakışma olursa, dosyayı bu çalıştırmada bulunan yüzleri değiştirmek için tekrar gönderir; bu yüzler önceki reddedilen çalıştırmadaki yüzlerden farklı olabilir. İlk istek çakışma bulmazsa, dosyayı yeni yüzler olarak yükleyebilir. Hangi yüzlerin değiştirildiğini görmek için `replaced_faces` alanını okuyun. Adapty eski dosyaları saklamaz. Listelenen yüzlerin yalnızca bir kısmını değiştirmek için her biri için [`fonts faces replace`](#adapty-fonts-faces-replace) komutunu kullanın.
+:::
+
+Değişken font dosyası şu sonuçlardan birini verir:
+
+- **Tüm stiller ailede yeni**: `created` veya `added`, statik bir dosya gibi.
+- **Stillerin bir kısmı ailede zaten var**: `partly_added`. Yeni stiller aileye katılır ve `kept_faces`, ailenin zaten sahip olduğu stilleri listeler.
+- **Tüm stiller ailede zaten var**: `refused`, seçenek olmadan. Bir yüzün dosyasını değiştirmek için [`fonts faces replace`](#adapty-fonts-faces-replace) kullanın.
+- **Yeni bir stilin iOS font adı, uygulamanın başka bir yüzünkiyle çakışıyor**: `refused`, herhangi bir çakışmada olduğu gibi seçeneklerle birlikte.
+
+Yükleme sonrasında iOS veya Android font adı bulunmayan bir yüz kaydedilir ve `warnings` bunu adlandırır. Adı [`fonts faces update`](#adapty-fonts-faces-update) ile ayarlayın.
+
+| Çıkış kodu | Neden | Ne yapmalı |
+|---|---|---|
+| `0` | Her dosya depolandı veya atlandı | — |
+| `2` | CLI bir dosyayı okuyamadı. Ya da `--replace-face-id` geçersiz bir UUID belirtti, `--choice replace` eksikti ya da birden fazla dosyayla kullanıldı. Hiçbir dosya gönderilmedi | Yolu veya bayrakları düzeltin, ardından tüm komutu yeniden çalıştırın |
+| `3` | Adapty CLI oturumunu reddetti ya da hesabın uygulamaya erişimi yok. O dosyadan sonraki dosyalar gönderilmedi | Oturum reddedildiyse yeniden giriş yapın. Erişim yoksa uygulama kimliğini doğrulayın ya da uygulamaya erişimi olan bir hesapla giriş yapın. Ardından depolanmayan dosyaları yükleyin |
+| `4` | Adapty en az bir dosyayı reddetti ve diğer dosyalar gönderildi. Ya da CLI bir yanıtı okuyamadı ve yükleme o dosyada durdu. Ya da her dosyanın sonucu var (depolandı veya atlandı) ancak değiştirilen aileleri kullanan flow'larla ilgili yanıt hatalı biçimliydi: `flows_to_publish` değeri `null` | Reddedilen her dosyanın sonucunu okuyun. `failed` durumdaki bir dosya için yeniden göndermeden önce [`fonts list`](#adapty-fonts-list) komutunu çalıştırın. Yalnızca flow'ların okunması başarısız olduysa komutun değiştirdiği her aile için [`fonts usage`](#adapty-fonts-usage) komutunu çalıştırın |
+| `5` | Bir ağ hatası. O dosyadan sonraki dosyalar gönderilmedi | `failed` dosyanın depolanıp depolanmadığını görmek için [`fonts list`](#adapty-fonts-list) komutunu çalıştırın, ardından depolanmayan dosyaları yükleyin |
+
+## adapty fonts add
+
+Seçtiğiniz font ailesine font dosyalarının yüzlerini ekleyin; dosyaların taşıdığı aile adından bağımsız olarak çalışır.
+
+```bash
+adapty fonts add --app <app-id> <font-family-id> ./Brand-Bold.otf
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `font-family-id` | Font ailesi kimliği (UUID) |
+| `file` | Bir `.ttf` veya `.otf` dosyasının yolu. Birden fazla dosya eklemek için her birini ayrı ayrı listeleyin |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--choice` | No | Use `replace` to replace colliding faces, or `keep` to leave existing faces as they are. The command can still add new faces |
+| `--replace-face-id` | No | With `--choice replace` and one file only: replace exactly these faces, the ones a refusal listed, as in [`fonts upload`](#adapty-fonts-upload) |
+
+Çakışma kuralları, sonuçlar ve çıkış kodları [`fonts upload`](#adapty-fonts-upload) ile aynıdır. `--choice keep` seçeneğiyle, bir değişken dosya yalnızca ailenin zaten sahip olduğu ağırlık ve italik çiftleriyle çakışıyorsa yeni stillerini eklemeye devam eder.
+
+## adapty fonts rename \{#adapty-fonts-rename\}
+
+Bir font ailesini yeniden adlandırır. Ailenin dosyaları ve yüzleri değişmez.
+
+```bash
+adapty fonts rename --app <app-id> <font-family-id> "Brand Sans"
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `font-family-id` | Font ailesi ID'si (UUID) |
+| `name` | Yeni aile adı |
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+
+Uygulamanın başka bir font ailesi aynı ada sahip olamaz. Yalnızca büyük/küçük harf bakımından farklılık gösteren bir ada izin verilir.
+
+## adapty fonts usage \{#adapty-fonts-usage\}
+
+Bir font ailesini kullanan flow'ları ve paywall'ları listeler.
+
+```bash
+adapty fonts usage --app <app-id> <font-family-id>
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `font-family-id` | Font ailesi kimliği (UUID) |
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama kimliği (UUID) |
+
+Yanıt, taslaklar dahil flow'ları ve aileyi kullanan paywall'ları listeler. Her yüz için, o yüzü kullanan paywall'ları listeler ya da Adapty yüzleri ayırt edemediğinde `null` döndürür. Bir flow, yalnızca yapılandırması aileye ID ile başvurduğunda listelenir. Aileye yalnızca adıyla başvuran bir flow listelenmez.
+
+## adapty fonts faces update
+
+Bir yüzün ağırlığını ve italik durumunu ya da iOS veya Android yazı tipi adını değiştirin.
+
+```bash
+adapty fonts faces update --app <app-id> <font-face-id> --ios-name BrandSans-Bold --android-name brand_sans_bold
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `font-face-id` | [`fonts list`](#adapty-fonts-list) komutunun gösterdiği yazı tipi yüzü ID'si (UUID) |
+
+| Bayrak | Gerekli | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+| `--weight` | Hayır | Normal için `400` veya kalın için `700` gibi yazı tipi ağırlığı. `--italic` ile birlikte kullanın |
+| `--italic` | Hayır | İtalik için `true`, dik için `false`. `--weight` ile birlikte kullanın |
+| `--ios-name` | Hayır | iOS yazı tipi adı: font dosyasında saklanan PostScript adı. Uygulamanın başka hiçbir yüzü bunu kullanamaz |
+| `--android-name` | Hayır | Android yazı tipi adı: `res/font/` klasöründeki uzantısız dosya adı. Küçük harfle başlar ve yalnızca küçük harf, rakam ve alt çizgi içerir |
+
+Ağırlık ve italik ayarlarını yaptıktan sonra, fonun `metadata_status` değeri `confirmed` olur. Android font adı, aynı dosyanın her yüzünde değişir. Değiştirilen adı kullanan paywaller yeni adı alır.
+
+## adapty fonts faces default \{#adapty-fonts-faces-default\}
+
+Bir yüzü ailesinin varsayılan yüzü yapar. Önceden varsayılan olan yüz artık varsayılan olmaktan çıkar.
+
+```bash
+adapty fonts faces default --app <app-id> <font-face-id>
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `font-face-id` | Font yüzü ID'si (UUID) |
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+
+## adapty fonts faces move
+
+Bir font ailesindeki face'i başka bir font ailesine taşır. Face dosyası değişmez.
+
+```bash
+adapty fonts faces move --app <app-id> <font-face-id> --to <font-family-id>
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `font-face-id` | Font face ID'si (UUID) |
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+| `--to` | Evet | Face'in taşınacağı ailenin ID'si (UUID) |
+
+Bir ailenin varsayılan face'i taşınamaz. Ağırlığı ve italik durumu bilinen bir face, aynı ağırlık ve italik değerlerine sahip başka bir face'e zaten sahip olan bir aileye taşınamaz.
+
+## adapty fonts faces replace
+
+Bir yüz için yeni dosya yükleyin.
+
+```bash
+adapty fonts faces replace --app <app-id> <font-face-id> ./Brand-Bold.otf
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `font-face-id` | Font yüzü ID'si (UUID) |
+| `file` | Yeni `.ttf` veya `.otf` dosyasının yolu |
+
+| Bayrak | Gerekli | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+| `--weight` | Hayır | Yazı tipinin ağırlığı. `--italic` ile birlikte kullanın |
+| `--italic` | Hayır | `true` veya `false`. `--weight` ile birlikte kullanın |
+| `--yes` | Hayır | Onay istemeden dosyanın üzerine yazar. `--json` ile, bir pipe içinde veya terminal olmadan kullanıldığında gereklidir |
+
+Yüzey, kimliğini, varsayılan işaretini ve Android yazı tipi adını korur. iOS yazı tipi adı yeni dosyadan gelir. Adapty eski dosyayı saklamaz ve geri yükleyemezsiniz. Bu nedenle komut onay ister. `--json` ile, bir pipe içinde veya terminal olmadan kullanıldığında komutun `--yes` seçeneğine ihtiyacı vardır: bu olmadan komut, çıkış kodu 6 (`confirm_required`) ile durur ve hiçbir şeyi değiştirmez. Ağırlığı ve italikliği bilinmeyen bir yüzey için değişken yazı tipi dosyası kullanmak istiyorsanız `--weight` ve `--italic` seçeneklerini geçin.
+
+Yüz zaten belirlenmiş bir ağırlık ve italik ayarına sahipse, yeni dosya her ikisiyle de eşleşmelidir. Adapty, aynı ailede başka bir yüz aynı ağırlık ve italik ayarına sahipse ya da uygulamadaki başka bir yüzün yeni dosyanın iOS font adını kullanıyorsa dosyayı reddeder. Her iki durumda da yüz eski dosyasını korur. iOS font adı kullanımda ise farklı bir PostScript adı olan bir dosya yükleyin veya bu adı kullanan yüzün dosyasını değiştirin.
 
 ## adapty flows versions list \{#adapty-flows-versions-list\}
 

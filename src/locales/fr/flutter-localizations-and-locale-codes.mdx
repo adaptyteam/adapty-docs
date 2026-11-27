@@ -15,7 +15,13 @@ Les codes de langue sont complexes et peuvent varier d'une plateforme à l'autre
 
 ## Standard des codes de langue chez Adapty \{#locale-code-standard-at-adapty\}
 
-Pour les codes de langue, Adapty utilise une version légèrement modifiée du [standard BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag) : chaque code est composé de sous-étiquettes en minuscules, séparées par des tirets. Quelques exemples : `en` (anglais), `pt-br` (portugais (Brésil)), `zh` (chinois simplifié), `zh-hant` (chinois traditionnel).
+Les codes de langue Adapty suivent la [norme BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag) : un sous-tag de langue, puis un sous-tag optionnel de script ou de région, séparés par des tirets. La casse d'un code dépend de l'endroit où il apparaît :
+
+- Le champ **Select languages** affiche tous les codes en minuscules : `pt-br`, `zh-hant`.
+- Les flows publiés depuis le Flow & Paywall Builder ont des codes avec une région en majuscules et un script avec une initiale majuscule : `pt-BR`, `zh-Hant`.
+- Les paywalls issus de l'ancien Paywall Builder conservent tous les codes en minuscules : `pt-br`, `zh-hant`.
+
+Les codes tels que `en`, `pt` et `es-419` s'affichent de la même façon partout.
 
 ## Correspondance des codes de langue \{#locale-code-matching\}
 
@@ -25,16 +31,18 @@ Dans le SDK v4, les flows et les onboardings associent les codes de langue diff�
 
 Un paywall rendu par Adapty est livré sous forme de flow dans le SDK v4, donc la règle ci-dessous s'applique aux deux.
 
-La correspondance est exacte. Le SDK compare le code que vous transmettez avec les codes de localisation du flow caractère par caractère : il ne modifie pas la casse, ne remplace pas les underscores (`_`) par des tirets (`-`), et ne se replie pas sur le sous-tag de langue. Pour un flow avec une localisation `pt-br`, seul `pt-br` correspond : `pt-BR`, `pt_BR` et `pt-PT` ne correspondent pas.
+La correspondance est exacte. Le SDK compare le code que vous passez avec les codes de localisation du flow caractère par caractère : il ne modifie pas la casse, ne remplace pas les tirets de soulignement (`_`) par des tirets (`-`), et ne se rabat pas sur le sous-tag de langue. Pour un flow avec une localisation `pt-BR`, seul `pt-BR` correspond : `pt-br`, `pt_BR`, et `pt-PT` passent tous à côté.
 
 Lorsque le code ne correspond à aucune localisation, le flow s'affiche silencieusement dans sa [locale par défaut](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) — le SDK ne renvoie pas d'erreur et ne consigne pas d'avertissement.
 
 Lorsque le code correspond, Adapty fusionne la localisation avec la localisation par défaut : les chaînes et les ressources que la localisation correspondante ne définit pas sont issues de la localisation par défaut.
 
-Omettre le code de langue ne revient pas à demander la localisation par défaut du flow : le SDK substitue un `en` fixe. Un flow dont la langue par défaut est `de` s'affichera quand même en `en` s'il dispose d'une localisation `en`, et ne se rabattra sur `de` que si ce n'est pas le cas.
+Omettre le code de langue ne revient pas à demander la localisation par défaut du flow : le SDK substitue un `en` fixe. Un flow dont la langue par défaut est `de` s'affiche quand même en `en` s'il dispose d'une localisation `en`, et ne revient à `de` qu'en l'absence de celle-ci.
 
 :::warning
-Passez le code de langue exactement tel qu'il est configuré dans le tableau de bord — sous-balises en minuscules séparées par des tirets. Ne passez pas un identifiant de locale système tel quel : `Platform.localeName` renvoie `pt_BR` et `PlatformDispatcher.instance.locale.toLanguageTag()` renvoie `pt-BR`, et les deux tombent en repli vers la localisation par défaut. Convertissez la valeur dans votre application avant de la passer.
+Passez le code de langue exactement tel qu'il apparaît dans le flow publié : `pt-BR`, et non `pt-br` issu du champ **Select languages**. Pour les paywalls de l'ancien Paywall Builder, passez des codes en minuscules, par exemple `pt-br`.
+
+Ne transmettez pas directement un identifiant de locale système. Sur un appareil configuré en portugais (Brésil), `Platform.localeName` renvoie `pt_BR`, qui ne correspond à aucune localisation. Sur un appareil configuré en anglais (États-Unis), `PlatformDispatcher.instance.locale.toLanguageTag()` renvoie `en-US`, ce qui ne correspond pas à un flow qui ne contient que `en`. Avant de transmettre un identifiant de locale système, convertissez-le en un code reconnu par le flow.
 :::
 
 ### Onboardings
@@ -50,11 +58,11 @@ Cette approche permet à `pt_BR`, `pt-BR` et `pt-br` de tous pointer vers la mê
 
 ## Implémenter les localisations \{#implementing-localizations\}
 
-Avec le SDK v4, vous n'avez pas besoin de passer un code de langue lors de la récupération d'un flow — `getFlow` retourne le flow avec toutes ses localisations, et Adapty en applique une au moment de la construction de la vue du flow. L'argument `locale` de `getFlow` et `getFlowForDefaultAudience` n'a aucun effet sur les flows ; il est déprécié et génère un avertissement dans les logs.
+Dans le SDK v4, vous ne passez pas de code de langue lors de la récupération d'un flow — le SDK charge toutes ses localisations lors de la construction de la vue du flow, et en applique une. L'argument `locale` de `getFlow` et `getFlowForDefaultAudience` n'a aucun effet sur les flows ; il est déprécié et génère un avertissement.
 
 - **Flows créés dans le builder** : le SDK ne lit pas les paramètres régionaux de l'appareil, donc résolvez-les dans votre application et passez-les comme argument `locale` de `createFlowView` ou `AdaptyUIFlowPlatformView`. L'argument est facultatif — omettez-le et le flow s'affiche en `en`, ou dans sa [langue par défaut](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) quand le flow n'a pas de localisation `en`.
 
-`AdaptyUIFlowView.locale` indique la localisation avec laquelle la vue a été construite. Cette fonctionnalité nécessite Flutter SDK 4.0.3 avec les versions natives iOS 4.0.2 et Android 4.0.1, et renvoie `null` avec des SDK natifs plus anciens.
+  `AdaptyUIFlowView.locale` indique la localisation avec laquelle la vue a été construite. Cette fonctionnalité nécessite Flutter SDK 4.0.3 avec les versions natives iOS 4.0.2 et Android 4.0.1, et renvoie `null` avec des SDK natifs plus anciens.
 - **Paywalls personnalisés (Remote Config)** : `getFlow` retourne toutes les localisations configurées dans `flow.remoteConfigs`. Chaque entrée contient un code `locale` et le contenu de la configuration (chaîne `data` ou le `dictionary` parsé). Sélectionnez l'entrée qui correspond à l'utilisateur, avec votre propre fallback :
 
 ```dart showLineNumbers
@@ -77,9 +85,9 @@ Les codes de locale entrent en jeu dans plusieurs scénarios — par exemple, lo
 
 Les codes de locale étant complexes et pouvant varier d'une plateforme à l'autre, nous nous appuyons sur un standard interne pour toutes les plateformes que nous supportons. Cependant, justement parce que ces codes sont complexes, il est vraiment important que vous compreniez ce que vous envoyez exactement à notre serveur pour obtenir la bonne localisation, et ce qui se passe ensuite — afin de toujours recevoir ce que vous attendez.
 
-## Norme des codes de langue chez Adapty \{#locale-code-standard-at-adapty\}
+## Standard des codes de langue chez Adapty \{#locale-code-standard-at-adapty\}
 
-Pour les codes de langue, Adapty utilise une version légèrement modifiée du [standard BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag) : chaque code est composé de sous-balises en minuscules, séparées par des tirets. Quelques exemples : `en` (anglais), `pt-br` (portugais (Brésil)), `zh` (chinois simplifié), `zh-hant` (chinois traditionnel).
+Pour les codes de langue, Adapty utilise une version légèrement modifiée du [standard BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag) : chaque code est composé de sous-étiquettes en minuscules, séparées par des tirets. Quelques exemples : `en` (anglais), `pt-br` (portugais (Brésil)), `zh` (chinois simplifié), `zh-hant` (chinois traditionnel).
 
 ## Correspondance des codes de langue \{#locale-code-matching\}
 

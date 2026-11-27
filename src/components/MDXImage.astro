@@ -1,5 +1,6 @@
 ---
 // MDXImage.astro - custom image resolution
+import DocVideo from './DocVideo.astro';
 interface Props {
   src: string;
   alt?: string;
@@ -94,11 +95,23 @@ if (src.startsWith('http') || src.startsWith('/_astro/') || src.startsWith('/@fs
     }
 }
 
+// GIFs converted by scripts/gif-to-video.mjs play as x.mp4 (see ZoomImage.astro).
+// Not eager: only the keys are needed, to check that the video exists.
+const convertedVideos = import.meta.glob('/src/assets/shared/video/*.mp4');
+const videoId = id.replace(/\.gif$/i, '.mp4');
+const playsAsVideo = !imageSrc && !src.startsWith('http') && /\.gif$/i.test(id)
+    && `/src/assets/shared/video/${videoId}` in convertedVideos;
+const videoWidth = typeof style === 'object' && style?.width ? String(style.width)
+    : width ? (typeof width === 'number' ? `${width}px` : width) : undefined;
+
 // Convert width/height to numbers if they are strings like "700px"
 const resolvedWidth = typeof width === 'string' ? parseInt(width.replace('px', '')) : width;
 const resolvedHeight = typeof height === 'string' ? parseInt(height.replace('px', '')) : height;
-const finalWidth = resolvedWidth ?? imageSrc?.width;
-const finalHeight = resolvedHeight ?? imageSrc?.height;
+const finalWidth = resolvedWidth || imageSrc?.width;
+// With only a width given, scale the height to keep the source's aspect ratio;
+// the browser sizes the placeholder box from these two attributes.
+const finalHeight = resolvedHeight
+    || (imageSrc && finalWidth ? Math.round((finalWidth * imageSrc.height) / imageSrc.width) : undefined);
 
 // Merge styles
 const finalStyle = {
@@ -113,7 +126,9 @@ if (width) {
 }
 ---
 
-{imageSrc ? (
+{playsAsVideo ? (
+  <DocVideo id={videoId} width={videoWidth} alt={alt || id} className={className} />
+) : imageSrc ? (
   <img 
     src={imageSrc.src} 
     alt={alt || id || ''} 
@@ -124,8 +139,10 @@ if (width) {
       className
     ]}
     style={finalStyle}
+    loading="lazy"
+    decoding="async"
     {...props}
   />
 ) : (
-  <img src={src} alt={alt} style={finalStyle} class={className} {...props} />
+  <img src={src} alt={alt} style={finalStyle} class={className} loading="lazy" decoding="async" {...props} />
 )}

@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import manropeUrl from '../css/fonts/Manrope-Variable.woff2?url';
 import Sidebar from '../components/Sidebar.astro';
 import TableOfContents from '../components/TableOfContents.astro';
 import FeedbackForm from '../components/FeedbackForm.astro';
@@ -242,10 +243,8 @@ const showHreflang = !isFullWidth && !noindex;
     )}
     {keywordsString && <meta name="keywords" content={keywordsString} data-rh="true" />}
     {rank !== undefined && <meta name="rank" content={String(rank)} data-rh="true" />}
-    <!-- Google Fonts: Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- The body font is needed for first paint; the CSS would only reveal it after the stylesheet loads. -->
+    <link rel="preload" href={manropeUrl} as="font" type="font/woff2" crossorigin />
     {isFullWidth ? null : <ClientRouter />}
     <meta name="google-site-verification" content="4rYXBX10-ZGpLJrZkkzyfbgqkF3U5cN92QgVovT6GFU" />
     {!isFullWidth && title && !noindex && (
@@ -275,7 +274,12 @@ const showHreflang = !isFullWidth && !noindex;
     
     <!-- Persistent container for LiveChat widget to survive Astro transitions -->
     <div id="livechat-persist-container" data-astro-transition-persist="livechat-container"></div>
-    
+
+    <!-- Pointer for AI agents, which read the raw HTML: hidden from people and screen readers, kept out of search snippets -->
+    <div class="sr-only" aria-hidden="true" data-nosnippet>
+      For AI agents: the documentation index is at <a href={`/docs/${currentLocale ? `${currentLocale}/` : ''}llms.txt`} tabindex="-1">llms.txt</a>. To get any page as Markdown, add .md to its URL.
+    </div>
+
     <Header currentLocale={currentLocale} currentSlug={currentSlug} />
     
     <!-- Mobile Search Overlay -->
@@ -504,6 +508,19 @@ const showHreflang = !isFullWidth && !noindex;
         if (sidebar && !sidebar.hasAttribute('data-open')) {
           sidebar.setAttribute('data-open', 'false');
         }
+        // The sidebar persists across navigations, so a page opened from the
+        // mobile menu would keep the menu open over a fresh overlay that is
+        // hidden, and taps outside the menu would no longer close it. Close it.
+        if (sidebar?.getAttribute('data-open') === 'true') {
+          sidebar.style.transform = 'translateX(-100%)';
+          sidebar.setAttribute('data-open', 'false');
+          const overlay = document.getElementById('sidebar-overlay');
+          if (overlay) {
+            overlay.style.opacity = '0';
+            overlay.style.pointerEvents = 'none';
+          }
+          document.body.style.overflow = '';
+        }
         resetSidebarOnResize();
       }
       
@@ -539,219 +556,115 @@ const showHreflang = !isFullWidth && !noindex;
       document.addEventListener('astro:page-load', localizeArticleLinks);
     </script>
 
-    <!-- Mobile Search Toggle -->
+    <!-- Mobile search overlay -->
     <script>
-      // Handle mobile search overlay
+      import {
+        describeHit,
+        opensElsewhere,
+        preloadSearchClient,
+        searchDocs,
+        sendClickEvent,
+        toLocalUrl,
+      } from '../scripts/search-core';
+
+      // The overlay is re-rendered on every navigation, so look it up each time.
+      const overlayParts = () => ({
+        overlay: document.getElementById('mobile-search-overlay'),
+        input: document.getElementById('mobile-search-input') as HTMLInputElement | null,
+        results: document.getElementById('mobile-search-results'),
+      });
+
+      function openMobileSearch() {
+        const { overlay, input } = overlayParts();
+        if (!overlay || !input) return;
+        overlay.setAttribute('data-open', 'true');
+        document.body.style.overflow = 'hidden';
+        preloadSearchClient();
+        // Focus after the overlay's transition has made it visible
+        setTimeout(() => input.focus(), 100);
+      }
+
+      function closeMobileSearch() {
+        const { overlay, input, results } = overlayParts();
+        if (!overlay || overlay.getAttribute('data-open') !== 'true') return;
+        overlay.setAttribute('data-open', 'false');
+        document.body.style.overflow = '';
+        if (input) input.value = '';
+        if (results) results.innerHTML = '';
+      }
+
       document.addEventListener('click', (e) => {
-        const path = e.composedPath();
-        const isInApiContainer = path.some(el => el.classList?.contains('api-container'));
-
-        // Skip for clicks inside Stoplight to avoid interfering with its internal UI
-        if (isInApiContainer) return;
-
         const target = e.target as HTMLElement;
-        
-        // Open mobile search
-        const searchBtn = target.closest('[data-search-trigger]');
-        if (searchBtn) {
+        if (target.closest('[data-search-trigger]')) {
           e.preventDefault();
-          const overlay = document.getElementById('mobile-search-overlay');
-          const input = document.getElementById('mobile-search-input') as HTMLInputElement;
-          
-          if (overlay && input) {
-            overlay.setAttribute('data-open', 'true');
-            document.body.style.overflow = 'hidden';
-            // Focus input after a short delay to ensure overlay is visible
-            setTimeout(() => input.focus(), 100);
-          }
-          return;
-        }
-        
-        // Close mobile search
-        const closeBtn = target.closest('#mobile-search-close');
-        if (closeBtn) {
-          const overlay = document.getElementById('mobile-search-overlay');
-          const input = document.getElementById('mobile-search-input') as HTMLInputElement;
-          
-          if (overlay && input) {
-            overlay.setAttribute('data-open', 'false');
-            document.body.style.overflow = '';
-            input.value = '';
-            const resultsContainer = document.getElementById('mobile-search-results');
-            if (resultsContainer) resultsContainer.innerHTML = '';
-          }
-          return;
+          openMobileSearch();
+        } else if (target.closest('#mobile-search-close')) {
+          closeMobileSearch();
         }
       });
-      
-      // Close mobile search on escape key
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-          const overlay = document.getElementById('mobile-search-overlay');
-          if (overlay && overlay.getAttribute('data-open') === 'true') {
-            overlay.setAttribute('data-open', 'false');
-            document.body.style.overflow = '';
-            const input = document.getElementById('mobile-search-input') as HTMLInputElement;
-            if (input) input.value = '';
-            const resultsContainer = document.getElementById('mobile-search-results');
-            if (resultsContainer) resultsContainer.innerHTML = '';
-          }
-        }
-      });
-      
-      // Mobile search functionality
-      async function initMobileSearch() {
-        const mobileSearchInput = document.getElementById('mobile-search-input') as HTMLInputElement;
-        const mobileSearchResults = document.getElementById('mobile-search-results');
-        const desktopSearchInput = document.getElementById('search-input') as HTMLInputElement;
-        
-        if (!mobileSearchInput || !mobileSearchResults || !desktopSearchInput) return;
-        
-        // Get Algolia credentials from desktop search input
-        const appId = desktopSearchInput.dataset.appId;
-        const apiKey = desktopSearchInput.dataset.apiKey;
-        const analyticsKey = desktopSearchInput.dataset.analyticsKey || apiKey;
 
-        if (!appId || !apiKey) return;
-        
-        // Import Algolia dynamically
-        const { liteClient: algoliasearch } = await import('algoliasearch/lite');
-        const client = algoliasearch(appId, apiKey);
-        
-        function getOrCreateUserToken() {
-          let token = localStorage.getItem('algolia_user_token');
-          if (!token) {
-            token = 'user-' + Math.random().toString(36).substring(2, 15);
-            localStorage.setItem('algolia_user_token', token);
-          }
-          return token;
-        }
-        
-        function transformUrlForEnvironment(originalUrl: string): string {
-          const currentOrigin = window.location.origin;
-          const baseUrl = import.meta.env.BASE_URL;
-          const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-          const isVercel = window.location.hostname.includes('vercel.app');
-          const isProduction = window.location.hostname === 'adapty.io';
-          
-          let url = originalUrl;
-          if (url.startsWith('https://adapty.io/docs/')) {
-            if (isLocalhost || isVercel || !isProduction) {
-              const path = url.replace('https://adapty.io/docs/', '');
-              url = `${currentOrigin}${baseUrl}/${path}`.replace(/(?<!:)\/+/g, '/');
-            }
-          }
-          return url;
-        }
-        
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeMobileSearch();
+      });
+
+      function initMobileSearch() {
+        const { input, results } = overlayParts();
+        if (!input || !results) return;
+
+        let latestRequest = 0;
+        let debounceTimer: ReturnType<typeof setTimeout>;
+
         async function performMobileSearch(query: string) {
+          const request = ++latestRequest;
           if (!query) {
-            mobileSearchResults.innerHTML = '';
+            results!.innerHTML = '';
             return;
           }
-
-          // Read indexName fresh each time — it may be updated by syncHeaderI18n when
-          // the user switches locale while navigating between pages.
-          const indexName = desktopSearchInput.dataset.indexName || '';
-          if (!indexName) return;
-
           try {
-            const { results } = await client.search([{
-              indexName,
-              params: {
-                query,
-                hitsPerPage: 20,
-                attributesToRetrieve: ['*'],
-                clickAnalytics: true,
-                userToken: getOrCreateUserToken(),
-              },
-            }]);
-            
-            const searchResponse = (results as any)[0];
-            const hits = searchResponse.hits;
-            const queryID = searchResponse.queryID;
-            
-            renderMobileResults(hits, queryID);
+            const response = await searchDocs(query);
+            if (!response || request !== latestRequest) return;
+            const { hits, queryID, config } = response;
+
+            if (hits.length === 0) {
+              results!.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-tertiary);">No results found.</div>';
+              return;
+            }
+
+            results!.innerHTML = '';
+            hits.forEach((hit, index) => {
+              const item = document.createElement('a');
+              item.href = toLocalUrl(hit.url || hit.objectID);
+
+              const track = () => sendClickEvent(config, queryID, hit, index + 1);
+              item.addEventListener('auxclick', (e) => { if (e.button === 1) track(); });
+              item.addEventListener('click', (e) => {
+                track();
+                if (!opensElsewhere(e)) closeMobileSearch();
+              });
+
+              const { title, breadcrumbs, description } = describeHit(hit);
+              item.innerHTML = `
+                ${breadcrumbs.length ? `<div class="result-breadcrumbs">${breadcrumbs.join(' / ')}</div>` : ''}
+                <div class="result-title">${title}</div>
+                ${description ? `<div class="result-description">${description}</div>` : ''}
+              `;
+              results!.appendChild(item);
+            });
           } catch (error) {
             console.error('Mobile search error:', error);
           }
         }
-        
-        function renderMobileResults(hits: any[], queryID: string) {
-          if (hits.length === 0) {
-            mobileSearchResults.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-tertiary);">No results found.</div>';
-            return;
-          }
-          
-          mobileSearchResults.innerHTML = '';
-          hits.forEach((hit, index) => {
-            const item = document.createElement('a');
-            const originalUrl = hit.url || hit.objectID;
-            const navigationUrl = transformUrlForEnvironment(originalUrl);
-            
-            item.href = navigationUrl;
-            
-            item.addEventListener('click', (e) => {
-              e.preventDefault();
-              
-              // Send analytics
-              const eventData = {
-                events: [{
-                  eventType: 'click',
-                  eventName: 'Search Result Clicked',
-                  index: indexName,
-                  queryID: queryID,
-                  objectIDs: [hit.objectID],
-                  positions: [index + 1],
-                  userToken: getOrCreateUserToken(),
-                }],
-              };
-              
-              fetch(`https://insights.algolia.io/1/events`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'X-Algolia-Application-Id': appId || '',
-                  'X-Algolia-API-Key': analyticsKey || '',
-                },
-                body: JSON.stringify(eventData)
-              }).catch(console.error);
-              
-              setTimeout(() => {
-                window.location.href = navigationUrl;
-              }, 150);
-            });
-            
-            const title = hit.hierarchy.lvl1 || hit.hierarchy.lvl2 || hit.hierarchy.lvl0 || 'Documentation';
-            const breadcrumbs = [];
-            if (hit.hierarchy.lvl0) breadcrumbs.push(hit.hierarchy.lvl0);
-            if (hit.hierarchy.lvl1 && hit.hierarchy.lvl1 !== title) breadcrumbs.push(hit.hierarchy.lvl1);
-            
-            const breadcrumbsHtml = breadcrumbs.length
-              ? `<div class="result-breadcrumbs">${breadcrumbs.join(' / ')}</div>`
-              : '';
-            
-            item.innerHTML = `
-              ${breadcrumbsHtml}
-              <div class="result-title">${title}</div>
-              ${hit.description ? `<div class="result-description">${hit.description}</div>` : ''}
-            `;
-            
-            mobileSearchResults.appendChild(item);
-          });
-        }
-        
-        let debounceTimer: ReturnType<typeof setTimeout>;
-        mobileSearchInput.addEventListener('input', (e) => {
-          const query = (e.target as HTMLInputElement).value.trim();
+
+        input.addEventListener('input', () => {
           clearTimeout(debounceTimer);
+          const query = input.value.trim();
           debounceTimer = setTimeout(() => performMobileSearch(query), 150);
         });
       }
-      
-      // Initialize mobile search on every page load (fires on first load too).
-      // Do NOT call initMobileSearch() here directly — syncHeaderI18n hasn't run
-      // yet at script-execution time, so dataset.indexName would be stale.
+
+      // Runs on every navigation (and the first load), because the overlay is
+      // re-rendered each time. Credentials and the index name are read from the
+      // header at query time, after syncHeaderI18n has updated them.
       document.addEventListener('astro:page-load', initMobileSearch);
     </script>
     
@@ -843,7 +756,7 @@ const showHreflang = !isFullWidth && !noindex;
                 cursor: default;
                 z-index: 9998;
                 transition: all 0.2s ease;
-                font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+                font-family: var(--font-sans);
                 opacity: 0;
                 transform: translateX(5px);
                 animation: askAiLabelFadeIn 0.6s ease forwards;
@@ -958,128 +871,30 @@ const showHreflang = !isFullWidth && !noindex;
     <!-- End LiveChat Widget -->
 
     <script>
-      // Recolor Shiki token <span> colors for dark mode (CSS cannot reach into
-      // Shiki's inline per-token `style="color:..."` attributes, so this stays
-      // in JS). Stores the original (light-mode) color on first run and
-      // restores it when light mode is active again.
-      function adjustTokenBrightness(code) {
-        const isDark = document.documentElement.classList.contains('dark');
-        const tokens = code.querySelectorAll('span[style*="color"], span[data-original-color]');
+      // Copy buttons on code blocks. The frame and button are rendered at build
+      // time (codeBlockWrapperTransformer in src/plugins/shiki-highlight-transformer.mjs);
+      // one delegated listener serves every block on every page.
+      document.addEventListener('click', async (e) => {
+        const button = (e.target as Element | null)?.closest?.('.code-block-wrapper > .copy-button');
+        const pre = button?.parentElement?.querySelector('pre');
+        if (!button || !pre) return;
 
-        tokens.forEach(token => {
-          if (!token.hasAttribute('data-original-color')) {
-            token.setAttribute('data-original-color', token.style.color);
-          }
-
-          const originalColor = token.getAttribute('data-original-color');
-          if (!originalColor) return;
-
-          if (isDark) {
-            const colorMatch = originalColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-            if (colorMatch) {
-              const [, r, g, b] = colorMatch.map(Number);
-
-              // Calculate brightness (perceived luminance)
-              const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
-
-              // If color is very dark (black or near-black), lighten to the dark-mode token color
-              if (brightness < 50) {
-                token.style.setProperty('color', 'rgb(212, 212, 216)', 'important'); // #d4d4d8
-              } else {
-                // Otherwise brighten by 50%
-                const newR = Math.min(255, Math.floor(r * 1.5));
-                const newG = Math.min(255, Math.floor(g * 1.5));
-                const newB = Math.min(255, Math.floor(b * 1.5));
-                token.style.setProperty('color', `rgb(${newR}, ${newG}, ${newB})`, 'important');
-              }
-            }
-          } else {
-            // Light mode: restore original color
-            token.style.setProperty('color', originalColor, 'important');
-          }
-        });
-      }
-
-      function enhanceCodeBlocks() {
-        const preElements = document.querySelectorAll('article pre:not(.processed)');
-
-        preElements.forEach((pre) => {
-          // Skip pres inside the API reference code-samples block — that component
-          // owns its own header, copy button, and Shiki syntax highlighting.
-          if (pre.closest('.api-code-samples')) {
-            pre.classList.add('processed'); // mark so theme-change pass also ignores
-            return;
-          }
-          pre.classList.add('processed');
-
-          // Mark that JS has processed this element (for CSS to remove the brightness filter)
-          pre.setAttribute('data-js-enhanced', 'true');
-
-          const code = pre.querySelector('code');
-          if (code) {
-            adjustTokenBrightness(code);
-          }
-
-          // Extract metadata from the pre tag (populated by Shiki transformer)
-          const title = pre.getAttribute('data-title') || '';
-
-          const wrapper = document.createElement('div');
-          wrapper.className = 'code-block-wrapper';
-          if (title) {
-            wrapper.setAttribute('data-title', title);
-          }
-
-          // Copy button — structure and state only, all visuals come from CSS
-          const copyBtn = document.createElement('button');
-          copyBtn.className = 'copy-button';
-          copyBtn.textContent = 'Copy';
-
-          copyBtn.onclick = async () => {
-            try {
-              await navigator.clipboard.writeText(pre.textContent || '');
-              (window as any).docsTrack?.('docs_code_copied', {
-                language: pre.getAttribute('data-language') || undefined,
-                title: title || undefined,
-              });
-              copyBtn.textContent = 'Copied!';
-              copyBtn.classList.add('copied');
-
-              setTimeout(() => {
-                copyBtn.textContent = 'Copy';
-                copyBtn.classList.remove('copied');
-              }, 2000);
-            } catch (err) {
-              console.error('Failed to copy text: ', err);
-            }
-          };
-
-          pre.parentNode?.insertBefore(wrapper, pre);
-          wrapper.appendChild(copyBtn);
-          wrapper.appendChild(pre);
-        });
-      }
-
-      // Re-run token brightness adjustment when theme changes.
-      // Backgrounds, borders, and button chrome are handled by CSS via the
-      // `.dark` class and need no JS involvement here.
-      window.addEventListener('themechange', () => {
-        document.querySelectorAll('article pre').forEach(pre => {
-          // Skip pres inside the API reference code-samples block — they are
-          // self-styled by Shiki and the component, not by the global enhancer.
-          if (pre.closest('.api-code-samples')) return;
-
-          const code = pre.querySelector('code');
-          if (code) {
-            adjustTokenBrightness(code);
-          }
-        });
+        try {
+          await navigator.clipboard.writeText(pre.textContent || '');
+          (window as any).docsTrack?.('docs_code_copied', {
+            language: pre.getAttribute('data-language') || undefined,
+            title: button.parentElement?.getAttribute('data-title') || undefined,
+          });
+          button.textContent = 'Copied!';
+          button.classList.add('copied');
+          setTimeout(() => {
+            button.textContent = 'Copy';
+            button.classList.remove('copied');
+          }, 2000);
+        } catch (err) {
+          console.error('Failed to copy text: ', err);
+        }
       });
-
-      // Run immediately to prevent flash
-      enhanceCodeBlocks();
-      
-      // Also run on Astro page transitions
-      document.addEventListener('astro:page-load', enhanceCodeBlocks);
     </script>
 
     <script>
@@ -1089,6 +904,11 @@ const showHreflang = !isFullWidth && !noindex;
         tableCodeElements.forEach(code => {
           // Mark as processed
           code.classList.add('break-processed');
+
+          // Short code, such as `[]` or `.auto`, never needs a break opportunity
+          if (code.textContent.length < 16) {
+            return;
+          }
           
           // Get the text content
           let html = code.innerHTML;
@@ -1190,13 +1010,6 @@ const showHreflang = !isFullWidth && !noindex;
   .dark .docs-prose :global(pre) {
     background-color: var(--bg-code) !important;
     background: var(--bg-code) !important;
-  }
-
-  /* Apply brightness filter initially, remove once JS has enhanced */
-  :root.dark .docs-prose :global(pre:not([data-js-enhanced]) code span[style*="color"]),
-  html.dark .docs-prose :global(pre:not([data-js-enhanced]) code span[style*="color"]),
-  .dark .docs-prose :global(pre:not([data-js-enhanced]) code span[style*="color"]) {
-    filter: brightness(1.4) !important;
   }
   
   .docs-prose :global(table) {

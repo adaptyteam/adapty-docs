@@ -12,11 +12,11 @@ metadataTitle: "优化流程与付费墙获取 | Flutter SDK | Adapty 文档"
 
 ## 规则与注意事项 \{#rules-and-pitfalls\}
 
-| 建议做法 | 避免做法 | 原因 |
+| 推荐做法 | 避免做法 | 原因 |
 |---|---|---|
-| 获取即将展示的版位，或通过 [`preloadFlows`](#preload-placements)（SDK 4.3.0+）预热缓存。 | 在启动时自行并发调用多个 `getFlow`。 | 手动批量预取会阻塞主线程并导致黑屏。`preloadFlows` 专为此场景设计，只需一次调用即可将请求批量发送至原生 SDK。 |
-| 在归因数据有机会解析之后再调用 `getFlow`，例如 `activate` 后 1–2 秒，或在 `didUpdateProfileStream` 触发之后。 | 在 `runApp` 之前的 `main()` 中调用 `getFlow`。 | 此时归因数据尚未到达。流程将按默认目标受众进行解析，悄无声息地绕过市场细分和 ASA 个性化设置。 |
-| 为每个版位设置 `loadTimeout` 并配置[备用付费墙](fallback-paywalls)。 | 无限期等待 `getFlow` 返回。 | 若不设置超时，网络状况较差的用户将看到空白屏幕，直到网络恢复——或直接退出应用。 |
+| 获取即将展示的版位，或使用 [`preloadFlows`](#preload-placements)（SDK 4.3.0+）预热缓存。 | 在启动时并发调用多个 `getFlow`。 | 手动实现的预加载会阻塞主线程并导致黑屏。`preloadFlows` 专为此场景设计，一次性将批量请求发送到原生 SDK。 |
+| 在归因数据有机会解析后再调用 `getFlow`，例如在 `activate` 后 1–2 秒，或在 `didUpdateProfileStream` 触发后。 | 在 `main()` 中、`runApp` 之前调用 `getFlow`。 | 此时归因数据尚未到位，流程会按默认目标受众解析，悄然绕过市场细分和 ASA 个性化设置。 |
+| 保持默认的 5 秒 `loadTimeout`，或设置其他合理值，并为每个版位配置[备用付费墙](fallback-paywalls)。 | 将 `getFlow` 的 `loadTimeout` 设得极大，使其永远不触发。 | 如果超时永远不触发，网络较差的用户会看到空白屏幕，直到网络恢复——或者直接关闭应用。 |
 
 请参阅[获取自定义付费墙和产品](fetch-paywalls-and-products-flutter)以了解 `fetchPolicy` 和 `loadTimeout` 参数说明，并参阅[版位](placements)了解如何选择合适的版位。
 
@@ -69,15 +69,21 @@ final flow = await Adapty().getFlow(
 
 一个流程分层抵达屏幕。预加载覆盖第一层，与 `getFlow` 的作用完全相同：
 
-| 层级 | 获取方式 | 是否可预加载 |
+| 层级 | 获取方式 | 预加载是否预热 |
 |---|---|---|
-| Flow JSON — 所选实验变体、其产品 ID 及远程配置 | `getFlow` | 是 |
+| Flow JSON — 所选实验变体、产品 ID 及远程配置 | `getFlow` | 是 |
 | UI 布局 — 页面结构、样式与文本 | `createFlowView` | 否 |
-| 图片，包括视频元素的静态占位帧 | `createFlowView`，在后台执行 | 否 |
+| 图片（包括替代视频元素展示的静态帧） | `createFlowView`（后台加载） | 否 |
 | 产品 | `createFlowView` 或 `getPaywallProducts` | 否 |
-| 视频文件 | 系统播放器，在页面渲染时加载 | SDK 不缓存 |
+| 视频文件 | iOS 上由系统播放器加载，Android 上由 ExoPlayer 在页面渲染时加载 | 否。Android 原生 SDK 最多缓存 50 MB 的已播放视频 |
 
-因此，对于某个布局，第一次调用 `createFlowView` 在预加载后仍需一次网络往返。不过，原生 SDK 随后会将该布局缓存到磁盘，且缓存在应用重启后依然有效，所以这笔开销只发生在首次请求时，而非每次请求都要承担。
+`createFlowView` 按以下顺序在三个位置查找布局：
+
+1. 原生 SDK 的磁盘缓存，该缓存在应用重启后仍会保留。
+2. 适用于 SDK 4.4 或更高版本的[备用文件](flutter-use-fallback-paywalls)，前提是你在最后一次发布流程后下载了该文件。
+3. 通过网络从 Adapty 获取。即使已预加载，这仍会产生一次网络往返。每当应用首次显示某个已发布版本的流程时，原生 SDK 都会发起该请求，然后将布局保存到磁盘缓存。
+
+当 `createFlowView` 的 `loadTimeout` 触发时，原生 SDK 不会回退：它会再次向 Adapty API 请求布局。`loadTimeout` 不会限制第二次请求的时间。
 
 ### 跳过目标受众分组 \{#skip-audience-segmentation\}
 
@@ -115,17 +121,20 @@ try {
 }
 ```
 
-捆绑文件会增加应用的下载大小，因此只捆绑用户首屏看到的媒体资源。
+内置文件会增加应用的下载体积，因此只需内置用户首屏看到的媒体资源。
+
+内置图片无需等待即可立即显示，但原生 SDK 仍会在后台下载已上传的图片。
 
 未打包的媒体资源也会立即显示：流程布局中已内置每张图片（包括视频帧）的低分辨率缩略图，在完整文件加载完成之前会先显示该缩略图。
 
 完整的 `customAssets` 参考，请参见[自定义资源](flutter-get-pb-paywalls#customize-assets)。
 
-## 针对弱网环境进行调优 \{#tune-for-poor-connectivity\}
+## 针对弱网络环境进行调优 \{#tune-for-poor-connectivity\}
 
-针对网络连接持续较差的市场（如农村地区、交通途中或受路由影响的地区）：
+针对网络连接持续不稳定的市场（农村地区、交通运输场景、受路由问题影响的地区）：
 
-- 除首次请求外，所有请求均设置 `fetchPolicy: AdaptyFlowFetchPolicy.returnCacheDataElseLoad`。
+- 在除第一次之外的所有请求中设置 `fetchPolicy: AdaptyFlowFetchPolicy.returnCacheDataElseLoad`。
 - 在 Adapty 看板中为每个版位配置[备用付费墙](fallback-paywalls)。
-- 将 `loadTimeout` 设置为 3–5 秒，并在超时触发时使用备用付费墙。
-- 不要让 flow 的展示依赖 `getProfile()`。独立调用 `getFlow`，避免因用户画像加载缓慢而阻塞 UI。
+- 在速度与定向之间合理权衡 `loadTimeout`。超时时间越短，用户越快看到备用内容；超时时间越长，定向流程就有更多时间完成加载。
+- [保持流程轻量化](flow-size)，以便布局下载更快。
+- 不要将流程显示与 `getProfile()` 耦合。独立调用 `getFlow`，避免慢速用户画像请求阻塞 UI。

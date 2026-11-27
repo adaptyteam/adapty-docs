@@ -1,13 +1,13 @@
 ---
-title: "Migrer le SDK iOS Adapty vers la v4.4"
-description: "Migrez vers le SDK iOS Adapty v4.4 : mettez à jour votre code d'action personnalisée et d'asset personnalisé, lisez la période de facturation depuis les conditions tarifaires, et téléchargez un nouveau fichier de secours."
+title: "Migrer vers le SDK iOS Adapty v4.4"
+description: "Migration vers le SDK iOS Adapty v4.4 : mettez à jour votre code d'actions personnalisées et d'assets personnalisés, lisez la période de facturation depuis les conditions tarifaires et téléchargez un nouveau fichier de secours."
 metadataTitle: "Migration vers le SDK iOS Adapty v4.4 | Documentation Adapty"
 ---
 
-Pour mettre à jour votre application du SDK iOS Adapty 4.3 vers la version 4.4, appliquez chaque modification de ce guide. Une application en 4.1 ou 4.2 doit d'abord appliquer les [changements v4.3](migration-to-ios-sdk-43), et une application en 4.0 doit appliquer les [changements v4.1](migration-to-ios-sdk-41) avant cela.
+Pour mettre à jour votre application depuis le SDK iOS Adapty 4.3 vers la version 4.4, appliquez chacune des modifications décrites dans ce guide. Si votre application utilise la version 4.1 ou 4.2, vous devez d'abord appliquer les [modifications de la v4.3](migration-to-ios-sdk-43), et si elle est en version 4.0, appliquez les [modifications de la v4.1](migration-to-ios-sdk-41) avant cela. Pour passer ensuite à la version 4.5, suivez le guide [Migrer vers la v4.5](migration-to-ios-sdk-45).
 
 :::warning
-Le format du fichier de secours a changé dans la version 4.4, et le compilateur ne peut pas détecter un fichier obsolète. Sans un [nouveau fichier de secours](#fallback-files), chaque placement perd son paywall de secours.
+Le format du fichier de secours a changé dans la version 4.4, et le compilateur ne peut pas détecter un fichier obsolète. Sans un [nouveau fichier de secours](#fallback-files), chaque placement perdra son paywall de secours.
 :::
 
 ## Référence rapide \{#quick-reference\}
@@ -24,7 +24,7 @@ Le format du fichier de secours a changé dans la version 4.4, et le compilateur
 
 ## AdaptyUI.Action.custom contient deux valeurs \{#custom-actions\}
 
-Lorsqu'un utilisateur appuie sur un bouton avec une action personnalisée, votre application reçoit `AdaptyUI.Action.custom`. Dans la version 4.4, cette action contient une seconde valeur, `arguments`, après l'ID de l'action. Dans la closure `didPerformAction` et la méthode déléguée `flowController(_:didPerform:)`, ajoutez `_` pour cette seconde valeur :
+Lorsqu'un utilisateur appuie sur un bouton avec une action personnalisée, votre application reçoit `AdaptyUI.Action.custom`. Depuis la version 4.4, elle contient une deuxième valeur, `arguments`, après l'ID de l'action. Dans le closure `didPerformAction` et la méthode delegate `flowController(_:didPerform:)`, ajoutez `_` pour cette deuxième valeur :
 
 ```diff showLineNumbers
   switch action {
@@ -39,151 +39,12 @@ Lorsqu'un utilisateur appuie sur un bouton avec une action personnalisée, votre
 ```
 
 ---
-title: "iOS – Achats avec l'App Store"
-metadataTitle: "iOS – Achats avec l'App Store | Documentation Adapty"
+title: "iOS – Achat intégré 'custom' avec un identifiant"
+description: "Exécutez un achat personnalisé avec un identifiant dans une application iOS. Ce guide vous aide à implémenter une action d'achat intégré 'custom' par identifiant."
+metadataTitle: "Achat intégré iOS par identifiant | Documentation Adapty"
 ---
 
-
-Avec le SDK Adapty, vous pouvez facilement effectuer des achats. La méthode principale pour y parvenir est `makePurchase()`.
-
-:::warning
-Assurez-vous de remettre le callback correctement. Côté iOS, Adapty gère les achats via l'observer de transactions. Si vous n'avez pas configuré les observers d'Adapty, les achats ne seront pas finalisés.
-:::
-
-## Effectuer un achat \{#make-purchase\}
-
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
-
-```swift title="Swift"
-do {
-    let purchaseResult = try await Adapty.makePurchase(product: product)
-    // process purchaseResult
-} catch {
-    // process error
-}
-```
-
-</TabItem>
-<TabItem value="Swift-Callback" label="Swift (Callback)">
-
-```swift title="Swift"
-Adapty.makePurchase(product: product) { result in
-    switch result {
-    case let .success(purchaseResult):
-        // process purchaseResult
-    case let .failure(error):
-        // process error
-    }
-}
-```
-
-</TabItem>
-</Tabs>
-
-| Paramètre | Présence | Description |
-|-----------|----------|-------------|
-| `product` | Obligatoire | Un objet `AdaptyPaywallProduct`. Obtenez cet objet en utilisant la méthode `getPaywallProducts()`, comme décrit dans [Afficher les produits du paywall](displaying-products). |
-
-## Résultat de l'achat \{#purchase-result\}
-
-Le résultat de `makePurchase()` est un objet `AdaptyPurchaseResult`. Il peut prendre l'une des valeurs suivantes :
-
-| Valeur | Description |
-|--------|-------------|
-| `.succeeded(AdaptyProfile)` | L'achat a réussi. Contient l'objet `AdaptyProfile` le plus récent. |
-| `.pending` | L'achat est en attente d'une action externe (par exemple, l'approbation d'un parent via la fonctionnalité Demander à acheter). Le profil ne changera pas tant que l'approbation ne sera pas accordée. |
-| `.userCancelled` | L'achat a été annulé par l'utilisateur. |
-| `.restored` | L'achat a été restauré avec succès (ce résultat ne devrait pas survenir dans le cadre de `makePurchase()`). |
-
-## Résultat de l'achat étendu \{#extended-purchase-result\}
-
-Le type `AdaptyPurchaseResult` contient également les propriétés suivantes :
-
-| Propriété | Description |
-|-----------|-------------|
-| `transaction` | L'objet `StoreKit.Transaction` associé à l'achat. |
-| `profile` | L'objet `AdaptyProfile` le plus récent si l'achat a réussi. |
-
-## Vérifier si l'utilisateur a un niveau d'accès \{#check-access-level\}
-
-Pour vérifier si un utilisateur a accès à du contenu premium, inspectez le profil retourné par `makePurchase()`.
-
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
-
-```swift title="Swift"
-do {
-    let purchaseResult = try await Adapty.makePurchase(product: product)
-    if case .succeeded(let profile) = purchaseResult {
-        if profile.accessLevels["premium"]?.isActive ?? false {
-            // grant access
-        }
-    }
-} catch {
-    // process error
-}
-```
-
-</TabItem>
-<TabItem value="Swift-Callback" label="Swift (Callback)">
-
-```swift title="Swift"
-Adapty.makePurchase(product: product) { result in
-    switch result {
-    case let .success(purchaseResult):
-        if case .succeeded(let profile) = purchaseResult {
-            if profile.accessLevels["premium"]?.isActive ?? false {
-                // grant access
-            }
-        }
-    case let .failure(error):
-        // process error
-    }
-}
-```
-
-</TabItem>
-</Tabs>
-
-## Gérer les erreurs d'achat \{#handle-purchase-errors\}
-
-Si `makePurchase()` échoue, il lève une `AdaptyError`. Voici quelques cas courants :
-
-| Code d'erreur | Description |
-|---------------|-------------|
-| `.paymentCancelled` | L'utilisateur a annulé l'achat. |
-| `.productNotAvailableForPurchase` | Le produit n'est pas disponible pour l'achat. |
-| `.storeProductNotAvailable` | Le produit n'est pas disponible dans le store de l'utilisateur. |
-
-## Identifier les actions personnalisées du paywall \{#identify-custom-paywall-actions\}
-
-Si vous utilisez le Paywall Builder, vous pouvez définir des actions personnalisées que les utilisateurs peuvent déclencher sur votre paywall. Voici comment identifier ces actions :
-
-<Tabs>
-<TabItem value="Swift" label="Swift" default>
-
-```swift title="Swift"
-func paywallController(
-    _ controller: AdaptyPaywallController,
-    didPerformAction action: AdaptyUI.Action
-) {
-    switch action {
-    case .close:
-        controller.dismiss(animated: true)
-    case let .openURL(url):
-        UIApplication.shared.open(url, options: [:])
-    case let .custom(id, _):
-        // Handle custom action by id
-        break
-    @unknown default:
-        break
-    }
-}
-```
-
-</TabItem>
-</Tabs>
+Code that compares `id` to a string stops compiling until you add `_`. Other code still builds, with the warning "enum case 'custom' has 2 associated values; matching them as a tuple is deprecated". In that code, `id` contains both values, not the action ID alone. Add `_` wherever Xcode shows this warning.
 
 ## Ressources personnalisées \{#custom-assets\}
 
@@ -191,14 +52,14 @@ Dans la version 4.4, `AdaptyUICustomAsset` est renommé en `AdaptyUIAsset`. L'an
 
 Les ressources de couleur, de police et de données changent de trois façons :
 
-- **Ressources de couleur** : `.color` prend une `Color` SwiftUI. `AdaptyUICustomColorAsset` est supprimé. Encapsulez une `UIColor` dans `Color(uiColor:)`, et passez directement une `Color` SwiftUI :
+- **Ressources de couleur** : `.color` prend une `Color` SwiftUI. `AdaptyUICustomColorAsset` est supprimé. Enveloppez une `UIColor` dans `Color(uiColor:)` et passez directement une `Color` SwiftUI :
 
   ```diff showLineNumbers
   - "brand_color": .color(.uiColor(brandColor)),
   + "brand_color": .color(Color(uiColor: brandColor)),
   ```
 
-- **Ressources de police** : `AdaptyUIFontAsset` prend `color:`, `letterSpacing:` et `lineHeight:` à la place de `defaultColor:`, `defaultLetterSpacing:` et `defaultLineHeight:`. Le paramètre `color:` accepte une `Color` SwiftUI :
+- **Ressources de police** : `AdaptyUIFontAsset` prend `color:`, `letterSpacing:` et `lineHeight:` au lieu de `defaultColor:`, `defaultLetterSpacing:` et `defaultLineHeight:`. Le paramètre `color:` accepte une `Color` SwiftUI :
 
   ```diff showLineNumbers
   - "title_font": .font(AdaptyUICustomFontAsset(font: titleFont, defaultColor: .uiColor(.white), defaultLineHeight: 24)),
@@ -209,7 +70,7 @@ Les ressources de couleur, de police et de données changent de trois façons :
 
 ## AdaptyProduct.localizedBillingPeriod est déprécié \{#localizedbillingperiod-is-deprecated\}
 
-`AdaptyProduct` possède une propriété [`subscriptionPricingTerms`](fetch-paywalls-and-products) qui décrit chaque paiement pour le produit : son prix et la fréquence à laquelle l'utilisateur paie. Dans la version 4.4, `localizedBillingPeriod`, le texte indiquant la fréquence de paiement, est déplacé de `AdaptyProduct` vers `subscriptionPricingTerms`. `AdaptyProduct.localizedBillingPeriod` fonctionne toujours, avec un avertissement de dépréciation : il retourne `subscriptionPricingTerms?.localizedBillingPeriod`. Pour supprimer cet avertissement, lisez la propriété depuis les conditions tarifaires :
+`AdaptyProduct` a une propriété [`subscriptionPricingTerms`](fetch-paywalls-and-products) qui décrit chaque paiement pour le produit : son prix et la fréquence à laquelle l'utilisateur paie. Dans la version 4.4, `localizedBillingPeriod`, le texte indiquant la fréquence de paiement de l'utilisateur, est déplacé de `AdaptyProduct` vers `subscriptionPricingTerms`. `AdaptyProduct.localizedBillingPeriod` fonctionne toujours, avec un avertissement de dépréciation : il renvoie `subscriptionPricingTerms?.localizedBillingPeriod`. Pour supprimer cet avertissement, lisez la propriété depuis les termes de tarification :
 
 ```diff showLineNumbers
 - let period = product.localizedBillingPeriod
@@ -223,5 +84,5 @@ Le format du [fichier de secours](fallback-flows) a changé dans le SDK 4.4. Té
 Le fichier téléchargé s'appelle `ios_4_4_0_fallback.json`. Donnez-lui le nom que votre application passe à `Bundle.main.url(forResource:withExtension:)`, ou mettez à jour ce nom dans cet appel.
 
 :::warning
-Un fichier de secours obsolète ne génère aucune erreur de compilation. Chaque placement perd silencieusement son paywall de secours. Le journal du SDK affiche alors : « The fallback paywalls version is not correct. Download a new one from the Adapty Dashboard. »
+Un fichier de secours obsolète ne génère aucune erreur de compilation. Chaque placement perd silencieusement son paywall de secours. Le log du SDK affiche alors « The fallback paywalls version is not correct. Download a new one from the Adapty Dashboard. »
 :::

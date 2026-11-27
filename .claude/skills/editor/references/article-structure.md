@@ -232,6 +232,11 @@ just to whole troubleshooting guides.
 - Example requests and responses
 - List all possible error codes
 
+### CLI Reference
+- **Every new command, topic, flag, or behavior change states the CLI version it needs.** Use the sentence the other CLI articles use: "The `fonts` commands need CLI version 0.33.0 or later. To see your version, run `adapty --version`." Put it in the topic's intro and in the section it governs.
+- **Name the version, never the release.** ❌ "Before the release that added the `fonts` commands, it exited with code 1." ✅ "Before CLI version 0.33.0, it exited with code 1."
+- **Find the version in the CLI repo, not in your memory.** If the feature branch isn't merged yet, the version is the next one after the latest tag. Tell the author it's a guess, so they confirm it before the merge.
+
 ### Conceptual Docs
 - Define terms on first use
 - Build from simple to complex

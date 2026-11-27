@@ -68,12 +68,31 @@ Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID") { result in
 | **fetchPolicy** | デフォルト: `.reloadRevalidatingCacheData` | <p>`fetchPolicy` は、SDKがキャッシュを使用するかどうかではなく、どのレイヤーを最初に読み取るかを設定します。デフォルトでは、SDKはまずサーバーにアクセスし、リクエストが失敗した場合にキャッシュデータを返します。ユーザーが常に最新のデータを取得できるため、このバリアントを推奨します。</p><p></p><p>ただし、ユーザーが不安定なインターネット環境にいると考えられる場合は、`.returnCacheDataElseLoad` の使用を検討してください。これは順序を逆にして、まずキャッシュを読み取り、キャッシュに何もない場合にのみサーバーにアクセスします。ユーザーは最新のデータを取得できない場合がありますが、インターネット接続が不安定でも高速な読み込みを体験できます。キャッシュは定期的に更新されるため、ネットワークリクエストを避けるためにセッション中に使用しても安全です。</p><p></p><p>3番目のポリシー `.returnCacheDataIfNotExpiredElseLoad(maxAge:)` は、この2つの中間に位置します。キャッシュされたコピーが `maxAge` 秒より新しい場合はキャッシュを先に読み取り、古くなるとサーバーにアクセスします。</p><p></p><p>キャッシュはアプリを再起動しても保持され、アプリのアンインストール時または手動クリーンアップ時にのみ消去されることに注意してください。</p><p></p><p>Adapty SDK はフローとペイウォールを2つのレイヤーに保存します。上記で説明した定期的に更新されるキャッシュと、[フォールバックペイウォール](fallback-paywalls)です。また、フローとペイウォールをより速く取得するためにCDNを使用し、CDNが到達不能な場合に備えてスタンドアロンのフォールバックサーバーも使用します。</p> |
 | **loadTimeout** | デフォルト: 5秒 | <p>この値はこのメソッドのタイムアウトを制限します。Adapty サーバーが時間内に応答しないかエラーを返した場合、SDKはキャッシュされたフローを返します。キャッシュに何もなく、サーバーがタイムアウトまたはサーバーエラーを返した場合、SDKはフォールバックサーバー（プレースメントの **All Users** オーディエンスのみを提供するCDNコピー）からフローをリクエストします。最終手段として、SDKは[フォールバックファイル](ios-use-fallback-paywalls)からフローを返します。</p><p></p><p>この操作は内部で複数のリクエストで構成される場合があるため、まれにこのメソッドが `loadTimeout` で指定した時間より若干遅れてタイムアウトすることがあることに注意してください。</p> |
 
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 以降" default>
+
 :::note
-v4 では、`locale` パラメータは `getFlow` から `getFlowConfiguration`（AdaptyUI でレンダリングする場合のみ使用）に移動しました。カスタムペイウォールの場合、利用可能なすべてのロケールは `flow.remoteConfigs` にまとめて返されます。ユーザーのデバイスまたはアプリの設定に合ったロケールを選択してください。
+v4 では、`getFlow` に `locale` パラメータはなく、SDK はデバイスに設定された優先言語を読み取りません。優先言語はアプリ側で読み取ってください。例えば `Locale.preferredLanguages` を使用します。フローまたはペイウォールをどこで表示するかによって、使用する場所が異なります。
+
+- SDKはフロー & ペイウォールビルダーからフローを表示します。フローが持つ最初の優先言語で表示するには、`getFlowConfiguration`の`preferredLocales`に[言語を渡して](localizations-and-locale-codes#pass-the-users-languages-to-the-sdk)ください。
+- アプリがカスタムペイウォールを自分で表示する場合、`getFlow`は`flow.remoteConfigs`内のすべてのロケールのリモートコンフィグを返します。優先言語に合ったリモートコンフィグを選択してください。
 :::
 
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
+
+:::note
+v4では、`getFlow`に`locale`パラメータはなく、SDKはデバイスのロケールを読み取りません。デバイスのロケールやアプリでユーザーが選択した言語に基づいて、アプリ内で[ロケールコード](localizations-and-locale-codes#pass-the-users-languages-to-the-sdk)を選択してください。フローまたはペイウォールを表示する側によって、コードをどこで使用するかが決まります。
+
+- SDKはFlow & ペイウォールビルダーのフローを表示します。フローのローカライズを選択するには、`getFlowConfiguration`の`locale`にロケールコードを渡してください。
+- アプリがカスタムペイウォールを自身で表示する場合、`getFlow`は`flow.remoteConfigs`にすべてのロケールのリモートコンフィグを返します。ロケールコードに一致するリモートコンフィグを選択してください。
+:::
+
+</TabItem>
+</Tabs>
+
 :::tip
-ユーザーがフローを必要とする前にキャッシュを埋めるには、[`preloadFlows`](ios-optimize-paywall-fetching#preload-placements)（iOS SDK 4.1+）を使って複数のプレースメントを一度にプリロードしてください。プリロード済みのコピーをネットワークより優先して読み込むには、`fetchPolicy: .returnCacheDataElseLoad` を渡してください。
+ユーザーがフローを必要とする前にキャッシュを事前に埋めるには、[`preloadFlows`](ios-optimize-paywall-fetching#preload-placements)（iOS SDK 4.1+）を使って複数のプレースメントをまとめて事前読み込みしてください。`fetchPolicy: .returnCacheDataElseLoad` を渡すと、ネットワークより先にプリロード済みのキャッシュから読み取れます。
 :::
 
 プロダクトIDをハードコードしないでください！フローはリモートで設定されるため、利用可能なプロダクト、プロダクトの数、特典（無料トライアルなど）は随時変更される可能性があります。こうしたシナリオに対応できるようコードを作成してください。

@@ -14,9 +14,9 @@ Ces règles supposent que `Adapty.activate()` et `Adapty.identify()` ont déjà 
 
 | À faire | À ne pas faire | Pourquoi |
 |---|---|---|
-| Récupérez uniquement le placement que vous êtes sur le point d'afficher.                                                                                                                | Prérécupérez tous les placements simultanément au lancement.        | La prérécupération en masse bloque le thread principal et provoque un écran noir pendant la rafale.                                  |
-| Appelez `getFlow` après que l'attribution a eu le temps de se résoudre — par exemple, 1 à 2 secondes après `activate` ou après le déclenchement de `setOnProfileUpdatedListener`. | Appelez `getFlow` au lancement de l'application.                       | L'attribution n'est pas encore arrivée. Le flow se résout par rapport à l'audience par défaut et contourne silencieusement les segments et la personnalisation ASA. |
-| Définissez un `loadTimeout` et configurez un [paywall de secours](fallback-paywalls) pour chaque placement.                                                           | Attendez `getFlow` indéfiniment.                     | Sans timeout, les utilisateurs avec une mauvaise connexion voient un écran vide jusqu'à la résolution réseau — ou ferment l'application.     |
+| Récupérez le placement que vous êtes sur le point d'afficher.                                                                                                                | Récupérer tous les placements simultanément au lancement.        | La récupération en masse bloque le fil principal et produit un écran noir pendant la rafale.                                  |
+| Récupérez `getFlow` après que l'attribution a eu le temps de se résoudre — par exemple, 1 à 2 secondes après `activate` ou après le déclenchement de `setOnProfileUpdatedListener`. | Appeler `getFlow` au lancement de l'application.                       | L'attribution n'est pas encore arrivée. Le flow se résout selon l'audience par défaut et contourne silencieusement les segments et la personnalisation ASA. |
+| Conservez le `loadTimeout` par défaut de 5 secondes ou définissez une autre valeur, et configurez un [paywall de secours](fallback-paywalls) pour chaque placement. | Passer à `getFlow` un `loadTimeout` si grand qu'il ne se déclenche jamais. | Si le délai d'attente ne se déclenche jamais, les utilisateurs avec une mauvaise connexion voient un écran vide jusqu'à ce que le réseau se rétablisse — ou ferment l'application. |
 
 Consultez [Récupérer des paywalls et produits personnalisés](fetch-paywalls-and-products-kmp) pour la référence des paramètres `fetchPolicy` et `loadTimeout`, et [Placements](placements) pour choisir le bon placement.
 
@@ -48,15 +48,18 @@ AdaptyUI.createFlowView(
 
 Les fichiers intégrés augmentent la taille de téléchargement de votre application, ne bundlez donc que les médias vus en premier par les utilisateurs.
 
-Les médias que vous n'intégrez pas apparaissent quand même immédiatement : la mise en page du flow inclut une petite copie basse résolution de chaque image, y compris l'image fixe d'une vidéo, et l'affiche jusqu'au chargement du fichier complet.
+Une image intégrée s'affiche instantanément, mais le SDK télécharge tout de même l'image uploadée en arrière-plan.
+
+Les médias non intégrés s'affichent également sans délai : le layout du flow contient une petite copie basse résolution de chaque image, y compris la vignette d'une vidéo, et l'affiche jusqu'au chargement du fichier complet.
 
 Pour la référence complète de `customAssets`, consultez [Personnaliser les assets](kmp-get-pb-paywalls#customize-assets).
 
-## Optimiser pour une mauvaise connectivité \{#tune-for-poor-connectivity\}
+## Optimisation pour les connexions instables \{#tune-for-poor-connectivity\}
 
-Pour les marchés où la connectivité est régulièrement mauvaise (zones rurales, transports en commun, régions affectées par le routage) :
+Pour les marchés où la connexion est régulièrement mauvaise (zones rurales, transports, régions affectées par des problèmes de routage) :
 
-- Définissez `fetchPolicy = AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` sur chaque fetch, sauf le tout premier.
+- Définissez `fetchPolicy = AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` sur chaque requête sauf la toute première.
 - Configurez un [paywall de secours](fallback-paywalls) pour chaque placement dans l'Adapty Dashboard.
-- Définissez `loadTimeout` entre 3 et 5 secondes et acceptez le paywall de secours à l'expiration du délai.
+- Équilibrez `loadTimeout` entre vitesse et ciblage. Avec un timeout plus court, les utilisateurs voient le paywall de secours plus tôt. Avec un timeout plus long, le flow ciblé a plus de temps pour se charger.
+- [Gardez le flow léger](flow-size), pour que sa mise en page se télécharge plus rapidement.
 - Ne bloquez pas l'affichage du flow sur `Adapty.getProfile()`. Appelez `getFlow` indépendamment pour qu'un profil lent ne bloque pas l'interface.
