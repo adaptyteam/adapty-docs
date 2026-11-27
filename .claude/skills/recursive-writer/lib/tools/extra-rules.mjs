@@ -139,4 +139,10 @@ export const EXTRA_RULES = [
     re: /\binstantly\b/gi,
     hint: 'Cut "instantly", or state the actual timing if a source confirms it.',
   },
+  {
+    id: 'noun-yes',
+    scope: 'changed',
+    re: /\b(your|their|his|her|my|our|a new|a)[ \t]+yes\b/gi,
+    hint: 'No "yes" as a noun: say "approval" ("waits for your approval") or use a verb ("after you approve the change").',
+  },
 ];

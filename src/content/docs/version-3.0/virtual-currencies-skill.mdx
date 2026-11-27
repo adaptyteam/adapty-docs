@@ -1,13 +1,13 @@
 ---
 title: "Agent skill for virtual currencies"
-description: "Install the virtual-currencies skill so your AI tool reads and changes your Adapty virtual currencies and their linked products with your yes, explains why a user has a balance, and corrects that balance."
+description: "Install the virtual-currencies skill so your AI tool reads and changes Adapty virtual currencies and linked products, and explains and corrects user balances."
 metadataTitle: "Virtual Currencies Agent Skill | Adapty Docs"
 ---
 
-[Virtual currencies](virtual-currencies) grant credits to your users when they buy a product or renew a subscription. The virtual-currencies skill manages them from your AI tool. Your agent lists your currencies, shows how many credits each linked product grants, creates a currency, and adds, changes, or removes its linked products. It also reads the credit transactions and the balances of a user, so it can tell you why that user has a balance. After your yes, it credits or debits the balance of one user. It works through the [`adapty virtual-currencies` CLI commands](developer-cli-virtual-currencies) or the [Adapty MCP server](adapty-mcp).
+[Virtual currencies](virtual-currencies) grant credits to your users when they buy a product or renew a subscription. The virtual-currencies skill manages them from your AI tool. Your agent lists your currencies, shows how many credits each linked product grants, creates a currency, and adds, changes, or removes its linked products. It also reads the credit transactions and the balances of a user, so it can tell you why that user has a balance. With your approval, it credits or debits the balance of one user. It works through the [`adapty virtual-currencies` CLI commands](developer-cli-virtual-currencies) or the [Adapty MCP server](adapty-mcp).
 
 :::note
-The skill asks before each change. It shows you what changes: each linked product with its credits before and after, the new currency with its products, or a user's balance before and after. It runs the change only after your yes. New credit amounts of linked products apply from the next purchase or renewal: current subscribers get the new amount at their next renewal. A balance correction applies at once.
+Before each change, the skill shows you what will change and waits for your approval. When the skill changes how many credits a product grants, the change applies from the next purchase or renewal. A balance correction applies right away.
 :::
 
 ## What you can ask
@@ -69,7 +69,7 @@ The virtual-currencies skill is part of the [Adapty plugin](manage-adapty-with-a
 
 ## What the skill asks before each change
 
-The skill reads the currency right before each change, and shows you what changes. Only your answer to the skill's question counts. A general "go ahead" before the skill shows the change doesn't. If you say no, the skill changes nothing.
+Right before each change, the skill loads the latest data from Adapty and shows you what will change. The skill then waits for your approval, even if you said "go ahead" before it showed the change. If you say no, the skill changes nothing.
 
 | Change | What the skill tells you |
 |---|---|
@@ -77,13 +77,18 @@ The skill reads the currency right before each change, and shows you what change
 | Add or change linked products | Each product that changes: new, or its credits before and after, for each purchase or each subscription period. Current subscribers get the new amount at their next renewal. The other linked products stay as they are. |
 | Remove a linked product | The product with its credits now. Its purchases stop granting credits of this currency, and no transaction records the purchases that grant none. Credits already granted stay. |
 | Change the name or the description | The name or the description before and after. The rest stays as it is. |
-| Correct a user's balance | The user, the balance before and after, the currency code, the direction, and the operation, for example `4512: 40 → 50 GEMS, credit, adjustment`. Each change corrects one currency of one user. To undo a correction, ask for a correction in the other direction. |
+| Correct a user's balance | The user, the balance before and after, the currency code, the direction, and the operation, for example `4512: 40 → 50 GEMS, credit, adjustment`. Each correction changes the balance of a single currency for a single user. You can't undo a correction. To offset it, ask for a second correction with the same amount in the other direction. |
 
-If the currency changes between the skill's read and its write, in the dashboard or from another tool, the skill doesn't overwrite that change. Adapty refuses the write, or, for a name change through the CLI, the skill's read right before the write shows the change. Nothing changes. The skill shows you the change again and waits for a new yes.
+Someone else can edit the name, description, or linked products of a virtual currency at the same time as the skill. If that edit happens while the skill waits for your approval, the skill doesn't overwrite it and saves nothing. The skill then shows you its change again, based on the latest data, and asks for your approval.
 
-If Adapty doesn't answer a change, the skill doesn't send it again at once. It reads the currency first and tells you what was saved. For a part of the change that is still missing, it shows you a new question and waits for a new yes.
+When a change fails with a network or server error, the skill can't tell whether Adapty saved the change. Instead of sending it again, the skill loads the latest data from Adapty and tells you what Adapty saved. If anything you approved isn't saved, the skill shows you what still needs to change and asks for your approval again.
 
-A balance correction is different: if Adapty doesn't answer it, the skill sends the same correction one more time, with the same idempotency key, within one hour. Adapty applies a key only once, so the balance doesn't change twice. The skill never sends the correction again with a new key, because a new key makes a second correction. If no key is known, one hour has passed, or the second send gets no answer too, the skill doesn't send the correction again. It reads the user's balances and transactions and tells you what Adapty saved.
+A balance correction is the exception, because Adapty makes one correction for each idempotency key. When a correction fails with a network or server error, the skill sends that correction to Adapty once more with the same key, within one hour of the first send:
+
+- If the first send made the correction, the second send changes nothing.
+- If the first send didn't make the correction, the second send makes it.
+
+The skill never sends a correction again with a new key, because a new key makes a second correction. If the skill has no key for the correction, an hour has passed, or the second send also fails, the skill doesn't send the correction again. It reads the user's balances and transactions, tells you what Adapty saved, and stops. If Adapty didn't save the correction, ask the skill for it again. The skill shows you the correction and waits for your approval.
 
 ## How the skill explains a balance
 
@@ -91,13 +96,13 @@ Ask why a user has a balance, and the skill reads the user's credit transactions
 
 If a user's credits disappear after a reinstall, on a new device, or after a login, the skill asks you for the user's previous profile and reads its balance. A balance belongs to one profile and doesn't move to another, so the credits stay on the previous profile. To keep each user's balance on every device, [identify your users](virtual-currency-balance#balances-profiles-and-devices).
 
-To correct the balance after the explanation, ask the skill for the fix. The skill shows you the correction and waits for your yes.
+To correct the balance after the explanation, ask the skill for the fix. The skill shows you the correction and waits for your approval.
 
 ## Limits
 
 - **No deletion of a currency**: You can't delete a currency or change its code, in the skill or in the dashboard.
-- **One user for each correction**: The skill corrects one currency of one user for each change, as the [Adjust balance](virtual-currency-balance#adjust-a-balance-manually) form of the dashboard does. Your server spends and grants credits through the server-side API: see the [Virtual currency quickstart](virtual-currency-quickstart) and [Grant an initial balance](grant-initial-balance).
+- **One user for each correction**: Each correction changes the balance of a single currency for a single user, as the [Adjust balance](virtual-currency-balance#adjust-a-balance-manually) form of the dashboard does. Your server spends and grants credits through the server-side API: see the [Virtual currency quickstart](virtual-currency-quickstart) and [Grant an initial balance](grant-initial-balance).
 - **Idempotency key for one hour**: Adapty applies the key of a correction once for each user, for one hour, and doesn't compare the rest of the request. For the details, see [Send a correction only once](developer-cli-virtual-currencies#send-a-correction-only-once).
-- **No unattended changes**: In a scheduled run or a script, with no one to answer, the skill only reads. For a change, it reports what the change does and the command for you to run.
+- **No unattended changes**: Every change requires human approval. If the skill runs where no one can approve a change, such as in a scheduled task or a script, it changes nothing in Adapty. Instead, it replies with a CLI command that you can run yourself. To automate changes, skip the skill and run the [CLI commands with `--yes`](developer-cli-virtual-currencies#confirmation-in-scripts-and-agents) in your script.
 
 To run the commands yourself, without the skill, see [Manage virtual currencies from the CLI](developer-cli-virtual-currencies).
