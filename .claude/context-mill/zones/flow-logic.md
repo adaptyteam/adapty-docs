@@ -40,31 +40,62 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
   wording from the builder UI directly rather than from any article in this zone, since it isn't
   independently confirmed here.
 - **Conditions on the Adapty SDK version** (the picker's **System** tab, `sdk.version`; product
-  decision and builder and transformer code, 2026-11-26, before release). Owner article:
-  `flow-sdk-version-branching` (screen pattern, paired-element pattern, limitations); the System
-  tab line in `onboarding-element-visibility`, the rule sentences in `onboarding-actions` and
-  `onboarding-navigation-branching`, and `onboarding-variables`, `paywall-device-compatibility-preview`
-  and `builder-ui` link to it.
+  decision and builder and transformer code, 2026-11-26, before release; corrected 2026-11-27 after a
+  docs review against the same code). Owner article: `flow-sdk-version-branching` (how the condition
+  works, choosing the version to enter, the screen pattern, the paired-element pattern, testing,
+  limitations). The System tab line in `onboarding-element-visibility`, the rule sentence and a
+  use-case bullet in `onboarding-actions`, a pointer in `onboarding-navigation-branching`, the
+  **Invalid SDK version condition** row in `flow-common-issues`, and `onboarding-variables`,
+  `paywall-device-compatibility-preview` and `builder-ui` link to it. The article names the two sides
+  the main screen or element and the backward-compatible screen or element; a bare "compatible" and
+  "fallback" were rejected, because "fallback" means only a custom element's fallback content.
   - Offered only in a conditional action and in a visibility condition, not in conditional text or
     element-state conditions. Two comparisons: **This version and above** (≥) and **Below this
-    version** (<). The value is a list (newest marked **Latest**) or free entry `major.minor[.patch]`;
-    a missing patch counts as 0; an empty value is an incomplete rule; an invalid value makes the
-    publication fail with the error at the condition, and the last published version stays.
+    version** (<); picking `sdk.version` presets ≥. The value is a list (4.4 marked **Latest**, down
+    to 4.0; it grows only when a feature needs a newer SDK) or free entry `major.minor[.patch]`; a
+    missing patch counts as 0. **Corrected 2026-11-27 (builder code):** an empty or invalid value
+    doesn't block previewing or publishing and isn't in the **Issues** panel. The row shows an error
+    and the closed editor a red border; the publication then fails with **Invalid SDK version
+    condition** in a notification whose **Details** link opens the element. Users keep the last
+    published version. This entry used to call an empty value an incomplete rule and to put the error
+    at the condition.
   - The device compares the native iOS or Android Adapty SDK version, also inside the cross-platform
     SDKs, numerically (4.10 > 4.9). On Android it is the core library `io.adapty:android-sdk`
-    version, not the BOM version (2026-11-26, device run: BOM 4.4.2 reports 4.4.0, BOM 4.3.3 reports
-    4.3.2, React Native 4.4.1 reports 4.4.0 on Android). An unknown version counts as the oldest, so
-    **Below this version** matches.
-  - The canvas and the dashboard preview evaluate a visibility condition as the **Latest** list
-    version with any patch; they never run conditional actions. The Adapty mobile app preview offers no version choice.
-  - Hiding is not decode protection: an earlier SDK still loads hidden elements. A visibility
-    condition on a custom element also hides its fallback. A declared custom variable with the id
-    `sdk.version` keeps its meaning, and that flow's System tab doesn't offer the SDK version.
-  - Unconfirmed (2026-11-26): on iOS SDK 4.0 and 4.1 a first-screen element hidden by a visibility
-    condition can show for one frame. Source: public `AdaptySDK-iOS`
-    `Sources.UIBuilder/UIBuilder/Rendering/Elements/AdaptyUISectionView.swift` at 4.0.0 and 4.1.3,
-    where the section state starts at slot 0 and updates on appearance. A device run on 2026-11-26 saw
-    no flash in the first sample after launch (not a frame-by-frame capture); the docs keep the limit.
+    version, not the BOM version. An unknown version counts as below every version, so **Below this
+    version** matches. Unconfirmed (2026-11-26, one device run, not re-checked): BOM 4.4.2 reports
+    4.4.0, BOM 4.3.3 reports 4.3.2, and React Native 4.4.1 reports 4.4.0 on Android. The article no
+    longer cites these pairs.
+  - The version to enter: feature articles state per-platform, BOM, or cross-platform versions, not
+    the native version the condition reads. The article's rule: enter `major.minor`, round a patch
+    requirement up to the next minor, and take the highest version across platforms. A version
+    without a patch matches every patch of its minor, so rounding down shows a feature to builds
+    without it (`prod_billing_price` needs iOS 4.3.1). The rule assumes that cross-platform and BOM
+    releases keep the major.minor of the native SDKs they include (open question for the SDK team).
+  - The condition can't tell the app's framework. A feature that also depends on it (hero-screen taps
+    outside the sheet on Android, a custom element's native view) needs the framework list from the
+    feature's article.
+  - **Corrected 2026-11-27 (builder code):** the canvas, which is the same surface as the dashboard
+    preview, evaluates a visibility condition as the **Latest** list version with any patch and never
+    runs conditional actions; a hidden element is reachable in the **Layers** panel. The Adapty
+    mobile app preview doesn't pass the app's version. On Android it passes the Adapty app's own SDK
+    version (public `AdaptySDK-Android`, `adapty-ui/src/main/java/com/adapty/ui/internal/script/SDKGlobals.kt`).
+    On iOS it passes the SDK's own version or none, depending on how the Adapty app opens the preview
+    (open question).
+  - A conditional action can also run **On Appear**. It can't serve the first screen because a flow
+    always opens on its first screen.
+  - **Corrected 2026-11-27 (transformer code):** an element or property newer than format 5.0.0 is
+    emitted only inside an `if version` with a 5.0 equivalent, so an earlier SDK never receives an
+    element it can't read. A hidden element still ships to every build and adds to the flow's size.
+    This entry used to say that hiding is not decode protection. A visibility condition on a custom
+    element also hides its fallback content, so the article tells readers not to add one.
+  - A declared custom variable with the id `sdk.version` keeps its meaning, and that flow's System
+    tab doesn't offer the SDK version. Variables made in the builder get generated ids, so only a flow
+    that sets the id itself (API, import, an AI chat) can hit this; the article no longer lists it.
+  - **Corrected 2026-11-27 (public `AdaptySDK-iOS`):** in iOS SDK 4.1.1, an element hidden by a
+    visibility condition draws for one frame on every screen as it opens, not only on the first
+    (`Sources.UIBuilder/UIBuilder/Rendering/Elements/AdaptyUISectionView.swift`: the section starts at
+    branch 0 and switches on appearance); 4.3.1 no longer does. 4.0.x and 4.2.x weren't checked. The
+    article keeps the limit for 4.0 and 4.1 and prescribes a screen-level condition instead.
 - **The SDK repos are explicitly not this zone's ground truth.** Articles here reference SDK-side shapes
   loosely (`AdaptyRemoteConfig`, the `remoteConfigs` array on `AdaptyFlow`, `getFlow`) only to hand the
   reader off to the platform SDK docs. Treat those shapes as owned by `sdk-flows-display` /
