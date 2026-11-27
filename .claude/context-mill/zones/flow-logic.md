@@ -106,11 +106,31 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
   `sdk-flows-manual` and their own sources (`jscore`, `ios-sdk`, etc. in `sources.md`) — don't correct or
   extend them from inside a flow-logic article.
 - **What the in-dashboard preview can resolve is decided by the dashboard, not by the builder.** The
-  dashboard passes the builder exactly six product fields: `id`, `title`, `access_level`, `price` (the
-  USD price), `price_per_day`, `billing_period` — and no offer fields at all. Check that before writing
-  any claim about what a preview shows: the builder's product variables can only resolve what the
-  dashboard sent, and a field's *absence* is why a variable renders as a token (dashboard code,
-  2026-08-24).
+  builder's product variables can only resolve what the dashboard sent, and a field's *absence* is why a
+  variable renders as a token. Updated 2026-11-27 (dashboard code): the product mapping now also has
+  slots for the offer-type flags, the `offer_*` values, and the `intro_*` fields below, but it reads them
+  from keys (`subscription.offer.phases`, `offerPrice`, `isFreeTrial`) that the typed dashboard product
+  doesn't declare. Unless the product list returns those keys, which is unverified, offer and intro
+  values still render as tokens and the flags still come only from **Preview as**. The docs keep saying
+  offer values stay unresolved in the preview; confirm in the UI before changing that.
+- **Intro price fields (2026-11-27, builder and transformer code).** `intro_price`,
+  `intro_billing_period`, `intro_full_duration` (strings) and `has_intro_price` (boolean, conditions
+  only; in text it is a publish error like the other booleans) read the first *paid* phase
+  (pay-as-you-go or pay-up-front) of the offer, where `offer_*` read the first phase. They exist for a
+  Google Play offer with a free trial and then a paid phase. Empty / `false` when no paid phase exists:
+  a trial-only offer, any iOS free trial (StoreKit offers have one phase), and a trial + intro Google
+  Play offer on an Android SDK older than 4.4.2, which sends the first phase only. Guard the intro line
+  with `has_intro_price`. Which cross-platform SDK versions bundle native Android 4.4.2 is open as of
+  2026-11-27.
+- **There is no `Offer required` publish issue (2026-11-27, builder code).** An `offer_*` or `intro_*`
+  variable on a product without an offer publishes; the SDK resolves eligibility and the value is empty
+  when the user has no offer. The issue went away with the per-screen product registry (2026-09-17).
+  Checked: the builder's publish-issue title list, a case-insensitive search for
+  `offer[-_ ]?required` in the builder, dashboard and transformer sources (titles can also be generated
+  from an issue code, so the code form was searched too). Removed from `onboarding-variables`,
+  `flow-common-issues` and `paywall-product-block` on 2026-11-27 — don't reintroduce it.
+- **Formulas can read `offer_price` but no `intro_*` field** (2026-11-27, builder code: the formula
+  operand list is the price fields plus `offer_price`).
 - **The per-screen product registry (flow schema v12)** — panel behaviour, menu items, toasts, dialog
   labels, and the publish-blocking issues with their exact titles. `paywall-product-block` and
   `flow-common-issues` quote those titles verbatim — verify against the builder UI, not against a
