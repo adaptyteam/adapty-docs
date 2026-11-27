@@ -172,7 +172,6 @@ These apply to every doc edit, however small. They are the rules no linter can c
 | File | Role |
 |------|------|
 | `src/styles/global.css` | **Primary stylesheet.** Tailwind import, theme variables (`@theme`), light/dark CSS custom properties, all design block styles (code blocks, details, callouts, tables, zoom images, heading anchors, task lists, highlight lines) |
-| `src/css/custom.css` | Legacy Docusaurus-era variables (`--purplePrimary`, `--ifm-*`). Still loaded via `src/css/custom.scss` but superseded by `global.css` for new work |
 | `src/components/api-reference/TryItPanel.css` | Styles for the Try-it panel of the API reference; the other API reference components carry scoped `<style>` blocks |
 | `src/css/fonts/fonts.css` | `@font-face` declarations for Manrope and JetBrains Mono, the only self-hosted fonts (`DocsLayout.astro` preloads Manrope). Missing glyphs fall through to system fonts. JetBrains Mono ships programming ligatures; the `font-variant-ligatures: none` rule in `global.css` turns them off |
 

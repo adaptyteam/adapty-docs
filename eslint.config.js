@@ -27,7 +27,6 @@ export default [
       "no-undef": "off",
       // Pre-existing escape patterns in source
       "no-useless-escape": "warn",
-      // cookie-checker.js is intentionally disabled with an early return
       "no-unreachable": "warn",
       // Don't auto-fix let → const
       "prefer-const": "off",
