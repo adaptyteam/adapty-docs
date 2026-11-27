@@ -1,0 +1,64 @@
+---
+title: "Adapty Capacitor SDK を v4.4 に移行する"
+description: "Adapty Capacitor SDK v4.4 への移行：両方のフォールバックファイルを置き換え、iOS および Android における新しいフローエラーを処理します。"
+metadataTitle: "Adapty Capacitor SDK v4.4 への移行 | Adapty ドキュメント"
+---
+
+Adapty Capacitor SDK 4.4では、フォールバックファイルのフォーマットが変更され、フローにiOS 16が必要となり、Androidではフローのスクリプトエラーがアプリにレポートされるようになりました。4.4では、TypeScriptにおいて`AdaptyPrice.currencyCode`、`AdaptyPrice.localizedString`、`AdaptySubscription.billingPlan`がオプショナルではなくなりました。アプリを4.4にアップデートするには、最新の`@adapty/capacitor`パッケージをインストールし、同じビルドで両方のフォールバックファイルを置き換えてください。旧バージョンのSDKは新しいファイルを受け付けません。その後、このガイドで他の変更点を確認してください。
+
+バージョン4.2以前をお使いの場合は、まず[v4.3への移行](migration-to-capacitor-sdk-43)を行ってから、このガイドに従ってください。
+
+:::warning
+フォールバックファイルの形式は4.4で変更されており、コンパイラはSDK 4.1〜4.3向けのフォールバックファイルを検出できません。[新しいフォールバックファイル](#replace-the-fallback-files)がない場合、すべてのプレースメントでフォールバックが機能しなくなります。
+:::
+
+## クイックリファレンス \{#quick-reference\}
+
+| v4.3 | v4.4 |
+|---|---|
+| v4.1〜4.3 用のフォールバックファイルをダウンロード済み | 新しいフォールバックファイル形式。両方のファイルを再ダウンロードしてください |
+| フローは iOS 15 で動作 | フローには iOS 16 が必要 |
+| Android では、SDK はフロースクリプトエラーをログに記録するのみ | `jsException` として `onError` に到達するようになりました |
+| `AdaptyPrice.currencyCode`、`AdaptyPrice.localizedString`、`AdaptySubscription.billingPlan` はオプション | 必須になりました |
+
+## インストール \{#installation\}
+
+`@adapty/capacitor` パッケージを更新し、ネイティブプロジェクトを同期します：
+
+```bash showLineNumbers
+npm install @adapty/capacitor@latest
+npx cap sync
+```
+
+要件は変わりません：**iOS 15.0** および **Capacitor 8**。フローのみ例外があります：[フローには iOS 16 が必要](#flows-require-ios-16) をご覧ください。詳細なセットアップ手順は [Adapty SDK のインストール](sdk-installation-capacitor) を参照してください。
+
+## フォールバックファイルを置き換える \{#replace-the-fallback-files\}
+
+[フォールバックファイル](capacitor-use-fallback-paywalls)を再度ダウンロードするには、**[Placements](https://app.adapty.io/placements)** で **Fallbacks** > **Download iOS Fallback** をクリックします。**Adapty SDK v4.4.0 and higher** の行で **Download** をクリックします。**Download Android Fallback** でも同様に繰り返します。
+
+ダウンロードしたファイルの名前は `ios_4_4_0_fallback.json` と `android_4_4_0_fallback.json` です。SDK 4.1〜4.3 用のフォールバックファイルの代わりに、[フォールバックペイウォールの使用](capacitor-use-fallback-paywalls)の手順に従って使用してください：
+
+- **iOS**: Xcodeプロジェクトにファイルを追加します。
+- **Android**: Android フォールバックファイル（4.1–4.3用）のフォルダーにファイルを置きます。
+
+各ファイルには、アプリが `adapty.setFallback` に渡す名前を付けるか、その呼び出し内の名前を更新してください。
+
+SDK 4.1–4.3用のフォールバックファイルを使用している場合、`adapty.setFallback` は `AdaptyError` をスローします。新しいファイルを確認するには、iOS と Android でアプリを実行し、この呼び出しがエラーをスローしないことを確認してください。
+
+## フローにはiOS 16が必要 \{#flows-require-ios-16\}
+
+バージョン4.4以降、フローにはiOS 16以降が必要です。購入やカスタムペイウォールなど、その他のSDK機能はiOS 15でも引き続き動作します。
+
+iOS 15では、`createFlowView`が`platformNotSupported`コードの`AdaptyError`をスローします。このエラーを受け取った場合は、フローの代わりに[カスタムペイウォール](capacitor-implement-paywalls-manually)などのコンテンツを表示してください。
+
+## Android でのフローのスクリプトエラーが `onError` に届くようになりました \{#flow-script-errors-reach-onerror-on-android\}
+
+Android では、フローのスクリプトが SDK イベントを処理中に例外をスローすることがあります。4.4 以降、この例外は iOS と同様に `jsException` コードを持つ `AdaptyError` として `onError` ハンドラーに渡されます。以前は、SDK がログに出力するのみでした。
+
+`onError` を設定していない場合、このエラーが発生するとフローが閉じられます。フローを開いたままにするには、`onError` を設定し、このエラーに対して `false` を返してください。
+
+## 価格とサブスクリプションのプロパティが必須になりました \{#price-and-subscription-properties-are-required\}
+
+TypeScriptでは、`AdaptyPrice.currencyCode`、`AdaptyPrice.localizedString`、`AdaptySubscription.billingPlan`は省略可能ではなくなりました。テストのモックなど、これらのオブジェクトをコード内で作成している場合は、これらのプロパティを設定してください。
+
+4.4では、ユーザーが[コミットメントプラン](set-up-12-month-commitment)を購入していない限り、すべてのサブスクリプションの`billingPlan`は`up_front`になります。4.4より前は、App Storeのサブスクリプションのみが`billingPlan`を持っていました。

@@ -1,0 +1,347 @@
+---
+title: "Mostrar elementos personalizados con el SDK de Capacitor"
+description: "Muestra una vista nativa de iOS o Android en cada elemento personalizado de un flow, y prueba el flow en un dispositivo."
+metadataTitle: "Mostrar elementos personalizados | SDK de Capacitor | Documentación de Adapty"
+---
+
+<FlowCustomElementsIntro />
+
+## Antes de empezar \{#before-you-start\}
+
+Necesitas:
+
+- **Adapty Capacitor SDK 4.4 o posterior**: Las versiones anteriores muestran el respaldo para cada elemento personalizado.
+- **Código nativo para iOS y Android**: No puedes mostrar HTML de tu aplicación web en un elemento personalizado. Escribe este código en Swift para iOS y en Kotlin para Android. Añade el código Swift al target `App` en Xcode, y el código Kotlin a la carpeta de `MainActivity.java`. Comienza cada nuevo archivo Kotlin con la línea `package` de `MainActivity.java`.
+- **Un esquema de nombres para los elementos personalizados**: Asigna a cada vista nativa un Type, como `lottie_animation`. Usa solo letras minúsculas, números y guiones bajos en los Types. Para distinguir entre elementos personalizados del mismo Type, asigna a cada uno un ID, como `welcome_wave`. Los Types e IDs en tu código deben coincidir con los del [Flow & Paywall Builder](flow-custom-elements#add-and-configure).
+
+Usa los mismos tipos e IDs en tu código de iOS y Android. A menos que configures una [audiencia](audience) separada para cada plataforma, los usuarios de iOS y Android verán los mismos flows.
+
+## Configura tu proyecto Android \{#set-up-your-android-project\}
+
+En tu proyecto Android, añade Kotlin y la librería Adapty UI. Para crear vistas nativas como composables, configura también Jetpack Compose.
+
+### Añadir Kotlin
+
+La plantilla de Capacitor no tiene configuración de Kotlin. Para compilar el código Kotlin de esta página, en `android/build.gradle`, establece `kotlin_version` en `2.2.20`, la versión de Kotlin predeterminada de `@adapty/capacitor`. Luego añade el plugin de Gradle de Kotlin a las dependencias de `buildscript`. Si `android/build.gradle` ya tiene ambas líneas, mantenlas.
+
+```groovy showLineNumbers title="android/build.gradle"
+buildscript {
+    ext.kotlin_version = '2.2.20'
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+```
+
+A continuación, aplica el plugin al módulo de la app. Establece el destino JVM de Kotlin en 21, la versión de Java que Capacitor define para el módulo de la app:
+
+```groovy showLineNumbers title="android/app/build.gradle"
+
+apply plugin: 'org.jetbrains.kotlin.android'
+
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_21
+    }
+}
+```
+
+### Añadir la biblioteca de Adapty UI
+
+En `android/app/build.gradle`, añade `io.adapty:android-ui` al bloque `dependencies`, sin especificar versión. `@adapty/capacitor` establece la versión. Una versión diferente de `android-ui` puede romper los flows.
+
+```groovy showLineNumbers title="android/app/build.gradle"
+dependencies {
+    implementation 'io.adapty:android-ui'
+}
+```
+
+### Configurar Jetpack Compose \{#set-up-jetpack-compose\}
+
+La plantilla de Capacitor no [configura Compose](https://developer.android.com/develop/ui/compose/setup-compose-dependencies-and-compiler) en el módulo de la app. Una `View` de Android no necesita configuración de Compose. Para construir vistas nativas como composables, añade el plugin de Gradle del compilador de Compose a las dependencias de `buildscript`:
+
+```groovy showLineNumbers title="android/build.gradle"
+buildscript {
+    dependencies {
+        classpath "org.jetbrains.kotlin:compose-compiler-gradle-plugin:$kotlin_version"
+    }
+}
+```
+
+Luego, aplica el plugin al módulo de la app y establece `compose true` en el bloque `buildFeatures`:
+
+```groovy showLineNumbers title="android/app/build.gradle"
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
+
+android {
+    buildFeatures {
+        compose true
+    }
+}
+```
+
+Para la vista Lottie de esta página, añade también `com.airbnb.android:lottie-compose`.
+
+## Crear vistas para elementos personalizados \{#create-views-for-custom-elements\}
+
+Para cada Type, crea una vista nativa para iOS y para Android, o reutiliza una de tu código nativo. Las siguientes vistas del Type `lottie_animation` reproducen una animación Lottie. La vista de Android es un composable que usa la librería `com.airbnb.android:lottie-compose`:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift"
+
+struct LottieElementView: View {
+    let animation: LottieAnimation?
+
+    var body: some View {
+        LottieView(animation: animation)
+            .resizable()
+            .looping()
+    }
+}
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin"
+
+@Composable
+fun LottieElement(animationFile: String) {
+    val composition by rememberLottieComposition(LottieCompositionSpec.Asset(animationFile))
+    LottieAnimation(
+        composition = composition,
+        iterations = LottieConstants.IterateForever,
+    )
+}
+```
+
+</TabItem>
+</Tabs>
+
+### Requisitos y buenas prácticas \{#requirements-and-best-practices\}
+
+- **Dimensionamiento**:
+  - **Relleno y alineación**: Asegúrate de que la vista nativa encaja en el contenedor que le asignaste en el Flow & Paywall Builder, menos el relleno. Si la vista no ocupa toda el área, aparece por defecto en la esquina superior izquierda de esa área. Para moverla, cambia la alineación en la sección **Layout** del elemento personalizado.
+  - **Altura Hug**: Si la altura del elemento personalizado está configurada como **Hug**, una vista que se expande para ocupar el espacio disponible (como un mapa o una lista lazy) se colapsará o se extenderá hasta la altura de la pantalla. En su lugar, asigna al elemento personalizado una altura [**Fixed**](flow-custom-elements#add-and-configure).
+- **Tema**: Las vistas nativas no heredan los estilos de tu aplicación web. Define colores y fuentes en el código nativo.
+- **Acciones de flow**: La vista nativa no puede ejecutar acciones de flow, como la transición a la siguiente pantalla. El contexto del elemento puede enviar mensajes al flow con `sendMessage` en iOS y `send` en Android, pero están reservados para futuras funcionalidades del Flow & Paywall Builder. Mantén los botones de navegación, los botones de compra y otros botones con acciones de flow fuera del elemento personalizado.
+- **Elementos seleccionables**: Mantén el elemento personalizado fuera de las tarjetas de producto y otros [elementos seleccionables](flow-selectable-elements). Cuando cambie la selección, la vista nativa puede perder su estado.
+- **Gestión de la navegación**: Cuando el usuario avanza a la siguiente pantalla, el SDK elimina la vista nativa de la pantalla. Detén lo que la vista haya iniciado, como sesiones de cámara, reproductores y actualizaciones de ubicación:
+  - **Vista SwiftUI**: Usa la acción `onDisappear`. Para trabajo asíncrono, usa `.task`: SwiftUI lo cancela cuando la vista desaparece.
+  - **Composable**: Usa el bloque `onDispose` de un `DisposableEffect`. Para trabajo asíncrono, usa `LaunchedEffect`: Compose lo cancela cuando el composable abandona la composición.
+  - **`View` de Android**: Sobreescribe `onDetachedFromWindow` en tu subclase de `View`, o añade un `View.OnAttachStateChangeListener` a la `View`.
+
+  Cuando el usuario regresa, el SDK llama de nuevo al resolver y la vista nativa se inicia sin el estado de la anterior. En Android, una rotación hace que el SDK llame al resolver de nuevo.
+- **Vistas UIKit**: En iOS, envuélvelas en `UIViewRepresentable`.
+- **Carruseles**: En Android, en un [carrusel](builder-containers#carousel), las vistas nativas de todas las diapositivas permanecen activas mientras la pantalla está abierta, no solo la vista de la diapositiva visible. Mantén las previsualizaciones de cámara y los reproductores con sonido fuera de los carruseles.
+
+## Escribe un resolver para enlazar elementos y vistas personalizados \{#write-a-resolver-to-match-custom-elements-and-views\}
+
+Escribe un resolver para cada plataforma. El resolver recibe el tipo y el ID de un elemento personalizado y devuelve la vista nativa correspondiente.
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+Para escribir un resolver, haz que un tipo implemente el protocolo `AdaptyUICustomElementsResolver` y define el método `view(forType:id:context:)`.
+
+Para el tipo `lottie_animation`, el siguiente resolver devuelve `LottieElementView`. El ID indica el nombre del archivo de animación en el bundle de la app, como `welcome_wave`:
+
+```swift showLineNumbers title="Swift"
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "lottie_animation":
+            // the ID names the animation file, such as welcome_wave.json
+            guard let animation = LottieAnimation.named(id) else {
+                return nil // no file for this ID: show the fallback
+            }
+            return AnyView(LottieElementView(animation: animation))
+        default:
+            return nil
+        }
+    }
+}
+```
+
+En el caso `default`, devuelve `nil`.
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+Para escribir un resolver, implementa la interfaz `AdaptyCustomElementsResolver`. Su método `resolve` devuelve la vista correspondiente en una de las siguientes formas:
+
+- **Un composable**: Devuelve `AdaptyCustomElementContent.compose`, con el composable dentro de su lambda.
+- **Una `View` de Android**: Devuelve `AdaptyCustomElementContent.view`, con una función que crea la `View`. Nombra el parámetro `factory`: `AdaptyCustomElementContent.view(factory = { context, _ -> ChartView(context) })`. Sin el nombre, Kotlin pasa una trailing lambda al parámetro opcional `update`, y el código no compila.
+
+Para el tipo `lottie_animation`, el siguiente resolver devuelve la [vista Lottie](#create-views-for-custom-elements). El ID nombra el archivo de animación en la carpeta `assets`, `android/app/src/main/assets`, por ejemplo `welcome_wave` para `welcome_wave.json`:
+
+```kotlin showLineNumbers title="Kotlin"
+
+class CustomElementsResolver(context: Context) : AdaptyCustomElementsResolver {
+    // the animation files in the assets folder, listed once
+    private val animationFiles: Set<String> = try {
+        context.assets.list("").orEmpty().toSet()
+    } catch (e: IOException) {
+        emptySet() // no list of files: every Lottie element shows the fallback
+    }
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        when (type) {
+            "lottie_animation" -> {
+                // the ID names the animation file, such as welcome_wave.json
+                val file = "$id.json"
+                if (file in animationFiles) {
+                    AdaptyCustomElementContent.compose { LottieElement(file) }
+                } else {
+                    null // no file for this ID: show the fallback
+                }
+            }
+            else -> null
+        }
+}
+```
+
+Para cualquier otro Type, devuelve `null`.
+
+</TabItem>
+</Tabs>
+
+Si [añades un elemento personalizado con un nuevo Type](flow-custom-elements#what-changes-require-an-app-release) después de lanzar la app, los usuarios de la versión publicada verán su fallback.
+
+El resolver tiene los siguientes requisitos:
+
+- **Datos de red y reproductores**: Mantén los datos de red y los reproductores en el estado de la [vista nativa](#create-views-for-custom-elements), no en el resolver. El SDK llama al resolver muchas veces mientras la pantalla está abierta. El código del resolver se ejecuta de nuevo en cada llamada, por lo que las peticiones de red se repiten y los reproductores empiezan desde cero. La vista nativa mantiene su estado entre estas llamadas, así que los datos se cargan una sola vez y los reproductores siguen reproduciéndose. Crea reproductores, sesiones y peticiones de red dentro de la vista nativa:
+  - **Vista SwiftUI**: Crea reproductores, sesiones y peticiones de red en `.task` o en un `@StateObject`, no en el valor inicial de una propiedad `@State`. Swift evalúa ese valor inicial de nuevo cada vez que el resolver crea la vista.
+  - **Composable**: Crea reproductores y sesiones en `remember`, y las peticiones de red en `LaunchedEffect`.
+  - **`View` de Android**: Crea reproductores, sesiones y peticiones de red en `onAttachedToWindow`.
+- **Una vista nativa por elemento personalizado**: Algunas vistas nativas cambian mientras la pantalla está abierta, por ejemplo, cuando se cargan sus datos o cuando el usuario las toca. Implementa esta lógica en la propia vista nativa, no en el resolver. Si el resolver devuelve una vista diferente para el mismo elemento personalizado, la vista pierde su estado.
+- **Una nueva `View` por cada aparición**: En Android, crea una nueva `View` en cada llamada a `factory`. El SDK llama a `factory` cada vez que aparece el elemento personalizado, por ejemplo, cuando se abre la pantalla, cuando el usuario vuelve a ella o tras una rotación.
+- **Datos de la app**: Almacena un objeto que contenga los datos, como un `ObservableObject` o un `StateFlow` con un [daily streak](capacitor-custom-element-lottie-animation), en una propiedad del resolver. Pasa el objeto a la vista nativa y obsérvalo allí:
+  - **Vista SwiftUI**: Observa un `ObservableObject` con `@ObservedObject`.
+  - **Composable**: Recoge un `StateFlow` con `collectAsState`, u observa un `LiveData` con `observeAsState`.
+  - **`View` de Android**: Observa el objeto en `onAttachedToWindow` y detén la observación en `onDetachedFromWindow`.
+
+  Un valor que copias en el resolver, como el número de racha, permanece tal como estaba cuando creaste el resolver. Si tu código JavaScript tiene los datos, como una racha diaria, envía cada nuevo valor al código nativo a través de un <InlineTooltip tooltip="plugin local de Capacitor">[iOS](https://capacitorjs.com/docs/ios/custom-code), [Android](https://capacitorjs.com/docs/android/custom-code)</InlineTooltip>, y actualiza el objeto allí.
+
+### Establece condiciones para el contenido de respaldo \{#set-conditions-for-fallback-content\}
+
+<FlowCustomElementsFallbackConditions />
+
+Para un permiso, devuelve ninguna vista solo cuando el usuario lo haya denegado antes de que se abriera la pantalla. En Android, `ContextCompat.checkSelfPermission` devuelve el mismo valor, `PERMISSION_DENIED`, en dos casos: antes de que tu app le pida el permiso al usuario por primera vez, y después de que el usuario lo deniegue. Para distinguir estos casos, guarda el resultado de la solicitud de permiso y lee el resultado guardado en el resolver. Si tu app aún no ha solicitado el permiso, devuelve la vista nativa y solicita el permiso dentro de la vista. Por ejemplo, solicita acceso a la ubicación cuando aparezca una [vista de mapa](capacitor-custom-element-map#3-match-the-map-to-the-custom-element), y muestra el mapa en cuanto el usuario conceda acceso. Si devuelves ninguna vista y el usuario concede acceso después, seguirá viendo el fallback. Un cambio de permiso no hace que el SDK llame al resolver de nuevo. La vista nativa solo aparece después de que el SDK llame al resolver de nuevo, por ejemplo cuando el usuario vuelve a la pantalla.
+
+## Pasa el resolver al SDK \{#pass-the-resolver-to-the-sdk\}
+
+Configura el resolver una sola vez por plataforma, al iniciar la app. El SDK lo llama en cada flow. Los usuarios ven tus vistas nativas en los nuevos flows y pruebas A/B sin necesidad de publicar una nueva versión de la app. Estas vistas siguen mostrando a cada usuario sus propios datos, como una [racha diaria](capacitor-custom-element-lottie-animation), porque los leen directamente desde tu app.
+
+### iOS
+
+En `AppDelegate.swift`, importa `AdaptyUI` y llama a `AdaptyUI.setCustomElementsResolver(_:)` en el método `application(_:didFinishLaunchingWithOptions:)`. Las líneas resaltadas muestran qué añadir. El resto de la clase `AppDelegate` debe permanecer igual:
+
+```swift showLineNumbers title="ios/App/App/AppDelegate.swift" {1,11}
+
+@UIApplicationMain
+class AppDelegate: UIResponder, UIApplicationDelegate {
+
+    var window: UIWindow?
+
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        AdaptyUI.setCustomElementsResolver(CustomElementsResolver())
+        // the rest of your launch code
+        return true
+    }
+}
+```
+
+Si escribes el resolver también en `AppDelegate.swift`, importa también `AdaptyUIBuilder` allí.
+
+### Android
+
+La plantilla de Capacitor no tiene clase `Application`. Crea `MainApplication.kt` en la carpeta de `MainActivity.java` y llama a `AdaptyUI.setCustomElementsResolver` en su método `onCreate`. Si tu app ya tiene una clase `Application`, añade las líneas destacadas en su lugar:
+
+```kotlin showLineNumbers title="MainApplication.kt" {4,9}
+package com.example.app
+
+
+class MainApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        AdaptyUI.setCustomElementsResolver(CustomElementsResolver(this))
+    }
+}
+```
+
+Para que Android cree esta clase al iniciar la app, en `android/app/src/main/AndroidManifest.xml`, establece el atributo `android:name` del elemento `application` como `.MainApplication`. Deja el resto de atributos tal como están:
+
+```xml showLineNumbers title="android/app/src/main/AndroidManifest.xml" {2}
+<application
+    android:name=".MainApplication"
+    android:allowBackup="true"
+    android:icon="@mipmap/ic_launcher">
+```
+
+:::tip
+Para mostrar la misma vista en cada elemento personalizado de un Type, pasa un mapa de Types y vistas en lugar de un resolver. Con un mapa, escribes menos código que con un resolver, pero no puedes [establecer condiciones para el contenido de respaldo](#set-conditions-for-fallback-content).
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+El mapa es un diccionario `[String: AdaptyUICustomElementBuilder]`. Si escribes el mapa en `AppDelegate.swift`, importa también `Lottie` allí.
+
+```swift showLineNumbers title="Swift"
+AdaptyUI.setCustomElementsResolver([
+    "lottie_animation": .init { _, id, _ in LottieElementView(animation: .named(id)) },
+])
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+Pasa el mapa a `AdaptyCustomElementsResolver.of`:
+
+```kotlin showLineNumbers title="Kotlin"
+val appWideViews = mapOf(
+    "confetti" to AdaptyCustomElementContent.compose { LottieElement("confetti.json") },
+)
+AdaptyUI.setCustomElementsResolver(AdaptyCustomElementsResolver.of(appWideViews))
+```
+
+</TabItem>
+</Tabs>
+:::
+
+No puedes adjuntar un resolver a un flow concreto. Para mostrar datos de tu código JavaScript, envíalos al código nativo antes de que se abra el flow. Luego lee los datos en el resolver. Por ejemplo, un paywall muestra el [peso que el usuario introdujo en un flow anterior](capacitor-custom-element-interactive-chart).
+
+## Prueba en un dispositivo \{#test-on-a-device\}
+
+El Flow & Paywall Builder no puede ejecutar el código de tu app, por lo que su lienzo solo muestra el fallback. Un error en la vista nativa puede hacer que la app se bloquee. Antes de publicar la app, prueba cada pantalla que tenga un elemento personalizado en un dispositivo iOS y en un dispositivo Android:
+
+1. Para ver la versión publicada más reciente de cada flow en lugar de una versión en caché, registra el dispositivo como [dispositivo de prueba](test-devices).
+2. Para ver las advertencias del SDK de Adapty en la consola de Xcode y en Logcat, establece el [nivel de log](sdk-installation-capacitor#logging) en `warn` o en un nivel más detallado.
+3. En el dispositivo, ejecuta una build que incluya el resolver. Abre cada pantalla que tenga un elemento personalizado y verifica que la vista nativa aparezca y se ajuste al elemento personalizado. Si la vista hace scroll o responde a gestos de arrastre, prueba estos gestos.
+4. Si aparece el respaldo en lugar de la vista nativa, busca esta advertencia en la consola de Xcode o en Logcat: `custom element <type>:<id> is not served by a resolver`. Luego verifica que:
+   - El Type y el ID en la advertencia coincidan con los de tu código, letra por letra.
+   - Tu app tenga el archivo, los datos o el permiso que necesita la vista.
+   - Tu app establezca el resolver al iniciar: en la clase `AppDelegate` en iOS, y en Android, en la clase `Application` que nombra `AndroidManifest.xml`.
+
+   Si la advertencia no aparece, verifica que la app utilice Adapty Capacitor SDK 4.4 o posterior.
+5. En Android, si el elemento personalizado permanece vacío, busca una de estas advertencias en Logcat:
+   - `custom element <type>:<id> is not served by a resolver`: El elemento personalizado no tiene contenido de respaldo y ningún resolver devuelve una vista para él. Verifica cada elemento del paso 4.
+   - `content does not report its size`: El composable no tiene altura propia. Asigna al elemento personalizado una altura [**Fixed** (fija)](flow-custom-elements#add-and-configure).
+
+   El SDK solo registra la advertencia de tamaño para los composables. Si una `View` de Android se queda vacía sin ninguna advertencia, dale también una altura **Fixed** al elemento personalizado.
+6. Para previsualizar el fallback, no devuelvas ninguna vista para el Type y vuelve a abrir la pantalla.
+
+## Ejemplos \{#examples\}
+
+Cada ejemplo muestra la configuración en el builder y el código para tu aplicación:
+
+- [Mostrar el progreso del usuario con una animación Lottie](capacitor-custom-element-lottie-animation): Un anillo que se rellena a medida que crece una racha.
+- [Mostrar un gráfico de objetivo de peso interactivo en un paywall](capacitor-custom-element-interactive-chart): Un gráfico de objetivo de peso, en el flow de paywall que sigue al flow de onboarding.
+- [Mostrar lugares cercanos en un mapa en un flow](capacitor-custom-element-map): Un mapa de centros de fitness cercanos a cada usuario.

@@ -1,0 +1,64 @@
+---
+title: "Adapty Capacitor SDK'yı v4.4'e Geçirin"
+description: "Adapty Capacitor SDK v4.4'e geçiş: her iki yedek dosyayı değiştirin ve iOS ile Android'de yeni flow hatalarını ele alın."
+metadataTitle: "Adapty Capacitor SDK v4.4'e Geçiş | Adapty Dokümanları"
+---
+
+Adapty Capacitor SDK 4.4, yedek dosya formatını değiştiriyor, flow'lar için iOS 16 gerektiriyor ve Android'de flow betik hatalarını uygulamanıza bildiriyor. 4.4'te `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString` ve `AdaptySubscription.billingPlan` artık TypeScript'te zorunlu alan. Uygulamanızı 4.4'e güncellemek için en son `@adapty/capacitor` paketini yükleyin ve aynı derlemede her iki yedek dosyayı da değiştirin. Önceki SDK sürümleri yeni dosyaları reddeder. Ardından bu kılavuzdaki diğer değişiklikleri inceleyin.
+
+Hâlâ 4.2 veya daha eski bir sürümdeyseniz önce [v4.3'e Geçiş](migration-to-capacitor-sdk-43) rehberini takip edin, ardından bu kılavuzu uygulayın.
+
+:::warning
+Yedek dosya formatı 4.4'te değişti ve derleyici SDK 4.1–4.3 için yedek dosyayı algılayamıyor. [Yeni yedek dosyalar](#replace-the-fallback-files) eklenmezse her placement yedek paywall'unu kaybeder.
+:::
+
+## Hızlı başvuru \{#quick-reference\}
+
+| v4.3 | v4.4 |
+|---|---|
+| 4.1–4.3 için indirilen yedek dosyalar | Yeni yedek dosya formatı; her iki dosyayı da yeniden indirin |
+| Flow'lar iOS 15'te açılır | Flow'lar iOS 16 gerektirir |
+| Android'de SDK yalnızca flow script hatalarını loglar | Hatalar `onError`'a `jsException` olarak ulaşır |
+| `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString` ve `AdaptySubscription.billingPlan` isteğe bağlıdır | Zorunludur |
+
+## Kurulum \{#installation\}
+
+`@adapty/capacitor` paketini güncelleyin ve native projeleri senkronize edin:
+
+```bash showLineNumbers
+npm install @adapty/capacitor@latest
+npx cap sync
+```
+
+Gereksinimler değişmedi: **iOS 15.0** ve **Capacitor 8**. Flow'lar bunun istisnasıdır: bkz. [Flow'lar iOS 16 gerektirir](#flows-require-ios-16). Tam kurulum için bkz. [Adapty SDK'yı Yükle](sdk-installation-capacitor).
+
+## Yedek dosyaları değiştirme \{#replace-the-fallback-files\}
+
+[Yedek dosyaları](capacitor-use-fallback-paywalls) yeniden indirmek için **[Placements](https://app.adapty.io/placements)** bölümünde **Fallbacks** > **Download iOS Fallback** seçeneğine tıklayın. **Adapty SDK v4.4.0 and higher** satırında **Download** seçeneğine tıklayın. Aynı adımı **Download Android Fallback** için de tekrarlayın.
+
+İndirilen dosyalar `ios_4_4_0_fallback.json` ve `android_4_4_0_fallback.json` olarak adlandırılmıştır. Bu dosyaları, SDK 4.1–4.3 için kullandığınız yedek dosyaların yerine [Yedek paywall'ları kullanma](capacitor-use-fallback-paywalls) bölümünde açıklandığı şekilde kullanın:
+
+- **iOS**: Dosyayı Xcode projenize ekleyin.
+- **Android**: Dosyayı, 4.1–4.3 sürümüne ait Android yedek dosyasının bulunduğu klasöre koyun.
+
+Her dosyaya, uygulamanızın `adapty.setFallback` çağrısına geçirdiği adı verin ya da bu çağrıdaki adları güncelleyin.
+
+4.1–4.3 SDK sürümüne ait bir yedek dosyasıyla `adapty.setFallback` bir `AdaptyError` fırlatır. Yeni dosyaları doğrulamak için uygulamayı iOS'ta ve Android'de çalıştırın; bu çağrının hata fırlatmadığından emin olun.
+
+## Flow'lar iOS 16 gerektirir \{#flows-require-ios-16\}
+
+4.4 sürümünden itibaren flow'lar iOS 16 veya üzerini gerektirir. Satın almalar ve özel paywalllar gibi diğer SDK özellikleri iOS 15'te çalışmaya devam eder.
+
+iOS 15'te `createFlowView`, `platformNotSupported` koduyla bir `AdaptyError` fırlatır. Uygulamanız bu hatayı aldığında, flow yerine kendi içeriğinizi gösterin; örneğin bir [özel paywall](capacitor-implement-paywalls-manually).
+
+## Android'de flow script hataları `onError`'a ulaşır \{#flow-script-errors-reach-onerror-on-android\}
+
+Android'de, flow script'i bir SDK olayını işlerken istisna fırlatabilir. 4.4 sürümünden itibaren bu istisna, iOS'takiyle aynı şekilde `jsException` koduyla bir `AdaptyError` olarak `onError` işleyicisine ulaşır. Önceden SDK bunu yalnızca logluyordu.
+
+`onError` ayarlamazsanız, bu hata durumunda flow kapanır. Flow'un açık kalması için `onError` ayarlayın ve bu hata için `false` döndürün.
+
+## Fiyat ve abonelik özellikleri artık zorunlu \{#price-and-subscription-properties-are-required\}
+
+TypeScript'te `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString` ve `AdaptySubscription.billingPlan` artık isteğe bağlı değil. Kodunuz bu nesneleri oluşturuyorsa (örneğin testlerdeki mock'lar), bu özellikleri mutlaka belirtin.
+
+4.4 sürümünde, [taahhüt planı](set-up-12-month-commitment) satın almayan kullanıcıların her aboneliğinde `billingPlan` değeri `up_front` olarak gelir. 4.4 öncesinde yalnızca App Store aboneliklerinde `billingPlan` bulunuyordu.

@@ -1,0 +1,64 @@
+---
+title: "Migrate Adapty Capacitor SDK sang v4.4"
+description: "Migrate sang Adapty Capacitor SDK v4.4: thay thế cả hai file dự phòng và xử lý các lỗi flow mới trên iOS và Android."
+metadataTitle: "Migration sang Adapty Capacitor SDK v4.4 | Tài liệu Adapty"
+---
+
+Adapty Capacitor SDK 4.4 thay đổi định dạng file dự phòng, yêu cầu iOS 16 cho flow, và báo cáo lỗi script flow cho ứng dụng của bạn trên Android. Trong 4.4, `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString`, và `AdaptySubscription.billingPlan` không còn là optional trong TypeScript nữa. Để cập nhật ứng dụng lên 4.4, hãy cài đặt gói `@adapty/capacitor` mới nhất và thay thế cả hai file dự phòng trong cùng một bản build. Các phiên bản SDK cũ hơn sẽ từ chối các file mới. Sau đó, hãy xem lại các thay đổi khác trong hướng dẫn này.
+
+Nếu bạn vẫn đang dùng phiên bản 4.2 hoặc cũ hơn, hãy bắt đầu với [Migrate to v4.3](migration-to-capacitor-sdk-43) rồi làm theo hướng dẫn này.
+
+:::warning
+Định dạng file dự phòng đã thay đổi trong phiên bản 4.4, và trình biên dịch không thể phát hiện file dự phòng dành cho SDK 4.1–4.3. Nếu không có [file dự phòng mới](#replace-the-fallback-files), mọi placement sẽ mất paywall dự phòng của mình.
+:::
+
+## Tổng quan nhanh \{#quick-reference\}
+
+| v4.3 | v4.4 |
+|---|---|
+| Các file dự phòng được tải xuống cho 4.1–4.3 | Định dạng file dự phòng mới; tải lại cả hai file |
+| Flow hoạt động trên iOS 15 | Flow yêu cầu iOS 16 |
+| Trên Android, SDK chỉ ghi log lỗi script của flow | Chúng được chuyển đến `onError` dưới dạng `jsException` |
+| `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString`, và `AdaptySubscription.billingPlan` là tùy chọn | Chúng là bắt buộc |
+
+## Cài đặt \{#installation\}
+
+Cập nhật gói `@adapty/capacitor` và đồng bộ các native project:
+
+```bash showLineNumbers
+npm install @adapty/capacitor@latest
+npx cap sync
+```
+
+Yêu cầu không thay đổi: **iOS 15.0** và **Capacitor 8**. Flow là ngoại lệ: xem [Flow yêu cầu iOS 16](#flows-require-ios-16). Xem [Cài đặt Adapty SDK](sdk-installation-capacitor) để biết hướng dẫn cài đặt đầy đủ.
+
+## Thay thế các file fallback \{#replace-the-fallback-files\}
+
+Để tải lại [các file fallback](capacitor-use-fallback-paywalls), trong **[Placements](https://app.adapty.io/placements)**, nhấp **Fallbacks** > **Download iOS Fallback**. Ở hàng **Adapty SDK v4.4.0 and higher**, nhấp **Download**. Lặp lại với **Download Android Fallback**.
+
+Các file được tải về có tên `ios_4_4_0_fallback.json` và `android_4_4_0_fallback.json`. Dùng chúng thay cho các file fallback của SDK 4.1–4.3, như hướng dẫn trong [Sử dụng paywall dự phòng](capacitor-use-fallback-paywalls):
+
+- **iOS**: Thêm file vào dự án Xcode của bạn.
+- **Android**: Đặt file vào thư mục chứa fallback file Android dành cho phiên bản 4.1–4.3.
+
+Đặt tên file theo tên mà app của bạn truyền vào `adapty.setFallback`, hoặc cập nhật tên trong lệnh gọi đó.
+
+Với fallback file dành cho SDK 4.1–4.3, `adapty.setFallback` sẽ trả về lỗi `AdaptyError`. Để xác nhận các file mới hoạt động đúng, hãy chạy app trên iOS và Android, và đảm bảo rằng lệnh gọi này không còn trả về lỗi nào.
+
+## Flow yêu cầu iOS 16 \{#flows-require-ios-16\}
+
+Bắt đầu từ phiên bản 4.4, flow yêu cầu iOS 16 trở lên. Các tính năng SDK khác như mua hàng và paywall tùy chỉnh vẫn hoạt động trên iOS 15.
+
+Trên iOS 15, `createFlowView` sẽ ném ra một `AdaptyError` với mã lỗi `platformNotSupported`. Khi ứng dụng của bạn nhận được lỗi này, hãy hiển thị nội dung của riêng bạn thay vì flow, chẳng hạn như một [paywall tùy chỉnh](capacitor-implement-paywalls-manually).
+
+## Lỗi script flow trên Android sẽ được đưa vào `onError` \{#flow-script-errors-reach-onerror-on-android\}
+
+Trên Android, script flow có thể ném ra ngoại lệ trong quá trình xử lý sự kiện SDK. Kể từ phiên bản 4.4, ngoại lệ này sẽ được đưa vào handler `onError` dưới dạng `AdaptyError` với mã `jsException`, giống như trên iOS. Trước đây, SDK chỉ ghi log lỗi này.
+
+Nếu bạn không thiết lập `onError`, flow sẽ đóng lại khi gặp lỗi này. Để giữ flow tiếp tục mở, hãy thiết lập `onError` và trả về `false` cho lỗi này.
+
+## Thuộc tính giá và gói đăng ký là bắt buộc \{#price-and-subscription-properties-are-required\}
+
+Trong TypeScript, `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString`, và `AdaptySubscription.billingPlan` không còn là tùy chọn nữa. Nếu code của bạn tạo các đối tượng này, chẳng hạn như mock trong test, hãy đặt các thuộc tính này cho chúng.
+
+Trong phiên bản 4.4, mọi gói đăng ký đều có `billingPlan`: `up_front`, trừ khi người dùng đã mua [commitment plan](set-up-12-month-commitment). Trước phiên bản 4.4, chỉ có gói đăng ký App Store mới có `billingPlan`.

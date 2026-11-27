@@ -1,0 +1,347 @@
+---
+title: "Hiển thị các phần tử tùy chỉnh với Capacitor SDK"
+description: "Hiển thị view iOS hoặc Android native trong từng phần tử tùy chỉnh của một flow, và kiểm tra flow trên thiết bị."
+metadataTitle: "Hiển thị phần tử tùy chỉnh | Capacitor SDK | Tài liệu Adapty"
+---
+
+<FlowCustomElementsIntro />
+
+## Trước khi bắt đầu
+
+Bạn cần:
+
+- **Adapty Capacitor SDK 4.4 trở lên**: Các phiên bản cũ hơn sẽ hiển thị paywall dự phòng cho mọi custom element.
+- **Code native cho iOS và Android**: Bạn không thể hiển thị HTML từ web app trong một custom element. Viết code này bằng Swift cho iOS và Kotlin cho Android. Thêm code Swift vào target `App` trong Xcode, và code Kotlin vào thư mục chứa `MainActivity.java`. Bắt đầu mỗi file Kotlin mới bằng dòng `package` của `MainActivity.java`.
+- **Quy tắc đặt tên cho custom element**: Đặt cho mỗi native view một Type, chẳng hạn như `lottie_animation`. Chỉ dùng chữ thường, số và dấu gạch dưới trong Type. Để phân biệt các custom element cùng Type, đặt cho mỗi cái một ID, chẳng hạn như `welcome_wave`. Type và ID trong code của bạn phải khớp với những gì đã cấu hình trong [Flow & Paywall Builder](flow-custom-elements#add-and-configure).
+
+Sử dụng cùng Types và IDs trong code iOS và Android. Trừ khi bạn thiết lập [đối tượng](audience) riêng cho từng nền tảng, người dùng iOS và Android sẽ thấy cùng một flow.
+
+## Thiết lập dự án Android của bạn \{#set-up-your-android-project\}
+
+Trong dự án Android của bạn, hãy thêm Kotlin và thư viện Adapty UI. Để xây dựng các native view dưới dạng composable, hãy thiết lập thêm Jetpack Compose.
+
+### Thêm Kotlin \{#add-kotlin\}
+
+Template Capacitor không có cài đặt Kotlin sẵn. Để build code Kotlin trên trang này, trong `android/build.gradle`, đặt `kotlin_version` thành `2.2.20`, phiên bản Kotlin mặc định của `@adapty/capacitor`. Sau đó thêm Kotlin Gradle plugin vào dependencies của `buildscript`. Nếu `android/build.gradle` đã có cả hai, giữ nguyên các dòng đó.
+
+```groovy showLineNumbers title="android/build.gradle"
+buildscript {
+    ext.kotlin_version = '2.2.20'
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+```
+
+Sau đó áp dụng plugin vào module app. Đặt JVM target của Kotlin là 21, phiên bản Java mà Capacitor thiết lập cho module app:
+
+```groovy showLineNumbers title="android/app/build.gradle"
+
+apply plugin: 'org.jetbrains.kotlin.android'
+
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_21
+    }
+}
+```
+
+### Thêm thư viện Adapty UI
+
+Trong `android/app/build.gradle`, thêm `io.adapty:android-ui` vào khối `dependencies`, không cần chỉ định phiên bản. `@adapty/capacitor` sẽ tự thiết lập phiên bản. Nếu dùng phiên bản `android-ui` khác có thể làm hỏng các flow.
+
+```groovy showLineNumbers title="android/app/build.gradle"
+dependencies {
+    implementation 'io.adapty:android-ui'
+}
+```
+
+### Thiết lập Jetpack Compose \{#set-up-jetpack-compose\}
+
+Template Capacitor không [thiết lập Compose](https://developer.android.com/develop/ui/compose/setup-compose-dependencies-and-compiler) trong app module. Một Android `View` không cần thiết lập Compose. Để xây dựng native view dưới dạng composable, hãy thêm Compose compiler Gradle plugin vào dependencies của `buildscript`:
+
+```groovy showLineNumbers title="android/build.gradle"
+buildscript {
+    dependencies {
+        classpath "org.jetbrains.kotlin:compose-compiler-gradle-plugin:$kotlin_version"
+    }
+}
+```
+
+Sau đó áp dụng plugin vào module app và đặt `compose true` trong block `buildFeatures`:
+
+```groovy showLineNumbers title="android/app/build.gradle"
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
+
+android {
+    buildFeatures {
+        compose true
+    }
+}
+```
+
+Đối với Lottie view trên trang này, hãy thêm `com.airbnb.android:lottie-compose`.
+
+## Tạo view cho các phần tử tùy chỉnh \{#create-views-for-custom-elements\}
+
+Với mỗi Type, hãy tạo một native view cho iOS và Android, hoặc tái sử dụng view có sẵn trong code native của bạn. Các view sau đây thuộc Type `lottie_animation` dùng để phát một Lottie animation. View Android là một composable sử dụng thư viện `com.airbnb.android:lottie-compose`:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift"
+
+struct LottieElementView: View {
+    let animation: LottieAnimation?
+
+    var body: some View {
+        LottieView(animation: animation)
+            .resizable()
+            .looping()
+    }
+}
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin"
+
+@Composable
+fun LottieElement(animationFile: String) {
+    val composition by rememberLottieComposition(LottieCompositionSpec.Asset(animationFile))
+    LottieAnimation(
+        composition = composition,
+        iterations = LottieConstants.IterateForever,
+    )
+}
+```
+
+</TabItem>
+</Tabs>
+
+### Yêu cầu và các phương pháp tốt nhất \{#requirements-and-best-practices\}
+
+- **Kích thước**:
+  - **Padding và căn chỉnh**: Đảm bảo native view vừa khít với container bạn đã phân bổ trong Flow & Paywall Builder, trừ đi phần padding. Nếu view không chiếm toàn bộ diện tích, nó sẽ hiển thị ở góc trên bên trái của khu vực đó theo mặc định. Để di chuyển nó, hãy thay đổi căn chỉnh trong phần **Layout** của custom element.
+  - **Hug height**: Nếu chiều cao của custom element được đặt thành **Hug**, một view kéo giãn để lấp đầy không gian có sẵn (như bản đồ hoặc lazy list) sẽ bị thu gọn hoặc giãn ra đến chiều cao của màn hình. Hãy đặt [chiều cao **Fixed**](flow-custom-elements#add-and-configure) cho custom element thay thế.
+- **Theme**: Native view không kế thừa các style của web app. Hãy đặt màu sắc và font chữ trong native code.
+- **Flow actions**: Native view không thể chạy các flow action, chẳng hạn như chuyển sang màn hình tiếp theo. Element context có thể gửi tin nhắn đến flow, với `sendMessage` trên iOS và `send` trên Android, nhưng chúng được dành riêng cho các tính năng Flow & Paywall Builder trong tương lai. Hãy giữ các nút điều hướng, nút mua hàng và các nút khác có flow action bên ngoài custom element.
+- **Selectable elements**: Giữ custom element bên ngoài các thẻ sản phẩm và các [selectable elements](flow-selectable-elements) khác. Khi lựa chọn thay đổi, native view có thể mất trạng thái của nó.
+- **Xử lý điều hướng**: Khi người dùng chuyển sang màn hình tiếp theo, SDK xóa native view khỏi màn hình. Hãy dừng những gì view đã khởi động, chẳng hạn như camera session, player và location update:
+  - **SwiftUI view**: Sử dụng action `onDisappear`. Đối với tác vụ bất đồng bộ, sử dụng `.task`: SwiftUI hủy nó khi view biến mất.
+  - **Composable**: Sử dụng block `onDispose` của `DisposableEffect`. Đối với tác vụ bất đồng bộ, sử dụng `LaunchedEffect`: Compose hủy nó khi composable rời khỏi composition.
+  - **Android `View`**: Override `onDetachedFromWindow` trong subclass `View` của bạn, hoặc thêm `View.OnAttachStateChangeListener` vào `View`.
+
+  Khi người dùng quay lại, SDK sẽ gọi resolver một lần nữa và native view bắt đầu mà không có trạng thái của view trước đó. Trên Android, khi xoay màn hình, SDK sẽ gọi lại resolver.
+- **UIKit views**: Trên iOS, hãy bọc chúng trong `UIViewRepresentable`.
+- **Carousels**: Trên Android, trong một [carousel](builder-containers#carousel), các native view trên tất cả các slide đều hoạt động khi màn hình đang mở, không chỉ view trên slide đang hiển thị. Không đặt camera preview và player có âm thanh vào carousel.
+
+## Viết resolver để khớp các phần tử tùy chỉnh với view \{#write-a-resolver-to-match-custom-elements-and-views\}
+
+Viết một resolver cho từng nền tảng. Resolver nhận vào Type và ID của một phần tử tùy chỉnh, rồi trả về native view tương ứng.
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+Để viết một resolver, hãy tạo một kiểu tuân theo protocol `AdaptyUICustomElementsResolver` và implement phương thức `view(forType:id:context:)`.
+
+Với Type `lottie_animation`, resolver sau đây trả về `LottieElementView`. ID là tên file animation trong app bundle, chẳng hạn như `welcome_wave`:
+
+```swift showLineNumbers title="Swift"
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "lottie_animation":
+            // the ID names the animation file, such as welcome_wave.json
+            guard let animation = LottieAnimation.named(id) else {
+                return nil // no file for this ID: show the fallback
+            }
+            return AnyView(LottieElementView(animation: animation))
+        default:
+            return nil
+        }
+    }
+}
+```
+
+Trong trường hợp `default`, trả về `nil`.
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+Để viết một resolver, hãy implement interface `AdaptyCustomElementsResolver`. Phương thức `resolve` của nó trả về view tương ứng theo một trong các dạng sau:
+
+- **Một composable**: Trả về `AdaptyCustomElementContent.compose`, với composable bên trong lambda của nó.
+- **Một Android `View`**: Trả về `AdaptyCustomElementContent.view`, với một hàm tạo `View`. Đặt tên cho tham số `factory`: `AdaptyCustomElementContent.view(factory = { context, _ -> ChartView(context) })`. Nếu không đặt tên, Kotlin sẽ truyền một trailing lambda vào tham số `update` tùy chọn, và code sẽ không biên dịch được.
+
+Với kiểu `lottie_animation`, resolver sau đây trả về [Lottie view](#create-views-for-custom-elements). ID đặt tên cho file animation trong thư mục `assets`, `android/app/src/main/assets`, ví dụ `welcome_wave` cho `welcome_wave.json`:
+
+```kotlin showLineNumbers title="Kotlin"
+
+class CustomElementsResolver(context: Context) : AdaptyCustomElementsResolver {
+    // the animation files in the assets folder, listed once
+    private val animationFiles: Set<String> = try {
+        context.assets.list("").orEmpty().toSet()
+    } catch (e: IOException) {
+        emptySet() // no list of files: every Lottie element shows the fallback
+    }
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        when (type) {
+            "lottie_animation" -> {
+                // the ID names the animation file, such as welcome_wave.json
+                val file = "$id.json"
+                if (file in animationFiles) {
+                    AdaptyCustomElementContent.compose { LottieElement(file) }
+                } else {
+                    null // no file for this ID: show the fallback
+                }
+            }
+            else -> null
+        }
+}
+```
+
+Đối với bất kỳ Type nào khác, hãy trả về `null`.
+
+</TabItem>
+</Tabs>
+
+Nếu bạn [thêm một phần tử tùy chỉnh với Type mới](flow-custom-elements#what-changes-require-an-app-release) sau khi phát hành ứng dụng, người dùng của phiên bản đã phát hành sẽ thấy paywall dự phòng của nó.
+
+Resolver có các yêu cầu sau:
+
+- **Dữ liệu mạng và player**: Lưu dữ liệu mạng và player trong trạng thái của [native view](#create-views-for-custom-elements), không lưu trong resolver. SDK gọi resolver nhiều lần trong khi màn hình đang mở. Code trong resolver chạy lại mỗi lần được gọi, nên các yêu cầu mạng sẽ lặp lại và player sẽ bắt đầu lại từ đầu. Native view giữ nguyên trạng thái giữa các lần gọi đó, vì vậy dữ liệu chỉ tải một lần và player tiếp tục phát. Tạo player, session và yêu cầu mạng bên trong native view:
+  - **SwiftUI view**: Tạo player, session và yêu cầu mạng trong `.task` hoặc một `@StateObject`, không tạo trong giá trị khởi tạo của thuộc tính `@State`. Swift đánh giá lại giá trị khởi tạo đó mỗi khi resolver tạo view.
+  - **Composable**: Tạo player và session trong `remember`, và yêu cầu mạng trong `LaunchedEffect`.
+  - **Android `View`**: Tạo player, session và yêu cầu mạng trong `onAttachedToWindow`.
+- **Một native view cho mỗi custom element**: Một số native view thay đổi trong khi màn hình đang mở, ví dụ khi dữ liệu của chúng tải xong hoặc khi người dùng nhấn vào. Hãy triển khai logic này trong native view, không triển khai trong resolver. Nếu resolver trả về một view khác cho cùng một custom element, view đó sẽ mất trạng thái.
+- **Một `View` mới cho mỗi lần hiển thị**: Trên Android, tạo một `View` mới trong mỗi lần gọi `factory`. SDK gọi `factory` mỗi khi custom element xuất hiện, chẳng hạn khi màn hình mở, khi người dùng quay lại màn hình, hoặc sau khi xoay màn hình.
+- **Dữ liệu ứng dụng**: Lưu trữ một đối tượng chứa dữ liệu, chẳng hạn như `ObservableObject` hoặc `StateFlow` với [chuỗi ngày liên tiếp](capacitor-custom-element-lottie-animation), trong một thuộc tính của resolver. Truyền đối tượng đó vào native view và quan sát đối tượng đó ở đó:
+  - **SwiftUI view**: Quan sát `ObservableObject` bằng `@ObservedObject`.
+  - **Composable**: Thu thập `StateFlow` bằng `collectAsState`, hoặc quan sát `LiveData` bằng `observeAsState`.
+  - **Android `View`**: Quan sát đối tượng trong `onAttachedToWindow` và dừng trong `onDetachedFromWindow`.
+
+  Giá trị bạn sao chép vào resolver, chẳng hạn như số ngày streak, sẽ giữ nguyên như lúc bạn tạo resolver đó. Nếu code JavaScript của bạn có dữ liệu, chẳng hạn như streak hàng ngày, hãy gửi từng giá trị mới sang code native thông qua <InlineTooltip tooltip="Capacitor plugin cục bộ">[iOS](https://capacitorjs.com/docs/ios/custom-code), [Android](https://capacitorjs.com/docs/android/custom-code)</InlineTooltip>, và cập nhật object ở đó.
+
+### Đặt điều kiện cho nội dung dự phòng \{#set-conditions-for-fallback-content\}
+
+<FlowCustomElementsFallbackConditions />
+
+Đối với một quyền, chỉ trả về no view khi người dùng đã từ chối quyền đó trước khi màn hình mở ra. Trên Android, `ContextCompat.checkSelfPermission` trả về cùng một giá trị, `PERMISSION_DENIED`, trong hai trường hợp: trước khi ứng dụng lần đầu yêu cầu người dùng cấp quyền, và sau khi người dùng từ chối. Để phân biệt hai trường hợp này, hãy lưu kết quả của yêu cầu quyền và đọc kết quả đã lưu trong resolver. Nếu ứng dụng chưa yêu cầu quyền, hãy trả về native view và yêu cầu quyền bên trong view đó. Ví dụ: yêu cầu quyền truy cập vị trí khi [map view](capacitor-custom-element-map#3-match-the-map-to-the-custom-element) xuất hiện, và hiển thị bản đồ ngay khi người dùng cấp quyền. Nếu bạn trả về no view và người dùng cấp quyền sau đó, họ vẫn thấy fallback. Một thay đổi về quyền không khiến SDK gọi lại resolver. Native view chỉ xuất hiện sau khi SDK gọi lại resolver, chẳng hạn khi người dùng quay lại màn hình.
+
+## Truyền resolver vào SDK \{#pass-the-resolver-to-the-sdk\}
+
+Thiết lập resolver một lần cho mỗi nền tảng, khi khởi động ứng dụng. SDK sẽ gọi resolver này trong mọi flow. Người dùng sẽ thấy các native view của bạn trong các flow và A/B test mới mà không cần phát hành lại ứng dụng. Các view này vẫn hiển thị dữ liệu riêng của từng người dùng, chẳng hạn như [chuỗi ngày liên tiếp](capacitor-custom-element-lottie-animation), vì chúng đọc dữ liệu đó từ ứng dụng của bạn.
+
+### iOS
+
+Trong `AppDelegate.swift`, import `AdaptyUI`, và gọi `AdaptyUI.setCustomElementsResolver(_:)` trong phương thức `application(_:didFinishLaunchingWithOptions:)`. Các dòng được đánh dấu cho thấy những gì cần thêm. Giữ nguyên phần còn lại của class `AppDelegate`:
+
+```swift showLineNumbers title="ios/App/App/AppDelegate.swift" {1,11}
+
+@UIApplicationMain
+class AppDelegate: UIResponder, UIApplicationDelegate {
+
+    var window: UIWindow?
+
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        AdaptyUI.setCustomElementsResolver(CustomElementsResolver())
+        // the rest of your launch code
+        return true
+    }
+}
+```
+
+Nếu bạn viết resolver trong `AppDelegate.swift`, hãy nhớ import thêm `AdaptyUIBuilder` ở đó.
+
+### Android
+
+Template Capacitor không có class `Application`. Hãy tạo `MainApplication.kt` trong thư mục chứa `MainActivity.java`, và gọi `AdaptyUI.setCustomElementsResolver` trong method `onCreate` của nó. Nếu ứng dụng của bạn đã có class `Application`, hãy thêm các dòng được đánh dấu vào đó:
+
+```kotlin showLineNumbers title="MainApplication.kt" {4,9}
+package com.example.app
+
+
+class MainApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        AdaptyUI.setCustomElementsResolver(CustomElementsResolver(this))
+    }
+}
+```
+
+Để Android tạo class này khi khởi động ứng dụng, trong `android/app/src/main/AndroidManifest.xml`, hãy đặt thuộc tính `android:name` của phần tử `application` thành `.MainApplication`. Giữ nguyên các thuộc tính còn lại:
+
+```xml showLineNumbers title="android/app/src/main/AndroidManifest.xml" {2}
+<application
+    android:name=".MainApplication"
+    android:allowBackup="true"
+    android:icon="@mipmap/ic_launcher">
+```
+
+:::tip
+Để hiển thị cùng một view cho mọi phần tử tùy chỉnh của một Type, hãy truyền vào một map gồm các Type và view thay vì dùng resolver. Với map, bạn viết ít code hơn so với resolver, nhưng không thể [đặt điều kiện cho nội dung dự phòng](#set-conditions-for-fallback-content).
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+Map là một dictionary `[String: AdaptyUICustomElementBuilder]`. Nếu bạn viết map này trong `AppDelegate.swift`, hãy import `Lottie` ở đó.
+
+```swift showLineNumbers title="Swift"
+AdaptyUI.setCustomElementsResolver([
+    "lottie_animation": .init { _, id, _ in LottieElementView(animation: .named(id)) },
+])
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+Truyền map vào `AdaptyCustomElementsResolver.of`:
+
+```kotlin showLineNumbers title="Kotlin"
+val appWideViews = mapOf(
+    "confetti" to AdaptyCustomElementContent.compose { LottieElement("confetti.json") },
+)
+AdaptyUI.setCustomElementsResolver(AdaptyCustomElementsResolver.of(appWideViews))
+```
+
+</TabItem>
+</Tabs>
+:::
+
+Bạn không thể gắn resolver vào một flow. Để hiển thị dữ liệu từ mã JavaScript, hãy gửi dữ liệu đó sang mã native trước khi flow mở. Sau đó đọc dữ liệu trong resolver. Ví dụ: một paywall hiển thị [cân nặng mà người dùng đã nhập trong một flow trước đó](capacitor-custom-element-interactive-chart).
+
+## Kiểm tra trên thiết bị thực \{#test-on-a-device\}
+
+Flow & Paywall Builder không thể chạy mã ứng dụng của bạn, vì vậy canvas chỉ hiển thị fallback. Lỗi trong native view có thể làm crash ứng dụng. Trước khi phát hành, hãy kiểm tra mọi màn hình có custom element trên thiết bị iOS và thiết bị Android:
+
+1. Để xem phiên bản đã xuất bản mới nhất của mỗi flow thay vì phiên bản được lưu trong cache, hãy đăng ký thiết bị làm [thiết bị test](test-devices).
+2. Để xem các cảnh báo của Adapty SDK trong Xcode console và trong Logcat, hãy đặt [log level](sdk-installation-capacitor#logging) thành `warn` hoặc mức chi tiết hơn.
+3. Trên thiết bị, chạy bản build có chứa resolver. Mở từng màn hình có custom element và xác nhận rằng native view xuất hiện và vừa khít với custom element. Nếu view có thể cuộn hoặc phản hồi thao tác kéo, hãy kiểm tra các thao tác đó.
+4. Nếu fallback xuất hiện thay vì native view, hãy tìm cảnh báo này trong Xcode console hoặc trong Logcat: `custom element <type>:<id> is not served by a resolver`. Sau đó xác nhận rằng:
+   - Type và ID trong cảnh báo khớp với những gì trong code của bạn, từng chữ một.
+   - Ứng dụng của bạn có file, dữ liệu hoặc quyền mà view cần.
+   - Ứng dụng của bạn đặt resolver khi khởi chạy: trong class `AppDelegate` trên iOS, và trên Android, trong class `Application` mà `AndroidManifest.xml` chỉ định.
+
+   Se cảnh báo không hiển thị, hãy xác minh rằng ứng dụng sử dụng Adapty Capacitor SDK 4.4 trở lên.
+5. Trên Android, nếu custom element vẫn trống, hãy tìm một trong các cảnh báo sau trong Logcat:
+   - `custom element <type>:<id> is not served by a resolver`: Custom element không có nội dung dự phòng và không có resolver nào trả về view cho nó. Hãy xác minh từng mục ở bước 4.
+   - `content does not report its size`: Composable không có chiều cao riêng. Hãy đặt chiều cao [**Fixed** (cố định)](flow-custom-elements#add-and-configure) cho custom element.
+
+   The SDK chỉ ghi lại cảnh báo kích thước cho các composable. Nếu một `View` Android vẫn trống mà không có cảnh báo, hãy đặt chiều cao **Fixed** cho phần tử tùy chỉnh đó.
+6. Để xem trước paywall dự phòng, không trả về view nào cho Type và mở lại màn hình.
+
+## Ví dụ \{#examples\}
+
+Mỗi ví dụ thực tế đều có phần hướng dẫn thiết lập trong builder và code cho ứng dụng của bạn:
+
+- [Hiển thị tiến trình người dùng bằng hoạt ảnh Lottie](capacitor-custom-element-lottie-animation): Một vòng tròn tăng dần khi streak phát triển.
+- [Hiển thị biểu đồ mục tiêu cân nặng tương tác trong paywall](capacitor-custom-element-interactive-chart): Biểu đồ mục tiêu cân nặng, trong flow paywall tiếp nối sau flow onboarding.
+- [Hiển thị các địa điểm gần đây trên bản đồ trong một flow](capacitor-custom-element-map): Bản đồ các trung tâm thể dục gần từng người dùng.

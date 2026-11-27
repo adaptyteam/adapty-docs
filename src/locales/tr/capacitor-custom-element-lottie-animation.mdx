@@ -1,0 +1,320 @@
+---
+title: "Lottie animasyonuyla kullanıcı ilerlemesini göster"
+description: "Günlük seri gibi her kullanıcının ilerlemesini bir flow ekranında Lottie animasyonu olarak görüntüleyin."
+metadataTitle: "Lottie animasyonuyla kullanıcı ilerlemesini göster | Capacitor SDK | Adapty Dokümanları"
+---
+
+<CustomElementLottieIntro />
+
+## Başlamadan önce \{#before-you-start\}
+
+- Uygulamanızı Adapty Capacitor SDK 4.4 veya sonraki bir sürüme güncelleyin. Daha eski SDK sürümleri, her özel element için [yedek içeriği](flow-custom-elements#set-fallback-content) gösterir.
+- Uygulamanızı flow'ları [getirmek](capacitor-get-pb-paywalls) ve [görüntülemek](capacitor-present-paywalls) için yapılandırın.
+- Uygulamanızın yerel kodunu, [Capacitor kılavuzunda](capacitor-flow-custom-elements#before-you-start) açıklandığı gibi özel elementler için yapılandırın.
+- iOS'ta, Lottie'yi Xcode'da Swift Package Manager aracılığıyla `https://github.com/airbnb/lottie-spm.git` adresinden uygulama hedefinize ekleyin.
+- Android'de, Jetpack Compose dahil olmak üzere [Android projenizi yapılandırın](capacitor-flow-custom-elements#set-up-your-android-project). Bu tarifte animasyon görünümü bir composable'dır. Compose Foundation'ı uygulamanıza Gradle ile `androidx.compose.foundation:foundation` bağımlılığından, versiyon belirtmeden ekleyin; versiyonu `io.adapty:android-ui`'nin Compose BOM'u belirler. Jetpack Compose için Lottie'yi `com.airbnb.android:lottie-compose` bağımlılığından ekleyin.
+
+<CustomElementLottieAnimationRequirements />
+
+## 1. Özel öğeyi ekrana ekleyin \{#1-add-the-custom-element-to-the-screen\}
+
+<CustomElementLottieBuilderSetup />
+
+## 2. Animasyon dosyasını uygulamanıza ekleyin \{#2-add-the-animation-file-to-your-app\}
+
+Yerel kodunuz, animasyon dosyasını web uygulamanızın assets klasöründen değil, iOS ve Android projelerinizden okur:
+
+- **iOS**: Dosyayı Xcode'da uygulama hedefine ekleyin.
+- **Android**: Dosyayı `android/app/src/main/assets` dizinine, yani Android uygulama modülünüzün `assets` klasörüne koyun. Dosyayı bir alt klasöre değil, bu klasörün kök dizinine yerleştirin.
+
+`.json` uzantısı olmadan dosya adı, özel öğenin ID'siyle eşleşmelidir; örneğin `streak_ring` için `streak_ring.json`.
+
+## 3. Animasyon görünümünü oluşturun \{#create-the-animation-view\}
+
+Streak için bir model ve animasyonu oynatacak bir görünüm oluşturun. Uygulamanız streak değiştiğinde modeli günceller. Görünüm modeli okuduğundan, ekran açıldığında halka mevcut streak'i gösterir:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift"
+
+// The streak that your app keeps up to date
+@MainActor
+final class StreakStore: ObservableObject {
+    @Published var currentStreak = 0 // days in a row
+}
+
+struct StreakRingView: View {
+    let animation: LottieAnimation
+    @ObservedObject var streakStore: StreakStore
+
+    // 7 days fill the ring: from 0 for an empty ring to 1 for a full one
+    private var progress: AnimationProgressTime {
+        min(AnimationProgressTime(streakStore.currentStreak) / 7, 1)
+    }
+
+    var body: some View {
+        LottieView(animation: animation)
+            .resizable()
+            .playing(.fromProgress(0, toProgress: progress, loopMode: .playOnce))
+    }
+}
+```
+
+`.playing(.fromProgress(0, toProgress: progress, loopMode: .playOnce))` halkayı bir kez, boştan `progress` değerine kadar doldurur.
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin"
+
+// the streak that your app keeps up to date
+class StreakStore {
+    val currentStreak = MutableStateFlow(0) // days in a row
+}
+
+@Composable
+fun StreakRing(animationFile: String, streakStore: StreakStore) {
+    val composition by rememberLottieComposition(LottieCompositionSpec.Asset(animationFile))
+    val streak by streakStore.currentStreak.collectAsState()
+
+    // 7 days fill the ring: from 0 for an empty ring to 1 for a full one
+    val progress = minOf(streak / 7f, 1f)
+
+    LottieAnimation(
+        composition = composition,
+        modifier = Modifier.fillMaxSize(), // scale the animation to fit the custom element
+        clipSpec = LottieClipSpec.Progress(0f, progress),
+    )
+}
+```
+
+`clipSpec = LottieClipSpec.Progress(0f, progress)` halkayı baştan `progress` değerine kadar doldurur.
+
+</TabItem>
+</Tabs>
+
+## 4. Animasyonu özel öğeyle eşleştirin \{#match-the-animation-to-the-custom-element\}
+
+[Uygulama genelindeki resolver'ınıza](capacitor-flow-custom-elements#pass-the-resolver-to-the-sdk) streak modeli için bir özellik ekleyin. Ardından `lottie_animation` Türü ve `streak_ring` ID'si için animasyon görünümünü döndürün. Vurgulanan satırlar neyin ekleneceğini veya değiştirileceğini gösterir. Uygulamanızda henüz uygulama genelinde bir [resolver](capacitor-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) yoksa kodun tamamını kopyalayın:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift" {6,14-18}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let streakStore: StreakStore
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "lottie_animation" where id == "streak_ring":
+            guard let animation = LottieAnimation.named(id) else {
+                return nil // no animation file: show the fallback
+            }
+            return AnyView(StreakRingView(animation: animation, streakStore: streakStore))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+`streak_ring` durumunu diğer `lottie_animation` durumlarından önce yerleştirin; çünkü Swift yalnızca eşleşen ilk durumu çalıştırır. Uygulama bundle'ında ilgili ID için dosya yoksa, çözümleyici `nil` döndürür ve kullanıcılar yedek içeriği görür.
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin" {8,22-28}
+
+class CustomElementsResolver(
+    context: Context,
+    private val streakStore: StreakStore,
+) : AdaptyCustomElementsResolver {
+    // the animation files in the assets folder, listed once
+    private val animationFiles: Set<String> = try {
+        context.assets.list("").orEmpty().toSet()
+    } catch (e: IOException) {
+        emptySet() // no list of files: every Lottie element shows the fallback
+    }
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        when (type) {
+            "lottie_animation" -> {
+                // the ID names the animation file, such as streak_ring.json
+                val file = "$id.json"
+                when {
+                    file !in animationFiles -> null // no file for this ID: show the fallback
+                    id == "streak_ring" ->
+                        AdaptyCustomElementContent.compose { StreakRing(file, streakStore) }
+                    // the other animations of your resolver
+                    else -> null
+                }
+            }
+            // the other Types of your resolver
+            else -> null
+        }
+}
+```
+
+`assets` klasöründe ilgili ID için dosya yoksa, resolver `null` döner ve kullanıcılar yedek içeriği görür. Resolver'ınız zaten [her animasyon dosyası için bir view döndürüyorsa](capacitor-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views), ID `streak_ring` olmadığında `null` yerine o view'ı döndürün. Bu sayede kullanıcılar diğer `lottie_animation` custom element'lerinin animasyonlarını görmeye devam eder.
+
+</TabItem>
+</Tabs>
+
+Streak modeliyle resolver'ı oluşturun ve uygulama başlangıcında uygulama genelinde resolver olarak ayarlayın:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+In `AppDelegate.swift`, add a property for the streak model, and set the resolver in the `application(_:didFinishLaunchingWithOptions:)` method. The highlighted lines show what to add. Keep the rest of the `AppDelegate` class as it is:
+
+```swift showLineNumbers title="ios/App/App/AppDelegate.swift" {1,9-10,13}
+
+@UIApplicationMain
+class AppDelegate: UIResponder, UIApplicationDelegate {
+
+    var window: UIWindow?
+    // the streak model that your app updates
+    let streakStore = StreakStore()
+
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        AdaptyUI.setCustomElementsResolver(CustomElementsResolver(streakStore: streakStore))
+        // the rest of your launch code
+        return true
+    }
+}
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+In `MainApplication.kt`, add a property for the streak model, and set the resolver in the `onCreate` method. The highlighted lines show what to add. Keep the rest of the `MainApplication` class as it is:
+
+```kotlin showLineNumbers title="MainApplication.kt" {7-8,12}
+package com.example.app
+
+
+class MainApplication : Application() {
+    // the streak model that your app updates
+    val streakStore = StreakStore()
+
+    override fun onCreate() {
+        super.onCreate()
+        AdaptyUI.setCustomElementsResolver(CustomElementsResolver(this, streakStore))
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+## 5. JavaScript kodunuzdan streak'i gönderin \{#send-the-streak-from-your-javascript-code\}
+
+JavaScript kodunuz streak'i tutar ve native view'lar bunu streak modelinden okur. Modeli güncellemek için streak'i <InlineTooltip tooltip="yerel Capacitor eklentisi">[iOS](https://capacitorjs.com/docs/ios/custom-code), [Android](https://capacitorjs.com/docs/android/custom-code)</InlineTooltip> aracılığıyla native kodunuza gönderin. Eklentinin her platform için bir implementasyonu ve bir JavaScript arayüzü vardır.
+
+Eklentiyi her platform için uygulayın:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+`App` hedefinde Xcode'da plugin'i oluşturun. Bu plugin, `AppDelegate` sınıfınızdaki streak modelini günceller:
+
+```swift showLineNumbers title="StreakStorePlugin.swift"
+
+@objc(StreakStorePlugin)
+public class StreakStorePlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "StreakStorePlugin"
+    public let jsName = "StreakStore"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "setStreak", returnType: CAPPluginReturnPromise)
+    ]
+
+    @objc func setStreak(_ call: CAPPluginCall) {
+        let days = call.getInt("days") ?? 0
+        Task { @MainActor in
+            (UIApplication.shared.delegate as? AppDelegate)?.streakStore.currentStreak = days
+        }
+        call.resolve()
+    }
+}
+```
+
+`CAPBridgeViewController` öğesinin bir alt sınıfını oluşturun ve `capacitorDidLoad` metodunda eklentiyi kaydedin. Uygulamanızın zaten `CAPBridgeViewController` alt sınıfı varsa, eklentiyi oraya kaydedin:
+
+```swift showLineNumbers title="MyViewController.swift"
+
+class MyViewController: CAPBridgeViewController {
+    override open func capacitorDidLoad() {
+        bridge?.registerPluginInstance(StreakStorePlugin())
+    }
+}
+```
+
+Uygulamanın bu alt sınıfı kullanması için `SceneDelegate.swift` dosyasında `CAPBridgeViewController()` ifadesini `MyViewController()` ile değiştirin. Projenizde `SceneDelegate.swift` yoksa, **Bridge View Controller**'ın özel sınıfını `Main.storyboard` içinde `MyViewController` olarak ayarlayın; ayrıntılar için [Custom ViewController](https://capacitorjs.com/docs/ios/viewcontroller) sayfasına bakın.
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+`MainActivity.java` dosyasının bulunduğu klasörde eklentiyi oluşturun. Bu eklenti, `MainApplication` sınıfınızdaki streak modelini günceller:
+
+```kotlin showLineNumbers title="StreakStorePlugin.kt"
+package com.example.app
+
+
+@CapacitorPlugin(name = "StreakStore")
+class StreakStorePlugin : Plugin() {
+    @PluginMethod
+    fun setStreak(call: PluginCall) {
+        val app = context.applicationContext as MainApplication
+        app.streakStore.currentStreak.value = call.getInt("days") ?: 0
+        call.resolve()
+    }
+}
+```
+
+Eklentiyi kaydetmek için `MainActivity.java` dosyasında `super.onCreate` çağrısından önce `registerPlugin` metodunu çağırın. Eklenmesi gereken satırlar vurgulanmıştır:
+
+```java showLineNumbers title="MainActivity.java" {3,7-11}
+package com.example.app;
+
+
+public class MainActivity extends BridgeActivity {
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(StreakStorePlugin.class);
+        super.onCreate(savedInstanceState);
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+JavaScript kodunuzda eklentiyi kaydedin. Ardından uygulamanın başlangıcında ve streak her değiştiğinde streak'i gönderin:
+
+```typescript showLineNumbers title="sendStreak.ts"
+
+interface StreakStorePlugin {
+  setStreak(options: { days: number }): Promise<void>;
+}
+
+// the name matches the jsName on iOS and the plugin name on Android
+const StreakStore = registerPlugin<StreakStorePlugin>('StreakStore');
+
+// call at app launch, and each time the streak changes
+export async function sendStreak(days: number) {
+  await StreakStore.setStreak({ days });
+}
+```
+
+## 6. Cihazda test etme \{#test-on-a-device\}
+
+<CustomElementLottieTest />
+
+Animasyon yerine neden yedek içeriğin göründüğünü öğrenmek için Capacitor kılavuzunun [Cihazda test etme](capacitor-flow-custom-elements#test-on-a-device) bölümündeki talimatları izleyin.

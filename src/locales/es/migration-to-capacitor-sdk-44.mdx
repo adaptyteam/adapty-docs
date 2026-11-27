@@ -1,0 +1,64 @@
+---
+title: "Migrar el SDK de Adapty Capacitor a v4.4"
+description: "Migra al SDK de Adapty Capacitor v4.4: reemplaza ambos archivos de respaldo y gestiona los nuevos errores de flow en iOS y Android."
+metadataTitle: "Migración al SDK de Adapty Capacitor v4.4 | Documentación de Adapty"
+---
+
+Adapty Capacitor SDK 4.4 cambia el formato del archivo de respaldo, requiere iOS 16 para los flows y reporta errores de scripts de flows a tu app en Android. En la versión 4.4, `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString` y `AdaptySubscription.billingPlan` ya no son opcionales en TypeScript. Para actualizar tu app a la versión 4.4, instala el último paquete `@adapty/capacitor`, y reemplaza ambos archivos de respaldo en el mismo build. Las versiones anteriores del SDK rechazarán los nuevos archivos. A continuación, revisa los demás cambios en esta guía.
+
+Si todavía usas la versión 4.2 o anterior, empieza por [Migrar a la v4.3](migration-to-capacitor-sdk-43) y luego sigue esta guía.
+
+:::warning
+El formato del archivo de respaldo cambió en la versión 4.4, y el compilador no puede detectar un archivo de respaldo para el SDK 4.1–4.3. Sin los [nuevos archivos de respaldo](#replace-the-fallback-files), cada placement pierde su paywall de respaldo.
+:::
+
+## Referencia rápida \{#quick-reference\}
+
+| v4.3 | v4.4 |
+|---|---|
+| Archivos de respaldo descargados para 4.1–4.3 | Nuevo formato de archivo de respaldo; descarga ambos archivos de nuevo |
+| Los flows se abren en iOS 15 | Los flows requieren iOS 16 |
+| En Android, el SDK solo registra errores de script de flow | Llegan a `onError` como `jsException` |
+| `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString` y `AdaptySubscription.billingPlan` son opcionales | Son obligatorios |
+
+## Instalación \{#installation\}
+
+Actualiza el paquete `@adapty/capacitor` y sincroniza los proyectos nativos:
+
+```bash showLineNumbers
+npm install @adapty/capacitor@latest
+npx cap sync
+```
+
+Los requisitos no han cambiado: **iOS 15.0** y **Capacitor 8**. Los flows son la excepción: consulta [Los flows requieren iOS 16](#flows-require-ios-16). Para la configuración completa, consulta [Instalar el SDK de Adapty](sdk-installation-capacitor).
+
+## Reemplaza los archivos de respaldo \{#replace-the-fallback-files\}
+
+Para volver a descargar los [archivos de respaldo](capacitor-use-fallback-paywalls), en **[Placements](https://app.adapty.io/placements)**, haz clic en **Fallbacks** > **Download iOS Fallback**. En la fila **Adapty SDK v4.4.0 and higher**, haz clic en **Download**. Repite el proceso con **Download Android Fallback**.
+
+Los archivos descargados se llaman `ios_4_4_0_fallback.json` y `android_4_4_0_fallback.json`. Úsalos en lugar de tus archivos de respaldo para SDK 4.1–4.3, como se indica en [Usar paywalls de respaldo](capacitor-use-fallback-paywalls):
+
+- **iOS**: Añade el archivo a tu proyecto Xcode.
+- **Android**: Coloca el archivo en la carpeta del archivo de paywall de respaldo de Android para 4.1–4.3.
+
+Dale a cada archivo el nombre que tu app pasa a `adapty.setFallback`, o actualiza los nombres en esa llamada.
+
+Con un archivo de paywall de respaldo para SDK 4.1–4.3, `adapty.setFallback` lanza un `AdaptyError`. Para verificar los nuevos archivos, ejecuta la app en iOS y en Android, y asegúrate de que esta llamada no lance ningún error.
+
+## Los flows requieren iOS 16 \{#flows-require-ios-16\}
+
+A partir de la versión 4.4, los flows requieren iOS 16 o posterior. Otras funciones del SDK, como las compras y los paywalls personalizados, siguen funcionando en iOS 15.
+
+En iOS 15, `createFlowView` lanza un `AdaptyError` con el código `platformNotSupported`. Cuando tu app recibe este error, muestra tu propio contenido en lugar del flow, como un [paywall personalizado](capacitor-implement-paywalls-manually).
+
+## Los errores de script de flow llegan a `onError` en Android \{#flow-script-errors-reach-onerror-on-android\}
+
+En Android, el script de un flow puede lanzar una excepción mientras gestiona un evento del SDK. A partir de la versión 4.4, esta excepción llega al handler `onError` como un `AdaptyError` con el código `jsException`, igual que en iOS. Antes, el SDK solo la registraba en el log.
+
+Si no configuras `onError`, el flow se cierra al producirse este error. Para mantener el flow abierto, configura `onError` y devuelve `false` para este error.
+
+## Las propiedades de precio y suscripción son obligatorias \{#price-and-subscription-properties-are-required\}
+
+En TypeScript, `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString` y `AdaptySubscription.billingPlan` ya no son opcionales. Si tu código crea estos objetos, como mocks en pruebas, establece estas propiedades en ellos.
+
+A partir de la versión 4.4, cada suscripción tiene `billingPlan`: `up_front`, a menos que el usuario haya comprado un [plan de compromiso](set-up-12-month-commitment). Antes de la versión 4.4, solo las suscripciones de App Store tenían `billingPlan`.

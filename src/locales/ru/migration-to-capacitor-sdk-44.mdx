@@ -1,0 +1,64 @@
+---
+title: "Миграция Adapty Capacitor SDK на v4.4"
+description: "Миграция на Adapty Capacitor SDK v4.4: замените оба резервных файла и обработайте новые ошибки флоу на iOS и Android."
+metadataTitle: "Миграция на Adapty Capacitor SDK v4.4 | Документация Adapty"
+---
+
+Adapty Capacitor SDK 4.4 изменяет формат резервного файла пейвола, требует iOS 16 для флоу и сообщает вашему приложению об ошибках скриптов флоу на Android. В версии 4.4 `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString` и `AdaptySubscription.billingPlan` в TypeScript больше не являются необязательными. Чтобы обновить приложение до версии 4.4, установите последнюю версию пакета `@adapty/capacitor` и замените оба резервных файла в том же билде. Более ранние версии SDK не поддерживают новые файлы. Ознакомьтесь с остальными изменениями в этом гайде.
+
+Если вы используете версию 4.2 или более раннюю, сначала выполните [Миграцию на v4.3](migration-to-capacitor-sdk-43), а затем следуйте этому руководству.
+
+:::warning
+Формат резервного файла изменился в версии 4.4, и компилятор не может обнаружить резервный файл для SDK версий 4.1–4.3. Без [новых резервных файлов](#replace-the-fallback-files) каждый плейсмент лишится своего резервного пейвола.
+:::
+
+## Краткий справочник \{#quick-reference\}
+
+| v4.3 | v4.4 |
+|---|---|
+| Резервные файлы, скачанные для версий 4.1–4.3 | Новый формат резервного файла; скачайте оба файла заново |
+| Флоу открываются на iOS 15 | Флоу требуют iOS 16 |
+| На Android SDK только записывает ошибки скриптов флоу в лог | Они передаются в `onError` как `jsException` |
+| `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString` и `AdaptySubscription.billingPlan` опциональны | Они обязательны |
+
+## Установка \{#installation\}
+
+Обновите пакет `@adapty/capacitor` и синхронизируйте нативные проекты:
+
+```bash showLineNumbers
+npm install @adapty/capacitor@latest
+npx cap sync
+```
+
+Требования остались прежними: **iOS 15.0** и **Capacitor 8**. Флоу — исключение: см. [Флоу требуют iOS 16](#flows-require-ios-16). Полная инструкция по настройке — в разделе [Установка Adapty SDK](sdk-installation-capacitor).
+
+## Замена резервных файлов \{#replace-the-fallback-files\}
+
+Чтобы снова скачать [резервные файлы](capacitor-use-fallback-paywalls), в разделе **[Placements](https://app.adapty.io/placements)** нажмите **Fallbacks** > **Download iOS Fallback**. В строке **Adapty SDK v4.4.0 and higher** нажмите **Download**. Повторите то же самое для **Download Android Fallback**.
+
+Скачанные файлы называются `ios_4_4_0_fallback.json` и `android_4_4_0_fallback.json`. Используйте их вместо резервных файлов для SDK 4.1–4.3, как описано в разделе [Использование резервных пейволов](capacitor-use-fallback-paywalls):
+
+- **iOS**: Добавьте файл в ваш Xcode-проект.
+- **Android**: Поместите файл в папку для Android-файла резервного пейвола версий 4.1–4.3.
+
+Дайте каждому файлу имя, которое ваше приложение передаёт в `adapty.setFallback`, либо обновите имена в этом вызове.
+
+При использовании файла резервного пейвола для SDK 4.1–4.3 вызов `adapty.setFallback` выбрасывает `AdaptyError`. Чтобы проверить новые файлы, запустите приложение на iOS и на Android и убедитесь, что этот вызов не выбрасывает ошибок.
+
+## Флоу требуют iOS 16 \{#flows-require-ios-16\}
+
+Начиная с версии 4.4, флоу работают только на iOS 16 и выше. Остальные возможности SDK — покупки и кастомные пейволы — по-прежнему доступны на iOS 15.
+
+На iOS 15 `createFlowView` выбрасывает `AdaptyError` с кодом `platformNotSupported`. Когда приложение получает эту ошибку, покажите пользователю альтернативный контент — например, [кастомный пейвол](capacitor-implement-paywalls-manually).
+
+## Ошибки скрипта флоу теперь попадают в `onError` на Android \{#flow-script-errors-reach-onerror-on-android\}
+
+На Android скрипт флоу может выбросить исключение при обработке события SDK. Начиная с версии 4.4, это исключение передаётся в обработчик `onError` как `AdaptyError` с кодом `jsException` — так же, как на iOS. Раньше SDK только логировал его.
+
+Если `onError` не задан, флоу закрывается при этой ошибке. Чтобы флоу оставался открытым, задайте `onError` и возвращайте `false` для этой ошибки.
+
+## Свойства цены и подписки теперь обязательны \{#price-and-subscription-properties-are-required\}
+
+В TypeScript свойства `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString` и `AdaptySubscription.billingPlan` больше не являются необязательными. Если ваш код создаёт эти объекты (например, моки в тестах), задайте в них эти свойства.
+
+Начиная с версии 4.4, каждая подписка имеет `billingPlan`: `up_front`, если только пользователь не приобрёл [план с обязательством](set-up-12-month-commitment). До версии 4.4 `billingPlan` был только у подписок App Store.

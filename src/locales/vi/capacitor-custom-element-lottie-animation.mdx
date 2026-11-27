@@ -1,0 +1,320 @@
+---
+title: "Hiển thị tiến trình người dùng bằng hoạt ảnh Lottie"
+description: "Hiển thị tiến trình của từng người dùng, chẳng hạn như chuỗi ngày liên tiếp, dưới dạng hoạt ảnh Lottie trên màn hình flow."
+metadataTitle: "Hiển thị tiến trình người dùng bằng hoạt ảnh Lottie | Capacitor SDK | Tài liệu Adapty"
+---
+
+<CustomElementLottieIntro />
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+- Cập nhật ứng dụng lên Adapty Capacitor SDK 4.4 hoặc mới hơn. Các phiên bản SDK cũ hơn sẽ hiển thị [nội dung dự phòng](flow-custom-elements#set-fallback-content) cho mọi custom element.
+- Thiết lập ứng dụng để [tải](capacitor-get-pb-paywalls) và [hiển thị](capacitor-present-paywalls) flow.
+- Thiết lập native code trong ứng dụng cho custom element, theo [hướng dẫn Capacitor](capacitor-flow-custom-elements#before-you-start).
+- Trên iOS, thêm Lottie vào app target trong Xcode bằng Swift Package Manager, từ `https://github.com/airbnb/lottie-spm.git`.
+- Trên Android, [thiết lập Android project](capacitor-flow-custom-elements#set-up-your-android-project), bao gồm Jetpack Compose. Animation view trong recipe này là một composable. Thêm Compose Foundation vào ứng dụng bằng Gradle, từ `androidx.compose.foundation:foundation`, không cần chỉ định phiên bản. Compose BOM của `io.adapty:android-ui` sẽ tự thiết lập phiên bản. Thêm Lottie cho Jetpack Compose từ `com.airbnb.android:lottie-compose`.
+
+<CustomElementLottieAnimationRequirements />
+
+## 1. Thêm phần tử tùy chỉnh vào màn hình \{#1-add-the-custom-element-to-the-screen\}
+
+<CustomElementLottieBuilderSetup />
+
+## 2. Thêm file animation vào ứng dụng \{#add-the-animation-file-to-your-app\}
+
+Code native của bạn đọc file animation từ dự án iOS và Android, không phải từ assets của ứng dụng web:
+
+- **iOS**: Thêm file vào app target của bạn trong Xcode.
+- **Android**: Đặt file vào `android/app/src/main/assets`, thư mục `assets` của Android app module. Giữ file ở thư mục gốc, không đặt trong thư mục con.
+
+Tên file không có `.json` phải khớp với ID của custom element, ví dụ `streak_ring.json` tương ứng với `streak_ring`.
+
+## 3. Tạo animation view \{#create-the-animation-view\}
+
+Tạo một model cho streak và một view phát animation. App của bạn cập nhật model khi streak thay đổi. View đọc từ model, vì vậy vòng tròn sẽ hiển thị streak hiện tại khi màn hình mở ra:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift"
+
+// The streak that your app keeps up to date
+@MainActor
+final class StreakStore: ObservableObject {
+    @Published var currentStreak = 0 // days in a row
+}
+
+struct StreakRingView: View {
+    let animation: LottieAnimation
+    @ObservedObject var streakStore: StreakStore
+
+    // 7 days fill the ring: from 0 for an empty ring to 1 for a full one
+    private var progress: AnimationProgressTime {
+        min(AnimationProgressTime(streakStore.currentStreak) / 7, 1)
+    }
+
+    var body: some View {
+        LottieView(animation: animation)
+            .resizable()
+            .playing(.fromProgress(0, toProgress: progress, loopMode: .playOnce))
+    }
+}
+```
+
+`.playing(.fromProgress(0, toProgress: progress, loopMode: .playOnce))` lấp đầy vòng một lần, từ trống đến `progress`.
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin"
+
+// the streak that your app keeps up to date
+class StreakStore {
+    val currentStreak = MutableStateFlow(0) // days in a row
+}
+
+@Composable
+fun StreakRing(animationFile: String, streakStore: StreakStore) {
+    val composition by rememberLottieComposition(LottieCompositionSpec.Asset(animationFile))
+    val streak by streakStore.currentStreak.collectAsState()
+
+    // 7 days fill the ring: from 0 for an empty ring to 1 for a full one
+    val progress = minOf(streak / 7f, 1f)
+
+    LottieAnimation(
+        composition = composition,
+        modifier = Modifier.fillMaxSize(), // scale the animation to fit the custom element
+        clipSpec = LottieClipSpec.Progress(0f, progress),
+    )
+}
+```
+
+`clipSpec = LottieClipSpec.Progress(0f, progress)` lấp đầy vòng tròn một lần, từ trống đến `progress`.
+
+</TabItem>
+</Tabs>
+
+## 4. Khớp animation với phần tử tùy chỉnh \{#match-the-animation-to-the-custom-element\}
+
+Trong [resolver toàn ứng dụng](capacitor-flow-custom-elements#pass-the-resolver-to-the-sdk) của bạn, hãy thêm một thuộc tính cho model streak. Sau đó trả về animation view cho Type `lottie_animation` và ID `streak_ring`. Các dòng được highlight cho thấy những gì cần thêm hoặc thay đổi. Nếu ứng dụng của bạn chưa có [resolver](capacitor-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) toàn ứng dụng, hãy sao chép toàn bộ đoạn code:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift" {6,14-18}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let streakStore: StreakStore
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "lottie_animation" where id == "streak_ring":
+            guard let animation = LottieAnimation.named(id) else {
+                return nil // no animation file: show the fallback
+            }
+            return AnyView(StreakRingView(animation: animation, streakStore: streakStore))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+Put the `streak_ring` case before any other `lottie_animation` case, because Swift only runs the first case that matches. If the app bundle has no file for the ID, the resolver returns `nil`, and users see the fallback.
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin" {8,22-28}
+
+class CustomElementsResolver(
+    context: Context,
+    private val streakStore: StreakStore,
+) : AdaptyCustomElementsResolver {
+    // the animation files in the assets folder, listed once
+    private val animationFiles: Set<String> = try {
+        context.assets.list("").orEmpty().toSet()
+    } catch (e: IOException) {
+        emptySet() // no list of files: every Lottie element shows the fallback
+    }
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        when (type) {
+            "lottie_animation" -> {
+                // the ID names the animation file, such as streak_ring.json
+                val file = "$id.json"
+                when {
+                    file !in animationFiles -> null // no file for this ID: show the fallback
+                    id == "streak_ring" ->
+                        AdaptyCustomElementContent.compose { StreakRing(file, streakStore) }
+                    // the other animations of your resolver
+                    else -> null
+                }
+            }
+            // the other Types of your resolver
+            else -> null
+        }
+}
+```
+
+Nếu thư mục `assets` không có file nào cho ID đó, resolver sẽ trả về `null` và người dùng sẽ thấy phần dự phòng. Nếu resolver của bạn đã trả về [view cho mọi file animation](capacitor-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views), hãy trả về view đó thay vì `null` khi ID không phải là `streak_ring`. Nhờ vậy, người dùng vẫn thấy được animation của các custom element `lottie_animation` khác.
+
+</TabItem>
+</Tabs>
+
+Tạo resolver với streak model, và đặt nó làm resolver toàn ứng dụng khi khởi chạy:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+Trong `AppDelegate.swift`, thêm một thuộc tính cho streak model và đặt resolver trong phương thức `application(_:didFinishLaunchingWithOptions:)`. Các dòng được đánh dấu cho thấy những gì cần thêm. Giữ nguyên phần còn lại của class `AppDelegate`:
+
+```swift showLineNumbers title="ios/App/App/AppDelegate.swift" {1,9-10,13}
+
+@UIApplicationMain
+class AppDelegate: UIResponder, UIApplicationDelegate {
+
+    var window: UIWindow?
+    // the streak model that your app updates
+    let streakStore = StreakStore()
+
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        AdaptyUI.setCustomElementsResolver(CustomElementsResolver(streakStore: streakStore))
+        // the rest of your launch code
+        return true
+    }
+}
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+Trong `MainApplication.kt`, thêm một thuộc tính cho streak model, và đặt resolver trong phương thức `onCreate`. Các dòng được tô sáng cho thấy những gì cần thêm. Giữ nguyên phần còn lại của class `MainApplication`:
+
+```kotlin showLineNumbers title="MainApplication.kt" {7-8,12}
+package com.example.app
+
+
+class MainApplication : Application() {
+    // the streak model that your app updates
+    val streakStore = StreakStore()
+
+    override fun onCreate() {
+        super.onCreate()
+        AdaptyUI.setCustomElementsResolver(CustomElementsResolver(this, streakStore))
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+## 5. Gửi streak từ code JavaScript của bạn \{#send-the-streak-from-your-javascript-code\}
+
+Code JavaScript của bạn lưu trữ streak, và các native view đọc nó từ streak model. Để cập nhật model, hãy gửi streak đến native code thông qua một <InlineTooltip tooltip="Capacitor plugin cục bộ">[iOS](https://capacitorjs.com/docs/ios/custom-code), [Android](https://capacitorjs.com/docs/android/custom-code)</InlineTooltip>. Plugin có implementation cho từng nền tảng và một JavaScript interface.
+
+Implement plugin cho từng nền tảng:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+Trong target `App` trong Xcode, hãy tạo plugin. Plugin này cập nhật model streak trong class `AppDelegate` của bạn:
+
+```swift showLineNumbers title="StreakStorePlugin.swift"
+
+@objc(StreakStorePlugin)
+public class StreakStorePlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "StreakStorePlugin"
+    public let jsName = "StreakStore"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "setStreak", returnType: CAPPluginReturnPromise)
+    ]
+
+    @objc func setStreak(_ call: CAPPluginCall) {
+        let days = call.getInt("days") ?? 0
+        Task { @MainActor in
+            (UIApplication.shared.delegate as? AppDelegate)?.streakStore.currentStreak = days
+        }
+        call.resolve()
+    }
+}
+```
+
+Tạo một lớp con của `CAPBridgeViewController` để đăng ký plugin trong phương thức `capacitorDidLoad`. Nếu ứng dụng của bạn đã có lớp con của `CAPBridgeViewController`, hãy đăng ký plugin ở đó:
+
+```swift showLineNumbers title="MyViewController.swift"
+
+class MyViewController: CAPBridgeViewController {
+    override open func capacitorDidLoad() {
+        bridge?.registerPluginInstance(StreakStorePlugin())
+    }
+}
+```
+
+Để ứng dụng sử dụng subclass này, trong `SceneDelegate.swift`, hãy thay `CAPBridgeViewController()` bằng `MyViewController()`. Nếu dự án của bạn không có `SceneDelegate.swift`, hãy đặt custom class của **Bridge View Controller** trong `Main.storyboard` thành `MyViewController`, như hướng dẫn trong [Custom ViewController](https://capacitorjs.com/docs/ios/viewcontroller).
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+Trong thư mục chứa `MainActivity.java`, tạo plugin. Plugin này cập nhật streak model trong class `MainApplication` của bạn:
+
+```kotlin showLineNumbers title="StreakStorePlugin.kt"
+package com.example.app
+
+
+@CapacitorPlugin(name = "StreakStore")
+class StreakStorePlugin : Plugin() {
+    @PluginMethod
+    fun setStreak(call: PluginCall) {
+        val app = context.applicationContext as MainApplication
+        app.streakStore.currentStreak.value = call.getInt("days") ?: 0
+        call.resolve()
+    }
+}
+```
+
+Để đăng ký plugin, trong `MainActivity.java`, hãy gọi `registerPlugin` trước `super.onCreate`. Các dòng được tô sáng cho thấy những gì cần thêm:
+
+```java showLineNumbers title="MainActivity.java" {3,7-11}
+package com.example.app;
+
+
+public class MainActivity extends BridgeActivity {
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(StreakStorePlugin.class);
+        super.onCreate(savedInstanceState);
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+Trong mã JavaScript của bạn, hãy đăng ký plugin. Sau đó gửi streak khi khởi động ứng dụng và mỗi khi streak thay đổi:
+
+```typescript showLineNumbers title="sendStreak.ts"
+
+interface StreakStorePlugin {
+  setStreak(options: { days: number }): Promise<void>;
+}
+
+// the name matches the jsName on iOS and the plugin name on Android
+const StreakStore = registerPlugin<StreakStorePlugin>('StreakStore');
+
+// call at app launch, and each time the streak changes
+export async function sendStreak(days: number) {
+  await StreakStore.setStreak({ days });
+}
+```
+
+## 6. Kiểm tra trên thiết bị \{#test-on-a-device\}
+
+<CustomElementLottieTest />
+
+Để tìm hiểu lý do tại sao paywall dự phòng hiển thị thay vì animation, hãy làm theo hướng dẫn trong phần [Kiểm tra trên thiết bị](capacitor-flow-custom-elements#test-on-a-device) của hướng dẫn Capacitor.

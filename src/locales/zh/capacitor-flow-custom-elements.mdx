@@ -1,0 +1,347 @@
+---
+title: "使用 Capacitor SDK 显示自定义元素"
+description: "在流程的每个自定义元素中显示原生 iOS 或 Android 视图，并在设备上测试流程。"
+metadataTitle: "显示自定义元素 | Capacitor SDK | Adapty 文档"
+---
+
+<FlowCustomElementsIntro />
+
+## 开始之前 \{#before-you-start\}
+
+您需要：
+
+- **Adapty Capacitor SDK 4.4 或更高版本**：旧版本会对每个自定义元素显示备用内容。
+- **iOS 和 Android 的原生代码**：无法在自定义元素中显示来自 Web 应用的 HTML。iOS 请使用 Swift 编写代码，Android 请使用 Kotlin 编写代码。将 Swift 代码添加到 Xcode 中的 `App` target，将 Kotlin 代码添加到 `MainActivity.java` 所在的文件夹。每个新建的 Kotlin 文件开头需加上 `MainActivity.java` 中的 `package` 行。
+- **自定义元素的命名规则**：为每个原生视图指定一个 Type，例如 `lottie_animation`。Type 中只能使用小写字母、数字和下划线。若要区分同一 Type 的多个自定义元素，请为每个元素指定一个 ID，例如 `welcome_wave`。代码中的 Type 和 ID 必须与[流程与付费墙编辑工具](flow-custom-elements#add-and-configure)中设置的保持一致。
+
+在 iOS 和 Android 代码中使用相同的类型和 ID。除非你为每个平台单独设置[目标受众](audience)，否则 iOS 和 Android 用户看到的是同一套流程。
+
+## 配置你的 Android 项目 \{#set-up-your-android-project\}
+
+在你的 Android 项目中，添加 Kotlin 和 Adapty UI 库。如需将原生视图构建为可组合项，还需配置 Jetpack Compose。
+
+### 添加 Kotlin \{#add-kotlin\}
+
+Capacitor 模板不包含 Kotlin 配置。为了编译本页的 Kotlin 代码，请在 `android/build.gradle` 中将 `kotlin_version` 设置为 `2.2.20`（即 `@adapty/capacitor` 默认使用的 Kotlin 版本），然后在 `buildscript` 的 dependencies 中添加 Kotlin Gradle 插件。如果 `android/build.gradle` 中已有这两项配置，保留原有内容即可。
+
+```groovy showLineNumbers title="android/build.gradle"
+buildscript {
+    ext.kotlin_version = '2.2.20'
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+```
+
+然后将插件应用到 app 模块。将 Kotlin 的 JVM 目标版本设置为 21，即 Capacitor 为 app 模块设置的 Java 版本：
+
+```groovy showLineNumbers title="android/app/build.gradle"
+
+apply plugin: 'org.jetbrains.kotlin.android'
+
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_21
+    }
+}
+```
+
+### 添加 Adapty UI 库 \{#add-the-adapty-ui-library\}
+
+在 `android/app/build.gradle` 的 `dependencies` 代码块中添加 `io.adapty:android-ui`，不需要指定版本号。`@adapty/capacitor` 会自动设置版本。若使用不同版本的 `android-ui`，可能导致流程无法正常运行。
+
+```groovy showLineNumbers title="android/app/build.gradle"
+dependencies {
+    implementation 'io.adapty:android-ui'
+}
+```
+
+### 设置 Jetpack Compose \{#set-up-jetpack-compose\}
+
+Capacitor 模板不会在 app 模块中[设置 Compose](https://developer.android.com/develop/ui/compose/setup-compose-dependencies-and-compiler)。Android `View` 无需任何 Compose 配置。如需将原生视图构建为 composable，请将 Compose 编译器 Gradle 插件添加到 `buildscript` 依赖项中：
+
+```groovy showLineNumbers title="android/build.gradle"
+buildscript {
+    dependencies {
+        classpath "org.jetbrains.kotlin:compose-compiler-gradle-plugin:$kotlin_version"
+    }
+}
+```
+
+然后将插件应用到 app 模块，并在 `buildFeatures` 块中设置 `compose true`：
+
+```groovy showLineNumbers title="android/app/build.gradle"
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
+
+android {
+    buildFeatures {
+        compose true
+    }
+}
+```
+
+对于本页面的 Lottie 视图，还需添加 `com.airbnb.android:lottie-compose`。
+
+## 为自定义元素创建视图 \{#create-views-for-custom-elements\}
+
+对于每种 Type，分别为 iOS 和 Android 创建原生视图，或复用你现有原生代码中的视图。以下 `lottie_animation` Type 的视图用于播放 Lottie 动画。Android 视图是一个使用 `com.airbnb.android:lottie-compose` 库的可组合函数：
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift"
+
+struct LottieElementView: View {
+    let animation: LottieAnimation?
+
+    var body: some View {
+        LottieView(animation: animation)
+            .resizable()
+            .looping()
+    }
+}
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin"
+
+@Composable
+fun LottieElement(animationFile: String) {
+    val composition by rememberLottieComposition(LottieCompositionSpec.Asset(animationFile))
+    LottieAnimation(
+        composition = composition,
+        iterations = LottieConstants.IterateForever,
+    )
+}
+```
+
+</TabItem>
+</Tabs>
+
+### 要求与最佳实践 \{#requirements-and-best-practices\}
+
+- **尺寸**：
+  - **内边距与对齐**：确保原生视图适配你在 Flow & Paywall Builder 中为其分配的容器（减去内边距）。如果视图未占满整个区域，默认会显示在该区域的起始角。如需调整位置，请在自定义元素的 **Layout** 部分修改对齐方式。
+  - **自适应高度**：如果自定义元素的高度设置为 **Hug**，会填满可用空间的视图（如地图或懒加载列表）可能会折叠，或拉伸至屏幕高度。请改为给自定义元素设置[**固定**高度](flow-custom-elements#add-and-configure)。
+- **主题**：原生视图不会继承 Web 应用的样式，颜色和字体需在原生代码中单独设置。
+- **流程操作**：原生视图无法执行流程操作，例如跳转到下一屏。元素上下文可以通过 iOS 的 `sendMessage` 和 Android 的 `send` 向流程发送消息，但这些功能目前保留给 Flow & Paywall Builder 的未来能力使用。请将导航按钮、购买按钮及其他带有流程操作的按钮放在自定义元素之外。
+- **可选择元素**：请将自定义元素放在产品卡片和其他[可选择元素](flow-selectable-elements)之外。选择状态变化时，原生视图可能会丢失其状态。
+- **导航处理**：当用户跳转到下一屏时，SDK 会将原生视图从屏幕上移除。请停止视图启动的所有任务，例如摄像头会话、播放器和位置更新：
+  - **SwiftUI 视图**：使用 `onDisappear` 操作。对于异步任务，使用 `.task`：视图消失时 SwiftUI 会自动取消它。
+  - **Composable**：在 `DisposableEffect` 的 `onDispose` 块中处理。对于异步任务，使用 `LaunchedEffect`：composable 离开组合时 Compose 会自动取消它。
+  - **Android `View`**：在 `View` 子类中重写 `onDetachedFromWindow`，或为 `View` 添加 `View.OnAttachStateChangeListener`。
+
+  当用户返回时，SDK 会再次调用 resolver，原生视图将以全新状态启动，不保留上次的状态。在 Android 上，旋转屏幕也会触发 SDK 再次调用 resolver。
+- **UIKit 视图**：在 iOS 上，请使用 `UIViewRepresentable` 进行包装。
+- **轮播图**：在 Android 上，[轮播图](builder-containers#carousel) 中所有幻灯片上的原生视图在屏幕打开期间均保持活跃状态，而不仅仅是当前可见幻灯片上的视图。请勿在轮播图中放置摄像头预览或带声音的播放器。
+
+## 编写解析器以匹配自定义元素和视图 \{#write-a-resolver-to-match-custom-elements-and-views\}
+
+为每个平台编写一个解析器。解析器接收自定义元素的 Type 和 ID，并返回对应的原生视图。
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+要编写解析器，需要让某个类型遵从 `AdaptyUICustomElementsResolver` 协议，并实现 `view(forType:id:context:)` 方法。
+
+对于 `lottie_animation` Type，以下解析器返回 `LottieElementView`。ID 对应 app bundle 中的动画文件名，例如 `welcome_wave`：
+
+```swift showLineNumbers title="Swift"
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "lottie_animation":
+            // the ID names the animation file, such as welcome_wave.json
+            guard let animation = LottieAnimation.named(id) else {
+                return nil // no file for this ID: show the fallback
+            }
+            return AnyView(LottieElementView(animation: animation))
+        default:
+            return nil
+        }
+    }
+}
+```
+
+在 `default` 情况下，返回 `nil`。
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+要编写解析器，请实现 `AdaptyCustomElementsResolver` 接口。其 `resolve` 方法以以下形式之一返回匹配的视图：
+
+- **一个可组合项（Composable）**：返回 `AdaptyCustomElementContent.compose`，并在其 lambda 中传入可组合项。
+- **一个 Android `View`**：返回 `AdaptyCustomElementContent.view`，并传入一个创建 `View` 的函数。务必为 `factory` 参数命名：`AdaptyCustomElementContent.view(factory = { context, _ -> ChartView(context) })`。如果不命名，Kotlin 会将尾随 lambda 传给可选的 `update` 参数，导致代码无法编译。
+
+对于 `lottie_animation` 类型，以下 resolver 返回 [Lottie 视图](#create-views-for-custom-elements)。ID 对应 `assets` 文件夹（`android/app/src/main/assets`）中的动画文件名，例如 `welcome_wave` 对应 `welcome_wave.json`：
+
+```kotlin showLineNumbers title="Kotlin"
+
+class CustomElementsResolver(context: Context) : AdaptyCustomElementsResolver {
+    // the animation files in the assets folder, listed once
+    private val animationFiles: Set<String> = try {
+        context.assets.list("").orEmpty().toSet()
+    } catch (e: IOException) {
+        emptySet() // no list of files: every Lottie element shows the fallback
+    }
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        when (type) {
+            "lottie_animation" -> {
+                // the ID names the animation file, such as welcome_wave.json
+                val file = "$id.json"
+                if (file in animationFiles) {
+                    AdaptyCustomElementContent.compose { LottieElement(file) }
+                } else {
+                    null // no file for this ID: show the fallback
+                }
+            }
+            else -> null
+        }
+}
+```
+
+对于任何其他 Type，返回 `null`。
+
+</TabItem>
+</Tabs>
+
+如果你在发布应用后[添加了具有新 Type 的自定义元素](flow-custom-elements#what-changes-require-an-app-release)，已发布版本的用户将看到其备用内容。
+
+解析器有以下要求：
+
+- **网络数据与播放器**：将网络数据和播放器保存在[原生视图](#create-views-for-custom-elements)的状态中，而不是保存在解析器里。SDK 在屏幕打开期间会多次调用解析器，解析器中的代码每次调用都会重新执行，导致网络请求重复发起、播放器从头开始播放。原生视图在多次调用之间能保持自身状态，因此数据只会加载一次，播放器也能持续播放。请在原生视图内创建播放器、会话和网络请求：
+  - **SwiftUI 视图**：在 `.task` 或 `@StateObject` 中创建播放器、会话和网络请求，而不是在 `@State` 属性的初始值中创建。每次解析器创建视图时，Swift 都会重新计算该初始值。
+  - **Composable**：在 `remember` 中创建播放器和会话，在 `LaunchedEffect` 中发起网络请求。
+  - **Android `View`**：在 `onAttachedToWindow` 中创建播放器、会话和网络请求。
+- **每个自定义元素对应一个原生视图**：有些原生视图在屏幕打开后会发生变化，例如数据加载完成时或用户点击时。请将这部分逻辑实现在原生视图内部，而不是放在解析器中。如果解析器为同一个自定义元素返回不同的视图，该视图将丢失其状态。
+- **每次出现都创建新的 `View`**：在 Android 上，每次调用 `factory` 时都要创建一个新的 `View`。SDK 会在自定义元素每次出现时调用 `factory`，例如屏幕打开、用户返回该屏幕或旋转屏幕之后。
+- **应用数据**：将持有数据的对象（例如 `ObservableObject` 或带有[每日连续登录](capacitor-custom-element-lottie-animation)的 `StateFlow`）存储在解析器的属性中，将该对象传递给原生视图，并在原生视图中监听该对象：
+  - **SwiftUI 视图**：使用 `@ObservedObject` 监听 `ObservableObject`。
+  - **Composable**：使用 `collectAsState` 收集 `StateFlow`，或使用 `observeAsState` 监听 `LiveData`。
+  - **Android `View`**：在 `onAttachedToWindow` 中监听对象，在 `onDetachedFromWindow` 中停止监听。
+
+  您复制到解析器中的值（例如连续天数）会保持创建解析器时的原始值。如果您的 JavaScript 代码中有数据（例如每日连续天数），请通过 <InlineTooltip tooltip="本地 Capacitor 插件">[iOS](https://capacitorjs.com/docs/ios/custom-code), [Android](https://capacitorjs.com/docs/android/custom-code)</InlineTooltip> 将每个新值发送到原生代码，并在那里更新对象。
+
+### 设置备用内容的条件 \{#set-conditions-for-fallback-content\}
+
+<FlowCustomElementsFallbackConditions />
+
+仅当用户在屏幕打开前已拒绝权限时，才返回空视图。在 Android 上，`ContextCompat.checkSelfPermission` 在两种情况下会返回相同的值 `PERMISSION_DENIED`：你的应用首次向用户请求权限之前，以及用户拒绝权限之后。要区分这两种情况，请保存权限请求的结果，并在 resolver 中读取已保存的结果。如果你的应用尚未请求过该权限，则返回原生视图，并在视图内部请求权限。例如，在[地图视图](capacitor-custom-element-map#3-match-the-map-to-the-custom-element)出现时请求位置访问权限，并在用户授予权限后立即显示地图。如果你返回了空视图，而用户此后授予了权限，他们仍会看到备用内容。权限变更不会触发 SDK 再次调用 resolver。只有当 SDK 再次调用 resolver 时（例如用户返回该页面），原生视图才会重新出现。
+
+## 将解析器传递给 SDK \{#pass-the-resolver-to-the-sdk\}
+
+在应用启动时，为每个平台设置一次解析器。SDK 会在每个流程中调用它。用户无需发布新版本即可在新流程和 A/B 测试中看到你的原生视图。这些视图仍会为每位用户展示其个人数据（例如[每日连续记录](capacitor-custom-element-lottie-animation)），因为它们会从你的应用中读取该数据。
+
+### iOS
+
+在 `AppDelegate.swift` 中，导入 `AdaptyUI`，并在 `application(_:didFinishLaunchingWithOptions:)` 方法中调用 `AdaptyUI.setCustomElementsResolver(_:)`。高亮行为新增内容，`AppDelegate` 类的其余部分保持不变：
+
+```swift showLineNumbers title="ios/App/App/AppDelegate.swift" {1,11}
+
+@UIApplicationMain
+class AppDelegate: UIResponder, UIApplicationDelegate {
+
+    var window: UIWindow?
+
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        AdaptyUI.setCustomElementsResolver(CustomElementsResolver())
+        // the rest of your launch code
+        return true
+    }
+}
+```
+
+如果你也在 `AppDelegate.swift` 中编写 resolver，请同时在该文件中导入 `AdaptyUIBuilder`。
+
+### Android
+
+Capacitor 模板没有 `Application` 类。请在 `MainActivity.java` 所在的文件夹中创建 `MainApplication.kt`，并在其 `onCreate` 方法中调用 `AdaptyUI.setCustomElementsResolver`。如果你的应用已有 `Application` 类，请将高亮行添加到其中：
+
+```kotlin showLineNumbers title="MainApplication.kt" {4,9}
+package com.example.app
+
+
+class MainApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        AdaptyUI.setCustomElementsResolver(CustomElementsResolver(this))
+    }
+}
+```
+
+要让 Android 在应用启动时创建此类，请在 `android/app/src/main/AndroidManifest.xml` 中，将 `application` 元素的 `android:name` 属性设置为 `.MainApplication`，其他属性保持不变：
+
+```xml showLineNumbers title="android/app/src/main/AndroidManifest.xml" {2}
+<application
+    android:name=".MainApplication"
+    android:allowBackup="true"
+    android:icon="@mipmap/ic_launcher">
+```
+
+:::tip
+要在某个 Type 的所有自定义元素中显示相同的视图，可以传入 Type 与视图的映射表，而不是使用 resolver。使用映射表比使用 resolver 代码更少，但无法[为备用内容设置条件](#set-conditions-for-fallback-content)。
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+该映射是一个 `[String: AdaptyUICustomElementBuilder]` 字典。如果你在 `AppDelegate.swift` 中编写该映射，还需要在那里导入 `Lottie`。
+
+```swift showLineNumbers title="Swift"
+AdaptyUI.setCustomElementsResolver([
+    "lottie_animation": .init { _, id, _ in LottieElementView(animation: .named(id)) },
+])
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+将映射传递给 `AdaptyCustomElementsResolver.of`：
+
+```kotlin showLineNumbers title="Kotlin"
+val appWideViews = mapOf(
+    "confetti" to AdaptyCustomElementContent.compose { LottieElement("confetti.json") },
+)
+AdaptyUI.setCustomElementsResolver(AdaptyCustomElementsResolver.of(appWideViews))
+```
+
+</TabItem>
+</Tabs>
+:::
+
+您无法将解析器附加到单个流程。如需在流程中显示 JavaScript 代码中的数据，请在流程打开之前将数据发送到原生代码，然后在解析器中读取该数据。例如，付费墙显示[用户在上一个流程中输入的体重](capacitor-custom-element-interactive-chart)。
+
+## 在设备上测试 \{#test-on-a-device\}
+
+流程与付费墙编辑工具无法运行你的应用代码，因此其画布只会显示备用内容。原生视图中的错误可能导致应用崩溃。在发布应用之前，请在 iOS 设备和 Android 设备上测试每个包含自定义元素的页面：
+
+1. 若要查看每个流程的最新发布版本而非缓存版本，请将设备注册为[测试设备](test-devices)。
+2. 若要在 Xcode 控制台和 Logcat 中查看 Adapty SDK 的警告信息，请将[日志级别](sdk-installation-capacitor#logging)设置为 `warn` 或更详细的级别。
+3. 在设备上运行包含 resolver 的构建版本。打开每个包含自定义元素的页面，确认原生视图已正确显示并适配自定义元素。如果视图支持滚动或拖拽操作，请测试这些手势。
+4. 如果显示的是备用内容而非原生视图，请在 Xcode 控制台或 Logcat 中查找以下警告：`custom element <type>:<id> is not served by a resolver`。然后确认以下几点：
+   - 警告中的 Type 和 ID 与代码中的完全一致，包括每一个字母的大小写。
+   - 应用已具备视图所需的文件、数据或权限。
+   - 应用在启动时已设置 resolver：iOS 端在 `AppDelegate` 类中设置，Android 端在 `AndroidManifest.xml` 所指定的 `Application` 类中设置。
+
+   如果警告未出现，请确认应用使用的是 Adapty Capacitor SDK 4.4 或更高版本。
+5. 在 Android 上，如果自定义元素保持为空，请在 Logcat 中查找以下警告之一：
+   - `custom element <type>:<id> is not served by a resolver`：该自定义元素没有备用内容，且没有解析器为其返回视图。请逐一核查步骤 4 中的各项内容。
+   - `content does not report its size`：该可组合项没有自身高度。请为自定义元素设置[**固定**高度](flow-custom-elements#add-and-configure)。
+
+   The SDK only logs the size warning for composables. If an Android `View` stays empty with no warning, give the custom element a **Fixed** height too.
+6. To preview the fallback, return no view for the Type, and open the screen again.
+
+## 示例 \{#examples\}
+
+每个示例都展示了编辑工具中的配置方式以及应用的对应代码：
+
+- [使用 Lottie 动画展示用户进度](capacitor-custom-element-lottie-animation)：随着连续打卡天数增长而填充的环形动画。
+- [在付费墙中展示可交互的体重目标图表](capacitor-custom-element-interactive-chart)：体重目标图表，位于用户引导流程结束后的付费墙流程中。
+- [在流程中展示附近地点的地图](capacitor-custom-element-map)：展示每位用户附近健身中心的地图。

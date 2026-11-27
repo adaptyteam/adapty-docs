@@ -1,0 +1,481 @@
+---
+title: "在付费墙中展示交互式体重目标图表"
+description: "在付费墙流程中以图表形式展示每位用户的预期体重变化。用户可拖动图表查看任意周的体重数据。"
+metadataTitle: "在付费墙中展示交互式体重目标图表 | Capacitor SDK | Adapty 文档"
+---
+
+按照此方案，在付费墙流程中以数据图表形式展示每位用户的预期体重变化。用户在用户引导流程中输入当前体重和目标体重，你的应用收集这两个值。数据图表展示用户在使用你的应用期间每周的预期进度，从当前值变化到目标值。你的应用以原生视图的形式，通过[自定义元素](flow-custom-elements)渲染数据图表。在 iOS 上，该视图使用 Swift Charts；在 Android 上，该视图无需图表库即可绘制数据图表。
+
+<DocVideo id="custom-element-chart-demo.mp4" width="300px" alt="最终效果的付费墙：用户在数据图表上拖动，标签显示每周的预计体重，直至目标体重 72 公斤。" />
+
+## 开始之前 \{#before-you-start\}
+
+- 将您的应用更新至 Adapty Capacitor SDK 4.4 或更高版本。早期 SDK 版本会为每个自定义元素显示[备用内容](flow-custom-elements#set-fallback-content)。
+- 配置您的应用以[获取](capacitor-get-pb-paywalls)和[展示](capacitor-present-paywalls)流程。
+- 按照 [Capacitor 指南](capacitor-flow-custom-elements#before-you-start)，为自定义元素配置应用的原生代码。
+- 在 iOS 上，沿图表拖动功能需要 iOS 17 或更高版本。在 iOS 16 上，用户可以看到折线，但无法沿其拖动。
+- 在 Android 上，[配置您的 Android 项目](capacitor-flow-custom-elements#set-up-your-android-project)，包括 Jetpack Compose。本示例中的图表是一个 composable 组件。请通过 Gradle 将 Compose Foundation 添加到您的应用中，依赖坐标为 `androidx.compose.foundation:foundation`，无需指定版本号。版本由 `io.adapty:android-ui` 的 Compose BOM 统一管理。
+
+<CustomElementChartTwoFlows />
+
+## 1. 在用户引导流程中询问当前体重和目标体重 \{#1-ask-for-the-current-and-goal-weight-in-the-onboarding-flow\}
+
+<CustomElementChartOnboardingInputs />
+
+## 2. 将自定义元素添加到付费墙页面 \{#2-add-the-custom-element-to-the-paywall-screen\}
+
+<CustomElementChartBuilderSetup />
+
+## 3. 在应用中保存当前体重和目标体重 \{#3-save-the-current-and-goal-weight-in-your-app\}
+
+从用户引导流程的 `flow_user_input` 事件中收集当前体重和目标体重，具体方式参见[处理流程数据](capacitor-flow-input)。若要判断用户是否到达最后一个页面，请监听 `flow_screen_showed` 事件，并检查其中的 `is_last_screen` 是否为 `true`。当用户引导流程在该页面关闭后，将两个体重值传入 `showWeightPaywall`——该函数用于[打开带数据图表的付费墙流程](#6-send-the-weights-from-your-javascript-code)。
+
+以下函数返回用户引导流程的 `onAnalytics` 和 `onDisappeared` 处理器：
+
+```typescript showLineNumbers title="weightOnboardingHandlers.ts"
+
+// the event handlers of the onboarding flow view
+export function weightOnboardingHandlers(): Partial<FlowEventHandlers> {
+  const enteredWeights: Record<string, string> = {};
+  let reachedLastScreen = false;
+
+  return {
+    onAnalytics(name, params) {
+      if (name === 'flow_screen_showed' && params.is_last_screen === true) {
+        reachedLastScreen = true;
+      } else if (
+        name === 'flow_user_input' &&
+        typeof params.element_id === 'string' &&
+        typeof params.value === 'string'
+      ) {
+        enteredWeights[params.element_id] = params.value;
+      }
+      return false; // keep the flow open
+    },
+    onDisappeared() {
+      // number inputs send their values as strings
+      const currentWeight = Number.parseFloat(enteredWeights.weight ?? '');
+      const goalWeight = Number.parseFloat(enteredWeights.goal_weight ?? '');
+      if (reachedLastScreen && !Number.isNaN(currentWeight) && !Number.isNaN(goalWeight)) {
+        showWeightPaywall(currentWeight, goalWeight);
+      }
+      return false;
+    },
+  };
+}
+```
+
+在呈现用户引导流程之前，将处理器传递给其视图：
+
+```typescript showLineNumbers title="Capacitor"
+const view = await createFlowView(flow);
+await view.setEventHandlers(weightOnboardingHandlers());
+await view.present();
+```
+
+如果你的应用已为用户引导流程设置了 `onAnalytics` 或 `onDisappeared`，请将 `weightOnboardingHandlers` 的代码添加到你的处理器中。每个传递给 `setEventHandlers` 的处理器都会替换同名的旧处理器。
+
+## 4. 创建数据图表视图 \{#create-the-chart-view\}
+
+创建一个体重计划的模型和带数据图表的视图。该计划包含从当前体重到目标体重的每周条目。当用户在图表上拖动时，视图会标记触摸点对应的周次，并显示该周的预计体重：
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift"
+
+struct WeightPlan {
+    let entries: [WeightEntry]
+
+    // One entry per week, from the current weight to the goal weight
+    init(currentWeight: Double, goalWeight: Double) {
+        let weeklyChange = 0.5 // kg per week
+        let startDate = Date.now
+        let weeks = Int((abs(goalWeight - currentWeight) / weeklyChange).rounded(.up))
+        let step = goalWeight < currentWeight ? -weeklyChange : weeklyChange
+        entries = (0...weeks).map { week in
+            WeightEntry(
+                date: startDate.addingTimeInterval(Double(week) * 7 * 24 * 60 * 60),
+                kilograms: week == weeks ? goalWeight : currentWeight + step * Double(week)
+            )
+        }
+    }
+}
+
+struct WeightEntry: Identifiable {
+    let date: Date
+    let kilograms: Double
+    var id: Date { date }
+}
+
+@available(iOS 16.0, *) // Swift Charts needs iOS 16
+struct WeightGoalChart: View {
+    let entries: [WeightEntry]
+    @State private var selectedDate: Date?
+
+    // The entry closest to the date that the user drags to
+    private var selectedEntry: WeightEntry? {
+        guard let selectedDate else { return nil }
+        return entries.min {
+            abs($0.date.timeIntervalSince(selectedDate)) < abs($1.date.timeIntervalSince(selectedDate))
+        }
+    }
+
+    var body: some View {
+        if #available(iOS 17.0, *) {
+            chart.chartXSelection(value: $selectedDate)
+        } else {
+            chart // iOS 16: no drag selection
+        }
+    }
+
+    private var chart: some View {
+        Chart {
+            ForEach(entries) { entry in
+                LineMark(
+                    x: .value("Date", entry.date),
+                    y: .value("Weight", entry.kilograms)
+                )
+            }
+            if let selectedEntry {
+                RuleMark(x: .value("Date", selectedEntry.date))
+                    .foregroundStyle(.gray.opacity(0.3))
+                PointMark(
+                    x: .value("Date", selectedEntry.date),
+                    y: .value("Weight", selectedEntry.kilograms)
+                )
+                .annotation(position: .top) {
+                    Text("\(selectedEntry.kilograms, specifier: "%.1f") kg")
+                        .font(.caption.bold())
+                }
+            }
+        }
+        .chartYScale(domain: .automatic(includesZero: false))
+    }
+}
+```
+
+在图表上拖动需要 iOS 17 或更高版本。在 iOS 16 上，用户可以看到折线，但无法沿其拖动。
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin"
+
+class WeightPlan(currentWeight: Double, goalWeight: Double) {
+    // one entry per week, from the current weight to the goal weight
+    val entries: List<WeightEntry> = run {
+        val weeklyChange = 0.5 // kg per week
+        val start = System.currentTimeMillis()
+        val weekMillis = 7L * 24 * 60 * 60 * 1000
+        val weeks = ceil(abs(goalWeight - currentWeight) / weeklyChange).toInt()
+        val step = if (goalWeight < currentWeight) -weeklyChange else weeklyChange
+        (0..weeks).map { week ->
+            val kilograms = if (week == weeks) goalWeight else currentWeight + step * week
+            WeightEntry(Date(start + week * weekMillis), kilograms)
+        }
+    }
+}
+
+data class WeightEntry(val date: Date, val kilograms: Double)
+
+@Composable
+fun WeightGoalChart(entries: List<WeightEntry>) {
+    // the week under the finger, or null when the user isn't dragging
+    var selectedIndex by remember { mutableStateOf<Int?>(null) }
+    val textMeasurer = rememberTextMeasurer()
+    val dateFormat = remember { DateFormat.getDateInstance(DateFormat.MEDIUM) }
+    val color = Color(0xFFAF52DE)
+    val textStyle = TextStyle(color = Color.Gray, fontSize = 12.sp)
+    val minKg = entries.minOf { it.kilograms }
+    val kgRange = (entries.maxOf { it.kilograms } - minKg).coerceAtLeast(1.0)
+
+    Canvas(
+        Modifier
+            .fillMaxSize()
+            .pointerInput(entries) {
+                // horizontal drags select a week; vertical drags scroll the screen
+                detectHorizontalDragGestures(
+                    onDragEnd = { selectedIndex = null },
+                    onDragCancel = { selectedIndex = null },
+                ) { change, _ ->
+                    val index = (change.position.x / size.width * entries.lastIndex).roundToInt()
+                    selectedIndex = index.coerceIn(0, entries.lastIndex)
+                }
+            }
+    ) {
+        val startDate = textMeasurer.measure(dateFormat.format(entries.first().date), textStyle)
+        val endDate = textMeasurer.measure(dateFormat.format(entries.last().date), textStyle)
+        val dateY = size.height - startDate.size.height
+        val top = 24.dp.toPx() // room for the projected weight above the line
+        val bottom = dateY - 8.dp.toPx()
+        fun pointOf(index: Int) = Offset(
+            x = size.width * index / entries.lastIndex.coerceAtLeast(1),
+            y = bottom - ((entries[index].kilograms - minKg) / kgRange * (bottom - top)).toFloat(),
+        )
+
+        // the line from the current weight to the goal weight
+        for (index in 1..entries.lastIndex) {
+            drawLine(color, pointOf(index - 1), pointOf(index), strokeWidth = 2.dp.toPx())
+        }
+        // the dates of the first and the last week
+        drawText(startDate, topLeft = Offset(0f, dateY))
+        drawText(endDate, topLeft = Offset(size.width - endDate.size.width, dateY))
+
+        // the selected week: a point, and the projected weight above it
+        selectedIndex?.let { index ->
+            val point = pointOf(index)
+            drawCircle(color, radius = 5.dp.toPx(), center = point)
+            val weight = String.format(Locale.getDefault(), "%.1f kg", entries[index].kilograms)
+            val label = textMeasurer.measure(weight, textStyle.copy(color = color))
+            val x = (point.x - label.size.width / 2)
+                .coerceAtMost(size.width - label.size.width)
+                .coerceAtLeast(0f)
+            drawText(label, topLeft = Offset(x, point.y - label.size.height - 8.dp.toPx()))
+        }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+<CustomElementChartWeeklyChange />
+
+## 5. 将数据图表与自定义元素匹配 \{#5-match-the-chart-to-the-custom-element\}
+
+在你的[应用级 resolver](capacitor-flow-custom-elements#pass-the-resolver-to-the-sdk) 中，添加一个 `WeightPlanStore` 属性。然后为 `line_chart` 类型和 `weight_goal` ID 返回图表视图。高亮行显示了需要添加或修改的内容。如果你的应用还没有应用级 [resolver](capacitor-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views)，请复制完整代码：
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift" {4-8,11,19-23}
+
+// the weight plan that your JavaScript code sends before the paywall flow opens
+@MainActor
+final class WeightPlanStore {
+    var plan: WeightPlan?
+}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let weightPlanStore: WeightPlanStore
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "line_chart" where id == "weight_goal":
+            guard #available(iOS 16.0, *), let plan = weightPlanStore.plan else {
+                return nil // no weight plan: show the fallback
+            }
+            return AnyView(WeightGoalChart(entries: plan.entries))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin" {4-7,10,15-22}
+
+// the weight plan that your JavaScript code sends before the paywall flow opens
+class WeightPlanStore {
+    var plan: WeightPlan? = null
+}
+
+class CustomElementsResolver(
+    private val weightPlanStore: WeightPlanStore,
+) : AdaptyCustomElementsResolver {
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        when (type) {
+            "line_chart" -> {
+                val plan = weightPlanStore.plan
+                if (id == "weight_goal" && plan != null) {
+                    AdaptyCustomElementContent.compose { WeightGoalChart(plan.entries) }
+                } else {
+                    null // no weight plan: show the fallback
+                }
+            }
+            // the other Types of your resolver
+            else -> null
+        }
+}
+```
+
+</TabItem>
+</Tabs>
+
+在您的 JavaScript 代码将权重发送到原生代码之前，解析器不会返回任何视图，用户将看到备用付费墙。
+
+## 6. 通过 JavaScript 代码发送权重 \{#6-send-the-weights-from-your-javascript-code\}
+
+在应用启动时设置解析器，并通过<InlineTooltip tooltip="本地 Capacitor 插件">[iOS](https://capacitorjs.com/docs/ios/custom-code)、[Android](https://capacitorjs.com/docs/android/custom-code)</InlineTooltip>从 JavaScript 代码填充 store。该插件为每个平台提供了对应的实现，以及一个 JavaScript 接口。
+
+为每个平台实现插件：
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+在 Xcode 的 `App` target 中创建插件。它会在你的 `AppDelegate` 类中更新权重计划：
+
+```swift showLineNumbers title="WeightPlanStorePlugin.swift"
+
+@objc(WeightPlanStorePlugin)
+public class WeightPlanStorePlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "WeightPlanStorePlugin"
+    public let jsName = "WeightPlanStore"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "setWeights", returnType: CAPPluginReturnPromise)
+    ]
+
+    @objc func setWeights(_ call: CAPPluginCall) {
+        guard let currentWeight = call.getDouble("currentWeight"),
+              let goalWeight = call.getDouble("goalWeight")
+        else {
+            call.reject("Missing currentWeight or goalWeight")
+            return
+        }
+        // the resolver reads the weight plan on the main thread
+        Task { @MainActor in
+            (UIApplication.shared.delegate as? AppDelegate)?.weightPlanStore.plan =
+                WeightPlan(currentWeight: currentWeight, goalWeight: goalWeight)
+        }
+        call.resolve()
+    }
+}
+```
+
+创建一个 `CAPBridgeViewController` 的子类，在其 `capacitorDidLoad` 方法中注册插件。如果你的应用已有 `CAPBridgeViewController` 的子类，直接在那里注册插件即可：
+
+```swift showLineNumbers title="MyViewController.swift"
+
+class MyViewController: CAPBridgeViewController {
+    override open func capacitorDidLoad() {
+        bridge?.registerPluginInstance(WeightPlanStorePlugin())
+    }
+}
+```
+
+要让应用使用此子类，请在 `SceneDelegate.swift` 中将 `CAPBridgeViewController()` 替换为 `MyViewController()`。如果项目中没有 `SceneDelegate.swift`，则按照 [Custom ViewController](https://capacitorjs.com/docs/ios/viewcontroller) 的说明，在 `Main.storyboard` 中将 **Bridge View Controller** 的自定义类设置为 `MyViewController`。
+
+在 `AppDelegate.swift` 中，为权重计划添加一个属性，并在 `application(_:didFinishLaunchingWithOptions:)` 方法中设置 resolver。高亮行为需要新增的内容。`AppDelegate` 类的其余部分保持不变：
+
+```swift showLineNumbers title="ios/App/App/AppDelegate.swift" {1,9-10,13}
+
+@UIApplicationMain
+class AppDelegate: UIResponder, UIApplicationDelegate {
+
+    var window: UIWindow?
+    // the weight plan that your JavaScript code sends
+    let weightPlanStore = WeightPlanStore()
+
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        AdaptyUI.setCustomElementsResolver(CustomElementsResolver(weightPlanStore: weightPlanStore))
+        // the rest of your launch code
+        return true
+    }
+}
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+在 `MainActivity.java` 所在的文件夹中，创建插件。它会更新 `MainApplication` 类中的权重计划：
+
+```kotlin showLineNumbers title="WeightPlanStorePlugin.kt"
+package com.example.app
+
+
+@CapacitorPlugin(name = "WeightPlanStore")
+class WeightPlanStorePlugin : Plugin() {
+    @PluginMethod
+    fun setWeights(call: PluginCall) {
+        val currentWeight = call.getDouble("currentWeight") ?: return call.reject("Missing currentWeight")
+        val goalWeight = call.getDouble("goalWeight") ?: return call.reject("Missing goalWeight")
+        val app = context.applicationContext as MainApplication
+        // the resolver reads the weight plan on the main thread
+        activity.runOnUiThread {
+            app.weightPlanStore.plan = WeightPlan(currentWeight, goalWeight)
+        }
+        call.resolve()
+    }
+}
+```
+
+要注册插件，请在 `MainActivity.java` 中，于 `super.onCreate` 之前调用 `registerPlugin`。高亮行为需要添加的内容：
+
+```java showLineNumbers title="MainActivity.java" {3,7-11}
+package com.example.app;
+
+
+public class MainActivity extends BridgeActivity {
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(WeightPlanStorePlugin.class);
+        super.onCreate(savedInstanceState);
+    }
+}
+```
+
+在 `MainApplication.kt` 中，添加一个用于重量计划的属性，并在 `onCreate` 方法中设置解析器。高亮行显示了需要添加的内容。保持 `MainApplication` 类的其余部分不变：
+
+```kotlin showLineNumbers title="MainApplication.kt" {7-8,12}
+package com.example.app
+
+
+class MainApplication : Application() {
+    // the weight plan that your JavaScript code sends
+    val weightPlanStore = WeightPlanStore()
+
+    override fun onCreate() {
+        super.onCreate()
+        AdaptyUI.setCustomElementsResolver(CustomElementsResolver(weightPlanStore))
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+在你的 JavaScript 代码中注册插件，然后在付费墙流程打开之前将权重发送到 store：
+
+```typescript showLineNumbers title="showWeightPaywall.ts"
+
+interface WeightPlanStorePlugin {
+  setWeights(options: { currentWeight: number; goalWeight: number }): Promise<void>;
+}
+
+// the name matches the jsName on iOS and the plugin name on Android
+const WeightPlanStore = registerPlugin<WeightPlanStorePlugin>('WeightPlanStore');
+
+export async function showWeightPaywall(currentWeight: number, goalWeight: number) {
+  try {
+    // the native resolver builds the chart from these weights
+    await WeightPlanStore.setWeights({ currentWeight, goalWeight });
+    const flow = await adapty.getFlow({ placementId: 'weight_paywall' });
+    const view = await createFlowView(flow);
+    await view.present();
+  } catch (error) {
+    // handle the error
+  }
+}
+```
+
+## 7. 在设备上测试 \{#test-on-a-device\}
+
+Flow & Paywall Builder 无法运行你的应用代码，因此画布中只会显示备用内容。要预览数据图表：
+
+1. [发布两个流程](builder-save-publish)。若要查看最新发布的版本而非缓存版本，请将设备注册为[测试设备](test-devices)。
+2. 运行包含解析器的应用构建版本。在 iOS 上，请使用运行 iOS 17 或更高版本的设备。完成包含当前体重和目标体重的用户引导流程，验证数据图表的折线是否从当前体重开始，到目标体重结束。
+3. 在数据图表上拖动，验证手指所在周的预测体重是否显示在折线上方。
+
+要测试备用方案，请在 `line_chart` 类型时不返回任何视图，然后重新打开付费墙流程。
+
+要了解为何显示备用方案而非数据图表，请参照 Capacitor 指南中[在设备上测试](capacitor-flow-custom-elements#test-on-a-device)部分的说明。
