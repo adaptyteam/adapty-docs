@@ -457,3 +457,11 @@ values including a "Cover" that no longer exists, and described "Fill" as stretc
 - **Screenshots.** `flow-builder/input-templates.webp` shows eight input presets beside a list of nine;
   `add-input.webp` predates the panel's search field. The owner declined both retakes on 2026-11-17 (too laborious;
   not significant). New: `number-picker-settings.webp`, `number-picker-card.webp`.
+
+**A footer no longer needs Vertical scroll (2026-11-27, confirmed by the builder team and checked on
+iOS SDK 4.4.0 and Android SDK 4.3.4).** From 2026-08-24 to 2026-11-27, `builder-containers#footer`,
+`paywall-layout-and-products#scroll` and `flow-common-issues` said a footer renders only with
+**Vertical scroll** on. That was a defect, now fixed: a non-scrolling screen draws its footer at the
+bottom like the canvas does. Flows published before the fix keep the old output until they are
+published again, which is the one thing `flow-common-issues#a-footer-doesnt-render` still tells the
+reader. Don't bring the scroll requirement back on the strength of an old ticket or an old flow.
