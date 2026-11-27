@@ -1,12 +1,19 @@
 ---
 title: "Manage virtual currencies from the CLI"
-description: "Manage virtual currencies from the terminal with the Adapty CLI: list and create currencies, change how many credits each product grants, and read the credit transactions and balances of an app or of one user."
+description: "Manage virtual currencies from the terminal with the Adapty CLI: list and create currencies, change how many credits each product grants, read the credit transactions and balances of an app or of one user, and correct the balance of one user."
 metadataTitle: "Virtual Currencies in the Developer CLI | Adapty Docs"
 ---
 
-The Adapty CLI manages [virtual currencies](virtual-currencies) from the terminal, under the `adapty virtual-currencies` topic. You can list the currencies of an app, create a currency, change its name and description, and add, change, or remove its *mappings*: the [linked products](create-virtual-currency#link-products) of the currency, with the credits each one grants. You can also read the credit transactions of an app or of one user, and the balances of one user. The CLI output calls credits *coins*.
+The Adapty CLI manages [virtual currencies](virtual-currencies) from the terminal, under the `adapty virtual-currencies` topic. With it, you can:
 
-Use it to let an AI agent set up your currencies, or to find out why a user has a balance without opening the dashboard. The currency and mapping commands do what the **Virtual currency** tab of the **Products** page does. The transaction and balance reads show the same data as the user's profile in the dashboard, but they don't change a balance. To correct one, [adjust it in the dashboard](virtual-currency-balance#adjust-a-balance-manually).
+- List the currencies of an app, create a currency, and change its name and description.
+- Add, change, or remove the *mappings* of a currency: its [linked products](create-virtual-currency#link-products), with the credits each one grants.
+- Read the credit transactions of an app or of one user, and the balances of one user.
+- Credit or debit the balance of a single currency for a single user.
+
+The CLI output calls credits *coins*.
+
+Use it to let an AI agent set up your currencies, or to find out why a user has a balance without opening the dashboard. The currency and mapping commands do what the **Virtual currency** tab of the **Products** page does. The transaction and balance reads show the same data as the user's profile in the dashboard. `profiles transactions create` makes the same change as the [Adjust balance](virtual-currency-balance#adjust-a-balance-manually) form of the dashboard.
 
 ## Before you start
 
@@ -15,6 +22,8 @@ The `virtual-currencies` topic uses the same installation and login as the rest 
 ```bash
 adapty virtual-currencies --help
 ```
+
+`profiles transactions create` needs a newer CLI than the other commands of the topic. If `adapty virtual-currencies profiles transactions create --help` reports no such command, update the CLI with `npm i -g adapty@latest`.
 
 Every command takes the app's UUID in `--app`. To find it, run:
 
@@ -138,7 +147,7 @@ adapty virtual-currencies transactions list --app <app-id> \
 
 The period is required, at most 366 days, both days included. The days are days of `--timezone`, an IANA time zone name, or of the app time zone without it. Filter the transactions with `--currency-code`, `--operation`, `--feature`, and `--sandbox` or `--no-sandbox`. For the operation values, see [Operation](virtual-currencies#operation).
 
-To read the transactions of one user, name the user by exactly one of `--profile`, the Adapty profile ID, and `--customer-user-id`, your own user ID:
+To read the transactions of one user, name the user with the Adapty profile ID in `--profile` or your own user ID in `--customer-user-id`, not both:
 
 ```bash
 adapty virtual-currencies profiles transactions list --app <app-id> --customer-user-id <user-id>
@@ -160,9 +169,51 @@ For totals and trends, use the virtual currency charts of [`adapty analytics`](d
 adapty virtual-currencies profiles balances get --app <app-id> --profile <profile-id>
 ```
 
-Name the user by exactly one of `--profile` and `--customer-user-id`. The balances show each currency of the user with its `balance`, the `held` and `available` credits, and the expiry breakdown: the credits that don't expire, the credits that expire soonest with their expiry times, the sum of the credits that expire later, and the expired credits.
+Name the user with `--profile` or `--customer-user-id`, not both. The balances show each currency of the user with its `balance`, the `held` and `available` credits, and the expiry breakdown: the credits that don't expire, the credits that expire soonest with their expiry times, the sum of the credits that expire later, and the expired credits.
 
 To find out why a user has a balance, read the user's transactions and the balances together. The dashboard shows the same data on the [user's profile](virtual-currency-balance).
+
+## Correct the balance of a user
+
+To compensate a user, return credits for a failed action, or correct a balance, credit or debit the balance:
+
+```bash
+adapty virtual-currencies profiles transactions create --app <app-id> --customer-user-id <user-id> \
+  --currency-code GEMS --direction credit --amount 10 --operation spend_reversal \
+  --feature ai_generation --comment "Failed generation"
+```
+
+Each command changes the balance of a single currency for a single user. Name the user with `--profile` or `--customer-user-id`, not both. The other flags have the values of the fields of the [Adjust balance](virtual-currency-balance#adjust-a-balance-manually) form:
+
+- **`--direction`**: `credit` adds credits, and `debit` removes them.
+- **`--amount`**: A whole number from 1 to 2147483647. A debit can remove up to the `available` credits that `profiles balances get` shows: expired credits that Adapty hasn't removed yet don't count.
+- **`--operation`**: For a credit, `reward`, `spend_reversal`, or `adjustment`. For a debit, `spend`, `reward_reversal`, or `adjustment`. Use `adjustment` for a correction that is neither a reward nor a reversal. For the other values, see [Operation](virtual-currencies#operation).
+- **`--feature`**: What the credits are for, such as `support_compensation`. Use letters, digits, and `_`, with at most one dot and up to 32 characters before and after the dot.
+- **`--reference-id`**: Optional. The ID of a related object, such as a support ticket, in up to 128 characters.
+- **`--comment`**: Optional. Why you change the balance, in one line of up to 200 characters.
+
+If `--amount` isn't a whole number or `--idempotency-key` is empty, the CLI exits with code 2. It sends the other values as you type them, and Adapty validates them. Before it sends the change, the CLI shows the user, the currency code, the direction, the amount, and the operation. It then asks for approval, as described in [Confirmation in scripts and agents](#confirmation-in-scripts-and-agents).
+
+The output shows:
+
+- The transaction ID.
+- The new `balance` and `available` credits of the currency.
+- The `spendable` credits: the most that a debit can remove after this correction. Unlike `available`, this number leaves out expired credits that Adapty hasn't removed yet.
+- The idempotency key of the change.
+
+Adapty saves the change as a manual adjustment: the user's event history, **Change history**, and the daily export show it. In the metadata of the transaction, Adapty sets the `source` key to `cli`. The metadata also contains your `comment`.
+
+You can't undo a correction. To offset it, make a second correction with the same amount in the other direction. Adapty keeps both transactions.
+
+### Send a correction only once
+
+Each correction has an *idempotency key*, a UUID v4. Give your own key in `--idempotency-key`, or let the CLI make one. The CLI prints the key before it sends the change. The output names it again, and `--json` gives it in `idempotency_key`.
+
+Adapty applies a key once for each user of an app, for one hour after the first command with the key:
+
+- A second command with the same key for the same user changes nothing and shows the result of the first command, with the balance right after that command. This is also true when its other flags differ, if Adapty accepts their values.
+- If Adapty refuses the change, it doesn't keep the key. The same key can then make a correction.
+- After one hour, the same key makes a new correction.
 
 ## Protection against lost changes
 
@@ -178,7 +229,7 @@ A script reads `updated_at` with `get --json` and passes it after approval:
 
 ```bash
 updated_at=$(adapty virtual-currencies get <currency-id> --app <app-id> --json | jq .updated_at)
-# Show the change to the person who approves it. After their yes:
+# Show the change to the person who approves it. After they approve the change:
 adapty virtual-currencies mappings upsert <currency-id> --app <app-id> \
   --file mappings.json --yes --expected-updated-at "$updated_at"
 ```
@@ -190,6 +241,7 @@ These commands show their effect and ask for approval before they send the chang
 - `create`
 - `mappings upsert`
 - `mappings delete`
+- `profiles transactions create`
 
 How they ask depends on how the command runs:
 
@@ -199,7 +251,7 @@ How they ask depends on how the command runs:
 | With `--yes` | The CLI sends the request without asking. Mapping writes also need [`--expected-updated-at`](#protection-against-lost-changes). |
 | Without `--yes`, with `--json`, in a pipe, or with no terminal | The CLI sends nothing and exits with code 6. The error shows the effect. |
 
-A script reads `updated_at` with `get --json`, shows the change, and runs the command with `--yes --expected-updated-at` after approval. An agent can also run the command without `--yes` and show the effect from the error.
+For a mapping write, a script reads `updated_at` with `get --json`, shows the change, and runs the command with `--yes --expected-updated-at` after approval. For `create` and `profiles transactions create`, a script shows the change and runs the command with `--yes` after approval. An agent can also run the command without `--yes` and show the effect from the error.
 
 `list`, `get`, `update`, and the transaction and balance reads run without asking.
 
@@ -210,10 +262,10 @@ A script reads `updated_at` with `get --json`, shows the change, and runs the co
 | 1 | You answered something other than `y` or `yes` at the prompt. Nothing was sent. | Run the command again if you meant to. |
 | 2 | The CLI refused the input before it sent anything: a flag, a mappings file that isn't a JSON list with at least one item, `update` without a change, `--description` with `--clear-description`, or both or neither of `--profile` and `--customer-user-id`. | Fix what the error names. |
 | 3 | You aren't logged in, or Adapty refused access with HTTP status 403: the app belongs to another account, or your sign-in can read the app but not change it. With `--json`, the error gives `status: 403`. | Log in with `adapty auth login`, and find the app ID in `adapty apps list`. If reads work and writes fail, ask an account owner for access that can make changes. |
-| 4 | Adapty refused the request. The error gives the reason, and `--json` gives the HTTP status and `error_code`. A server error (5xx) on a write also gives code 4, and the result is unknown. | See [Messages from Adapty](#messages-from-adapty). After a server error on a write, see [If a write gets no answer](#if-a-write-gets-no-answer). |
-| 5 | The CLI couldn't reach Adapty. | Make sure you are online. After a write, see [If a write gets no answer](#if-a-write-gets-no-answer). |
-| 6 | A command that asks for approval ran without `--yes` and with no one to answer, or a mapping write ran with `--yes` and without `--expected-updated-at`. Nothing was sent. | Show the effect in the error to the person who approves the change. After that person approves it, run the command again as [Protection against lost changes](#protection-against-lost-changes) describes. |
-| 130 | You pressed Ctrl+C at the prompt. Nothing was sent. | — |
+| 4 | Adapty refused the request. The error gives the reason, and `--json` gives the HTTP status and `error_code`. A server error (5xx) on a write also gives code 4, and the result is unknown. | See [Messages from Adapty](#messages-from-adapty). After a server error on a write, see [If the result of a write is unknown](#if-the-result-of-a-write-is-unknown). |
+| 5 | The CLI couldn't reach Adapty. | Make sure you are online. After a write, see [If the result of a write is unknown](#if-the-result-of-a-write-is-unknown). |
+| 6 | A command that asks for approval ran without `--yes` and with no one to answer, or a mapping write ran with `--yes` and without `--expected-updated-at`. Nothing was sent. | Show the effect in the error to the person who approves the change. After that person approves it, run the command again with `--yes`. A mapping write also needs `--expected-updated-at`, as [Protection against lost changes](#protection-against-lost-changes) describes. |
+| 130 | You pressed Ctrl+C at the prompt. Nothing was sent. A Ctrl+C while `profiles transactions create` sends the change gives the same code, and the result is unknown. | After a Ctrl+C during the send, see [If the result of a write is unknown](#if-the-result-of-a-write-is-unknown). |
 
 ### Messages from Adapty
 
@@ -225,14 +277,32 @@ With `--json`, the error gives the `error_code`:
 | `invalid_date_range` | The period of `transactions list` is longer than 366 days, or the period of a transaction list ends before it starts. | Use a shorter period, or give a `--date-from` that isn't after `--date-to`. |
 | `cursor_filters_mismatch` | The cursor belongs to a page with another period, other filters, or another time zone. | Run the next page with the same flags as the first page. |
 | `invalid_cursor` | The value of `--cursor` isn't a cursor from Adapty. | Copy the cursor from the `More rows:` line, or from `meta.pagination.next_cursor`. |
-| `profile_does_not_exist` | The app has no user with this profile ID or customer user ID. A deleted user can't be found by the customer user ID. | Make sure that the ID is correct. For a deleted user, use `--profile`. |
+| `profile_does_not_exist` | The app has no user with this profile ID or customer user ID. A deleted user can't be found by the customer user ID. | Make sure that the ID is correct. To read the transactions or balances of a deleted user, use `--profile`. |
+| `profile_not_found` | `profiles transactions create` found no user of the app with the ID in `--profile`, or the user is deleted. Nothing changed. | Make sure that the ID is correct, and that the user belongs to the app in `--app`. The balance of a deleted user can't be corrected. |
+| `insufficient_balance` | The debit is larger than the credits that the user can spend now. The error names that amount. Nothing changed. | Read the balances with `profiles balances get`, and debit at most the `available` credits. |
+| `balance_overflow` | The credit makes the balance larger than the largest balance that Adapty can save. Nothing changed. | Credit a smaller amount. |
+| `unknown_currency` | The app has no currency with the code in `--currency-code`. The code is case-sensitive. Nothing changed. | Find the code with `list`, and give it in the same case. |
+| `idempotency_in_flight` | Adapty hasn't finished the first correction with the same idempotency key. This command changed nothing, but the first correction can still be saved. | Wait a few seconds, and run the same command again with the same `--idempotency-key`. If you get this error 3 times, read the user's transactions with `profiles transactions list` before you decide. |
+| `idempotency_key_invalid` | The value of `--idempotency-key` isn't a UUID v4. Nothing changed. | Give a UUID v4, or leave out the flag. |
 | `throttled` | More than 2 calls of the same transaction or balance read in one second for the same app. | Wait and run the command again. The CLI waits and tries a read up to 3 times. |
 
-Adapty also refuses a 21st currency in an app and a code that the app already uses, with exit code 4.
+Adapty also refuses a 21st currency in an app and a code that the app already uses, with exit code 4. In `profiles transactions create`, Adapty refuses an amount out of the range from 1 to 2147483647, and an operation that doesn't match the direction, with exit code 4. The error names the field.
 
-### If a write gets no answer
+### If the result of a write is unknown
 
-If the CLI gets no answer to a write, because of a network error or a server error (exit code 4 or 5), it can't tell whether Adapty saved the change. The CLI doesn't send the write again. Before you run the command again, read what Adapty saved: after `create`, run `list` and look for the code. After any other write, read the currency with `get`. A second write can fail although the first one passed: with `virtual_currency_conflict`, with a 404 for a mapping that is already removed, or with a used code after a create.
+If a write fails with a network error or a server error (exit code 4 or 5), the CLI can't tell whether Adapty saved the change. The same is true when you press Ctrl+C while `profiles transactions create` sends the change (exit code 130). The CLI doesn't send the write again.
+
+To correct the balance exactly once when the result of `profiles transactions create` is unknown, repeat the command with the same [idempotency key](#send-a-correction-only-once):
+
+1. Copy the `--idempotency-key <key>` flag from the error that the command printed.
+2. Within one hour after the first command, run the same command again with that flag. Don't use a new key: a new key makes a second correction.
+   - If the first command made the correction, the second command changes nothing and shows that correction.
+   - If the first command didn't make the correction, the second command makes it.
+3. If an hour has passed, or the result of the second command is also unknown, read the user's transactions with `profiles transactions list`. Look for a transaction with the operation and amount of your command, created after you ran it.
+   - If you find the transaction, Adapty made the correction.
+   - If you don't find it, Adapty made no correction. Run the command again without `--idempotency-key`, so that the CLI makes a new key.
+
+After the other writes, read what Adapty saved before you run the command again. After `create`, run `list` and look for the code. After `update` or a mapping write, read the currency with `get`. A second write can fail although the first one passed: with `virtual_currency_conflict`, with a 404 for a mapping that is already removed, or with a used code after a create.
 
 ## Command reference
 
@@ -304,7 +374,7 @@ Takes the currency ID as its argument.
 
 ### `virtual-currencies profiles transactions list`
 
-Takes exactly one of `--profile` and `--customer-user-id`, and the flags of `transactions list`. The period is optional.
+Takes `--profile` or `--customer-user-id`, not both, and the flags of `transactions list`. The period is optional.
 
 | Flag | Required | Description |
 |---|---|---|
@@ -318,6 +388,24 @@ Takes exactly one of `--profile` and `--customer-user-id`, and the flags of `tra
 | `--profile` | One of the two | The Adapty profile ID of the user. |
 | `--customer-user-id` | One of the two | Your own ID of the user. |
 
+### `virtual-currencies profiles transactions create`
+
+Changes the balance of a single currency for a single user. See [Correct the balance of a user](#correct-the-balance-of-a-user).
+
+| Flag | Required | Description |
+|---|---|---|
+| `--profile` | One of the two | The Adapty profile ID of the user. |
+| `--customer-user-id` | One of the two | Your own ID of the user. |
+| `--currency-code` | Yes | The code of the currency, in the same case as in `list`. |
+| `--direction` | Yes | `credit` or `debit`. |
+| `--amount` | Yes | A whole number from 1 to 2147483647. |
+| `--operation` | Yes | What the change means. It must match the direction. |
+| `--feature` | Yes | What the credits are for. |
+| `--reference-id` | No | The ID of a related object, such as a support ticket. |
+| `--comment` | No | A comment of up to 200 characters. |
+| `--idempotency-key` | No | A UUID v4. Default: a new key that the CLI makes. See [Send a correction only once](#send-a-correction-only-once). |
+| `--yes`, `-y` | No | Change without asking. Required with `--json` or in a pipe. |
+
 ## Work from an AI assistant
 
 The [Adapty MCP server](adapty-mcp) offers the same actions as `virtual_currencies_*` tools, for example `virtual_currencies_mappings_upsert` for `mappings upsert`. The tools work the same way as the commands, with these differences:
@@ -325,11 +413,13 @@ The [Adapty MCP server](adapty-mcp) offers the same actions as `virtual_currenci
 - **Protection against lost changes**: `virtual_currencies_update`, `virtual_currencies_mappings_upsert`, and `virtual_currencies_mappings_delete` require `expected_updated_at`, the `updated_at` of a read. After a `virtual_currency_conflict` error, the assistant reads the currency again.
 - **Description**: In `virtual_currencies_update`, an empty `description` removes the description.
 - **Pages**: When `meta.pagination.has_more` is true, the assistant sends `meta.pagination.next_cursor` in `cursor`, with the same filters and time zone, for the next page.
-- **Approval**: The tools don't ask for approval and have no `--yes`. Before `virtual_currencies_create`, `virtual_currencies_mappings_upsert`, and `virtual_currencies_mappings_delete`, the assistant shows you the change and waits for your yes.
+- **Approval**: The tools don't ask for approval and have no `--yes`. Before `virtual_currencies_create`, `virtual_currencies_mappings_upsert`, `virtual_currencies_mappings_delete`, and `virtual_currencies_profiles_transactions_create`, the assistant shows you the change and waits for your approval.
+- **Balance correction**: Each call of the `virtual_currencies_profiles_transactions_create` tool changes the balance of a single currency for a single user. The tool takes `profile_id` or `customer_user_id`, and the values of the command flags in `currency_code`, `direction`, `amount`, `operation`, `feature`, `reference_id`, and `comment`. In the metadata of the transaction, Adapty sets the `source` key to `mcp`. The metadata also contains the `comment`.
+- **Idempotency key**: The `virtual_currencies_profiles_transactions_create` tool takes an optional `idempotency_key`. The assistant makes a UUID v4 and gives it. Without a key, the tool makes one. The result names the key, and so does an error after the tool sent the change. The key has the limits of [Send a correction only once](#send-a-correction-only-once). If the result of a call is unknown, the assistant sends the same correction again with the same `idempotency_key`, within one hour, and never with a new key. If the assistant has no key for the correction, or an hour has passed, the assistant doesn't send the correction again. It reads the user's balances and transactions and tells you what Adapty saved. If Adapty didn't save the correction, ask the assistant for it again.
 - **Throttling**: After a `throttled` error, the tools don't try the read again. The error says how long to wait.
 
 ## What's next
 
-- [Agent skill for virtual currencies](virtual-currencies-skill) — let your agent set up your currencies and explain a user's balance, with your yes before each change.
+- [Agent skill for virtual currencies](virtual-currencies-skill) — let your agent set up your currencies, explain a user's balance, and correct it, with your approval before each change.
 - [Create a virtual currency](create-virtual-currency) — the same setup in the dashboard.
 - [Virtual currency balance](virtual-currency-balance) — the balances and the change history of a user in the dashboard.

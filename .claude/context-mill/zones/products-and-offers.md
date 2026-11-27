@@ -299,6 +299,10 @@ Corpus-wide synonyms live in `aliases.md` and aren't repeated here.
     ledger with no type filter). The comment reaches the event-history **Details** block as the
     metadata key `comment`. A **Change history** window lists manual adjustments of the last 3 months
     with the actor and role, with up to ~2 minutes of lag. Owner article: `virtual-currency-balance`.
+  - *2026-11-26:* the same adjustment can come from the CLI and the MCP server (see the `agent-tooling` brief,
+    Gaps and misses). Those rows keep the type `dashboard_transaction` and add the metadata key `source` (`cli` or
+    `mcp`), so the **Details** block shows `source` next to `comment`; `virtual-currency-balance` says so in its
+    Metadata bullet. Rows from the dashboard form keep `comment` only (backend code, 2026-11-26).
   - *Unverified:* what makes a profile a "test user" for the sandbox flag has no UI label and no docs
     article; the article says "a test user's balance" without a link.
 
