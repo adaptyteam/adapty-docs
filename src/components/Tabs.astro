@@ -1,5 +1,5 @@
 ---
-import { nanoid } from 'nanoid';
+import { findTabPanels, showPanel } from '../utils/tab-items';
 
 interface Props {
   groupId?: string;
@@ -7,21 +7,45 @@ interface Props {
 }
 
 const { groupId, queryString } = Astro.props;
-const id = nanoid(); // Unique ID for this tab group instance
+
+// The buttons and the starting panel are rendered here, at build time, so the
+// group shows in its final shape before any script runs (no layout shift, and
+// it reads without JS). The starting panel is the `default` one, else the first.
+// A saved choice or a ?query value is applied by the inline script below,
+// before the group is painted.
+const panelsHtml = await Astro.slots.render('default');
+const panels = findTabPanels(panelsHtml);
+const initial = panels.find((p) => p.isDefault) ?? panels[0];
+const content = initial ? showPanel(panelsHtml, initial.start) : panelsHtml;
+const hasDefault = panels.some((p) => p.isDefault);
 ---
 
-<div class="tabs-container my-8" data-group-id={groupId} data-query-string={queryString} id={id}>
+<div
+  class="tabs-container my-8"
+  data-group-id={groupId}
+  data-query-string={queryString ? 'true' : undefined}
+  data-has-default={hasDefault ? 'true' : undefined}
+>
   <div class="tabs-card">
-    <!-- Tabs Header -->
     <div class="tabs-header" role="tablist">
-      {/* Tab buttons will be injected here by client-side script */}
+      {panels.map((panel) => (
+        <button
+          type="button"
+          role="tab"
+          class:list={['tab-button', panel === initial ? 'tab-button-active' : 'tab-button-inactive']}
+          aria-selected={panel === initial ? 'true' : 'false'}
+          data-value={panel.value}
+        >{panel.label}</button>
+      ))}
     </div>
-    
-    <!-- Tab Content -->
+
     <div class="tabs-content px-6 py-5">
-      <slot />
+      <Fragment set:html={content} />
     </div>
   </div>
+  {groupId && (
+    <script is:inline>(function(c){const g=c.getAttribute('data-group-id');let v=null;try{if(c.getAttribute('data-query-string')==='true')v=new URLSearchParams(location.search).get(g);if(!v&&!c.hasAttribute('data-has-default'))v=localStorage.getItem('tab-group-'+g)}catch(e){}if(v&&window.__tabsSelect)window.__tabsSelect(c,v)})(document.currentScript.parentElement)</script>
+  )}
 </div>
 
 <style>
@@ -98,154 +122,33 @@ const id = nanoid(); // Unique ID for this tab group instance
 </style>
 
 <script>
-  function switchTab(container, targetValue, groupId, shouldSync = false) {
-    const items = Array.from(container.querySelectorAll('.tab-item')).filter(item => {
-      return item.closest('.tabs-container') === container;
-    });
-    
-    const tabList = container.querySelector('[role="tablist"]');
-    const buttons = tabList ? Array.from(tabList.querySelectorAll('button')) : [];
-    
-    const availableValues = items.map(i => i.getAttribute('data-value'));
-    
-    let effectiveValue = targetValue;
-    
-    if (!availableValues.includes(effectiveValue)) {
-      if (effectiveValue === 'swift' && availableValues.includes('ios')) effectiveValue = 'ios';
-      else if (effectiveValue === 'ios' && availableValues.includes('swift')) effectiveValue = 'swift';
-      else if (effectiveValue === 'kotlin' && availableValues.includes('android')) effectiveValue = 'android';
-      else if (effectiveValue === 'android' && availableValues.includes('kotlin')) effectiveValue = 'kotlin';
+  // Panel switching itself is window.__tabsSelect, defined inline in DocsLayout's
+  // <head> so each group's inline script can use it while the page is parsed.
+  // This module adds what happens on a click: remember the choice, update the
+  // URL, and switch every group with the same groupId (and the TOC, via tab-sync).
+  type TabsWindow = Window & { __tabsSelect?: (c: Element, v: string, animate?: boolean) => string | undefined };
+  const w = window as TabsWindow;
+
+  document.addEventListener('click', (e) => {
+    const button = (e.target as Element | null)?.closest?.<HTMLButtonElement>('.tabs-header > .tab-button');
+    const container = button?.closest('.tabs-container');
+    if (!button || !container || !w.__tabsSelect) return;
+    const value = w.__tabsSelect(container, button.dataset.value ?? '', true);
+    const groupId = container.getAttribute('data-group-id');
+    if (!value || !groupId) return;
+
+    try { localStorage.setItem(`tab-group-${groupId}`, value); } catch { /* storage blocked */ }
+    if (container.getAttribute('data-query-string') === 'true') {
+      const url = new URL(window.location.href);
+      url.searchParams.set(groupId, value);
+      window.history.replaceState(window.history.state, '', url);
     }
-
-    if (!availableValues.includes(effectiveValue)) {
-      effectiveValue = availableValues[0];
-    }
-    
-    if (!effectiveValue) return;
-
-    items.forEach(item => {
-      if (item.getAttribute('data-value') === effectiveValue) {
-        item.classList.remove('hidden');
-        item.style.animation = 'fadeIn 0.15s ease-out';
-      } else {
-        item.classList.add('hidden');
-      }
-    });
-    
-    buttons.forEach(btn => {
-      if (btn.dataset.value === effectiveValue) {
-        btn.className = "tab-button tab-button-active";
-      } else {
-        btn.className = "tab-button tab-button-inactive";
-      }
-    });
-
-    if (shouldSync && groupId) {
-      localStorage.setItem(`tab-group-${groupId}`, effectiveValue);
-      
-      // Update query string if enabled
-      if (container.getAttribute('data-query-string') === 'true') {
-        const url = new URL(window.location.href);
-        url.searchParams.set(groupId, effectiveValue);
-        window.history.replaceState({}, '', url);
-      }
-
-      window.dispatchEvent(new CustomEvent('tab-sync', { 
-        detail: { groupId, value: effectiveValue } 
-      }));
-    }
-  }
-
-  function initTabs() {
-    const containers = document.querySelectorAll('.tabs-container:not([data-tabs-initialized])');
-    
-    containers.forEach(container => {
-      container.setAttribute('data-tabs-initialized', 'true');
-
-      const tabItems = Array.from(container.querySelectorAll('.tab-item')).filter(item => {
-        return item.closest('.tabs-container') === container;
-      });
-      
-      const tabList = container.querySelector('[role="tablist"]');
-      const groupId = container.getAttribute('data-group-id');
-      const isQuerySyncEnabled = container.getAttribute('data-query-string') === 'true';
-      
-      // 1. Generate Headers
-      tabItems.forEach((item, index) => {
-        const value = item.getAttribute('data-value');
-        const label = item.getAttribute('data-label') || value;
-        
-        const button = document.createElement('button');
-        button.dataset.value = value;
-        button.dataset.index = index.toString();
-        button.className = "tab-button tab-button-inactive";
-        button.textContent = label;
-        
-        button.onclick = () => {
-          switchTab(container, value, groupId, true);
-        };
-        
-        tabList.appendChild(button);
-      });
-
-      // 2. Set Initial State
-      let initialValue = null;
-
-      // Priority 1: Query String
-      if (isQuerySyncEnabled && groupId) {
-        const params = new URLSearchParams(window.location.search);
-        const fromUrl = params.get(groupId);
-        if (fromUrl) initialValue = fromUrl;
-      }
-
-      // Priority 2: Default Tab
-      if (!initialValue) {
-        const defaultTab = tabItems.find(item => item.hasAttribute('data-default'));
-        if (defaultTab) {
-          initialValue = defaultTab.getAttribute('data-value');
-        }
-      }
-      
-      // Priority 3: Local Storage
-      if (groupId && !initialValue) {
-        const saved = localStorage.getItem(`tab-group-${groupId}`);
-        if (saved) initialValue = saved;
-      }
-      
-      // Priority 4: First Tab
-      if (!initialValue && tabItems.length > 0) {
-        initialValue = tabItems[0].getAttribute('data-value');
-      }
-      
-      if (initialValue) {
-        switchTab(container, initialValue, groupId, false);
-      }
-    });
-  }
-
-  // Handle sync events
-  window.addEventListener('tab-sync', (e) => {
-    const { groupId, value } = e.detail;
-    const containers = document.querySelectorAll(`.tabs-container[data-group-id="${groupId}"]`);
-    containers.forEach(container => {
-      switchTab(container, value, groupId, false);
-    });
+    window.dispatchEvent(new CustomEvent('tab-sync', { detail: { groupId, value } }));
   });
 
-  // Run on initial load
-  initTabs();
-
-  // Run on page loads (for View Transitions)
-  document.addEventListener('astro:page-load', initTabs);
+  window.addEventListener('tab-sync', (e) => {
+    const { groupId, value } = (e as CustomEvent<{ groupId: string; value: string }>).detail;
+    document.querySelectorAll(`.tabs-container[data-group-id="${CSS.escape(groupId)}"]`)
+      .forEach((container) => w.__tabsSelect?.(container, value));
+  });
 </script>
-
-<style is:global>
-  @keyframes fadeIn {
-    from {
-      opacity: 0.6;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-</style>
