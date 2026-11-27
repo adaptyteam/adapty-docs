@@ -275,6 +275,7 @@ or developer can see and click.
 | flow-common-issues | reference | marketer, dev | 16 | tutorial |
 | flow-funnel | — | marketer, dev | 14 | tutorial |
 | flow-metrics | — | marketer, dev | 25 | tutorial |
+| flow-permissions | reference | dev, marketer | 30 | tutorial |
 | flow-screen-transitions | — | marketer, dev | 3 | tutorial |
 | flow-show-hide-animations | — | marketer, dev | 6 | tutorial |
 | flow-size | — | marketer, dev | 8 | tutorial |
@@ -488,6 +489,18 @@ or developer can see and click.
   `sdk-flows-display` brief's 2026-11-20 findings. The Action order bullet restates the builder's warning
   for navigation placed after the request (dashboard code, 2026-11-20). The trigger table above it still
   says **On screen appear** / **On tap** while the builder labels are **On Screen Appear** / **On Tap**.
+- **Request permission's per-kind facts live in `flow-permissions` (2026-11-24, updated 2026-11-26).** The
+  builder prints the full declarations row of the selected kind, with its qualifiers (OS versions,
+  capabilities, Health Connect as a note for health on Android), from the same data as
+  `FlowPermissionDeclarations` (dashboard code, 2026-11-27; until then it named one main key).
+  Since 2026-11-26 the owner of every per-kind fact (dialog, all keys and capabilities, API levels, the
+  native result → answer → section → outcome table) is the shared article `flow-permissions`, assigned to
+  this zone on 2026-11-27 (its siblings, such as `respond-to-purchase-outcomes`, are here). Its summary
+  table is the `FlowPermissionDeclarations` reusable; the iOS and Android guides carry inline copies. `onboarding-actions#request-permission` links
+  `flow-permissions` once, after the sentence that lists example permissions. A new permission kind or a
+  changed declaration moves those together, along with the routing list in
+  `onboarding-actions#request-permission` and the builder's setup line, which must stay equal to
+  `FlowPermissionDeclarations`.
 
 ## Boundaries
 
@@ -512,6 +525,11 @@ topics whenever an element's *behaviour* (not its look) comes up.
 with the SDK side — see "Reader jobs" for exactly which `sdk-flows-display`/`sdk-flows-manual`/
 `sdk-migrations` article each one hands off to. That hand-off is the boundary, not a gap: this zone owns
 "what you configure in the dashboard," the SDK zones own "what code reads it."
+
+Per-kind permission facts (what each permission shows users, its `Info.plist` keys, Android permissions
+and OS versions, the answer to pass) route to `flow-permissions` (this zone since 2026-11-27); the app code that answers them is the
+`handle-permissions` family in `sdk-flows-display`. The **Request permission** action itself (triggers, outcome sections, one request at a time) stays here in
+`onboarding-actions#request-permission` (2026-11-26).
 
 ## Ticket language
 
@@ -701,6 +719,52 @@ needed in place.
 - **Same-screen updates.** Texts and visibility that read a picker's `.value` re-evaluate when the wheel settles
   (code); not run on a device.
 - **On Changed** is dropped at publish for every input (see `flow-design` Gaps); `onboarding-actions` still lists it.
+
+**Request permission, 2026-11-24 (dashboard code and transformer code).**
+
+- **Request permission covers every permission kind and has three outcome sections (2026-11-24,
+  dashboard code and transformer code).** The **Permission** field is a searchable select of 21 kinds,
+  grouped Notifications and tracking / Location / Camera and media / Personal data / Device and home,
+  labelled **Push notifications**, **App tracking (ATT)**, **Location while using the app**… The sections
+  are **When allowed**, **When denied**, **After response**, in that order. The app's answer runs one list:
+  granted → When allowed; not granted with `detailResult` `denied`, `restricted` or `permanently_denied` →
+  When denied; anything else (no status, `unsupported`) and an empty matching list → After response, so a
+  flow with only After response behaves as before. A request whose lists are all empty is sent as a bare
+  request: the screen-appear guard against re-asking after **Navigate back** applies only to requests with
+  outcomes, which is why the article keeps "sends the request every time the screen appears" for that
+  case. One request at a time, for bare requests too. Each request reports `flow_permission_requested`
+  and each answer `flow_permission_answered` as customer analytics events. The builder's warning callout
+  now names the `Info.plist` key and Android manifest permission for the selected kind; that table is
+  mirrored in the `sdk-flows-display` reusable `FlowPermissionDeclarations`, so the two must change
+  together.
+- **Permission analytics report the answer, not the section (product contract, 2026-11-25; checked on
+  devices against the branch build, 2026-11-26, with the iOS and Android SDKs).** `flow_permission_answered.outcome` is the answer category, computed
+  from `result` and `detail_result` whatever sections the author filled: `granted`, `limited`,
+  `provisional` for a granted answer; `denied`, `restricted`, `permanently_denied`, `unsupported`,
+  `other` (any other status), `no_status` for a refusal. Bare requests get the same values (the earlier
+  `granted` / `denied` / `response` / `none` set is gone). A new `flow_permission_unanswered` event fires
+  once, 60 s after a request the app hasn't answered (`permission`, `with_outcome`, `outcome`:
+  `on_screen` / `left_screen`); a closed flow sends nothing, and a late answer still sends
+  `flow_permission_answered`. Section routing is unchanged. The builder also warns about a screen whose
+  only way off is a permission request (no other action leaves the screen outside that request's
+  outcomes); `onboarding-actions#request-permission` restates it and recommends a **Skip** button. The
+  event list itself lives in the `FlowPermissionEvents` reusable (`sdk-flows-display`).
+- **Open question (2026-11-26): pre-permission screen guidance vs the Skip button.** Apple's Human
+  Interface Guidelines (developer.apple.com/design/human-interface-guidelines/privacy, "Pre-alert
+  screens") recommend one button that opens the system alert and no way to leave the screen without
+  seeing it. `onboarding-actions#request-permission` recommends a **Skip** button so that users of app
+  versions that never answer can leave. Decided 2026-11-27 (product decision): the docs lead with the
+  Skip button, and `flow-permissions` keeps Apple's one-button screen only as a caveat for flows that
+  every app version answers. The builder's warning, generalized on 2026-11-27 (dashboard code), reads:
+  "The user can leave this screen only through the permission request, and only once the app answers
+  it. Add another way out, such as a Skip button." `onboarding-actions` quotes it.
+- **The "Request a system permission other than push notifications" custom-action use case was
+  replaced (2026-11-24)** by "Open the system settings", since the action now covers every permission.
+- **The `request-permission-action.webp` screenshot still shows the push-only editor (2026-11-24)**:
+  one **Permission** row and only **After response**. No recorder checkout was available to retake it
+  with the `mock-screenshots` skill; retake it with **Location while using the app** selected and the
+  three sections visible, from the branch that ships the select until it reaches the dashboard's main
+  branch.
 
 **Verified 2026-11-18 for the virtual currency top-up recipe** (AdaptySDK-iOS 4.4.0, AdaptySDK-Android
 4.4.0, builder code read 2026-11-17).

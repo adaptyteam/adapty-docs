@@ -1,46 +1,53 @@
 ---
 title: "Handle permission requests in flows - Flutter"
-description: "Ask users for push notification permission from a flow in your Flutter app with AdaptyUISystemRequestsHandler, and return their answer to the flow."
+description: "Ask users for system permissions, such as push notifications or camera access, from a flow in your Flutter app with AdaptyUISystemRequestsHandler, and return their answers to the flow."
 metadataTitle: "Handle Flow Permissions - Flutter | Adapty Docs"
 ---
 
-A [flow](adapty-flow-builder) can ask users for permission to send push notifications with the **Request permission** action, for example on an onboarding screen that explains what the notifications are for. The Adapty SDK doesn't show the system permission dialog itself. It passes the request to an `AdaptyUISystemRequestsHandler` in your app. Your app shows the dialog and returns the user's answer, and the flow continues.
+A [flow](adapty-flow-builder) can ask users for a system permission with the **Request permission** action. For example, a flow can ask for push notifications on an onboarding screen that explains them, or for camera access before a feature that scans documents. The Adapty SDK doesn't show the system permission dialog itself. It passes the request to an `AdaptyUISystemRequestsHandler` in your app. Your app shows the dialog and returns the user's answer, and the flow continues.
 
 ## Before you start
 
 You need:
 
 - **Adapty Flutter SDK 4.0.0 or later**: Earlier versions don't have `AdaptyUISystemRequestsHandler`. See [Install & configure SDK](sdk-installation-flutter).
-- **A flow with the Request permission action**: In the Flow & Paywall Builder, add the **Request permission** action to an element's **On Tap** or **On Screen Appear** trigger. In its **After response** section, add the actions to run after the user answers, such as **Navigate Next**. For the action settings, see [Request permission](onboarding-actions#request-permission).
-- **A library that shows the notification dialog**: The example uses [permission_handler](https://pub.dev/packages/permission_handler). Any other package or your own platform code works the same way.
-- **The `POST_NOTIFICATIONS` permission in your Android manifest, and `targetSdk` 33 or higher**: Android 13 and later show the notification permission dialog only to apps that declare the permission and target Android 13 or later:
+- **A flow with the Request permission action**: In the Flow & Paywall Builder, add the **Request permission** action to an element's **On Tap** or **On Screen Appear** trigger. In the action, select the permission in the **Permission** field. In its outcome sections, add the actions to run after the user answers, such as **Navigate Next** in **After response**. For the action settings, see [Request permission](onboarding-actions#request-permission).
+- **A library that shows the permission dialogs**: The examples use [permission_handler](https://pub.dev/packages/permission_handler), [device_info_plus](https://pub.dev/packages/device_info_plus) to read the Android version, and [geolocator](https://pub.dev/packages/geolocator) for precise location. Any other package or your own platform code works the same way.
+- **The declarations of the permissions that your handler requests**: A purpose string in `Info.plist` on iOS, and a permission in the Android manifest. See [Declare the permissions](#declare-the-permissions).
+- **For push notifications on Android, `targetSdk` 33 or higher**: Only apps that target Android 13 or later choose when the notification permission dialog appears.
+- **permission_handler 13.0.2 or later, with permission_handler_apple 9.6.4 or later**: Add `permission_handler: ^13.0.2` and `permission_handler_apple: ^9.6.4` to `pubspec.yaml`. permission_handler 13.0.2 brings permission_handler_android 14.1.0, which reports the first refusal as `denied`. The Adapty Flutter SDK 4.x builds for iOS with Swift Package Manager only. With it, permission_handler_apple 9.6.4 turns on each permission whose purpose string is in `Info.plist`. See [Request each permission](#request-each-permission).
 
-  ```xml showLineNumbers title="android/app/src/main/AndroidManifest.xml"
-  <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-      <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-      <!-- ... -->
-  </manifest>
-  ```
-
-- **For iOS with CocoaPods**: Add `PERMISSION_NOTIFICATIONS=1` to `GCC_PREPROCESSOR_DEFINITIONS` in your `Podfile`, as the [permission_handler setup](https://pub.dev/packages/permission_handler) describes. Without it, `Permission.notification.request()` returns denied, and iOS shows no dialog. With Swift Package Manager, permission_handler includes the notification permission by default.
+:::warning
+**On Android, show a flow that requests permissions with `AdaptyUIFlowPlatformView`.** A flow presented with `AdaptyUI().createFlowView(...).present()` gets the permission result only after it closes, so it waits on the screen. For `AdaptyUIFlowPlatformView`, your `MainActivity` extends `FlutterFragmentActivity`: see [Embed in widget hierarchy](flutter-present-paywalls#embed-in-widget-hierarchy).
+:::
 
 ## How the flow requests a permission
 
 1. The flow reaches the **Request permission** action: the user taps the element, or the screen appears.
-2. The Adapty SDK calls `handlePermission` on your handler with `AdaptyUIPermission.push`.
-3. Your app requests the permission from the OS and returns `AdaptyUIPermissionResult.granted()` or `AdaptyUIPermissionResult.denied()`.
-4. The flow runs the **After response** actions. They are the same for both answers.
+2. The Adapty SDK calls `handlePermission` on your handler with the permission selected in the action, such as `AdaptyUIPermission.push` or `AdaptyUIPermission.camera`.
+3. Your app requests the permission from the OS and returns `AdaptyUIPermissionResult.granted()` or `AdaptyUIPermissionResult.denied()` with a status.
 
-The flow waits on the screen until your app returns the answer. If your app never answers, the flow stays on the screen. If the OS doesn't show the dialog, for example because the user already answered it, `Permission.notification.request()` returns the earlier answer at once, and the flow runs the **After response** actions right away. If those actions leave the screen, the user sees the screen that requests the permission only for a moment.
+<FlowPermissionAnswers />
 
-With **On Screen Appear**, the flow doesn't send the request again when the user comes back to the screen with a **Navigate back** action. With **On Tap**, every tap sends a new request, except taps while a request waits for your answer.
+The flow waits on the screen until your app returns the answer. If your app never answers, the flow stays on the screen. If the OS doesn't show the dialog, for example because the user already answered it, permission_handler returns the earlier answer at once, and the flow runs the outcome actions right away. If those actions leave the screen, the user sees the screen that requests the permission only for a moment.
+
+With **On Screen Appear**, the flow sends the request once per screen visit. When the user comes back to the screen with a **Navigate back** action, the flow doesn't send it again, unless every outcome section of the action is empty. With **On Tap**, each tap sends a new request. The flow sends one permission request at a time: while a request waits for your answer, a tap on an element that requests a permission does nothing.
 
 ## Implement the handler
 
-To answer permission requests, create a class that extends `AdaptyUISystemRequestsHandler` and implement `handlePermission`. Return denied for the permissions your app doesn't request.
+:::warning
+**Request only the permissions that your app declares, and answer `AdaptyUIPermissionResult.denied('unsupported')` for any other permission.** For most permissions, iOS terminates the app when the app requests a permission whose purpose string is missing from `Info.plist`. A flow author can add a request for any permission at any time, and the flow also reaches app versions released before the request was added.
+:::
+
+To answer permission requests, create a class that extends `AdaptyUISystemRequestsHandler` and implement `handlePermission`. In this example, the handler sends each permission to its function from [Code for each permission](#code-for-each-permission), and answers any other value as unsupported without a dialog:
 
 ```dart showLineNumbers title="Flutter"
+import 'dart:async';
+import 'dart:io' show Platform;
+
 import 'package:adapty_flutter/adapty_flutter.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/widgets.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class FlowSystemRequestsHandler extends AdaptyUISystemRequestsHandler {
@@ -50,17 +57,34 @@ class FlowSystemRequestsHandler extends AdaptyUISystemRequestsHandler {
     AdaptyUIPermission permission,
     Map<String, String>? customArgs,
   ) async {
-    // Answer "denied" to every permission your app doesn't request
-    if (permission != AdaptyUIPermission.push) {
-      return const AdaptyUIPermissionResult.denied();
-    }
-
     try {
-      final status = await Permission.notification.request();
-      return status.isGranted
-          ? const AdaptyUIPermissionResult.granted()
-          : const AdaptyUIPermissionResult.denied();
+      return await switch (permission) {
+        AdaptyUIPermission.push => requestPush(),
+        AdaptyUIPermission.tracking => requestTracking(),
+        AdaptyUIPermission.locationWhenInUse => requestLocationWhenInUse(),
+        AdaptyUIPermission.locationAlways => requestLocationAlways(),
+        AdaptyUIPermission.locationFullAccuracy => requestLocationFullAccuracy(),
+        AdaptyUIPermission.camera => requestCamera(),
+        AdaptyUIPermission.microphone => requestMicrophone(),
+        AdaptyUIPermission.photos => requestPhotos(),
+        AdaptyUIPermission.mediaLibrary => requestMediaLibrary(),
+        AdaptyUIPermission.music => requestMusic(),
+        AdaptyUIPermission.speech => requestSpeech(),
+        AdaptyUIPermission.contacts => requestContacts(),
+        AdaptyUIPermission.calendar => requestCalendar(),
+        AdaptyUIPermission.reminders => requestReminders(),
+        AdaptyUIPermission.health => requestHealth(),
+        AdaptyUIPermission.motion => requestMotion(),
+        AdaptyUIPermission.bluetooth => requestBluetooth(),
+        AdaptyUIPermission.localNetwork => requestLocalNetwork(),
+        AdaptyUIPermission.homekit => requestHomeKit(),
+        AdaptyUIPermission.focusStatus => requestFocusStatus(),
+        AdaptyUIPermission.siri => requestSiri(),
+        // Any other value, such as a permission added to the builder later.
+        _ => Future.value(const AdaptyUIPermissionResult.denied('unsupported')),
+      };
     } catch (_) {
+      // Not an answer from the user: the flow runs After response.
       return const AdaptyUIPermissionResult.denied();
     }
   }
@@ -73,22 +97,575 @@ class FlowSystemRequestsHandler extends AdaptyUISystemRequestsHandler {
 }
 ```
 
+Copy the functions only for the permissions that your app requests, and answer `unsupported` for the rest. To do so, delete their cases from the switch: the last case answers them. Your app doesn't declare those permissions.
+
+The functions use these helpers. `requestAndAnswer` requests a permission with permission_handler and returns the answer with the status for the result. See [Pass the status](#pass-the-status).
+
+```dart showLineNumbers title="Flutter"
+/// How long to wait for an iOS alert: under 60 seconds, when the flow reports it unanswered.
+const iosAlertTimeout = Duration(seconds: 30);
+
+/// The answer for a permission_handler status.
+AdaptyUIPermissionResult answerFromStatus(PermissionStatus status) {
+  return switch (status) {
+    PermissionStatus.granted => const AdaptyUIPermissionResult.granted('granted'),
+    PermissionStatus.limited => const AdaptyUIPermissionResult.granted('limited'),
+    PermissionStatus.provisional => const AdaptyUIPermissionResult.granted('provisional'),
+    PermissionStatus.restricted => const AdaptyUIPermissionResult.denied('restricted'),
+    PermissionStatus.permanentlyDenied => const AdaptyUIPermissionResult.denied('permanently_denied'),
+    PermissionStatus.denied => const AdaptyUIPermissionResult.denied('denied'),
+  };
+}
+
+/// Requests [permission] and answers with the status that the flow expects.
+/// On iOS, [timeout] limits the wait for the alert.
+Future<AdaptyUIPermissionResult> requestAndAnswer(
+  Permission permission, {
+  Duration? timeout,
+}) async {
+  if (Platform.isIOS) {
+    // On iOS, permission_handler reports "not asked yet" as denied.
+    final before = await permission.status;
+    // Decided earlier: iOS shows no alert, so answer at once.
+    if (before != PermissionStatus.denied) return answerFromStatus(before);
+
+    var request = permission.request();
+    if (timeout != null) {
+      request = request.timeout(timeout, onTimeout: () => permission.status);
+    }
+    return switch (await request) {
+      // permission_handler reports "Don't Allow" in this alert as permanentlyDenied.
+      PermissionStatus.permanentlyDenied => const AdaptyUIPermissionResult.denied('denied'),
+      // Still not asked: the alert closed without a choice, or didn't appear.
+      PermissionStatus.denied => const AdaptyUIPermissionResult.denied(),
+      final after => answerFromStatus(after),
+    };
+  }
+
+  final rationaleBefore = await permission.shouldShowRequestRationale;
+  return answerOnAndroid(await permission.request(), permission, rationaleBefore);
+}
+
+/// Applies the Android rationale rule to a permission_handler result.
+Future<AdaptyUIPermissionResult> answerOnAndroid(
+  PermissionStatus status,
+  Permission permission,
+  bool rationaleBefore,
+) async {
+  // A rationale before the request: the user saw the dialog and declined it again.
+  if (status == PermissionStatus.permanentlyDenied && rationaleBefore) {
+    return const AdaptyUIPermissionResult.denied('denied');
+  }
+  // No rationale before or after: the user closed the first dialog without a choice.
+  if (status == PermissionStatus.denied && !await permission.shouldShowRequestRationale) {
+    return const AdaptyUIPermissionResult.denied();
+  }
+  return answerFromStatus(status);
+}
+
+/// The Android API level of the device.
+Future<int> androidSdkInt() async => (await DeviceInfoPlugin().androidInfo).version.sdkInt;
+
+/// Completes when the app is in the foreground, or after [timeout].
+Future<void> waitUntilResumed({Duration timeout = iosAlertTimeout}) async {
+  if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) return;
+  final resumed = Completer<void>();
+  final listener = AppLifecycleListener(onResume: () {
+    if (!resumed.isCompleted) resumed.complete();
+  });
+  try {
+    await resumed.future.timeout(timeout, onTimeout: () {});
+  } finally {
+    listener.dispose();
+  }
+}
+```
+
 `handlePermission` receives:
 
 - **`view`**: The flow view that sent the request.
-- **`permission`**: The permission the flow requests. The **Request permission** action sends `AdaptyUIPermission.push`.
+- **`permission`**: The permission selected in the action. `AdaptyUIPermission` has a constant for each value in [Declare the permissions](#declare-the-permissions), named in camel case: for example, `AdaptyUIPermission.locationWhenInUse` for `location_when_use`. The `value` property returns the value as a string.
 - **`customArgs`**: Custom arguments of the request. The **Request permission** action sends none, so the value is `null`.
 
-If `handlePermission` throws or never completes, the flow gets no answer and stays on the screen. The example catches errors for this reason.
+`AdaptyUIPermissionResult.granted()` and `AdaptyUIPermissionResult.denied()` take the status as an optional string, such as `AdaptyUIPermissionResult.denied('permanently_denied')`.
 
-A granted permission lets your app show notifications. To receive push notifications, register the device with your push provider, as your app does outside flows.
+If `handlePermission` throws, Adapty Flutter SDK versions before 4.4.1 send the flow no answer, so `FlowSystemRequestsHandler` catches errors itself. If `handlePermission` never completes, the flow stays on the screen, so the functions wait for iOS alerts with a timeout. After a timeout, permission_handler on iOS keeps the request open until iOS answers it. Until then, every other permission request throws, and the flow runs **After response**.
 
 With a handler registered, the Adapty SDK passes app review requests to `handleAppReviewRequest`, whose base method does nothing. The example keeps the native review prompt.
+
+## Code for each permission
+
+Each function requests one permission and returns the answer for the flow. For what users see, the OS versions, and the status for each result, see [System permissions](flow-permissions).
+
+### Push notifications \{#push\}
+
+Declare `POST_NOTIFICATIONS` in the Android manifest. iOS needs no `Info.plist` key. See [System permissions](flow-permissions#push).
+
+```dart showLineNumbers title="Flutter"
+Future<AdaptyUIPermissionResult> requestPush() async {
+  if (Platform.isAndroid && await androidSdkInt() < 33) {
+    // Android 12 and earlier show no dialog: answer from the notification settings.
+    return await Permission.notification.isGranted
+        ? const AdaptyUIPermissionResult.granted('granted')
+        : const AdaptyUIPermissionResult.denied('permanently_denied');
+  }
+  return requestAndAnswer(Permission.notification);
+}
+```
+
+- A granted permission lets your app show notifications. To receive push notifications, register the device with your push provider, as your app does outside flows.
+- **Differs from System permissions**: When `requestAuthorization(options:)` fails on iOS, permission_handler reports `permanentlyDenied`, so the function passes `denied` instead of no status.
+
+### App tracking (ATT) \{#tracking\}
+
+Declare `NSUserTrackingUsageDescription` in `Info.plist`. Android has no such permission. See [System permissions](flow-permissions#tracking).
+
+```dart showLineNumbers title="Flutter"
+Future<AdaptyUIPermissionResult> requestTracking() async {
+  // Android has no tracking permission: permission_handler would answer denied.
+  if (!Platform.isIOS) return const AdaptyUIPermissionResult.denied('unsupported');
+  // iOS shows the alert only while the app is active.
+  await waitUntilResumed();
+  return requestAndAnswer(Permission.appTrackingTransparency);
+}
+```
+
+- After the user answers, send the ATT status to Adapty. See [Deal with ATT](flutter-deal-with-att).
+- **Differs from System permissions**: In the EU, iOS lets the app ask again a year after the user's answer. permission_handler doesn't request tracking again after a refusal, so the function passes `permanently_denied`.
+
+### Location while using the app \{#location_when_use\}
+
+Declare `NSLocationWhenInUseUsageDescription` in `Info.plist`, and `ACCESS_COARSE_LOCATION` with `ACCESS_FINE_LOCATION` in the Android manifest. See [System permissions](flow-permissions#location_when_use).
+
+```dart showLineNumbers title="Flutter"
+Future<AdaptyUIPermissionResult> requestLocationWhenInUse() {
+  // On Android, this requests precise and approximate location together.
+  return requestAndAnswer(Permission.locationWhenInUse, timeout: iosAlertTimeout);
+}
+```
+
+- On Android, permission_handler reports approximate location as denied before the request. A user who allowed only approximate location sees the dialog again, with the offer of precise location. Either choice returns granted.
+
+### Location always \{#location_always\}
+
+Declare `NSLocationWhenInUseUsageDescription` and `NSLocationAlwaysAndWhenInUseUsageDescription` in `Info.plist`, and `ACCESS_BACKGROUND_LOCATION` with the foreground location permissions in the Android manifest. See [System permissions](flow-permissions#location_always).
+
+```dart showLineNumbers title="Flutter"
+Future<AdaptyUIPermissionResult> requestLocationAlways() async {
+  // Both OSes need location while using the app first.
+  final whenInUse = await requestAndAnswer(
+    Permission.locationWhenInUse,
+    timeout: iosAlertTimeout,
+  );
+  if (!whenInUse.granted) return whenInUse;
+
+  if (Platform.isAndroid) {
+    // Android 11+ opens a settings page. The result arrives when the user comes back.
+    return await Permission.locationAlways.request() == PermissionStatus.granted
+        ? const AdaptyUIPermissionResult.granted('granted')
+        : const AdaptyUIPermissionResult.denied('denied');
+  }
+
+  // Granted, or permanentlyDenied after an earlier Always request: iOS shows no alert.
+  final before = await Permission.locationAlways.status;
+  if (before != PermissionStatus.denied) return answerFromStatus(before);
+
+  // permission_handler can return before the user answers the upgrade alert,
+  // so read the status after the alert closes.
+  Permission.locationAlways.request().ignore();
+  await Future<void>.delayed(const Duration(seconds: 1));
+  if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+    // No alert: after Allow Once, iOS ignores the request.
+    return const AdaptyUIPermissionResult.denied('permanently_denied');
+  }
+  await waitUntilResumed();
+  return await Permission.locationAlways.isGranted
+      ? const AdaptyUIPermissionResult.granted('granted')
+      // The user chose Keep Only While Using.
+      : const AdaptyUIPermissionResult.denied('denied');
+}
+```
+
+- **Differs from System permissions**: On iOS, permission_handler can't request Always access before location while using the app is granted. The function requests location while using the app first, so a new user sees two alerts in a row, and the function never passes `provisional`.
+- After **Allow Once**, iOS ignores the Always request, and permission_handler can keep it open until the app becomes active again. Until then, every other permission request throws, and the flow runs **After response**. Request **Location always** on a screen whose next steps request no other permission.
+
+### Precise location \{#location_full_accuracy\}
+
+Add [geolocator](https://pub.dev/packages/geolocator) to `pubspec.yaml`. Add `import 'package:geolocator/geolocator.dart';` to the imports at the top of the file. Declare `NSLocationWhenInUseUsageDescription` and `NSLocationTemporaryUsageDescriptionDictionary` in `Info.plist`, and `ACCESS_COARSE_LOCATION` with `ACCESS_FINE_LOCATION` in the Android manifest. See [System permissions](flow-permissions#location_full_accuracy).
+
+```dart showLineNumbers title="Flutter"
+Future<AdaptyUIPermissionResult> requestLocationFullAccuracy() async {
+  // Precise location needs location while using the app. On Android, this
+  // request also shows the dialog that offers precise location.
+  final location = await requestAndAnswer(
+    Permission.locationWhenInUse,
+    timeout: iosAlertTimeout,
+  );
+  if (!location.granted) return location;
+
+  if (await Geolocator.getLocationAccuracy() == LocationAccuracyStatus.precise) {
+    return const AdaptyUIPermissionResult.granted('granted');
+  }
+  if (Platform.isIOS) {
+    // The flow sends no purpose key: use a key from NSLocationTemporaryUsageDescriptionDictionary.
+    final accuracy = await Geolocator.requestTemporaryFullAccuracy(purposeKey: 'StoreFinder');
+    if (accuracy == LocationAccuracyStatus.precise) {
+      return const AdaptyUIPermissionResult.granted('granted');
+    }
+  }
+  // Only approximate location.
+  return const AdaptyUIPermissionResult.denied('denied');
+}
+```
+
+- Replace `StoreFinder` with a key of your `NSLocationTemporaryUsageDescriptionDictionary`. With a missing key, iOS keeps approximate location, and the function passes `denied`. A missing dictionary makes the request throw, and the flow runs **After response**.
+
+### Camera \{#camera\}
+
+Declare `NSCameraUsageDescription` in `Info.plist`, and `CAMERA` in the Android manifest. See [System permissions](flow-permissions#camera).
+
+```dart showLineNumbers title="Flutter"
+Future<AdaptyUIPermissionResult> requestCamera() async {
+  if (Platform.isAndroid) {
+    final features = (await DeviceInfoPlugin().androidInfo).systemFeatures;
+    if (!features.contains('android.hardware.camera.any')) {
+      return const AdaptyUIPermissionResult.denied('unsupported');
+    }
+  }
+  return requestAndAnswer(Permission.camera);
+}
+```
+
+### Microphone \{#microphone\}
+
+Declare `NSMicrophoneUsageDescription` in `Info.plist`, and `RECORD_AUDIO` in the Android manifest. See [System permissions](flow-permissions#microphone).
+
+```dart showLineNumbers title="Flutter"
+Future<AdaptyUIPermissionResult> requestMicrophone() {
+  return requestAndAnswer(Permission.microphone);
+}
+```
+
+### Photos \{#photos\}
+
+Declare `NSPhotoLibraryUsageDescription` in `Info.plist`, and the Android permissions from [System permissions](flow-permissions#photos) in the Android manifest.
+
+```dart showLineNumbers title="Flutter"
+Future<AdaptyUIPermissionResult> requestPhotos() async {
+  if (Platform.isIOS) return requestAndAnswer(Permission.photos);
+  if (await androidSdkInt() <= 32) return requestAndAnswer(Permission.storage);
+
+  // Android 13+: images and videos in one dialog.
+  final rationaleBefore = await Permission.photos.shouldShowRequestRationale;
+  final statuses = (await [Permission.photos, Permission.videos].request()).values;
+  if (statuses.contains(PermissionStatus.granted)) {
+    return const AdaptyUIPermissionResult.granted('granted');
+  }
+  // Android 14+: the user selected some photos and videos.
+  if (statuses.contains(PermissionStatus.limited)) {
+    return const AdaptyUIPermissionResult.granted('limited');
+  }
+  return answerOnAndroid(
+    statuses.contains(PermissionStatus.permanentlyDenied)
+        ? PermissionStatus.permanentlyDenied
+        : PermissionStatus.denied,
+    Permission.photos,
+    rationaleBefore,
+  );
+}
+```
+
+- Declare `READ_MEDIA_VISUAL_USER_SELECTED`: without it, Android 14 and later report a selection of photos as full access, and the function passes `granted`.
+
+### Media library \{#media_library\}
+
+Declare `NSAppleMusicUsageDescription` in `Info.plist`, and `READ_MEDIA_AUDIO` with `READ_EXTERNAL_STORAGE` up to API 32 in the Android manifest. See [System permissions](flow-permissions#media_library).
+
+```dart showLineNumbers title="Flutter"
+Future<AdaptyUIPermissionResult> requestMediaLibrary() async {
+  if (Platform.isIOS) return requestAndAnswer(Permission.mediaLibrary);
+  // Permission.mediaLibrary returns granted on Android without a dialog: request audio files.
+  return requestAndAnswer(
+    await androidSdkInt() >= 33 ? Permission.audio : Permission.storage,
+  );
+}
+```
+
+### Apple Music \{#music\}
+
+permission_handler has no MusicKit request: `Permission.mediaLibrary` calls the older `MPMediaLibrary` API. Android has no such permission. See [System permissions](flow-permissions#music).
+
+```dart showLineNumbers title="Flutter"
+Future<AdaptyUIPermissionResult> requestMusic() async {
+  // permission_handler can't call MusicKit, and Android has no such permission.
+  return const AdaptyUIPermissionResult.denied('unsupported');
+}
+```
+
+- To request it on iOS, call `MusicAuthorization.request()` in your own Swift code through a [platform channel](https://docs.flutter.dev/platform-integration/platform-channels).
+
+### Speech recognition \{#speech\}
+
+Declare `NSSpeechRecognitionUsageDescription` in `Info.plist`, and `RECORD_AUDIO` in the Android manifest. See [System permissions](flow-permissions#speech).
+
+```dart showLineNumbers title="Flutter"
+Future<AdaptyUIPermissionResult> requestSpeech() {
+  // Android has no separate permission: speech recognition uses RECORD_AUDIO.
+  return requestAndAnswer(Platform.isIOS ? Permission.speech : Permission.microphone);
+}
+```
+
+- To recognize live audio on iOS, the app also needs **Microphone**. Request it on another screen of the flow.
+- **Differs from System permissions**: The function doesn't call `SpeechRecognizer.isRecognitionAvailable()` on Android, which needs a [platform channel](https://docs.flutter.dev/platform-integration/platform-channels). On a device without a recognition service, it passes the microphone answer instead of `unsupported`.
+
+### Contacts \{#contacts\}
+
+Declare `NSContactsUsageDescription` in `Info.plist`, and `READ_CONTACTS` in the Android manifest. See [System permissions](flow-permissions#contacts).
+
+```dart showLineNumbers title="Flutter"
+Future<AdaptyUIPermissionResult> requestContacts() {
+  // On iOS 18+, a selection of contacts comes back as limited.
+  return requestAndAnswer(Permission.contacts);
+}
+```
+
+### Calendar \{#calendar\}
+
+Declare `NSCalendarsFullAccessUsageDescription` in `Info.plist`, with `NSCalendarsUsageDescription` for iOS 16 and earlier. Declare `READ_CALENDAR` with `WRITE_CALENDAR` in the Android manifest. See [System permissions](flow-permissions#calendar).
+
+```dart showLineNumbers title="Flutter"
+Future<AdaptyUIPermissionResult> requestCalendar() async {
+  final answer = await requestAndAnswer(Permission.calendarFullAccess);
+  // iOS 17+: the user allowed only adding events.
+  if (Platform.isIOS && !answer.granted && await Permission.calendarWriteOnly.isGranted) {
+    return const AdaptyUIPermissionResult.granted('limited');
+  }
+  return answer;
+}
+```
+
+- On Android, `Permission.calendarFullAccess` answers without a dialog unless the manifest declares both `READ_CALENDAR` and `WRITE_CALENDAR`.
+- **Differs from System permissions**: When the iOS request fails with an error, permission_handler reports `permanentlyDenied`, so the function passes `denied` instead of no status.
+
+### Reminders \{#reminders\}
+
+Declare `NSRemindersFullAccessUsageDescription` and `NSRemindersUsageDescription` in `Info.plist`. Android has no reminders store. See [System permissions](flow-permissions#reminders).
+
+```dart showLineNumbers title="Flutter"
+Future<AdaptyUIPermissionResult> requestReminders() async {
+  // Android has no reminders store: permission_handler would answer granted.
+  if (!Platform.isIOS) return const AdaptyUIPermissionResult.denied('unsupported');
+  return requestAndAnswer(Permission.reminders);
+}
+```
+
+- With Swift Package Manager, permission_handler includes reminders only when `Info.plist` has `NSRemindersUsageDescription`, also in apps that support only iOS 17 and later.
+- **Differs from System permissions**: When the iOS request fails with an error, permission_handler reports `permanentlyDenied`, so the function passes `denied` instead of no status.
+
+### Health data \{#health\}
+
+permission_handler has no request for HealthKit or Health Connect. See [System permissions](flow-permissions#health).
+
+```dart showLineNumbers title="Flutter"
+Future<AdaptyUIPermissionResult> requestHealth() async {
+  // permission_handler can't request HealthKit or Health Connect access.
+  return const AdaptyUIPermissionResult.denied('unsupported');
+}
+```
+
+- To request health data, call HealthKit and Health Connect in your own platform code through a [platform channel](https://docs.flutter.dev/platform-integration/platform-channels), and pass the statuses from [System permissions](flow-permissions#health).
+
+### Motion & Fitness \{#motion\}
+
+Declare `NSMotionUsageDescription` in `Info.plist`, and `ACTIVITY_RECOGNITION` in the Android manifest. See [System permissions](flow-permissions#motion).
+
+```dart showLineNumbers title="Flutter"
+Future<AdaptyUIPermissionResult> requestMotion() {
+  if (Platform.isIOS) {
+    // iOS has no request method: the first motion query shows the alert.
+    return requestAndAnswer(Permission.sensors, timeout: iosAlertTimeout);
+  }
+  // On Android, Permission.sensors is the body sensors permission.
+  return requestAndAnswer(Permission.activityRecognition);
+}
+```
+
+- **Differs from System permissions**: On an iOS device without motion data, the function passes no status instead of `unsupported`. `Permission.sensors` has no `serviceStatus`, so `CMMotionActivityManager.isActivityAvailable()` needs a [platform channel](https://docs.flutter.dev/platform-integration/platform-channels).
+
+### Bluetooth \{#bluetooth\}
+
+Declare `NSBluetoothAlwaysUsageDescription` in `Info.plist`, and the Android permissions from [System permissions](flow-permissions#bluetooth) in the Android manifest.
+
+```dart showLineNumbers title="Flutter"
+Future<AdaptyUIPermissionResult> requestBluetooth() async {
+  if (Platform.isIOS) {
+    // iOS has no request method: creating a Bluetooth manager shows the alert.
+    return requestAndAnswer(Permission.bluetooth, timeout: iosAlertTimeout);
+  }
+  final features = (await DeviceInfoPlugin().androidInfo).systemFeatures;
+  if (!features.contains('android.hardware.bluetooth')) {
+    return const AdaptyUIPermissionResult.denied('unsupported');
+  }
+  // Android 11 and earlier: Bluetooth scans need precise location.
+  if (await androidSdkInt() <= 30) return requestAndAnswer(Permission.location);
+
+  final rationaleBefore = await Permission.bluetoothScan.shouldShowRequestRationale;
+  final statuses = (await [Permission.bluetoothScan, Permission.bluetoothConnect].request()).values;
+  if (statuses.every((status) => status == PermissionStatus.granted)) {
+    return const AdaptyUIPermissionResult.granted('granted');
+  }
+  return answerOnAndroid(
+    statuses.contains(PermissionStatus.permanentlyDenied)
+        ? PermissionStatus.permanentlyDenied
+        : PermissionStatus.denied,
+    Permission.bluetoothScan,
+    rationaleBefore,
+  );
+}
+```
+
+- On Android 12 and later, the function passes `granted` only when the user allows both `BLUETOOTH_SCAN` and `BLUETOOTH_CONNECT`.
+
+### Local network \{#local_network\}
+
+Declare `ACCESS_LOCAL_NETWORK` in the Android manifest only if the app targets Android 17 (API 37) or higher. In the code, set `androidTargetSdk` to your app's `targetSdk`. permission_handler has no local network request on iOS. See [System permissions](flow-permissions#local_network).
+
+```dart showLineNumbers title="Flutter"
+// The targetSdk of your app.
+const androidTargetSdk = 36;
+
+Future<AdaptyUIPermissionResult> requestLocalNetwork() async {
+  // permission_handler has no iOS request: iOS has no request method or status.
+  if (Platform.isIOS) return const AdaptyUIPermissionResult.denied('unsupported');
+  // Below Android 17, or for an app that targets API 36 or lower, INTERNET gives access.
+  // permission_handler would answer denied there.
+  if (androidTargetSdk < 37 || await androidSdkInt() < 37) {
+    return const AdaptyUIPermissionResult.granted('granted');
+  }
+  return requestAndAnswer(Permission.accessLocalNetwork);
+}
+```
+
+- On iOS, a local network operation shows the alert. To answer from its result, run the operation in your own platform code through a [platform channel](https://docs.flutter.dev/platform-integration/platform-channels).
+
+### HomeKit \{#homekit\}
+
+permission_handler has no HomeKit request, and Android has no such permission. See [System permissions](flow-permissions#homekit).
+
+```dart showLineNumbers title="Flutter"
+Future<AdaptyUIPermissionResult> requestHomeKit() async {
+  // permission_handler has no HomeKit request, and Android has no such permission.
+  return const AdaptyUIPermissionResult.denied('unsupported');
+}
+```
+
+- To request it on iOS, create an `HMHomeManager` in your own Swift code through a [platform channel](https://docs.flutter.dev/platform-integration/platform-channels).
+
+### Focus status \{#focus_status\}
+
+permission_handler has no Focus status request, and Android has no such permission. See [System permissions](flow-permissions#focus_status).
+
+```dart showLineNumbers title="Flutter"
+Future<AdaptyUIPermissionResult> requestFocusStatus() async {
+  // permission_handler has no Focus status request, and Android has no such permission.
+  return const AdaptyUIPermissionResult.denied('unsupported');
+}
+```
+
+- To request it on iOS, call `INFocusStatusCenter.default.requestAuthorization()` in your own Swift code through a [platform channel](https://docs.flutter.dev/platform-integration/platform-channels).
+
+### Siri \{#siri\}
+
+Add the Siri capability in Xcode, and declare `NSSiriUsageDescription` in `Info.plist`. Android has no such permission. See [System permissions](flow-permissions#siri).
+
+```dart showLineNumbers title="Flutter"
+Future<AdaptyUIPermissionResult> requestSiri() async {
+  // Android has no Siri permission: permission_handler would answer denied.
+  if (!Platform.isIOS) return const AdaptyUIPermissionResult.denied('unsupported');
+  return requestAndAnswer(Permission.assistant);
+}
+```
+
+- In an app without the Siri capability, answer `unsupported` instead.
+
+## Request each permission
+
+The functions use [permission_handler](https://pub.dev/packages/permission_handler) to show the system dialogs. This table lists the `Permission` that each function requests. A dash means that the function answers `unsupported` there.
+
+| Value | iOS | Android |
+|:------|:----|:--------|
+| `push` | `Permission.notification` | `Permission.notification` on Android 13 and later. On Android 12 and earlier, its status, without a request |
+| `tracking` | `Permission.appTrackingTransparency` | — |
+| `location_when_use` | `Permission.locationWhenInUse` | `Permission.locationWhenInUse`, which requests precise and approximate location |
+| `location_always` | `Permission.locationAlways`, after `Permission.locationWhenInUse` is granted | `Permission.locationAlways`, after `Permission.locationWhenInUse` is granted |
+| `location_full_accuracy` | `Permission.locationWhenInUse`, then `Geolocator.requestTemporaryFullAccuracy` from geolocator | `Permission.locationWhenInUse`, then `Geolocator.getLocationAccuracy` from geolocator |
+| `camera` | `Permission.camera` | `Permission.camera` |
+| `microphone` | `Permission.microphone` | `Permission.microphone` |
+| `photos` | `Permission.photos` | `Permission.photos` with `Permission.videos` on Android 13 and later, `Permission.storage` on Android 12 and earlier |
+| `media_library` | `Permission.mediaLibrary` | `Permission.audio` on Android 13 and later, `Permission.storage` on Android 12 and earlier |
+| `music` | — | — |
+| `speech` | `Permission.speech` | `Permission.microphone` |
+| `contacts` | `Permission.contacts` | `Permission.contacts` |
+| `calendar` | `Permission.calendarFullAccess` | `Permission.calendarFullAccess` |
+| `reminders` | `Permission.reminders` | — |
+| `health` | — | — |
+| `motion` | `Permission.sensors` | `Permission.activityRecognition` |
+| `bluetooth` | `Permission.bluetooth` | `Permission.bluetoothScan` with `Permission.bluetoothConnect` on Android 12 and later, `Permission.location` on Android 11 and earlier |
+| `local_network` | — | `Permission.accessLocalNetwork` on Android 17 and later, for an app that targets API 37 or higher. Otherwise, the function answers `granted` without a request |
+| `homekit` | — | — |
+| `focus_status` | — | — |
+| `siri` | `Permission.assistant` | — |
+
+Request the iOS-only permissions only on iOS. On Android, permission_handler answers them without a dialog: `Permission.reminders` and `Permission.mediaLibrary` return granted, so the flow would run **When allowed**. `Permission.appTrackingTransparency` and `Permission.assistant` return denied. On Android, `Permission.sensors` is the body sensors permission, so the `motion` function requests `Permission.activityRecognition`.
+
+### Pass the status
+
+The `requestAndAnswer` helper passes this status for permission_handler's `PermissionStatus`:
+
+| `PermissionStatus` | Status to pass | Section |
+|:-------------------|:---------------|:--------|
+| `granted` | `granted` | **When allowed** |
+| `limited` | `limited` | **When allowed** |
+| `provisional` | `provisional` | **When allowed** |
+| `restricted` | `restricted` | **When denied** |
+| `denied` on Android, with a rationale after the request | `denied` | **When denied** |
+| `denied` on Android, without a rationale after the request: the user closed the first dialog without a choice | No status | **After response** |
+| `denied` on iOS after the request: the alert closed without a choice, or didn't appear | No status | **After response** |
+| `permanentlyDenied` on iOS, returned by the request | `denied` | **When denied** |
+| `permanentlyDenied` on iOS before the request | `permanently_denied` | **When denied** |
+| `permanentlyDenied` on Android, with a rationale before the request: the user declined the dialog again | `denied` | **When denied** |
+| `permanentlyDenied` on Android, without a rationale before the request: Android showed no dialog | `permanently_denied` | **When denied** |
+
+On iOS, permission_handler returns `permanentlyDenied` for most refusals, also right after the alert, and returns `denied` for a permission that the app hasn't requested yet. So the helper reads the status first: `permanentlyDenied` before the request is an earlier refusal, and `permanentlyDenied` after it is a refusal in this alert. A dismissed location alert returns `denied`. On Android, permission_handler returns `denied` for the first refusal, and `permanentlyDenied` when the user denies again or Android shows no dialog. So the helper reads the rationale before the request: with a rationale, the user saw the dialog, and the helper passes `denied`.
+
+On iOS with Swift Package Manager, permission_handler_apple includes a permission only when its purpose string is in `Info.plist`, and doesn't need `Podfile` macros. A permission that isn't included returns denied, and iOS shows no dialog. Follow these rules from the [permission_handler README](https://pub.dev/packages/permission_handler):
+
+- **After you add or change an `Info.plist` key**: Clear the Xcode package cache once, with `rm -rf ~/Library/Developer/Xcode/DerivedData`.
+- **When you build from Xcode.app**: permission_handler can't find `Info.plist`, so it leaves out every permission, and every request returns denied. Set the `PERMISSION_HANDLER_INFO_PLIST` variable with `launchctl setenv`, as the README describes.
+- **With an older permission_handler_apple and CocoaPods**: Add a macro to `GCC_PREPROCESSOR_DEFINITIONS` in the `Podfile` for each permission, such as `PERMISSION_NOTIFICATIONS=1` and `PERMISSION_CAMERA=1`. Versions earlier than 9.6.4 also have known issues with finding `Info.plist` and with `Permission.locationAlways`, so update instead where you can.
+
+## Declare the permissions
+
+The OS shows a permission dialog only to an app that declares the permission: in `ios/Runner/Info.plist` on iOS, and in `android/app/src/main/AndroidManifest.xml` on Android. For each permission that your handler requests, add these declarations:
+
+<FlowPermissionDeclarations />
+
+For example, an app that requests only notifications and camera access adds `NSCameraUsageDescription` to `Info.plist` on iOS. On Android, the app declares these permissions:
+
+```xml showLineNumbers title="android/app/src/main/AndroidManifest.xml"
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- ... -->
+</manifest>
+```
+
+For what each permission shows users, the OS versions it needs, and the status to pass for each result, see [System permissions](flow-permissions).
 
 ## Register the handler
 
 :::warning
-**Without a handler, the flow stops at the permission request.** If your app registers no handler, the Adapty SDK sends the flow no answer, on iOS and on Android. The flow stays on the screen that sent the request and doesn't run the **After response** actions.
+**Without a handler, the flow shows no permission dialog.** If your app registers no handler, Adapty Flutter SDK versions before 4.4.1 send the flow no answer, on iOS and on Android. The flow stays on the screen that sent the request. From version 4.4.1, the SDK answers `denied` without a status, and the flow runs **After response**.
 :::
 
 To send the permission requests from all flows to your handler, call `AdaptyUI().setSystemRequestsHandler` once, before you present a flow. For example, call it right after you set the flow events observer:
@@ -99,4 +676,13 @@ AdaptyUI().setSystemRequestsHandler(FlowSystemRequestsHandler());
 
 ## Test the permission request
 
-iOS shows the notification dialog only once per app install. Android stops showing it after the user allows notifications or denies them twice. To see the dialog again while you test the flow, delete the app from the device and install it again. Then open the flow and reach the **Request permission** action. If the screen stays and no dialog appears, the flow got no answer: make sure that your app registers the handler before it presents the flow. If the flow moves on without a dialog, make sure that the Android app declares `POST_NOTIFICATIONS` and targets Android 13 or later, and that the iOS `Podfile` enables `PERMISSION_NOTIFICATIONS`.
+iOS shows most permission dialogs only once per app install. Android stops showing a permission dialog after the user allows the permission or denies it twice. To see the dialog again while you test the flow, delete the app from the device and install it again. Then open the flow and reach the **Request permission** action.
+
+If no dialog appears, look for the cause:
+
+- **The screen stays**: The flow got no answer. Make sure that your app registers the handler before it presents the flow, and that on Android the flow is shown with `AdaptyUIFlowPlatformView`.
+- **The flow moves on**: Make sure that the app registers the handler and declares the permission on both platforms. On iOS, clear DerivedData after you add the `Info.plist` key. For notifications on Android, the app targets Android 13 or later.
+
+To see how users answer permission requests, read the flow's analytics events in the `flowViewDidReceiveAnalyticEvent` method of your flow events observer. For details, see [Handle flow & paywall events](flutter-handling-events).
+
+<FlowPermissionEvents />

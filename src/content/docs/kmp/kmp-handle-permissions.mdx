@@ -1,37 +1,41 @@
 ---
 title: "Handle permission requests in flows - Kotlin Multiplatform"
-description: "Ask users for push notification permission from a flow in your Kotlin Multiplatform app with AdaptyUISystemRequestsHandler, and return their answer to the flow."
+description: "Ask users for system permissions, such as push notifications or camera access, from a flow in your Kotlin Multiplatform app with AdaptyUISystemRequestsHandler, and return their answers to the flow."
 metadataTitle: "Handle Flow Permissions - Kotlin Multiplatform | Adapty Docs"
 ---
 
-A [flow](adapty-flow-builder) can ask users for permission to send push notifications with the **Request permission** action, for example on an onboarding screen that explains what the notifications are for. The Adapty SDK doesn't show the system permission dialog itself. It passes the request to an `AdaptyUISystemRequestsHandler` in your app. Your app shows the dialog and returns the user's answer, and the flow continues.
+A [flow](adapty-flow-builder) can ask users for a system permission with the **Request permission** action. For example, an onboarding screen can explain what push notifications are for and then request them, or a flow can request camera access before a feature that scans documents. The Adapty SDK doesn't show the system permission dialog itself. It passes the request to an `AdaptyUISystemRequestsHandler` in your app. Your app shows the dialog and returns the user's answer, and the flow continues.
 
 ## Before you start
 
 You need:
 
 - **Adapty Kotlin Multiplatform SDK 4.1.0 or later**: Version 4.1.0 is the first stable release with `AdaptyUISystemRequestsHandler`.
-- **A flow with the Request permission action**: In the Flow & Paywall Builder, add the **Request permission** action to an element's **On Tap** or **On Screen Appear** trigger. In its **After response** section, add the actions to run after the user answers, such as **Navigate Next**. For the action settings, see [Request permission](onboarding-actions#request-permission).
-- **The `POST_NOTIFICATIONS` permission in your Android manifest, and `targetSdk` 33 or higher**: Android 13 and later show the notification permission dialog only to apps that declare the permission and target Android 13 or later:
-
-  ```xml title="AndroidManifest.xml"
-  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-  ```
+- **A flow with the Request permission action**: In the Flow & Paywall Builder, add the **Request permission** action to an element's **On Tap** or **On Screen Appear** trigger. In the action, select the permission in the **Permission** field. In its outcome sections, add the actions to run after the user answers, such as **Navigate Next** in **After response**. For the action settings, see [Request permission](onboarding-actions#request-permission).
+- **The declarations of the permissions that your handler requests**: A purpose string in `Info.plist` on iOS, and a permission in the Android manifest. See [Declare the permissions](#declare-the-permissions).
+- **For push notifications on Android, `targetSdk` 33 or higher**: Only apps that target Android 13 or later choose when the notification permission dialog appears.
 
 ## How the flow requests a permission
 
 1. The flow reaches the **Request permission** action: the user taps the element, or the screen appears.
-2. The Adapty SDK calls `handlePermission` on your handler with `AdaptyUIPermission.PUSH`.
-3. Your app requests the permission from the OS and returns `AdaptyUIPermissionResult.granted()` or `AdaptyUIPermissionResult.denied()`.
-4. The flow runs the **After response** actions. They are the same for both answers.
+2. The Adapty SDK calls `handlePermission` on your handler with the permission selected in the action, such as `AdaptyUIPermission.PUSH` or `AdaptyUIPermission.CAMERA`.
+3. Your app requests the permission from the OS and returns `AdaptyUIPermissionResult.granted()` or `AdaptyUIPermissionResult.denied()` with a status.
 
-The flow waits on the screen until your app returns the answer. If your app never answers, the flow stays on the screen. If the OS doesn't show the dialog, for example because the user already answered it, your handler returns at once, and the flow runs the **After response** actions right away. If those actions leave the screen, the user sees the screen that requests the permission only for a moment.
+<FlowPermissionAnswers />
 
-With **On Screen Appear**, the flow doesn't send the request again when the user comes back to the screen with a **Navigate back** action. With **On Tap**, every tap sends a new request, except taps while a request waits for your answer.
+The flow waits on the screen until your app returns the answer. If your app never answers, the flow stays on the screen. If the OS doesn't show the dialog, for example because the user already answered it, your handler returns at once, and the flow runs the outcome actions right away. If those actions leave the screen, the user sees the screen that requests the permission only for a moment.
+
+With **On Screen Appear**, the flow sends the request once. When the user comes back to the screen with a **Navigate back** action, the flow doesn't send it again, unless every outcome section of the action is empty. With **On Tap**, each tap sends a new request. The flow sends one permission request at a time: while a request waits for your answer, a tap on an element that requests a permission does nothing.
 
 ## Implement the handler
 
-To answer permission requests, implement `AdaptyUISystemRequestsHandler` in common code. Return a result for every request: return `denied` for the permissions your app doesn't request, and catch the exceptions of your platform code. The Adapty SDK doesn't catch exceptions from `handlePermission`: an uncaught exception crashes the app, and the flow gets no answer.
+:::warning
+**Request only the permissions that your app declares, and answer `AdaptyUIPermissionResult.denied("unsupported")` for any other permission.** For most permissions, iOS terminates the app when the app requests a permission whose purpose string is missing from `Info.plist`. A flow author can add a request for any permission at any time, and the flow also reaches app versions released before the request was added.
+:::
+
+To answer permission requests, implement `AdaptyUISystemRequestsHandler` in common code. Common code can't show the system dialogs, so the handler sends each permission to its own `expect` function, with an `actual` implementation in `iosMain` and in `androidMain`. The functions call the platform APIs, because moko-permissions can't report every status that the flow needs.
+
+The handler must return a result for every request. The Adapty SDK doesn't catch exceptions from `handlePermission`: an uncaught exception crashes the app, and the flow gets no answer. So the handler catches the exceptions of every function, and answers without a status:
 
 ```kotlin showLineNumbers title="commonMain"
 import com.adapty.kmp.AdaptyUISystemRequestsHandler
@@ -45,84 +49,93 @@ class MySystemRequestsHandler : AdaptyUISystemRequestsHandler {
         view: AdaptyUIFlowView,
         permission: AdaptyUIPermission,
         customArgs: Map<String, String>?,
-    ): AdaptyUIPermissionResult {
-        if (permission != AdaptyUIPermission.PUSH) {
-            return AdaptyUIPermissionResult.denied()
+    ): AdaptyUIPermissionResult = try {
+        when (permission) {
+            AdaptyUIPermission.PUSH -> requestPush()
+            AdaptyUIPermission.TRACKING -> requestTracking()
+            AdaptyUIPermission.LOCATION_WHEN_USE -> requestLocationWhenInUse()
+            AdaptyUIPermission.LOCATION_ALWAYS -> requestLocationAlways()
+            AdaptyUIPermission.LOCATION_FULL_ACCURACY -> requestPreciseLocation()
+            AdaptyUIPermission.CAMERA -> requestCamera()
+            AdaptyUIPermission.MICROPHONE -> requestMicrophone()
+            AdaptyUIPermission.PHOTOS -> requestPhotos()
+            AdaptyUIPermission.MEDIA_LIBRARY -> requestMediaLibrary()
+            AdaptyUIPermission.MUSIC -> requestMusic()
+            AdaptyUIPermission.SPEECH -> requestSpeech()
+            AdaptyUIPermission.CONTACTS -> requestContacts()
+            AdaptyUIPermission.CALENDAR -> requestCalendar()
+            AdaptyUIPermission.REMINDERS -> requestReminders()
+            AdaptyUIPermission.HEALTH -> requestHealth()
+            AdaptyUIPermission.MOTION -> requestMotion()
+            AdaptyUIPermission.BLUETOOTH -> requestBluetooth()
+            AdaptyUIPermission.LOCAL_NETWORK -> requestLocalNetwork()
+            AdaptyUIPermission.HOMEKIT -> requestHomeKit()
+            AdaptyUIPermission.FOCUS_STATUS -> requestFocusStatus()
+            AdaptyUIPermission.SIRI -> requestSiri()
+            // A permission this app version doesn't request: answer without a dialog.
+            else -> AdaptyUIPermissionResult.denied("unsupported")
         }
-        return try {
-            if (requestPushPermission()) {
-                AdaptyUIPermissionResult.granted()
-            } else {
-                AdaptyUIPermissionResult.denied()
-            }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            AdaptyUIPermissionResult.denied(e.message)
-        }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Throwable) {
+        // An exception that leaves handlePermission crashes the app.
+        // Answer without a status instead: the flow runs After response.
+        AdaptyUIPermissionResult.denied()
     }
 }
+
+// One function for each permission, with an actual in iosMain and one in androidMain.
+expect suspend fun requestPush(): AdaptyUIPermissionResult
+expect suspend fun requestTracking(): AdaptyUIPermissionResult
+expect suspend fun requestLocationWhenInUse(): AdaptyUIPermissionResult
+expect suspend fun requestLocationAlways(): AdaptyUIPermissionResult
+expect suspend fun requestPreciseLocation(): AdaptyUIPermissionResult
+expect suspend fun requestCamera(): AdaptyUIPermissionResult
+expect suspend fun requestMicrophone(): AdaptyUIPermissionResult
+expect suspend fun requestPhotos(): AdaptyUIPermissionResult
+expect suspend fun requestMediaLibrary(): AdaptyUIPermissionResult
+expect suspend fun requestMusic(): AdaptyUIPermissionResult
+expect suspend fun requestSpeech(): AdaptyUIPermissionResult
+expect suspend fun requestContacts(): AdaptyUIPermissionResult
+expect suspend fun requestCalendar(): AdaptyUIPermissionResult
+expect suspend fun requestReminders(): AdaptyUIPermissionResult
+expect suspend fun requestHealth(): AdaptyUIPermissionResult
+expect suspend fun requestMotion(): AdaptyUIPermissionResult
+expect suspend fun requestBluetooth(): AdaptyUIPermissionResult
+expect suspend fun requestLocalNetwork(): AdaptyUIPermissionResult
+expect suspend fun requestHomeKit(): AdaptyUIPermissionResult
+expect suspend fun requestFocusStatus(): AdaptyUIPermissionResult
+expect suspend fun requestSiri(): AdaptyUIPermissionResult
 ```
 
-`requestPushPermission` is your platform code. See [Request the permission on each platform](#request-the-permission-on-each-platform).
+Copy the functions only for the permissions that your app requests, from [Code for each permission](#code-for-each-permission). For any other permission, delete its line in `when` and its `expect` declaration, so that the handler answers `unsupported`. Your app then doesn't link that permission's framework or declare its purpose string.
 
 `handlePermission` receives:
 
 - **`view`**: The flow view that sent the request.
-- **`permission`**: The permission the flow requests. The **Request permission** action sends `AdaptyUIPermission.PUSH`.
+- **`permission`**: The permission selected in the action. `AdaptyUIPermission` has a constant for each value in [Declare the permissions](#declare-the-permissions), named in upper case: for example, `AdaptyUIPermission.LOCATION_WHEN_USE` for `location_when_use`. The `value` property returns the value as a string.
 - **`customArgs`**: Custom arguments of the request. The **Request permission** action sends none, so the value is `null`.
 
-The `detail` string you can pass to `granted` and `denied` is optional.
+`granted` and `denied` take the status as an optional `detail` string, such as `AdaptyUIPermissionResult.denied("permanently_denied")`. For the status that each OS result needs, see [System permissions](flow-permissions).
 
-A granted permission lets your app show notifications. To receive push notifications, register the device with your push provider, such as APNs or Firebase Cloud Messaging, as your app does outside flows.
-
-`AdaptyUISystemRequestsHandler` also has `handleAppReviewRequest`. Its default shows the native review prompt, so you don't need to override it.
-
-## Request the permission on each platform
-
-Common code can't show the system dialog, so `requestPushPermission` is an `expect` function with an `actual` implementation for each platform. If your app already uses a Kotlin Multiplatform permissions library, call it from `handlePermission` instead.
-
-```kotlin title="commonMain"
-expect suspend fun requestPushPermission(): Boolean
-```
-
-On iOS, ask `UNUserNotificationCenter` for authorization:
-
-```kotlin showLineNumbers title="iosMain"
-import kotlinx.coroutines.suspendCancellableCoroutine
-import platform.UserNotifications.UNAuthorizationOptionAlert
-import platform.UserNotifications.UNAuthorizationOptionBadge
-import platform.UserNotifications.UNAuthorizationOptionSound
-import platform.UserNotifications.UNUserNotificationCenter
-import kotlin.coroutines.resume
-
-actual suspend fun requestPushPermission(): Boolean =
-    suspendCancellableCoroutine { continuation ->
-        UNUserNotificationCenter.currentNotificationCenter().requestAuthorizationWithOptions(
-            UNAuthorizationOptionAlert or UNAuthorizationOptionBadge or UNAuthorizationOptionSound,
-        ) { granted, _ ->
-            continuation.resume(granted)
-        }
-    }
-```
-
-On Android, the runtime permission exists from Android 13. On earlier versions, return whether notifications are turned on for the app. Ask from the activity that is on screen, which is the flow's activity while a flow is shown. In this example, `ResumedActivity` tracks it. Register it in `Application.onCreate` with `registerActivityLifecycleCallbacks(ResumedActivity)`:
+On Android, the functions request runtime permissions with `requestRuntimePermissions`. It asks from the activity on screen, which is the flow's activity while a flow is shown. `ResumedActivity` tracks that activity: register it in `Application.onCreate` with `registerActivityLifecycleCallbacks(ResumedActivity)`. To tell a refusal in the dialog from a refusal without a dialog, and from a dialog closed without a choice, `requestRuntimePermissions` follows [the rules for every permission](flow-permissions#rules-for-every-permission):
 
 ```kotlin showLineNumbers title="androidMain"
-import android.Manifest
 import android.app.Activity
 import android.app.Application
+import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.util.UUID
 import kotlin.coroutines.resume
 
+// The activity on screen: while a flow is shown, the flow's activity.
+// Register it in Application.onCreate: registerActivityLifecycleCallbacks(ResumedActivity).
 object ResumedActivity : Application.ActivityLifecycleCallbacks {
     var current: ComponentActivity? = null
         private set
@@ -142,34 +155,1597 @@ object ResumedActivity : Application.ActivityLifecycleCallbacks {
     override fun onActivityDestroyed(activity: Activity) {}
 }
 
-actual suspend fun requestPushPermission(): Boolean {
-    val activity = ResumedActivity.current ?: return false
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-        return NotificationManagerCompat.from(activity).areNotificationsEnabled()
+class RuntimeRequest(
+    // Whether each requested permission is granted after the request.
+    val granted: Map<String, Boolean>,
+    // The status to pass if the permission isn't granted.
+    val deniedStatus: String?,
+)
+
+// Requests the permissions together, in one dialog.
+suspend fun requestRuntimePermissions(vararg permissions: String): RuntimeRequest {
+    // No activity on screen: the exception makes the handler answer without a status.
+    val activity = ResumedActivity.current ?: error("No resumed activity")
+    fun isGranted(permission: String) =
+        ContextCompat.checkSelfPermission(activity, permission) == PackageManager.PERMISSION_GRANTED
+    if (permissions.all(::isGranted)) {
+        return RuntimeRequest(permissions.associateWith { true }, null)
     }
-    val permission = Manifest.permission.POST_NOTIFICATIONS
-    if (ContextCompat.checkSelfPermission(activity, permission) == PackageManager.PERMISSION_GRANTED) {
-        return true
-    }
-    return suspendCancellableCoroutine { continuation ->
-        lateinit var launcher: ActivityResultLauncher<String>
+    // Android can't tell whether the app requested a permission before, so the app keeps a flag.
+    val requested = activity.getSharedPreferences("flow_permissions", Context.MODE_PRIVATE)
+    val requestedBefore = permissions.any { requested.getBoolean(it, false) }
+    val rationaleBefore = permissions.any { activity.shouldShowRequestPermissionRationale(it) }
+    requested.edit().apply { permissions.forEach { putBoolean(it, true) } }.apply()
+
+    suspendCancellableCoroutine { continuation ->
+        lateinit var launcher: ActivityResultLauncher<Array<String>>
+        // A key of its own for each request.
         launcher = activity.activityResultRegistry.register(
-            "push_permission",
-            ActivityResultContracts.RequestPermission(),
-        ) { granted ->
+            "flow_permission_${UUID.randomUUID()}",
+            ActivityResultContracts.RequestMultiplePermissions(),
+        ) {
             launcher.unregister()
-            continuation.resume(granted)
+            if (continuation.isActive) continuation.resume(Unit)
         }
-        launcher.launch(permission)
         continuation.invokeOnCancellation { launcher.unregister() }
+        launcher.launch(arrayOf(*permissions))
+    }
+
+    val deniedStatus = when {
+        // A rationale before or after the request: the user declined the dialog.
+        rationaleBefore || permissions.any { activity.shouldShowRequestPermissionRationale(it) } -> "denied"
+        // No rationale before or after a repeated request: Android showed no dialog.
+        requestedBefore -> "permanently_denied"
+        // The user closed the dialog without a choice: the flow runs After response.
+        else -> null
+    }
+    return RuntimeRequest(permissions.associateWith(::isGranted), deniedStatus)
+}
+```
+
+Each request registers its launcher with a key of its own, so two requests don't share a result. If the activity is recreated while the dialog is open, for example on rotation, the result doesn't reach the function. The flow then gets no answer, and after 60 seconds it reports `flow_permission_unanswered`.
+
+The flags are in the `flow_permissions` shared preferences file. Android Auto Backup can restore this file on a new installation, and a dialog that the user closes without a choice then gets `permanently_denied`. To keep the file out of backups, exclude `flow_permissions.xml` in your backup rules, as [Android backup rules](sdk-installation-android#android-backup-rules-auto-backup-configuration) describes.
+
+`AdaptyUISystemRequestsHandler` also has `handleAppReviewRequest`. Its default shows the native review prompt, so you don't need to override it.
+
+## Code for each permission
+
+Each permission has an `actual` function for `iosMain` and one for `androidMain`. The Adapty SDK calls `handlePermission` on the main thread on both platforms, and the functions call the OS from there. When iOS has no request method, or doesn't always call back, the iOS function waits 50 seconds at most: after 60 seconds without an answer, the flow reports `flow_permission_unanswered`.
+
+### Push notifications \{#push\}
+
+Request it on Android 13 and later with `POST_NOTIFICATIONS` in the manifest. iOS needs no `Info.plist` key. See [System permissions](flow-permissions#push).
+
+```kotlin showLineNumbers title="iosMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+import kotlinx.coroutines.suspendCancellableCoroutine
+import platform.Foundation.NSError
+import platform.UserNotifications.UNAuthorizationOptionAlert
+import platform.UserNotifications.UNAuthorizationOptionBadge
+import platform.UserNotifications.UNAuthorizationOptionSound
+import platform.UserNotifications.UNAuthorizationStatus
+import platform.UserNotifications.UNAuthorizationStatusAuthorized
+import platform.UserNotifications.UNAuthorizationStatusDenied
+import platform.UserNotifications.UNAuthorizationStatusEphemeral
+import platform.UserNotifications.UNAuthorizationStatusNotDetermined
+import platform.UserNotifications.UNAuthorizationStatusProvisional
+import platform.UserNotifications.UNUserNotificationCenter
+import kotlin.coroutines.resume
+
+actual suspend fun requestPush(): AdaptyUIPermissionResult {
+    val center = UNUserNotificationCenter.currentNotificationCenter()
+    val before = suspendCancellableCoroutine<UNAuthorizationStatus> { continuation ->
+        center.getNotificationSettingsWithCompletionHandler { settings ->
+            continuation.resume(settings?.authorizationStatus ?: UNAuthorizationStatusNotDetermined)
+        }
+    }
+    when (before) {
+        UNAuthorizationStatusAuthorized, UNAuthorizationStatusEphemeral ->
+            return AdaptyUIPermissionResult.granted("granted")
+        // Quiet notifications, after an earlier request with UNAuthorizationOptionProvisional.
+        UNAuthorizationStatusProvisional -> return AdaptyUIPermissionResult.granted("provisional")
+        // The user declined earlier: iOS shows no alert.
+        UNAuthorizationStatusDenied -> return AdaptyUIPermissionResult.denied("permanently_denied")
+    }
+    val (allowed, error) = suspendCancellableCoroutine<Pair<Boolean, NSError?>> { continuation ->
+        center.requestAuthorizationWithOptions(
+            UNAuthorizationOptionAlert or UNAuthorizationOptionBadge or UNAuthorizationOptionSound,
+        ) { granted, error ->
+            continuation.resume(granted to error)
+        }
+    }
+    return when {
+        error != null -> AdaptyUIPermissionResult.denied()
+        allowed -> AdaptyUIPermissionResult.granted("granted")
+        else -> AdaptyUIPermissionResult.denied("denied")
     }
 }
 ```
 
+```kotlin showLineNumbers title="androidMain"
+import android.Manifest
+import android.os.Build
+import androidx.core.app.NotificationManagerCompat
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+
+actual suspend fun requestPush(): AdaptyUIPermissionResult {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        // Android 12 and earlier have no dialog: answer from the notification setting.
+        val activity = ResumedActivity.current ?: error("No resumed activity")
+        return if (NotificationManagerCompat.from(activity).areNotificationsEnabled()) {
+            AdaptyUIPermissionResult.granted("granted")
+        } else {
+            AdaptyUIPermissionResult.denied("permanently_denied")
+        }
+    }
+    val request = requestRuntimePermissions(Manifest.permission.POST_NOTIFICATIONS)
+    return if (request.granted.getValue(Manifest.permission.POST_NOTIFICATIONS)) {
+        AdaptyUIPermissionResult.granted("granted")
+    } else {
+        AdaptyUIPermissionResult.denied(request.deniedStatus)
+    }
+}
+```
+
+- To grant quiet notifications without an alert, add `UNAuthorizationOptionProvisional` to the iOS options, and pass `provisional` with the granted answer.
+- A granted notification permission lets your app show notifications. To receive push notifications, register the device with your push provider, such as APNs or Firebase Cloud Messaging, as your app does outside flows.
+
+### App tracking (ATT) \{#tracking\}
+
+Declare `NSUserTrackingUsageDescription` on iOS. Android has no such permission. See [System permissions](flow-permissions#tracking).
+
+```kotlin showLineNumbers title="iosMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
+import platform.AppTrackingTransparency.ATTrackingManager
+import platform.AppTrackingTransparency.ATTrackingManagerAuthorizationStatus
+import platform.AppTrackingTransparency.ATTrackingManagerAuthorizationStatusAuthorized
+import platform.AppTrackingTransparency.ATTrackingManagerAuthorizationStatusDenied
+import platform.AppTrackingTransparency.ATTrackingManagerAuthorizationStatusRestricted
+import platform.Foundation.NSNotificationCenter
+import platform.Foundation.NSOperationQueue
+import platform.UIKit.UIApplication
+import platform.UIKit.UIApplicationDidBecomeActiveNotification
+import platform.UIKit.UIApplicationState
+import platform.darwin.NSObjectProtocol
+import kotlin.coroutines.resume
+import kotlin.time.Duration.Companion.seconds
+
+private suspend fun awaitDidBecomeActive() = suspendCancellableCoroutine { continuation ->
+    val center = NSNotificationCenter.defaultCenter
+    var observer: NSObjectProtocol? = null
+    observer = center.addObserverForName(
+        UIApplicationDidBecomeActiveNotification, null, NSOperationQueue.mainQueue,
+    ) { _ ->
+        observer?.let { center.removeObserver(it) }
+        if (continuation.isActive) continuation.resume(Unit)
+    }
+    continuation.invokeOnCancellation { observer?.let { center.removeObserver(it) } }
+}
+
+actual suspend fun requestTracking(): AdaptyUIPermissionResult {
+    when (ATTrackingManager.trackingAuthorizationStatus) {
+        ATTrackingManagerAuthorizationStatusAuthorized -> return AdaptyUIPermissionResult.granted("granted")
+        ATTrackingManagerAuthorizationStatusRestricted -> return AdaptyUIPermissionResult.denied("restricted")
+        // The user declined earlier, or turned off tracking requests in Settings: iOS shows no alert.
+        ATTrackingManagerAuthorizationStatusDenied ->
+            return AdaptyUIPermissionResult.denied("permanently_denied")
+    }
+    // iOS shows the alert only while the app is active.
+    if (UIApplication.sharedApplication.applicationState != UIApplicationState.UIApplicationStateActive) {
+        // The app didn't become active in time: answer without a status.
+        withTimeoutOrNull(50.seconds) { awaitDidBecomeActive() } ?: return AdaptyUIPermissionResult.denied()
+    }
+    val status = suspendCancellableCoroutine<ATTrackingManagerAuthorizationStatus> { continuation ->
+        ATTrackingManager.requestTrackingAuthorizationWithCompletionHandler { continuation.resume(it) }
+    }
+    return when (status) {
+        ATTrackingManagerAuthorizationStatusAuthorized -> AdaptyUIPermissionResult.granted("granted")
+        ATTrackingManagerAuthorizationStatusDenied -> AdaptyUIPermissionResult.denied("denied")
+        ATTrackingManagerAuthorizationStatusRestricted -> AdaptyUIPermissionResult.denied("restricted")
+        // iOS closed the prompt without a decision.
+        else -> AdaptyUIPermissionResult.denied()
+    }
+}
+```
+
+```kotlin showLineNumbers title="androidMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+
+// Android has no tracking permission.
+actual suspend fun requestTracking(): AdaptyUIPermissionResult =
+    AdaptyUIPermissionResult.denied("unsupported")
+```
+
+- In the EU, iOS lets the app ask again a year after the user's answer. For how to handle it, see [System permissions](flow-permissions#tracking).
+- After the user answers, send the ATT status to Adapty. See [Deal with ATT](kmp-deal-with-att).
+
+### Location while using the app \{#location_when_use\}
+
+Declare `NSLocationWhenInUseUsageDescription` on iOS, and `ACCESS_COARSE_LOCATION` and `ACCESS_FINE_LOCATION` on Android. See [System permissions](flow-permissions#location_when_use).
+
+```kotlin showLineNumbers title="iosMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
+import platform.CoreLocation.CLLocationManager
+import platform.CoreLocation.CLLocationManagerDelegateProtocol
+import platform.CoreLocation.kCLAuthorizationStatusAuthorizedAlways
+import platform.CoreLocation.kCLAuthorizationStatusAuthorizedWhenInUse
+import platform.CoreLocation.kCLAuthorizationStatusDenied
+import platform.CoreLocation.kCLAuthorizationStatusNotDetermined
+import platform.CoreLocation.kCLAuthorizationStatusRestricted
+import platform.darwin.NSObject
+import kotlin.coroutines.resume
+import kotlin.time.Duration.Companion.seconds
+
+private class WhenInUseLocationRequest : NSObject(), CLLocationManagerDelegateProtocol {
+    val manager = CLLocationManager()
+    private var onDecided: (() -> Unit)? = null
+
+    init {
+        manager.delegate = this
+    }
+
+    suspend fun request() {
+        // Never wait longer than the flow does: 60 seconds.
+        withTimeoutOrNull(50.seconds) {
+            suspendCancellableCoroutine { continuation ->
+                onDecided = { if (continuation.isActive) continuation.resume(Unit) }
+                manager.requestWhenInUseAuthorization()
+            }
+        }
+        onDecided = null
+    }
+
+    // iOS also calls this method when it creates the manager, with the current status.
+    override fun locationManagerDidChangeAuthorization(manager: CLLocationManager) {
+        if (manager.authorizationStatus != kCLAuthorizationStatusNotDetermined) onDecided?.invoke()
+    }
+}
+
+actual suspend fun requestLocationWhenInUse(): AdaptyUIPermissionResult {
+    val location = WhenInUseLocationRequest()
+    val before = location.manager.authorizationStatus
+    // With any other status, iOS ignores the request and doesn't call the delegate.
+    if (before == kCLAuthorizationStatusNotDetermined) location.request()
+    return when (location.manager.authorizationStatus) {
+        kCLAuthorizationStatusAuthorizedWhenInUse, kCLAuthorizationStatusAuthorizedAlways ->
+            AdaptyUIPermissionResult.granted("granted")
+        kCLAuthorizationStatusRestricted -> AdaptyUIPermissionResult.denied("restricted")
+        kCLAuthorizationStatusDenied -> AdaptyUIPermissionResult.denied(
+            // Denied before the request, also with Location Services off: iOS shows no alert.
+            if (before == kCLAuthorizationStatusNotDetermined) "denied" else "permanently_denied",
+        )
+        // No answer before the timeout.
+        else -> AdaptyUIPermissionResult.denied()
+    }
+}
+```
+
+```kotlin showLineNumbers title="androidMain"
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+
+actual suspend fun requestLocationWhenInUse(): AdaptyUIPermissionResult {
+    val activity = ResumedActivity.current ?: error("No resumed activity")
+    val fine = Manifest.permission.ACCESS_FINE_LOCATION
+    val coarse = Manifest.permission.ACCESS_COARSE_LOCATION
+    // Approximate location is granted too: don't ask for precise location again.
+    // To report approximate location in analytics, pass "limited" for it instead.
+    val hasLocation = listOf(fine, coarse).any {
+        ContextCompat.checkSelfPermission(activity, it) == PackageManager.PERMISSION_GRANTED
+    }
+    if (hasLocation) return AdaptyUIPermissionResult.granted("granted")
+    // Request both: some Android 12 releases ignore a request for precise location alone.
+    val request = requestRuntimePermissions(fine, coarse)
+    return if (request.granted.values.any { it }) {
+        AdaptyUIPermissionResult.granted("granted")
+    } else {
+        AdaptyUIPermissionResult.denied(request.deniedStatus)
+    }
+}
+```
+
+### Location always \{#location_always\}
+
+Declare `NSLocationWhenInUseUsageDescription` and `NSLocationAlwaysAndWhenInUseUsageDescription` on iOS, and `ACCESS_BACKGROUND_LOCATION` with the foreground location permissions on Android. See [System permissions](flow-permissions#location_always).
+
+```kotlin showLineNumbers title="iosMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
+import platform.CoreLocation.CLLocationManager
+import platform.CoreLocation.CLLocationManagerDelegateProtocol
+import platform.CoreLocation.kCLAuthorizationStatusAuthorizedAlways
+import platform.CoreLocation.kCLAuthorizationStatusAuthorizedWhenInUse
+import platform.CoreLocation.kCLAuthorizationStatusDenied
+import platform.CoreLocation.kCLAuthorizationStatusNotDetermined
+import platform.CoreLocation.kCLAuthorizationStatusRestricted
+import platform.Foundation.NSNotificationCenter
+import platform.Foundation.NSOperationQueue
+import platform.Foundation.NSUserDefaults
+import platform.UIKit.UIApplicationDidBecomeActiveNotification
+import platform.UIKit.UIApplicationWillResignActiveNotification
+import platform.darwin.NSObject
+import platform.darwin.NSObjectProtocol
+import kotlin.coroutines.resume
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+
+private class AlwaysLocationRequest : NSObject(), CLLocationManagerDelegateProtocol {
+    val manager = CLLocationManager()
+    private var onDecided: (() -> Unit)? = null
+
+    init {
+        manager.delegate = this
+    }
+
+    // Waits for a status change after the request, or for the timeout.
+    suspend fun awaitChange(timeout: Duration, request: () -> Unit = {}) {
+        withTimeoutOrNull(timeout) {
+            suspendCancellableCoroutine { continuation ->
+                onDecided = { if (continuation.isActive) continuation.resume(Unit) }
+                request()
+            }
+        }
+        onDecided = null
+    }
+
+    override fun locationManagerDidChangeAuthorization(manager: CLLocationManager) {
+        if (manager.authorizationStatus != kCLAuthorizationStatusNotDetermined) onDecided?.invoke()
+    }
+}
+
+// Returns false if the notification doesn't arrive in time.
+private suspend fun awaitAppNotification(name: String?, timeout: Duration): Boolean =
+    withTimeoutOrNull(timeout) {
+        suspendCancellableCoroutine { continuation ->
+            val center = NSNotificationCenter.defaultCenter
+            var observer: NSObjectProtocol? = null
+            observer = center.addObserverForName(name, null, NSOperationQueue.mainQueue) { _ ->
+                observer?.let { center.removeObserver(it) }
+                if (continuation.isActive) continuation.resume(true)
+            }
+            continuation.invokeOnCancellation { observer?.let { center.removeObserver(it) } }
+        }
+    } ?: false
+
+actual suspend fun requestLocationAlways(): AdaptyUIPermissionResult {
+    val location = AlwaysLocationRequest()
+    // iOS accepts one Always request per install and can't tell whether the app asked before.
+    val defaults = NSUserDefaults.standardUserDefaults
+    val requestedBefore = defaults.boolForKey("flow_location_always_requested")
+    when (location.manager.authorizationStatus) {
+        kCLAuthorizationStatusAuthorizedAlways -> return AdaptyUIPermissionResult.granted("granted")
+        kCLAuthorizationStatusRestricted -> return AdaptyUIPermissionResult.denied("restricted")
+        kCLAuthorizationStatusDenied -> return AdaptyUIPermissionResult.denied("permanently_denied")
+        kCLAuthorizationStatusNotDetermined -> {
+            defaults.setBool(true, "flow_location_always_requested")
+            location.awaitChange(50.seconds) { location.manager.requestAlwaysAuthorization() }
+            return when (location.manager.authorizationStatus) {
+                // Location access from the first alert is provisional Always access:
+                // iOS asks the second question later, typically while the app isn't running.
+                kCLAuthorizationStatusAuthorizedAlways, kCLAuthorizationStatusAuthorizedWhenInUse ->
+                    AdaptyUIPermissionResult.granted("provisional")
+                kCLAuthorizationStatusDenied -> AdaptyUIPermissionResult.denied("denied")
+                kCLAuthorizationStatusRestricted -> AdaptyUIPermissionResult.denied("restricted")
+                else -> AdaptyUIPermissionResult.denied()
+            }
+        }
+    }
+    // Location while using the app is granted. After Allow Once, or after an earlier
+    // Always request, iOS ignores the request and shows no alert.
+    if (requestedBefore) return AdaptyUIPermissionResult.denied("permanently_denied")
+    defaults.setBool(true, "flow_location_always_requested")
+    location.manager.requestAlwaysAuthorization()
+    // The app becomes inactive while the upgrade alert is on screen. Keep Only While Using
+    // doesn't change the status, so wait for the app to become active again.
+    val alertShown = awaitAppNotification(UIApplicationWillResignActiveNotification, 1.seconds)
+    if (alertShown) {
+        awaitAppNotification(UIApplicationDidBecomeActiveNotification, 50.seconds)
+        // The status can change after the app becomes active.
+        if (location.manager.authorizationStatus != kCLAuthorizationStatusAuthorizedAlways) {
+            location.awaitChange(1.seconds)
+        }
+    }
+    return when {
+        location.manager.authorizationStatus == kCLAuthorizationStatusAuthorizedAlways ->
+            AdaptyUIPermissionResult.granted("granted")
+        alertShown -> AdaptyUIPermissionResult.denied("denied")
+        else -> AdaptyUIPermissionResult.denied("permanently_denied")
+    }
+}
+```
+
+```kotlin showLineNumbers title="androidMain"
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.content.ContextCompat
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+
+actual suspend fun requestLocationAlways(): AdaptyUIPermissionResult {
+    val activity = ResumedActivity.current ?: error("No resumed activity")
+    val foreground = listOf(
+        Manifest.permission.ACCESS_FINE_LOCATION,
+        Manifest.permission.ACCESS_COARSE_LOCATION,
+    )
+    // Precise or approximate location is enough: don't ask for precise location again.
+    val hasForeground = foreground.any {
+        ContextCompat.checkSelfPermission(activity, it) == PackageManager.PERMISSION_GRANTED
+    }
+    if (!hasForeground) {
+        val request = requestRuntimePermissions(*foreground.toTypedArray())
+        if (request.granted.values.none { it }) {
+            // As for location while using the app.
+            return AdaptyUIPermissionResult.denied(request.deniedStatus)
+        }
+    }
+    // Android 9 and earlier grant background location with foreground location.
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        return AdaptyUIPermissionResult.granted("granted")
+    }
+    // A separate request. On Android 11 and later, it opens the settings page,
+    // and the result arrives when the user comes back to the app.
+    val background = requestRuntimePermissions(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+    return if (background.granted.getValue(Manifest.permission.ACCESS_BACKGROUND_LOCATION)) {
+        AdaptyUIPermissionResult.granted("granted")
+    } else {
+        AdaptyUIPermissionResult.denied("denied")
+    }
+}
+```
+
+- On Android, if location while using the app isn't granted, the function requests it first, so the user can see two requests. To show a screen about each, request **Location while using the app** on an earlier flow screen.
+
+### Precise location \{#location_full_accuracy\}
+
+Declare `NSLocationWhenInUseUsageDescription` and `NSLocationTemporaryUsageDescriptionDictionary` on iOS, and `ACCESS_COARSE_LOCATION` and `ACCESS_FINE_LOCATION` on Android. See [System permissions](flow-permissions#location_full_accuracy).
+
+```kotlin showLineNumbers title="iosMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
+import platform.CoreLocation.CLAccuracyAuthorization.CLAccuracyAuthorizationFullAccuracy
+import platform.CoreLocation.CLLocationManager
+import platform.CoreLocation.CLLocationManagerDelegateProtocol
+import platform.CoreLocation.kCLAuthorizationStatusAuthorizedAlways
+import platform.CoreLocation.kCLAuthorizationStatusAuthorizedWhenInUse
+import platform.CoreLocation.kCLAuthorizationStatusDenied
+import platform.CoreLocation.kCLAuthorizationStatusNotDetermined
+import platform.CoreLocation.kCLAuthorizationStatusRestricted
+import platform.darwin.NSObject
+import kotlin.coroutines.resume
+import kotlin.time.Duration.Companion.seconds
+
+private class PreciseLocationRequest : NSObject(), CLLocationManagerDelegateProtocol {
+    val manager = CLLocationManager()
+    private var onDecided: (() -> Unit)? = null
+
+    init {
+        manager.delegate = this
+    }
+
+    suspend fun requestWhenInUse() {
+        withTimeoutOrNull(50.seconds) {
+            suspendCancellableCoroutine { continuation ->
+                onDecided = { if (continuation.isActive) continuation.resume(Unit) }
+                manager.requestWhenInUseAuthorization()
+            }
+        }
+        onDecided = null
+    }
+
+    override fun locationManagerDidChangeAuthorization(manager: CLLocationManager) {
+        if (manager.authorizationStatus != kCLAuthorizationStatusNotDetermined) onDecided?.invoke()
+    }
+}
+
+actual suspend fun requestPreciseLocation(): AdaptyUIPermissionResult {
+    val location = PreciseLocationRequest()
+    val before = location.manager.authorizationStatus
+    // The request needs location access while the app is in use: ask for it first.
+    // Its alert has a Precise switch.
+    if (before == kCLAuthorizationStatusNotDetermined) location.requestWhenInUse()
+    when (location.manager.authorizationStatus) {
+        kCLAuthorizationStatusAuthorizedWhenInUse, kCLAuthorizationStatusAuthorizedAlways -> Unit
+        kCLAuthorizationStatusRestricted -> return AdaptyUIPermissionResult.denied("restricted")
+        kCLAuthorizationStatusDenied -> return AdaptyUIPermissionResult.denied(
+            if (before == kCLAuthorizationStatusNotDetermined) "denied" else "permanently_denied",
+        )
+        else -> return AdaptyUIPermissionResult.denied()
+    }
+    if (location.manager.accuracyAuthorization == CLAccuracyAuthorizationFullAccuracy) {
+        return AdaptyUIPermissionResult.granted("granted")
+    }
+    // The flow sends no purpose key: pass a key of NSLocationTemporaryUsageDescriptionDictionary.
+    suspendCancellableCoroutine { continuation ->
+        location.manager.requestTemporaryFullAccuracyAuthorizationWithPurposeKey("StoreFinder") { _ ->
+            continuation.resume(Unit)
+        }
+    }
+    return if (location.manager.accuracyAuthorization == CLAccuracyAuthorizationFullAccuracy) {
+        AdaptyUIPermissionResult.granted("granted")
+    } else {
+        AdaptyUIPermissionResult.denied("denied")
+    }
+}
+```
+
+```kotlin showLineNumbers title="androidMain"
+import android.Manifest
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+
+actual suspend fun requestPreciseLocation(): AdaptyUIPermissionResult {
+    // With approximate location only, Android 12 and later offer to change it to precise.
+    val request = requestRuntimePermissions(
+        Manifest.permission.ACCESS_FINE_LOCATION,
+        Manifest.permission.ACCESS_COARSE_LOCATION,
+    )
+    return when {
+        request.granted.getValue(Manifest.permission.ACCESS_FINE_LOCATION) ->
+            AdaptyUIPermissionResult.granted("granted")
+        // The user kept approximate location.
+        request.granted.getValue(Manifest.permission.ACCESS_COARSE_LOCATION) ->
+            AdaptyUIPermissionResult.denied("denied")
+        else -> AdaptyUIPermissionResult.denied(request.deniedStatus)
+    }
+}
+```
+
+- Replace `StoreFinder` with a key of your `NSLocationTemporaryUsageDescriptionDictionary`. With a missing key, iOS shows no alert, and the function answers `denied`.
+
+### Camera \{#camera\}
+
+Declare `NSCameraUsageDescription` on iOS and `CAMERA` on Android. See [System permissions](flow-permissions#camera).
+
+```kotlin showLineNumbers title="iosMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+import kotlinx.coroutines.suspendCancellableCoroutine
+import platform.AVFoundation.AVAuthorizationStatusAuthorized
+import platform.AVFoundation.AVAuthorizationStatusDenied
+import platform.AVFoundation.AVAuthorizationStatusRestricted
+import platform.AVFoundation.AVCaptureDevice
+import platform.AVFoundation.AVMediaTypeVideo
+import platform.AVFoundation.authorizationStatusForMediaType
+import platform.AVFoundation.requestAccessForMediaType
+import kotlin.coroutines.resume
+
+actual suspend fun requestCamera(): AdaptyUIPermissionResult =
+    when (AVCaptureDevice.authorizationStatusForMediaType(AVMediaTypeVideo)) {
+        AVAuthorizationStatusAuthorized -> AdaptyUIPermissionResult.granted("granted")
+        AVAuthorizationStatusRestricted -> AdaptyUIPermissionResult.denied("restricted")
+        // The user declined earlier: iOS shows no alert.
+        AVAuthorizationStatusDenied -> AdaptyUIPermissionResult.denied("permanently_denied")
+        else -> {
+            val allowed = suspendCancellableCoroutine { continuation ->
+                AVCaptureDevice.requestAccessForMediaType(AVMediaTypeVideo) { continuation.resume(it) }
+            }
+            if (allowed) {
+                AdaptyUIPermissionResult.granted("granted")
+            } else {
+                AdaptyUIPermissionResult.denied("denied")
+            }
+        }
+    }
+```
+
+```kotlin showLineNumbers title="androidMain"
+import android.Manifest
+import android.content.pm.PackageManager
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+
+actual suspend fun requestCamera(): AdaptyUIPermissionResult {
+    val activity = ResumedActivity.current ?: error("No resumed activity")
+    if (!activity.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
+        return AdaptyUIPermissionResult.denied("unsupported")
+    }
+    val request = requestRuntimePermissions(Manifest.permission.CAMERA)
+    return if (request.granted.getValue(Manifest.permission.CAMERA)) {
+        AdaptyUIPermissionResult.granted("granted")
+    } else {
+        AdaptyUIPermissionResult.denied(request.deniedStatus)
+    }
+}
+```
+
+- To install the app on Android devices without a back camera, also declare `<uses-feature android:name="android.hardware.camera" android:required="false" />`.
+
+### Microphone \{#microphone\}
+
+Declare `NSMicrophoneUsageDescription` on iOS and `RECORD_AUDIO` on Android. See [System permissions](flow-permissions#microphone).
+
+```kotlin showLineNumbers title="iosMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+import kotlinx.coroutines.suspendCancellableCoroutine
+import platform.AVFoundation.AVAuthorizationStatusAuthorized
+import platform.AVFoundation.AVAuthorizationStatusDenied
+import platform.AVFoundation.AVAuthorizationStatusRestricted
+import platform.AVFoundation.AVCaptureDevice
+import platform.AVFoundation.AVMediaTypeAudio
+import platform.AVFoundation.authorizationStatusForMediaType
+import platform.AVFoundation.requestAccessForMediaType
+import kotlin.coroutines.resume
+
+actual suspend fun requestMicrophone(): AdaptyUIPermissionResult =
+    when (AVCaptureDevice.authorizationStatusForMediaType(AVMediaTypeAudio)) {
+        AVAuthorizationStatusAuthorized -> AdaptyUIPermissionResult.granted("granted")
+        AVAuthorizationStatusRestricted -> AdaptyUIPermissionResult.denied("restricted")
+        // The user declined earlier: iOS shows no alert.
+        AVAuthorizationStatusDenied -> AdaptyUIPermissionResult.denied("permanently_denied")
+        else -> {
+            val allowed = suspendCancellableCoroutine { continuation ->
+                AVCaptureDevice.requestAccessForMediaType(AVMediaTypeAudio) { continuation.resume(it) }
+            }
+            if (allowed) {
+                AdaptyUIPermissionResult.granted("granted")
+            } else {
+                AdaptyUIPermissionResult.denied("denied")
+            }
+        }
+    }
+```
+
+```kotlin showLineNumbers title="androidMain"
+import android.Manifest
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+
+actual suspend fun requestMicrophone(): AdaptyUIPermissionResult {
+    val request = requestRuntimePermissions(Manifest.permission.RECORD_AUDIO)
+    return if (request.granted.getValue(Manifest.permission.RECORD_AUDIO)) {
+        AdaptyUIPermissionResult.granted("granted")
+    } else {
+        AdaptyUIPermissionResult.denied(request.deniedStatus)
+    }
+}
+```
+
+### Photos \{#photos\}
+
+Declare `NSPhotoLibraryUsageDescription` on iOS. On Android, declare `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_VISUAL_USER_SELECTED`, and `READ_EXTERNAL_STORAGE` with `android:maxSdkVersion="32"`. See [System permissions](flow-permissions#photos).
+
+```kotlin showLineNumbers title="iosMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+import kotlinx.coroutines.suspendCancellableCoroutine
+import platform.Photos.PHAccessLevelReadWrite
+import platform.Photos.PHAuthorizationStatus
+import platform.Photos.PHAuthorizationStatusAuthorized
+import platform.Photos.PHAuthorizationStatusDenied
+import platform.Photos.PHAuthorizationStatusLimited
+import platform.Photos.PHAuthorizationStatusNotDetermined
+import platform.Photos.PHAuthorizationStatusRestricted
+import platform.Photos.PHPhotoLibrary
+import kotlin.coroutines.resume
+
+actual suspend fun requestPhotos(): AdaptyUIPermissionResult {
+    // The access level API reports limited access. The older request reports it as authorized.
+    val before = PHPhotoLibrary.authorizationStatusForAccessLevel(PHAccessLevelReadWrite)
+    val status = if (before == PHAuthorizationStatusNotDetermined) {
+        suspendCancellableCoroutine<PHAuthorizationStatus> { continuation ->
+            PHPhotoLibrary.requestAuthorizationForAccessLevel(PHAccessLevelReadWrite) {
+                continuation.resume(it)
+            }
+        }
+    } else {
+        before
+    }
+    return when (status) {
+        PHAuthorizationStatusAuthorized -> AdaptyUIPermissionResult.granted("granted")
+        PHAuthorizationStatusLimited -> AdaptyUIPermissionResult.granted("limited")
+        PHAuthorizationStatusRestricted -> AdaptyUIPermissionResult.denied("restricted")
+        PHAuthorizationStatusDenied -> AdaptyUIPermissionResult.denied(
+            if (before == PHAuthorizationStatusNotDetermined) "denied" else "permanently_denied",
+        )
+        else -> AdaptyUIPermissionResult.denied()
+    }
+}
+```
+
+```kotlin showLineNumbers title="androidMain"
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.content.ContextCompat
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+
+actual suspend fun requestPhotos(): AdaptyUIPermissionResult {
+    val activity = ResumedActivity.current ?: error("No resumed activity")
+    val full = when {
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ->
+            listOf(Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO)
+        else -> listOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+    }
+    // Android 14 and later: access to the photos and videos that the user selects.
+    val selected = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+        listOf(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
+    } else {
+        emptyList()
+    }
+    // Full access to photos or to videos: don't show the dialog again.
+    if (full.any { ContextCompat.checkSelfPermission(activity, it) == PackageManager.PERMISSION_GRANTED }) {
+        return AdaptyUIPermissionResult.granted("granted")
+    }
+    val request = requestRuntimePermissions(*(full + selected).toTypedArray())
+    return when {
+        full.any { request.granted.getValue(it) } -> AdaptyUIPermissionResult.granted("granted")
+        selected.any { request.granted.getValue(it) } -> AdaptyUIPermissionResult.granted("limited")
+        else -> AdaptyUIPermissionResult.denied(request.deniedStatus)
+    }
+}
+```
+
+- Without `READ_MEDIA_VISUAL_USER_SELECTED` in the manifest, Android 14 reports a selection of photos as full access, and the function passes `granted` for it.
+
+### Media library \{#media_library\}
+
+Declare `NSAppleMusicUsageDescription` on iOS. On Android, declare `READ_MEDIA_AUDIO`, and `READ_EXTERNAL_STORAGE` with `android:maxSdkVersion="32"`. See [System permissions](flow-permissions#media_library).
+
+```kotlin showLineNumbers title="iosMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+import kotlinx.coroutines.suspendCancellableCoroutine
+import platform.MediaPlayer.MPMediaLibrary
+import platform.MediaPlayer.MPMediaLibraryAuthorizationStatus
+import platform.MediaPlayer.MPMediaLibraryAuthorizationStatusAuthorized
+import platform.MediaPlayer.MPMediaLibraryAuthorizationStatusDenied
+import platform.MediaPlayer.MPMediaLibraryAuthorizationStatusNotDetermined
+import platform.MediaPlayer.MPMediaLibraryAuthorizationStatusRestricted
+import kotlin.coroutines.resume
+
+actual suspend fun requestMediaLibrary(): AdaptyUIPermissionResult {
+    val before = MPMediaLibrary.authorizationStatus()
+    val status = if (before == MPMediaLibraryAuthorizationStatusNotDetermined) {
+        suspendCancellableCoroutine<MPMediaLibraryAuthorizationStatus> { continuation ->
+            MPMediaLibrary.requestAuthorization { continuation.resume(it) }
+        }
+    } else {
+        before
+    }
+    return when (status) {
+        MPMediaLibraryAuthorizationStatusAuthorized -> AdaptyUIPermissionResult.granted("granted")
+        MPMediaLibraryAuthorizationStatusRestricted -> AdaptyUIPermissionResult.denied("restricted")
+        MPMediaLibraryAuthorizationStatusDenied -> AdaptyUIPermissionResult.denied(
+            if (before == MPMediaLibraryAuthorizationStatusNotDetermined) "denied" else "permanently_denied",
+        )
+        else -> AdaptyUIPermissionResult.denied()
+    }
+}
+```
+
+```kotlin showLineNumbers title="androidMain"
+import android.Manifest
+import android.os.Build
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+
+actual suspend fun requestMediaLibrary(): AdaptyUIPermissionResult {
+    val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        Manifest.permission.READ_MEDIA_AUDIO
+    } else {
+        Manifest.permission.READ_EXTERNAL_STORAGE
+    }
+    val request = requestRuntimePermissions(permission)
+    return if (request.granted.getValue(permission)) {
+        AdaptyUIPermissionResult.granted("granted")
+    } else {
+        AdaptyUIPermissionResult.denied(request.deniedStatus)
+    }
+}
+```
+
+### Apple Music \{#music\}
+
+Declare `NSAppleMusicUsageDescription` on iOS. Android has no Apple Music permission. See [System permissions](flow-permissions#music).
+
+```kotlin showLineNumbers title="iosMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+import kotlinx.coroutines.suspendCancellableCoroutine
+import platform.StoreKit.SKCloudServiceAuthorizationStatus
+import platform.StoreKit.SKCloudServiceAuthorizationStatus.SKCloudServiceAuthorizationStatusAuthorized
+import platform.StoreKit.SKCloudServiceAuthorizationStatus.SKCloudServiceAuthorizationStatusDenied
+import platform.StoreKit.SKCloudServiceAuthorizationStatus.SKCloudServiceAuthorizationStatusNotDetermined
+import platform.StoreKit.SKCloudServiceAuthorizationStatus.SKCloudServiceAuthorizationStatusRestricted
+import platform.StoreKit.SKCloudServiceController
+import kotlin.coroutines.resume
+
+// MusicKit's MusicAuthorization is Swift-only. SKCloudServiceController returns the same authorization.
+actual suspend fun requestMusic(): AdaptyUIPermissionResult {
+    val before = SKCloudServiceController.authorizationStatus()
+    val status = if (before == SKCloudServiceAuthorizationStatusNotDetermined) {
+        suspendCancellableCoroutine<SKCloudServiceAuthorizationStatus> { continuation ->
+            SKCloudServiceController.requestAuthorization { continuation.resume(it) }
+        }
+    } else {
+        before
+    }
+    return when (status) {
+        SKCloudServiceAuthorizationStatusAuthorized -> AdaptyUIPermissionResult.granted("granted")
+        SKCloudServiceAuthorizationStatusRestricted -> AdaptyUIPermissionResult.denied("restricted")
+        SKCloudServiceAuthorizationStatusDenied -> AdaptyUIPermissionResult.denied(
+            if (before == SKCloudServiceAuthorizationStatusNotDetermined) "denied" else "permanently_denied",
+        )
+        else -> AdaptyUIPermissionResult.denied()
+    }
+}
+```
+
+```kotlin showLineNumbers title="androidMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+
+// Android has no Apple Music permission.
+actual suspend fun requestMusic(): AdaptyUIPermissionResult =
+    AdaptyUIPermissionResult.denied("unsupported")
+```
+
+- Kotlin can't call MusicKit, a Swift-only framework, so the iOS function calls `SKCloudServiceController`. It returns the same authorization, and it's deprecated in iOS 18.
+
+### Speech recognition \{#speech\}
+
+Declare `NSSpeechRecognitionUsageDescription` on iOS and `RECORD_AUDIO` on Android. See [System permissions](flow-permissions#speech).
+
+```kotlin showLineNumbers title="iosMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+import kotlinx.coroutines.suspendCancellableCoroutine
+import platform.Speech.SFSpeechRecognizer
+import platform.Speech.SFSpeechRecognizerAuthorizationStatus
+import platform.Speech.SFSpeechRecognizerAuthorizationStatus.SFSpeechRecognizerAuthorizationStatusAuthorized
+import platform.Speech.SFSpeechRecognizerAuthorizationStatus.SFSpeechRecognizerAuthorizationStatusDenied
+import platform.Speech.SFSpeechRecognizerAuthorizationStatus.SFSpeechRecognizerAuthorizationStatusNotDetermined
+import platform.Speech.SFSpeechRecognizerAuthorizationStatus.SFSpeechRecognizerAuthorizationStatusRestricted
+import kotlin.coroutines.resume
+
+actual suspend fun requestSpeech(): AdaptyUIPermissionResult {
+    val before = SFSpeechRecognizer.authorizationStatus()
+    val status = if (before == SFSpeechRecognizerAuthorizationStatusNotDetermined) {
+        suspendCancellableCoroutine<SFSpeechRecognizerAuthorizationStatus> { continuation ->
+            SFSpeechRecognizer.requestAuthorization { continuation.resume(it) }
+        }
+    } else {
+        before
+    }
+    return when (status) {
+        SFSpeechRecognizerAuthorizationStatusAuthorized -> AdaptyUIPermissionResult.granted("granted")
+        SFSpeechRecognizerAuthorizationStatusRestricted -> AdaptyUIPermissionResult.denied("restricted")
+        SFSpeechRecognizerAuthorizationStatusDenied -> {
+            val askedNow = before == SFSpeechRecognizerAuthorizationStatusNotDetermined
+            AdaptyUIPermissionResult.denied(if (askedNow) "denied" else "permanently_denied")
+        }
+        else -> AdaptyUIPermissionResult.denied()
+    }
+}
+```
+
+```kotlin showLineNumbers title="androidMain"
+import android.Manifest
+import android.speech.SpeechRecognizer
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+
+actual suspend fun requestSpeech(): AdaptyUIPermissionResult {
+    val activity = ResumedActivity.current ?: error("No resumed activity")
+    if (!SpeechRecognizer.isRecognitionAvailable(activity)) {
+        return AdaptyUIPermissionResult.denied("unsupported")
+    }
+    // Android has no speech recognition permission: the recognizer needs the microphone.
+    val request = requestRuntimePermissions(Manifest.permission.RECORD_AUDIO)
+    return if (request.granted.getValue(Manifest.permission.RECORD_AUDIO)) {
+        AdaptyUIPermissionResult.granted("granted")
+    } else {
+        AdaptyUIPermissionResult.denied(request.deniedStatus)
+    }
+}
+```
+
+- If your app targets Android 11 or higher, add the `<queries>` element for the speech recognition service, as [System permissions](flow-permissions#speech) shows. Without it, `isRecognitionAvailable` returns `false`.
+- To recognize live audio on iOS, the app also needs the **Microphone** permission. Request it on another flow screen, or before the function returns.
+
+### Contacts \{#contacts\}
+
+Declare `NSContactsUsageDescription` on iOS and `READ_CONTACTS` on Android. See [System permissions](flow-permissions#contacts).
+
+```kotlin showLineNumbers title="iosMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+import kotlinx.coroutines.suspendCancellableCoroutine
+import platform.Contacts.CNAuthorizationStatusAuthorized
+import platform.Contacts.CNAuthorizationStatusDenied
+import platform.Contacts.CNAuthorizationStatusLimited
+import platform.Contacts.CNAuthorizationStatusNotDetermined
+import platform.Contacts.CNAuthorizationStatusRestricted
+import platform.Contacts.CNContactStore
+import platform.Contacts.CNEntityType
+import kotlin.coroutines.resume
+
+private val contactStore = CNContactStore()
+
+actual suspend fun requestContacts(): AdaptyUIPermissionResult {
+    val before = CNContactStore.authorizationStatusForEntityType(CNEntityType.CNEntityTypeContacts)
+    if (before == CNAuthorizationStatusNotDetermined) {
+        suspendCancellableCoroutine { continuation ->
+            contactStore.requestAccessForEntityType(CNEntityType.CNEntityTypeContacts) { _, _ ->
+                continuation.resume(Unit)
+            }
+        }
+    }
+    // The request reports only whether the user gave access: the status tells limited from full access.
+    return when (CNContactStore.authorizationStatusForEntityType(CNEntityType.CNEntityTypeContacts)) {
+        CNAuthorizationStatusAuthorized -> AdaptyUIPermissionResult.granted("granted")
+        CNAuthorizationStatusLimited -> AdaptyUIPermissionResult.granted("limited")
+        CNAuthorizationStatusRestricted -> AdaptyUIPermissionResult.denied("restricted")
+        CNAuthorizationStatusDenied -> AdaptyUIPermissionResult.denied(
+            if (before == CNAuthorizationStatusNotDetermined) "denied" else "permanently_denied",
+        )
+        else -> AdaptyUIPermissionResult.denied()
+    }
+}
+```
+
+```kotlin showLineNumbers title="androidMain"
+import android.Manifest
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+
+actual suspend fun requestContacts(): AdaptyUIPermissionResult {
+    val request = requestRuntimePermissions(Manifest.permission.READ_CONTACTS)
+    return if (request.granted.getValue(Manifest.permission.READ_CONTACTS)) {
+        AdaptyUIPermissionResult.granted("granted")
+    } else {
+        AdaptyUIPermissionResult.denied(request.deniedStatus)
+    }
+}
+```
+
+### Calendar \{#calendar\}
+
+Declare `NSCalendarsFullAccessUsageDescription` and `NSCalendarsUsageDescription` on iOS, and `READ_CALENDAR` and `WRITE_CALENDAR` on Android. See [System permissions](flow-permissions#calendar).
+
+```kotlin showLineNumbers title="iosMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+import kotlinx.coroutines.suspendCancellableCoroutine
+import platform.EventKit.EKAuthorizationStatusDenied
+import platform.EventKit.EKAuthorizationStatusFullAccess
+import platform.EventKit.EKAuthorizationStatusRestricted
+import platform.EventKit.EKAuthorizationStatusWriteOnly
+import platform.EventKit.EKEntityType
+import platform.EventKit.EKEventStore
+import platform.Foundation.NSError
+import platform.UIKit.UIDevice
+import kotlin.coroutines.resume
+
+private val calendarStore = EKEventStore()
+
+actual suspend fun requestCalendar(): AdaptyUIPermissionResult {
+    when (EKEventStore.authorizationStatusForEntityType(EKEntityType.EKEntityTypeEvent)) {
+        // Also .authorized on iOS 16 and earlier: the same value.
+        EKAuthorizationStatusFullAccess -> return AdaptyUIPermissionResult.granted("granted")
+        // Add-events-only access, while this function requests full access.
+        // If your app requests write-only access, pass "granted" instead.
+        EKAuthorizationStatusWriteOnly -> return AdaptyUIPermissionResult.granted("limited")
+        EKAuthorizationStatusRestricted -> return AdaptyUIPermissionResult.denied("restricted")
+        EKAuthorizationStatusDenied -> return AdaptyUIPermissionResult.denied("permanently_denied")
+    }
+    val error = suspendCancellableCoroutine<NSError?> { continuation ->
+        val completion = { _: Boolean, error: NSError? -> continuation.resume(error) }
+        if (UIDevice.currentDevice.systemVersion.substringBefore('.').toInt() >= 17) {
+            calendarStore.requestFullAccessToEventsWithCompletion(completion)
+        } else {
+            calendarStore.requestAccessToEntityType(EKEntityType.EKEntityTypeEvent, completion)
+        }
+    }
+    if (error != null) return AdaptyUIPermissionResult.denied()
+    // The user can grant add-events-only access in the full access alert.
+    return when (EKEventStore.authorizationStatusForEntityType(EKEntityType.EKEntityTypeEvent)) {
+        EKAuthorizationStatusFullAccess -> AdaptyUIPermissionResult.granted("granted")
+        EKAuthorizationStatusWriteOnly -> AdaptyUIPermissionResult.granted("limited")
+        EKAuthorizationStatusDenied -> AdaptyUIPermissionResult.denied("denied")
+        EKAuthorizationStatusRestricted -> AdaptyUIPermissionResult.denied("restricted")
+        else -> AdaptyUIPermissionResult.denied()
+    }
+}
+```
+
+```kotlin showLineNumbers title="androidMain"
+import android.Manifest
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+
+actual suspend fun requestCalendar(): AdaptyUIPermissionResult {
+    val request = requestRuntimePermissions(
+        Manifest.permission.READ_CALENDAR,
+        Manifest.permission.WRITE_CALENDAR,
+    )
+    return if (request.granted.values.all { it }) {
+        AdaptyUIPermissionResult.granted("granted")
+    } else {
+        AdaptyUIPermissionResult.denied(request.deniedStatus)
+    }
+}
+```
+
+### Reminders \{#reminders\}
+
+Declare `NSRemindersFullAccessUsageDescription` and `NSRemindersUsageDescription` on iOS. Android has no system reminders store. See [System permissions](flow-permissions#reminders).
+
+```kotlin showLineNumbers title="iosMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+import kotlinx.coroutines.suspendCancellableCoroutine
+import platform.EventKit.EKAuthorizationStatusDenied
+import platform.EventKit.EKAuthorizationStatusFullAccess
+import platform.EventKit.EKAuthorizationStatusRestricted
+import platform.EventKit.EKEntityType
+import platform.EventKit.EKEventStore
+import platform.Foundation.NSError
+import platform.UIKit.UIDevice
+import kotlin.coroutines.resume
+
+private val remindersStore = EKEventStore()
+
+actual suspend fun requestReminders(): AdaptyUIPermissionResult {
+    when (EKEventStore.authorizationStatusForEntityType(EKEntityType.EKEntityTypeReminder)) {
+        // Also .authorized on iOS 16 and earlier: the same value.
+        EKAuthorizationStatusFullAccess -> return AdaptyUIPermissionResult.granted("granted")
+        EKAuthorizationStatusRestricted -> return AdaptyUIPermissionResult.denied("restricted")
+        EKAuthorizationStatusDenied -> return AdaptyUIPermissionResult.denied("permanently_denied")
+    }
+    val (allowed, error) = suspendCancellableCoroutine<Pair<Boolean, NSError?>> { continuation ->
+        val completion = { granted: Boolean, error: NSError? -> continuation.resume(granted to error) }
+        if (UIDevice.currentDevice.systemVersion.substringBefore('.').toInt() >= 17) {
+            remindersStore.requestFullAccessToRemindersWithCompletion(completion)
+        } else {
+            remindersStore.requestAccessToEntityType(EKEntityType.EKEntityTypeReminder, completion)
+        }
+    }
+    return when {
+        error != null -> AdaptyUIPermissionResult.denied()
+        allowed -> AdaptyUIPermissionResult.granted("granted")
+        else -> AdaptyUIPermissionResult.denied("denied")
+    }
+}
+```
+
+```kotlin showLineNumbers title="androidMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+
+// Android has no system reminders store.
+actual suspend fun requestReminders(): AdaptyUIPermissionResult =
+    AdaptyUIPermissionResult.denied("unsupported")
+```
+
+### Health data \{#health\}
+
+On iOS, add the HealthKit capability, and declare `NSHealthShareUsageDescription` and `NSHealthUpdateUsageDescription`. On Android, add the Health Connect client library, `androidx.health.connect:connect-client`, and the Health Connect declarations. See [System permissions](flow-permissions#health).
+
+```kotlin showLineNumbers title="iosMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+import kotlinx.coroutines.suspendCancellableCoroutine
+import platform.Foundation.NSError
+import platform.HealthKit.HKAuthorizationRequestStatus
+import platform.HealthKit.HKAuthorizationRequestStatusUnnecessary
+import platform.HealthKit.HKAuthorizationStatusSharingAuthorized
+import platform.HealthKit.HKErrorDomain
+import platform.HealthKit.HKErrorHealthDataRestricted
+import platform.HealthKit.HKHealthStore
+import platform.HealthKit.HKQuantityType
+import platform.HealthKit.HKQuantityTypeIdentifierStepCount
+import kotlin.coroutines.resume
+
+private val healthStore = HKHealthStore()
+
+// The flow sends no data types: request your app's own.
+private val steps = HKQuantityType.quantityTypeForIdentifier(HKQuantityTypeIdentifierStepCount)
+private val healthWriteTypes = setOfNotNull(steps)
+private val healthReadTypes = setOfNotNull(steps)
+
+actual suspend fun requestHealth(): AdaptyUIPermissionResult {
+    if (!HKHealthStore.isHealthDataAvailable()) return AdaptyUIPermissionResult.denied("unsupported")
+    // Unnecessary: the user answered for every type before, so iOS shows no sheet.
+    val sheetStatus = suspendCancellableCoroutine<HKAuthorizationRequestStatus> { continuation ->
+        healthStore.getRequestStatusForAuthorizationToShareTypes(
+            healthWriteTypes, healthReadTypes,
+        ) { status, _ ->
+            continuation.resume(status)
+        }
+    }
+    val error = suspendCancellableCoroutine<NSError?> { continuation ->
+        healthStore.requestAuthorizationToShareTypes(healthWriteTypes, healthReadTypes) { _, error ->
+            continuation.resume(error)
+        }
+    }
+    if (error != null) {
+        val restricted = error.domain == HKErrorDomain && error.code == HKErrorHealthDataRestricted
+        // Any other error isn't an answer from the user.
+        return AdaptyUIPermissionResult.denied(if (restricted) "restricted" else null)
+    }
+    // iOS doesn't tell whether the user allowed reading: the flow runs After response.
+    if (healthWriteTypes.isEmpty()) return AdaptyUIPermissionResult.denied()
+    val allowed = healthWriteTypes.count {
+        healthStore.authorizationStatusForType(it) == HKAuthorizationStatusSharingAuthorized
+    }
+    return when {
+        allowed == healthWriteTypes.size -> AdaptyUIPermissionResult.granted("granted")
+        allowed > 0 -> AdaptyUIPermissionResult.granted("limited")
+        sheetStatus == HKAuthorizationRequestStatusUnnecessary ->
+            AdaptyUIPermissionResult.denied("permanently_denied")
+        else -> AdaptyUIPermissionResult.denied("denied")
+    }
+}
+```
+
+```kotlin showLineNumbers title="androidMain"
+import android.content.Context
+import androidx.activity.result.ActivityResultLauncher
+import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.PermissionController
+import androidx.health.connect.client.permission.HealthPermission
+import androidx.health.connect.client.records.StepsRecord
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+import kotlinx.coroutines.suspendCancellableCoroutine
+import java.util.UUID
+import kotlin.coroutines.resume
+
+// The flow sends no data types: request your app's own, declared in the manifest.
+private val healthPermissions = setOf(
+    HealthPermission.getReadPermission(StepsRecord::class),
+    HealthPermission.getWritePermission(StepsRecord::class),
+)
+
+actual suspend fun requestHealth(): AdaptyUIPermissionResult {
+    val activity = ResumedActivity.current ?: error("No resumed activity")
+    if (HealthConnectClient.getSdkStatus(activity) != HealthConnectClient.SDK_AVAILABLE) {
+        return AdaptyUIPermissionResult.denied("unsupported")
+    }
+    val permissionController = HealthConnectClient.getOrCreate(activity).permissionController
+    if (permissionController.getGrantedPermissions().containsAll(healthPermissions)) {
+        return AdaptyUIPermissionResult.granted("granted")
+    }
+    suspendCancellableCoroutine { continuation ->
+        lateinit var launcher: ActivityResultLauncher<Set<String>>
+        launcher = activity.activityResultRegistry.register(
+            "flow_health_permission_${UUID.randomUUID()}",
+            PermissionController.createRequestPermissionResultContract(),
+        ) {
+            launcher.unregister()
+            if (continuation.isActive) continuation.resume(Unit)
+        }
+        continuation.invokeOnCancellation { launcher.unregister() }
+        launcher.launch(healthPermissions)
+    }
+    val granted = permissionController.getGrantedPermissions().intersect(healthPermissions)
+    // Health Connect reports no cancel: the app counts every request that returns no grant.
+    val prefs = activity.getSharedPreferences("flow_permissions", Context.MODE_PRIVATE)
+    val cancelsBefore = prefs.getInt("health_cancels", 0)
+    prefs.edit().putInt("health_cancels", if (granted.isEmpty()) cancelsBefore + 1 else 0).apply()
+    return when {
+        granted == healthPermissions -> AdaptyUIPermissionResult.granted("granted")
+        granted.isNotEmpty() -> AdaptyUIPermissionResult.granted("limited")
+        // After two cancels in a row, Health Connect shows no screen.
+        cancelsBefore >= 2 -> AdaptyUIPermissionResult.denied("permanently_denied")
+        else -> AdaptyUIPermissionResult.denied("denied")
+    }
+}
+```
+
+- The functions request access to step counts as an example. Replace the types with your app's own, and declare the same Android permissions in the manifest and in the Google Play Console.
+- iOS reports only write access. If your app requests only read access on iOS, the function answers without a status, and the flow runs **After response**.
+
+### Motion & Fitness \{#motion\}
+
+Declare `NSMotionUsageDescription` on iOS and `ACTIVITY_RECOGNITION` on Android. See [System permissions](flow-permissions#motion).
+
+```kotlin showLineNumbers title="iosMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
+import platform.CoreMotion.CMAuthorizationStatusAuthorized
+import platform.CoreMotion.CMAuthorizationStatusDenied
+import platform.CoreMotion.CMAuthorizationStatusRestricted
+import platform.CoreMotion.CMMotionActivityManager
+import platform.Foundation.NSDate
+import platform.Foundation.NSOperationQueue
+import platform.Foundation.dateByAddingTimeInterval
+import kotlin.coroutines.resume
+import kotlin.time.Duration.Companion.seconds
+
+private val motionActivityManager = CMMotionActivityManager()
+
+actual suspend fun requestMotion(): AdaptyUIPermissionResult {
+    if (!CMMotionActivityManager.isActivityAvailable()) return AdaptyUIPermissionResult.denied("unsupported")
+    when (CMMotionActivityManager.authorizationStatus()) {
+        CMAuthorizationStatusAuthorized -> return AdaptyUIPermissionResult.granted("granted")
+        CMAuthorizationStatusRestricted -> return AdaptyUIPermissionResult.denied("restricted")
+        CMAuthorizationStatusDenied -> return AdaptyUIPermissionResult.denied("permanently_denied")
+    }
+    // iOS has no request method: the first query of motion activity shows the alert,
+    // and the query handler runs after the user answers.
+    withTimeoutOrNull(50.seconds) {
+        suspendCancellableCoroutine { continuation ->
+            val now = NSDate()
+            motionActivityManager.queryActivityStartingFromDate(
+                now.dateByAddingTimeInterval(-60.0), now, NSOperationQueue.mainQueue,
+            ) { _, _ ->
+                if (continuation.isActive) continuation.resume(Unit)
+            }
+        }
+    }
+    return when (CMMotionActivityManager.authorizationStatus()) {
+        CMAuthorizationStatusAuthorized -> AdaptyUIPermissionResult.granted("granted")
+        CMAuthorizationStatusDenied -> AdaptyUIPermissionResult.denied("denied")
+        CMAuthorizationStatusRestricted -> AdaptyUIPermissionResult.denied("restricted")
+        // Still not determined when the timeout ends.
+        else -> AdaptyUIPermissionResult.denied()
+    }
+}
+```
+
+```kotlin showLineNumbers title="androidMain"
+import android.Manifest
+import android.os.Build
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+
+actual suspend fun requestMotion(): AdaptyUIPermissionResult {
+    // Android 9 and earlier have no runtime permission for physical activity.
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        return AdaptyUIPermissionResult.granted("granted")
+    }
+    val request = requestRuntimePermissions(Manifest.permission.ACTIVITY_RECOGNITION)
+    return if (request.granted.getValue(Manifest.permission.ACTIVITY_RECOGNITION)) {
+        AdaptyUIPermissionResult.granted("granted")
+    } else {
+        AdaptyUIPermissionResult.denied(request.deniedStatus)
+    }
+}
+```
+
+### Bluetooth \{#bluetooth\}
+
+Declare `NSBluetoothAlwaysUsageDescription` on iOS. On Android, declare `BLUETOOTH_SCAN` and `BLUETOOTH_CONNECT`, and the permissions for Android 11 and earlier. See [System permissions](flow-permissions#bluetooth).
+
+```kotlin showLineNumbers title="iosMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
+import platform.CoreBluetooth.CBCentralManager
+import platform.CoreBluetooth.CBCentralManagerDelegateProtocol
+import platform.CoreBluetooth.CBCentralManagerOptionShowPowerAlertKey
+import platform.CoreBluetooth.CBManager
+import platform.CoreBluetooth.CBManagerAuthorizationAllowedAlways
+import platform.CoreBluetooth.CBManagerAuthorizationDenied
+import platform.CoreBluetooth.CBManagerAuthorizationNotDetermined
+import platform.CoreBluetooth.CBManagerAuthorizationRestricted
+import platform.darwin.NSObject
+import kotlin.coroutines.resume
+import kotlin.time.Duration.Companion.seconds
+
+private class BluetoothRequest : NSObject(), CBCentralManagerDelegateProtocol {
+    private var manager: CBCentralManager? = null
+    private var onDecided: (() -> Unit)? = null
+
+    // iOS has no request method: creating a CBCentralManager shows the alert.
+    suspend fun request() {
+        withTimeoutOrNull(50.seconds) {
+            suspendCancellableCoroutine { continuation ->
+                onDecided = { if (continuation.isActive) continuation.resume(Unit) }
+                // Without the power alert: a radio that is turned off isn't a refusal.
+                val options = mapOf<Any?, Any?>(CBCentralManagerOptionShowPowerAlertKey to false)
+                manager = CBCentralManager(this@BluetoothRequest, null, options)
+            }
+        }
+        onDecided = null
+    }
+
+    override fun centralManagerDidUpdateState(central: CBCentralManager) {
+        if (CBManager.authorization != CBManagerAuthorizationNotDetermined) {
+            onDecided?.invoke()
+        }
+    }
+}
+
+actual suspend fun requestBluetooth(): AdaptyUIPermissionResult {
+    val before = CBManager.authorization
+    if (before == CBManagerAuthorizationNotDetermined) BluetoothRequest().request()
+    return when (CBManager.authorization) {
+        CBManagerAuthorizationAllowedAlways -> AdaptyUIPermissionResult.granted("granted")
+        CBManagerAuthorizationRestricted -> AdaptyUIPermissionResult.denied("restricted")
+        CBManagerAuthorizationDenied -> AdaptyUIPermissionResult.denied(
+            if (before == CBManagerAuthorizationNotDetermined) "denied" else "permanently_denied",
+        )
+        // Still not determined when the timeout ends.
+        else -> AdaptyUIPermissionResult.denied()
+    }
+}
+```
+
+```kotlin showLineNumbers title="androidMain"
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+
+actual suspend fun requestBluetooth(): AdaptyUIPermissionResult {
+    val activity = ResumedActivity.current ?: error("No resumed activity")
+    // For a BLE app, use PackageManager.FEATURE_BLUETOOTH_LE instead.
+    if (!activity.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH)) {
+        return AdaptyUIPermissionResult.denied("unsupported")
+    }
+    val permissions = if (
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+        activity.applicationInfo.targetSdkVersion >= Build.VERSION_CODES.S
+    ) {
+        arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+    } else {
+        // Earlier, Bluetooth scanning needs precise location: the user sees the location dialog.
+        // Request both: some Android 12 releases ignore a request for precise location alone.
+        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+    }
+    val request = requestRuntimePermissions(*permissions)
+    return when {
+        permissions.all { request.granted.getValue(it) } -> AdaptyUIPermissionResult.granted("granted")
+        // Approximate location only: not enough to scan.
+        request.granted.values.any { it } -> AdaptyUIPermissionResult.denied("denied")
+        else -> AdaptyUIPermissionResult.denied(request.deniedStatus)
+    }
+}
+```
+
+- If your app advertises to other Bluetooth devices, also request `BLUETOOTH_ADVERTISE` on Android 12 and later.
+- Before Android 12, and for apps that target a lower API level, the function requests `ACCESS_FINE_LOCATION` with `ACCESS_COARSE_LOCATION`: on Android 12, an app that targets a lower API level can run this code, and some Android 12 releases ignore a request for `ACCESS_FINE_LOCATION` alone. Bluetooth scans there need precise location, so approximate location only gets `denied`.
+
+### Local network \{#local_network\}
+
+Declare `NSLocalNetworkUsageDescription` on iOS. On Android, declare `ACCESS_LOCAL_NETWORK` only if your app targets Android 17. See [System permissions](flow-permissions#local_network).
+
+```kotlin showLineNumbers title="iosMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+
+// iOS has no request method or status API for the local network.
+actual suspend fun requestLocalNetwork(): AdaptyUIPermissionResult =
+    AdaptyUIPermissionResult.denied("unsupported")
+```
+
+```kotlin showLineNumbers title="androidMain"
+import android.os.Build
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+
+actual suspend fun requestLocalNetwork(): AdaptyUIPermissionResult {
+    val activity = ResumedActivity.current ?: error("No resumed activity")
+    // Android 17 (API 37) adds the permission for apps that target it.
+    // Before that, the INTERNET permission gives local network access.
+    if (Build.VERSION.SDK_INT < 37 || activity.applicationInfo.targetSdkVersion < 37) {
+        return AdaptyUIPermissionResult.granted("granted")
+    }
+    val permission = "android.permission.ACCESS_LOCAL_NETWORK"
+    val request = requestRuntimePermissions(permission)
+    return if (request.granted.getValue(permission)) {
+        AdaptyUIPermissionResult.granted("granted")
+    } else {
+        AdaptyUIPermissionResult.denied(request.deniedStatus)
+    }
+}
+```
+
+- **Differs from System permissions**: On iOS, the function answers `unsupported`. iOS has no request method and no status API for the local network: it shows the alert at the first local network operation. If your app has a local network feature, answer from the result of that operation, such as a Bonjour browse, as [System permissions](flow-permissions#local_network) describes. Write that code in Swift with the Network framework, and pass the result to your Kotlin code.
+
+### HomeKit \{#homekit\}
+
+On iOS, add the HomeKit capability, and declare `NSHomeKitUsageDescription`. Android has no such permission. See [System permissions](flow-permissions#homekit).
+
+```kotlin showLineNumbers title="iosMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.withTimeoutOrNull
+import platform.Foundation.NSUserDefaults
+import platform.HomeKit.HMHomeManager
+import platform.HomeKit.HMHomeManagerAuthorizationStatus
+import platform.HomeKit.HMHomeManagerAuthorizationStatusAuthorized
+import platform.HomeKit.HMHomeManagerAuthorizationStatusDetermined
+import platform.HomeKit.HMHomeManagerDelegateProtocol
+import platform.darwin.NSObject
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
+
+private class HomeKitAccess : NSObject(), HMHomeManagerDelegateProtocol {
+    private var manager: HMHomeManager? = null
+    private val updates = Channel<Unit>(Channel.CONFLATED)
+
+    private val status: HMHomeManagerAuthorizationStatus
+        get() = manager?.authorizationStatus ?: 0u
+    val isDecided: Boolean
+        get() = (status and HMHomeManagerAuthorizationStatusDetermined) != 0uL
+    val isAuthorized: Boolean
+        get() = (status and HMHomeManagerAuthorizationStatusAuthorized) != 0uL
+
+    suspend fun awaitDecided() {
+        // iOS has no request method: creating the manager shows the alert.
+        if (manager == null) manager = HMHomeManager().also { it.delegate = this }
+        // In a later launch, the new manager has the decided status at once, and after a refusal
+        // iOS calls no delegate method. So read the status every 0.25 seconds too.
+        withTimeoutOrNull(50.seconds) {
+            while (!isDecided) withTimeoutOrNull(250.milliseconds) { updates.receive() }
+        }
+    }
+
+    // iOS calls this method when the user answers the alert.
+    override fun homeManager(
+        manager: HMHomeManager,
+        didUpdateAuthorizationStatus: HMHomeManagerAuthorizationStatus,
+    ) {
+        updates.trySend(Unit)
+    }
+}
+
+// Keep one HMHomeManager for the life of the app.
+private val homeKitAccess = HomeKitAccess()
+
+actual suspend fun requestHomeKit(): AdaptyUIPermissionResult {
+    // Don't pass "restricted" for the .restricted flag:
+    // Apple defines it as no access to home data, not as a device policy.
+    if (homeKitAccess.isDecided) {
+        // Decided before this request: iOS shows no alert.
+        return if (homeKitAccess.isAuthorized) {
+            AdaptyUIPermissionResult.granted("granted")
+        } else {
+            AdaptyUIPermissionResult.denied("permanently_denied")
+        }
+    }
+    // Whether the user answered the alert in an earlier launch.
+    val defaults = NSUserDefaults.standardUserDefaults
+    val answeredBefore = defaults.boolForKey("flow_homekit_answered")
+    homeKitAccess.awaitDecided()
+    // Not decided when the timeout ends.
+    if (!homeKitAccess.isDecided) return AdaptyUIPermissionResult.denied()
+    defaults.setBool(true, "flow_homekit_answered")
+    return when {
+        homeKitAccess.isAuthorized -> AdaptyUIPermissionResult.granted("granted")
+        answeredBefore -> AdaptyUIPermissionResult.denied("permanently_denied")
+        else -> AdaptyUIPermissionResult.denied("denied")
+    }
+}
+```
+
+```kotlin showLineNumbers title="androidMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+
+// Android has no HomeKit permission.
+actual suspend fun requestHomeKit(): AdaptyUIPermissionResult =
+    AdaptyUIPermissionResult.denied("unsupported")
+```
+
+- If your app already keeps an `HMHomeManager`, read the status from that manager instead of creating a second one.
+
+### Focus status \{#focus_status\}
+
+Declare `NSFocusStatusUsageDescription` on iOS. Android has no such permission. See [System permissions](flow-permissions#focus_status).
+
+```kotlin showLineNumbers title="iosMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+import kotlinx.coroutines.suspendCancellableCoroutine
+import platform.Intents.INFocusStatusAuthorizationStatus
+import platform.Intents.INFocusStatusAuthorizationStatusAuthorized
+import platform.Intents.INFocusStatusAuthorizationStatusDenied
+import platform.Intents.INFocusStatusAuthorizationStatusNotDetermined
+import platform.Intents.INFocusStatusAuthorizationStatusRestricted
+import platform.Intents.INFocusStatusCenter
+import kotlin.coroutines.resume
+
+actual suspend fun requestFocusStatus(): AdaptyUIPermissionResult {
+    val center = INFocusStatusCenter.defaultCenter
+    val before = center.authorizationStatus
+    val status = if (before == INFocusStatusAuthorizationStatusNotDetermined) {
+        suspendCancellableCoroutine<INFocusStatusAuthorizationStatus> { continuation ->
+            center.requestAuthorizationWithCompletionHandler { continuation.resume(it) }
+        }
+    } else {
+        before
+    }
+    return when (status) {
+        INFocusStatusAuthorizationStatusAuthorized -> AdaptyUIPermissionResult.granted("granted")
+        INFocusStatusAuthorizationStatusRestricted -> AdaptyUIPermissionResult.denied("restricted")
+        INFocusStatusAuthorizationStatusDenied -> AdaptyUIPermissionResult.denied(
+            if (before == INFocusStatusAuthorizationStatusNotDetermined) "denied" else "permanently_denied",
+        )
+        // The user chose neither option.
+        else -> AdaptyUIPermissionResult.denied()
+    }
+}
+```
+
+```kotlin showLineNumbers title="androidMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+
+// Android has no Focus status permission.
+actual suspend fun requestFocusStatus(): AdaptyUIPermissionResult =
+    AdaptyUIPermissionResult.denied("unsupported")
+```
+
+- To read the Focus status after the user allows it, the app also needs notification authorization and the Communication Notifications capability.
+
+### Siri \{#siri\}
+
+On iOS, add the Siri capability, and declare `NSSiriUsageDescription`. Android has no such permission. See [System permissions](flow-permissions#siri).
+
+```kotlin showLineNumbers title="iosMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+import kotlinx.coroutines.suspendCancellableCoroutine
+import platform.Intents.INPreferences
+import platform.Intents.INSiriAuthorizationStatus
+import platform.Intents.INSiriAuthorizationStatusAuthorized
+import platform.Intents.INSiriAuthorizationStatusDenied
+import platform.Intents.INSiriAuthorizationStatusNotDetermined
+import platform.Intents.INSiriAuthorizationStatusRestricted
+import kotlin.coroutines.resume
+
+// Call it only in an app with the Siri capability. Without it, answer "unsupported".
+actual suspend fun requestSiri(): AdaptyUIPermissionResult {
+    val before = INPreferences.siriAuthorizationStatus()
+    val status = if (before == INSiriAuthorizationStatusNotDetermined) {
+        suspendCancellableCoroutine<INSiriAuthorizationStatus> { continuation ->
+            INPreferences.requestSiriAuthorization { continuation.resume(it) }
+        }
+    } else {
+        before
+    }
+    return when (status) {
+        INSiriAuthorizationStatusAuthorized -> AdaptyUIPermissionResult.granted("granted")
+        INSiriAuthorizationStatusRestricted -> AdaptyUIPermissionResult.denied("restricted")
+        INSiriAuthorizationStatusDenied -> AdaptyUIPermissionResult.denied(
+            if (before == INSiriAuthorizationStatusNotDetermined) "denied" else "permanently_denied",
+        )
+        else -> AdaptyUIPermissionResult.denied()
+    }
+}
+```
+
+```kotlin showLineNumbers title="androidMain"
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+
+// Android has no Siri permission.
+actual suspend fun requestSiri(): AdaptyUIPermissionResult =
+    AdaptyUIPermissionResult.denied("unsupported")
+```
+
+## If your app uses moko-permissions
+
+[moko-permissions](https://github.com/icerockdev/moko-permissions) 0.20.1 can request some of the permissions. Its results can't carry every status that the flow needs, and some of them crash the app or report a wrong answer. If you call it from `handlePermission`, take these limits into account:
+
+| Value | moko-permissions | Limits |
+|:------|:-----------------|:-------|
+| `push` | `Permission.REMOTE_NOTIFICATION` | On iOS, it reports provisional authorization as granted. On Android 12 and earlier, `providePermission()` always throws `RequestCanceledException`: read `getPermissionState()` there, and don't call `providePermission()`. |
+| `camera`, `microphone` | `Permission.CAMERA`, `Permission.RECORD_AUDIO` | On iOS, `getPermissionState()` reports a restricted permission as granted, and `providePermission()` throws `IllegalStateException` for it. |
+| `location_when_use` | `Permission.COARSE_LOCATION` | `Permission.LOCATION` needs precise location on Android 12 and later, so a user who chooses approximate location gets a refusal exception. |
+| `location_always` | `Permission.BACKGROUND_LOCATION` | Don't use it. On iOS, it throws `DeniedException` without an alert when location while using the app is granted. On Android 11 and later, it requests foreground and background location together, and Android grants neither to an app that targets Android 11 or higher. |
+| `photos` | `Permission.GALLERY` | On iOS, it reports limited access as granted. For restricted access, both `getPermissionState()` and `providePermission()` throw `IllegalStateException`. On Android 13 and later, it needs both images and videos. |
+| `contacts` | `Permission.READ_CONTACTS` | On iOS 18 and later, it reports limited access as granted. `Permission.CONTACTS` also requests `WRITE_CONTACTS` on Android. |
+| `bluetooth` | `Permission.BLUETOOTH_CONNECT` | On iOS, `getPermissionState()` reports a restricted permission as granted, while `providePermission()` throws `DeniedAlwaysException` for it. With Bluetooth turned off, it throws `DeniedException`, which isn't an answer from the user. When the permission is already decided, `providePermission()` reads the Bluetooth state from a new manager. That state is likely still unknown, so it can throw `IllegalStateException`. On a device without Bluetooth, it throws `DeniedAlwaysException`, as for a refusal. On Android 11 and earlier, it requests only `BLUETOOTH`, an install-time permission, so it reports granted without the location access that scans need there. |
+| `motion` | `Permission.MOTION` | Don't use it. On iOS, it returns before the user answers, so the permission always looks granted. On Android, it also requests `BODY_SENSORS`, and on Android 10 and 11 it requests only `BODY_SENSORS`. |
+
+Map the results of moko-permissions to the status:
+
+- **Before the request**: Read `getPermissionState()`, so that you can tell a new refusal from an earlier one.
+- **On iOS**: `DeniedAlwaysException` after the state `NotDetermined` means that the user declined the alert: pass `denied`. After the state `DeniedAlways`, iOS showed no alert: pass `permanently_denied`.
+- **On Android**: Pass `denied` for `DeniedException`. For `DeniedAlwaysException`, use the state before the request. After `Denied`, the user declined the dialog again: pass `denied`. After `NotGranted`, pass `permanently_denied` if your app requested the permission before, and answer without a status otherwise: the user closed the dialog without a choice. To know whether your app requested a permission before, keep a flag for it, as `requestRuntimePermissions` does. For `RequestCanceledException`, answer without a status.
+- **For `IllegalStateException`**: Catch it, and answer without a status. moko-permissions also throws it on Android when its `PermissionsController` isn't bound to an activity.
+- **Binding on Android**: Bind the `PermissionsController` to the activity that shows the flow, for example in `onActivityResumed` of `ResumedActivity`. A controller bound to another activity requests from behind the flow.
+
+moko-permissions has no `restricted`, `limited`, or `provisional` result. To pass these statuses, use the functions in [Code for each permission](#code-for-each-permission).
+
+## Declare the permissions
+
+The OS shows a permission dialog only to an app that declares the permission: in `Info.plist` of the iOS app, and in the Android manifest. For each permission that your handler requests, add these declarations:
+
+<FlowPermissionDeclarations />
+
+For example, an app that requests notifications and camera access adds `NSCameraUsageDescription` to `Info.plist` on iOS. On Android, the app declares these permissions:
+
+```xml title="AndroidManifest.xml"
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+<uses-permission android:name="android.permission.CAMERA" />
+```
+
+For what each permission shows users, the OS versions it needs, and the status to pass for each result, see [System permissions](flow-permissions).
+
 ## Register the handler
 
 :::warning
-**Without a handler, the flow stops at the permission request.** If your app registers no handler, the Adapty SDK sends the flow no answer, on iOS and on Android. The flow stays on the screen that sent the request and doesn't run the **After response** actions.
+**Without a handler, the flow stops at the permission request.** If your app registers no handler, the Adapty SDK sends the flow no answer, on iOS and on Android. The flow stays on the screen that sent the request and doesn't run the outcome actions.
 :::
 
 To send permission requests to your handler, call `AdaptyUI.setSystemRequestsHandler` once at app startup, before your app shows the first flow. For example, call it where you call `AdaptyUI.setFlowsEventsObserver`.
@@ -182,4 +1758,8 @@ AdaptyUI.setSystemRequestsHandler(MySystemRequestsHandler())
 
 ## Test the permission request
 
-iOS shows the notification dialog only once per app install. Android stops showing it after the user allows notifications or denies them twice. To see the dialog again while you test the flow, delete the app from the device and install it again. Then open the flow and reach the **Request permission** action. If the screen stays and no dialog appears, the flow got no answer: make sure that your app registers the handler before it presents the flow. If the flow moves on without a dialog, make sure that the Android app declares `POST_NOTIFICATIONS` and targets Android 13 or later.
+iOS shows most permission dialogs only once per app install. Android stops showing a permission dialog after the user allows the permission or denies it twice. To see the dialog again while you test the flow, delete the app from the device and install it again. Then open the flow and reach the **Request permission** action. If the screen stays and no dialog appears, the flow got no answer: make sure that your app registers the handler before it presents the flow. If the flow moves on without a dialog, make sure that the app declares the permission on both platforms. For notifications on Android, the app must also target Android 13 or later.
+
+To see how users answer permission requests, read the flow's analytics events in the `flowViewDidReceiveAnalyticEvent` method of your flows events observer. For details, see [Handle flow & paywall events](kmp-handling-events).
+
+<FlowPermissionEvents />
