@@ -655,6 +655,23 @@ needed in place.
   page). `flow-custom-tags` (the BMI use case and the BMI example in the `<platform>-flow-custom-tags` guides) still
   calculates a BMI in app code and passes it through a custom tag; that stays valid, but a formula now does it in
   the flow.
+- **Formulas, second round (2026-11-25, builder and transformer code before release).** The **Expression** field
+  is a code editor: references show as chips (**Weekly · prod_price** for a product), typing `{{` opens hints that
+  fit the cursor, and **Insert variable** has four tabs: **Functions**, **Elements**, **Products**, **Custom**. A
+  formula reads the price and `prod_price_per_day|week|month|year` of any catalog product, and the per-period prices
+  of the selected product. The builder adds a read catalog product to the end of the list of products of each screen
+  that reads the formula (texts and conditions, through other formulas, and on the host screens of a reusable
+  component), with no offer; it never removes the entry. A per-period price uses the text table (a month is 30 days,
+  30/7 weeks), the same as the price variables in `onboarding-variables`; the builder preview takes the period from
+  the product's **Subscription duration**, so a product without one has no preview value. New functions
+  `daysBetween`, `weeksBetween`, `monthsBetween`, `yearsBetween` give a Number (whole units, negative when `end` is
+  earlier). Date variables and Date formulas gained **Is empty** / **Is not empty** in conditions. All of it is in
+  `flow-formulas`.
+  **Ripple:** a flow from the CLI or the API whose read formula names a catalog product that no screen lists without
+  an offer fails to publish with `formula_undeclared_product`; `flow-common-issues` has its row (the builder adds the
+  entry itself, so builder users don't see it). Open: the screenshots of the new editor are not captured yet. The shipped `flow-generator` skill learns the
+  same language in its own change. The `flow-formula-create.webp` screenshot shows the plain text field of the
+  first release.
 - **Navigate Next follows screen order, not answers.** It opens the next screen in the flow's order whatever users
   picked, so a branch to one of two parallel screens needs **Navigate to Screen** on both to rejoin.
 - **What sends input values.** Navigation actions (**Navigate to Screen**, **Navigate Next**, **Navigate back**),
