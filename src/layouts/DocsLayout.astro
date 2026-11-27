@@ -11,6 +11,7 @@ import Footer from '../components/Footer.astro';
 import { ClientRouter } from 'astro:transitions';
 import { getUIStrings } from '../locales/ui-strings';
 import { SUPPORTED_LOCALES } from '../data/locales';
+import { localizeDocsLinks } from '../utils/localize-links';
 
 interface Props {
   title: string;
@@ -31,6 +32,12 @@ interface Props {
 }
 
 const { title, sidebarData, apiSidebarData, currentPlatformId, currentSlug, currentLocale, headings = [], breadcrumbs = [], description, metadataTitle, keywords, rank, isFullWidth = false, hideRightColumn = false, noindex = false } = Astro.props;
+
+// On a translated page, article links point at the same language in the HTML
+// itself (search engines and the first paint see it), not after a script runs.
+const localizedArticle = currentLocale && currentLocale !== 'en'
+  ? localizeDocsLinks(await Astro.slots.render('default'), currentLocale)
+  : undefined;
 
 const tSearch = getUIStrings(currentLocale).search;
 const derivedTitle = metadataTitle || title;
@@ -345,7 +352,7 @@ const showHreflang = !isFullWidth && !noindex;
                             <Breadcrumbs items={breadcrumbs} />
                         </div>
                     )}
-                    <slot />
+                    {localizedArticle !== undefined ? <Fragment set:html={localizedArticle} /> : <slot />}
                 </article>
 
                 {!isFullWidth && !hideRightColumn && (
@@ -535,27 +542,6 @@ const showHreflang = !isFullWidth && !noindex;
       document.addEventListener('astro:page-load', initSidebarState);
     </script>
     
-    <!-- Localize in-article links when on a locale page -->
-    <script>
-      function localizeArticleLinks() {
-        const localeMatch = window.location.pathname.match(/\/docs\/([a-z]{2})(\/|$)/);
-        if (!localeMatch) return; // English page — nothing to do
-        const locale = localeMatch[1];
-        const prefix = `/docs/${locale}/`;
-
-        document.querySelectorAll<HTMLAnchorElement>('article a[href]').forEach(el => {
-          const href = el.getAttribute('href')!;
-          // Only rewrite absolute internal /docs/ links that don't already have the locale prefix
-          if (href.startsWith('/docs/') && !href.startsWith(prefix)) {
-            el.href = href.replace(/^\/docs\//, prefix);
-          }
-        });
-      }
-
-      localizeArticleLinks();
-      document.addEventListener('astro:page-load', localizeArticleLinks);
-    </script>
-
     <!-- Mobile search overlay -->
     <script>
       import {

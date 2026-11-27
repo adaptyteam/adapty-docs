@@ -1,7 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { buildDocPaths } from '../utils/docs';
-import { SUPPORTED_LOCALES } from '../data/locales';
 
 /**
  * Sitemap for all Chinese-localized pages (/docs/zh/...).
@@ -14,18 +13,16 @@ export const GET: APIRoute = async () => {
 
   const urls: string[] = [];
 
-  for (const locale of SUPPORTED_LOCALES) {
-    for (const entry of englishPaths) {
-      // Skip redirect stubs — same rule as [locale]/[...slug].astro
-      if (entry.props.redirectTo) continue;
+  for (const entry of englishPaths) {
+    // Skip redirect stubs — same rule as [locale]/[...slug].astro
+    if (entry.props.redirectTo) continue;
 
-      const slug: string | undefined = entry.params.slug;
-      const loc = slug
-        ? `https://adapty.io/docs/${locale}/${slug}`
-        : `https://adapty.io/docs/${locale}/`;
+    const slug: string | undefined = entry.params.slug;
+    const loc = slug
+      ? `https://adapty.io/docs/zh/${slug}`
+      : `https://adapty.io/docs/zh/`;
 
-      urls.push(loc);
-    }
+    urls.push(loc);
   }
 
   const urlEntries = urls
