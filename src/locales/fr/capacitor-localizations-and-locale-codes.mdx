@@ -16,7 +16,13 @@ Les codes de locale sont complexes et peuvent varier d'une plateforme à l'autre
 
 ## Standard des codes de langue chez Adapty \{#locale-code-standard-at-adapty\}
 
-Pour les codes de langue, Adapty utilise une version légèrement modifiée du [standard BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag) : chaque code est composé de sous-balises en minuscules, séparées par des tirets. Quelques exemples : `en` (anglais), `pt-br` (portugais (Brésil)), `zh` (chinois simplifié), `zh-hant` (chinois traditionnel).
+Les codes de langue Adapty suivent la [norme BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag) : un sous-tag de langue, suivi d'un sous-tag optionnel de script ou de région, séparés par des traits d'union. La casse appliquée dépend de l'endroit où le code apparaît :
+
+- Le champ **Select languages** affiche tous les codes en minuscules : `pt-br`, `zh-hant`.
+- Les flows publiés depuis le Flow & Paywall Builder ont des codes avec la région en majuscules et le script avec une initiale majuscule : `pt-BR`, `zh-Hant`.
+- Les paywalls issus de l'ancien Paywall Builder conservent tous les codes en minuscules : `pt-br`, `zh-hant`.
+
+Des codes comme `en`, `pt` et `es-419` se ressemblent partout.
 
 ## Correspondance des codes de langue \{#locale-code-matching\}
 
@@ -24,18 +30,20 @@ Dans le SDK v4, les flows et les onboardings font correspondre les codes de lang
 
 ### Flows et paywalls
 
-Un paywall rendu par Adapty est livré sous forme de flow dans le SDK v4, donc la règle ci-dessous couvre les deux.
+Un paywall rendu par Adapty est livré sous forme de flow dans le SDK v4, donc la règle ci-dessous s'applique aux deux.
 
-La correspondance est exacte. Le SDK compare le code que vous transmettez avec les codes de localisation du flow caractère par caractère : il ne modifie pas la casse, ne remplace pas les tirets bas (`_`) par des tirets (`-`) et ne se replie pas sur la balise de langue. Pour un flow avec une localisation `pt-br`, seul `pt-br` correspond : `pt-BR`, `pt_BR` et `pt-PT` ne correspondent pas.
+La correspondance est exacte. Le SDK compare le code que vous transmettez avec les codes de localisation du flow caractère par caractère : il ne modifie pas la casse, ne remplace pas les tirets bas (`_`) par des tirets (`-`), et ne se rabat pas sur le sous-tag de langue. Pour un flow avec une localisation `pt-BR`, seul `pt-BR` correspond : `pt-br`, `pt_BR` et `pt-PT` ne correspondent pas.
 
 Lorsque le code ne correspond à aucune localisation, le flow s'affiche silencieusement dans sa [langue par défaut](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) — le SDK ne retourne pas d'erreur et n'enregistre pas d'avertissement.
 
 Lorsque le code correspond, Adapty fusionne la localisation avec celle par défaut : les chaînes et ressources que la localisation trouvée ne définit pas sont héritées de la localisation par défaut.
 
-Omettre le code de langue n'est pas la même chose que demander la localisation par défaut du flow : le SDK substitue un `en` fixe. Un flow dont la langue par défaut est `de` s'affiche quand même en `en` s'il possède une localisation `en`, et ne bascule vers `de` que si ce n'est pas le cas.
+Omettre le code de langue ne revient pas à demander la localisation par défaut du flow : le SDK substitue un `en` fixe. Un flow dont la langue par défaut est `de` s'affiche en `en` s'il dispose d'une localisation `en`, et ne revient à `de` qu'en l'absence de celle-ci.
 
 :::warning
-Passez le code de langue exactement tel qu'il est configuré dans le tableau de bord — sous-balises en minuscules séparées par des tirets. Ne passez pas tel quel un identifiant de locale système : `navigator.language` renvoie `pt-BR`, ce qui fait basculer vers la localisation par défaut. Convertissez la valeur dans votre application avant de la transmettre.
+Passez le code de langue exactement tel qu'il apparaît dans le flow publié : `pt-BR`, et non `pt-br` depuis le champ **Select languages**. Pour les paywalls issus de l'ancien Paywall Builder, utilisez des codes en minuscules, comme `pt-br`.
+
+Ne transmettez pas un identifiant de locale système tel quel. Sur un appareil configuré en anglais (États-Unis), `navigator.language` renvoie `en-US`, ce qui ne correspond pas à un flow qui ne contient que `en`. Avant de transmettre un identifiant de locale système, convertissez-le en un code reconnu par le flow.
 :::
 
 ### Onboardings
@@ -49,11 +57,11 @@ Les onboardings sont localisés côté serveur, et les règles du serveur accept
 
 Cette approche permet à `pt_BR`, `pt-BR` et `pt-br` de tous pointer vers la même localisation d'onboarding.
 
-## Implémenter les localisations \{#implementing-localizations\}
+## Implémentation des localisations \{#implementing-localizations\}
 
-Dans le SDK v4, vous ne passez pas de code de langue lors de la récupération d'un flow — `getFlow` renvoie le flow avec toutes ses localisations, et Adapty en applique une au moment de la construction de la vue du flow.
+Dans le SDK v4, vous ne passez pas de code de langue lors du chargement d'un flow — le SDK charge toutes ses localisations à la construction de la vue du flow, puis en applique une.
 
-- **Flows construits dans le builder** : le SDK ne lit pas la langue du système, vous devez donc la résoudre dans votre app et la passer comme option `locale` de `createFlowView`. C'est optionnel — omettez-la et le flow s'affiche en `en`, ou dans sa [langue par défaut](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) si le flow ne possède pas de localisation `en`.
+- **Flows construits dans le builder** : le SDK ne lit pas la langue de l'appareil, donc résolvez-la dans votre application et passez-la en tant qu'option `locale` de `createFlowView`. C'est facultatif — omettez-la et le flow s'affiche en `en`, ou dans sa [langue par défaut](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) si le flow n'a pas de localisation `en`.
 
   ```typescript showLineNumbers
   import { createFlowView } from '@adapty/capacitor';
@@ -61,7 +69,7 @@ Dans le SDK v4, vous ne passez pas de code de langue lors de la récupération d
   const view = await createFlowView(flow, { locale: 'es' });
   ```
 
-`view.locale` indique la localisation avec laquelle la vue a été construite. L'option `locale` et `view.locale` nécessitent le SDK Capacitor 4.1 ou une version ultérieure, et `view.locale` est `undefined` sur les versions antérieures. Le [gestionnaire `onAppeared`](capacitor-handling-events#the-view-argument) renvoie la même valeur.
+  `view.locale` indique la localisation avec laquelle la vue a été construite. L'option `locale` et `view.locale` nécessitent le SDK Capacitor 4.1 ou une version ultérieure, et `view.locale` est `undefined` sur les versions antérieures. Le [gestionnaire `onAppeared`](capacitor-handling-events#the-view-argument) renvoie la même valeur.
 - **Paywalls personnalisés (Remote Config)** : `getFlow` renvoie toutes les localisations configurées dans `flow.remoteConfigs`. Chaque entrée contient un code `lang` et un objet `data`. Sélectionnez l'entrée correspondant à l'utilisateur, avec votre propre solution de secours :
 
 ```typescript showLineNumbers
@@ -85,7 +93,7 @@ Les codes de locale étant complexes et pouvant varier d'une plateforme à l'aut
 
 ## Standard des codes de langue chez Adapty \{#locale-code-standard-at-adapty\}
 
-Pour les codes de langue, Adapty utilise une version légèrement modifiée du [standard BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag) : chaque code est composé de sous-tags en minuscules, séparés par des tirets. Quelques exemples : `en` (anglais), `pt-br` (portugais (Brésil)), `zh` (chinois simplifié), `zh-hant` (chinois traditionnel).
+Pour les codes de langue, Adapty utilise une version légèrement modifiée du [standard BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag) : chaque code est composé de sous-balises en minuscules, séparées par des tirets. Quelques exemples : `en` (anglais), `pt-br` (portugais (Brésil)), `zh` (chinois simplifié), `zh-hant` (chinois traditionnel).
 
 ## Correspondance des codes de langue \{#locale-code-matching\}
 

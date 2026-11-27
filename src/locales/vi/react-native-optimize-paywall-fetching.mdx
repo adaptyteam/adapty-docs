@@ -12,11 +12,11 @@ Các quy tắc này giả định rằng `adapty.activate()` và `adapty.identif
 
 ## Quy tắc và những lỗi thường gặp \{#rules-and-pitfalls\}
 
-| Làm thế này | Không làm thế này | Lý do |
+| Nên làm | Không nên làm | Lý do |
 |---|---|---|
-| Fetch placement bạn sắp hiển thị, hoặc làm ấm cache bằng [`preloadFlows`](#preload-placements) (SDK 4.3.0+). | Tự tạo các lệnh gọi `getFlow` đồng thời khi khởi động. | Một burst prefetch tự tay sẽ chặn JS thread và gây màn hình đen. `preloadFlows` được tạo ra cho việc này và gửi batch đến native SDK chỉ trong một lần gọi. |
-| Fetch `getFlow` sau khi attribution đã có cơ hội được xử lý — ví dụ, 1–2 giây sau `activate` hoặc sau khi `onLatestProfileLoad` được kích hoạt. | Gọi `getFlow` tại root component mount. | Attribution chưa được xác định. Flow sẽ được xử lý theo đối tượng mặc định và âm thầm bỏ qua các phân khúc và cá nhân hóa ASA. |
-| Đặt `loadTimeoutMs` và cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement. | Chờ `getFlow` vô thời hạn. | Nếu không có timeout, người dùng có kết nối kém sẽ thấy màn hình trống cho đến khi mạng phản hồi — hoặc đóng ứng dụng. |
+| Fetch placement bạn sắp hiển thị, hoặc làm ấm cache bằng [`preloadFlows`](#preload-placements) (SDK 4.3.0+). | Tự gọi nhiều `getFlow` đồng thời khi khởi động. | Việc tự tạo nhiều prefetch cùng lúc sẽ chặn JS thread và gây màn hình đen. `preloadFlows` được thiết kế cho mục đích này và gửi toàn bộ batch lên native SDK trong một lần gọi. |
+| Gọi `getFlow` sau khi attribution đã có cơ hội xử lý xong — ví dụ, 1–2 giây sau `activate` hoặc sau khi `onLatestProfileLoad` được kích hoạt. | Gọi `getFlow` ngay tại root component mount. | Attribution chưa được xử lý xong. Flow sẽ được resolve theo đối tượng mặc định và âm thầm bỏ qua các phân khúc cũng như cá nhân hóa ASA. |
+| Giữ nguyên giá trị mặc định `loadTimeoutMs` là 5000 mili giây hoặc đặt giá trị khác, và cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement. | Truyền vào `getFlow` một giá trị `loadTimeoutMs` quá lớn đến mức không bao giờ kích hoạt. | Nếu timeout không bao giờ kích hoạt, người dùng có kết nối kém sẽ thấy màn hình trắng cho đến khi mạng phản hồi — hoặc họ sẽ đóng ứng dụng. |
 
 Xem [Tải paywall tùy chỉnh và sản phẩm](fetch-paywalls-and-products-react-native) để biết tham chiếu tham số `fetchPolicy` và `loadTimeoutMs`, và [Placements](placements) để chọn placement phù hợp.
 
@@ -74,7 +74,13 @@ Một flow hiển thị lên màn hình theo từng lớp. Một preload bao g�
 | Hình ảnh, bao gồm khung tĩnh thay thế cho phần tử video | `createFlowView`, chạy nền | Không |
 | Tệp video | Trình phát hệ thống, khi màn hình hiển thị | Không được SDK lưu cache |
 
-Vậy lần gọi `createFlowView` đầu tiên cho một layout nhất định vẫn tốn một lần round trip sau khi preload. Sau đó SDK sẽ lưu layout đó vào disk cache, cache này tồn tại qua cả lần khởi động lại ứng dụng, nên chi phí chỉ rơi vào lần request đầu tiên chứ không phải mỗi lần.
+`createFlowView` tìm kiếm layout theo thứ tự sau:
+
+1. Bộ nhớ đệm trên ổ đĩa của SDK, vẫn tồn tại sau khi khởi động lại ứng dụng.
+2. [File dự phòng](react-native-use-fallback-paywalls) của bạn (từ SDK 4.4 trở lên), nếu bạn đã tải xuống sau lần cuối cùng publish flow.
+3. Adapty, qua mạng. Điều này tốn một lần round trip, ngay cả sau khi preload. Lần đầu tiên ứng dụng hiển thị mỗi phiên bản đã publish của flow, SDK sẽ thực hiện yêu cầu này. Sau đó, nó lưu layout vào bộ nhớ đệm trên ổ đĩa.
+
+Khi `loadTimeoutMs` của `createFlowView` kích hoạt, SDK không chuyển sang dự phòng: thay vào đó, nó gửi lại yêu cầu layout đến Adapty API. `loadTimeoutMs` không giới hạn yêu cầu thứ hai này.
 
 ### Bỏ qua phân khúc đối tượng \{#skip-audience-segmentation\}
 
@@ -109,15 +115,18 @@ const view = await createFlowView(flow, { customAssets: bundledAssets });
 
 Các file đóng gói sẽ tăng kích thước tải xuống của app, vì vậy chỉ nên đóng gói những media người dùng nhìn thấy đầu tiên.
 
-Những media bạn không đóng gói vẫn hiển thị ngay lập tức: layout của flow chứa sẵn một bản sao độ phân giải thấp của từng ảnh, bao gồm cả khung tĩnh của video, và hiển thị bản đó cho đến khi file đầy đủ tải xong.
+Hình ảnh được đóng gói sẵn hiển thị ngay lập tức mà không cần chờ, nhưng SDK vẫn tải xuống hình ảnh đã upload trong nền.
 
-Để xem toàn bộ tài liệu tham khảo về `customAssets`, xem [Tùy chỉnh assets](react-native-get-pb-paywalls#customize-assets).
+Các media không được đóng gói vẫn hiển thị ngay: layout của flow bao gồm một bản sao độ phân giải thấp của mỗi hình ảnh, kể cả khung tĩnh của video, và hiển thị bản đó cho đến khi tệp đầy đủ được tải xong.
 
-## Tối ưu cho kết nối kém \{#tune-for-poor-connectivity\}
+Để xem tài liệu tham khảo đầy đủ về `customAssets`, hãy xem [Tùy chỉnh assets](react-native-get-pb-paywalls#customize-assets).
 
-Đối với các thị trường có kết nối kém liên tục (khu vực nông thôn, phương tiện giao thông, vùng bị ảnh hưởng bởi định tuyến mạng):
+## Điều chỉnh cho kết nối kém \{#tune-for-poor-connectivity\}
 
-- Đặt `fetchPolicy: 'return_cache_data_else_load'` cho mọi lần fetch ngoại trừ lần đầu tiên.
-- Cấu hình [paywall dự phòng](fallback-paywalls) cho mọi placement trong Adapty Dashboard.
-- Đặt `loadTimeoutMs` từ 3–5 giây và chấp nhận paywall dự phòng khi hết thời gian chờ.
-- Không chặn việc hiển thị flow vào kết quả của `getProfile()`. Gọi `getFlow` độc lập để tránh trường hợp profile chậm làm chặn giao diện.
+Đối với các thị trường có kết nối kém liên tục (vùng nông thôn, phương tiện giao thông, khu vực bị ảnh hưởng bởi định tuyến):
+
+- Đặt `fetchPolicy: 'return_cache_data_else_load'` cho mọi lần fetch trừ lần đầu tiên.
+- Cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement trong Adapty Dashboard.
+- Cân bằng `loadTimeoutMs` giữa tốc độ và targeting. Timeout ngắn hơn thì người dùng thấy fallback sớm hơn. Timeout dài hơn thì flow được nhắm mục tiêu có thêm thời gian để tải.
+- [Giữ flow nhẹ](flow-size), để layout tải xuống nhanh hơn.
+- Đừng chặn việc hiển thị flow bằng `getProfile()`. Gọi `getFlow` độc lập để profile chậm không làm cản trở giao diện.

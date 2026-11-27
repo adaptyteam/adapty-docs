@@ -12,15 +12,15 @@ Bu kurallar, `Adapty.activate()` ve `Adapty.identify()` fonksiyonlarının zaten
 
 ## Kurallar ve tuzaklar \{#rules-and-pitfalls\}
 
-| Bunu yapın | Bunu yapmayın | Neden |
+| Bunu yap | Bunu yapma | Neden |
 |---|---|---|
-| Göstermek üzere olduğunuz placement'ı çekin ya da [`preloadFlows`](#preload-placements) ile önbelleği ısıtın (SDK 4.1+). | Başlangıçta kendi eşzamanlı `getFlow` çağrılarınızı zincirlemeyin. | Elle yazılmış bir önceden yükleme patlaması ana thread'i bloke eder ve siyah ekrana yol açar. `preloadFlows` bunun için tasarlanmıştır ve zaman aşımı bütçesini toplu olarak paylaşır. |
-| Attribution'ın çözülmesine fırsat tanıdıktan sonra `getFlow`'u çekin — örneğin `activate`'ten 1–2 saniye sonra ya da `didLoadLatestProfile` tetiklendikten sonra. | `getFlow`'u `App.init()` içinde çağırmayın. | Attribution henüz tamamlanmamıştır. Flow, varsayılan kitleye göre çözümlenir ve segment ile ASA kişiselleştirmesini sessizce atlar. |
-| Her placement için bir `loadTimeout` belirleyin ve bir [yedek paywall](fallback-paywalls) yapılandırın. | `getFlow`'u süresiz olarak beklemeyin. | Zaman aşımı olmadan, bağlantısı zayıf kullanıcılar ağ çözümlenene kadar boş ekran görür — ya da uygulamayı kapatır. |
+| Göstermek üzere olduğunuz placement'ı getirin ya da [`preloadFlows`](#preload-placements) (SDK 4.1+) ile önbelleği ısıtın. | Başlatma sırasında kendi eşzamanlı `getFlow` çağrılarınızı yayın. | El yapımı bir prefetch patlaması ana thread'i bloke eder ve siyah ekrana yol açar. `preloadFlows` bunun için tasarlanmıştır ve toplu iş genelinde tek bir zaman aşımı bütçesini paylaşır. |
+| `getFlow`'u attribution'ın çözümlenme fırsatı bulduktan sonra getirin — örneğin `activate`'ten 1–2 saniye sonra veya `didLoadLatestProfile` tetiklendikten sonra. | `getFlow`'u `App.init()`'te çağırın. | Attribution henüz gelmemiştir. Flow varsayılan kitleye göre çözümlenir ve segment ile ASA kişiselleştirmesini sessizce atlar. |
+| Varsayılan `loadTimeout` değerini (5 saniye) koruyun ya da başka bir değer ayarlayın ve her placement için bir [yedek paywall](fallback-paywalls) yapılandırın. | `getFlow`'a hiçbir zaman tetiklenmeyen kadar büyük bir `loadTimeout` verin. | Zaman aşımı hiç tetiklenmezse, zayıf bağlantıdaki kullanıcılar ağ çözümlenene kadar boş ekran görür ya da uygulamayı kapatır. |
 
-Herhangi bir fetch işleminde — sıradan bir `getFlow` dahil — `loadTimeout` tetiklendiğinde, SDK mevcut bir önbelleklenmiş varyant varsa onu döndürür; yoksa kalan süre içinde varsayılan kitle (**All Users**) varyantını çeker. Bu istek için hedefleme kaybedilir, ertelenmez: segment ve attribution tabanlı kitleler sonuca uygulanmaz.
+`loadTimeout`, `getFlow` üzerinde tetiklendiğinde SDK, varsa önbelleğe alınmış varyantı döndürür; aksi takdirde kalan süre içinde varsayılan kitle (**All Users**) varyantını çeker. Hedefleme, o istek için ertelenmez, tamamen kaybolur: segmentler ve attribution tabanlı kitleler sonuca uygulanmaz.
 
-`fetchPolicy` ve `loadTimeout` parametre referansı için [Özel paywallları ve ürünleri getirme](fetch-paywalls-and-products) bölümüne, doğru placement'ı seçmek için ise [Placementlar](placements) bölümüne bakın.
+`fetchPolicy` ve `loadTimeout` parametre referansı için [Özel paywall ve ürünleri çekme](fetch-paywalls-and-products) bölümüne, doğru placement seçimi için ise [Placement'lar](placements) bölümüne bakın.
 
 ## Placement'ları önceden yükle \{#preload-placements\}
 
@@ -97,7 +97,15 @@ Bir flow ekrana katmanlar halinde gelir. Preload, tıpkı `getFlow`'un yaptığ�
 | Görseller; video öğesinin yerine geçen sabit kare dahil | `getFlowConfiguration`, arka planda | Hayır |
 | Video dosyaları | Ekran render edilirken sistem oynatıcısı | SDK tarafından önbelleğe alınmaz |
 
-`getFlowConfiguration` layout'u bekler; bu nedenle önceden yükleme yapılmış olsa bile belirli bir layout için yapılan ilk istek bir tur-gidiş-dönüş maliyeti gerektirir. SDK ardından bu layout'u kendi disk önbelleğinde tutar; bu önbellek uygulama yeniden başlatmalarından sonra da hayatta kalır ve herhangi bir ağ çağrısından önce okunur, dolayısıyla maliyet her istekte değil yalnızca ilk istekte oluşur. SDK layout'u edindikten sonra, çağrıdan bağımsız olarak görselleri önbelleğe almaya başlar: ekranı bekletmez ve bittiğinde bunu bildiren bir callback, delegate metodu veya hata yoktur.
+`getFlowConfiguration` düzeni üç yerde arar ve bu sırayı izler:
+
+1. SDK'nın disk önbelleği; bu önbellek uygulama yeniden başlatmalarından sonra da korunur.
+2. SDK 4.4 veya sonrası için [yedek dosyanız](ios-use-fallback-paywalls); bu dosyayı flow'u en son yayımladıktan sonra indirdiyseniz geçerlidir.
+3. Ağ üzerinden Adapty. Bu bir gidiş-dönüş gerektirir ve ön yüklemeden sonra bile geçerlidir. Her yayımlanmış flow sürümünü uygulama ilk gösterdiğinde, SDK bu isteği yapar. Ardından düzeni disk önbelleğine kaydeder.
+
+SDK düzeni aldıktan sonra, görselleri çağrıdan bağımsız olarak önbelleğe almaya başlar: ekranı bekletmez, tamamlandığında bunu bildiren bir callback, delegate metodu veya hata dönmez.
+
+`getFlowConfiguration` için belirlenen `loadTimeout` süresi dolduğunda SDK yedek çözüme geçmez: düzeni Adapty API'sinden tekrar talep eder. `loadTimeout`, bu ikinci isteği sınırlandırmaz.
 
 ### Hangi placement'ın başarısız olduğunu öğrenin \{#find-out-which-placement-failed\}
 
@@ -149,17 +157,20 @@ let flowConfig = try await AdaptyUI.getFlowConfiguration(
 )
 ```
 
-Paketlenmiş dosyalar uygulamanızın indirme boyutunu artırır; bu yüzden yalnızca kullanıcıların ilk gördüğü medyaları paketleyin.
+Paketlenmiş dosyalar uygulamanızın indirme boyutunu artırdığından, yalnızca kullanıcıların ilk gördüğü medyayı paketleyin.
 
-Paketlemediğiniz medyalar yine de hemen görünür: görünüm yapılandırması, video duraklatma karesi dahil her görselin küçük, düşük çözünürlüklü bir kopyasını içerir ve tam dosya yüklenene kadar bunu gösterir.
+Paketlenmiş bir görsel anında görünür; ancak SDK, yüklenen görseli arka planda indirmeye devam eder.
 
-`assetsResolver` için tam referansa ulaşmak üzere [Varlıkları özelleştirin](get-pb-paywalls#customize-assets) sayfasına bakın.
+Paketlemediğiniz medya da hemen görünür: görünüm yapılandırması, her görselin küçük, düşük çözünürlüklü bir kopyasını (videolar için sabit kare dahil) taşır ve tam dosya yüklenene kadar bunu gösterir.
+
+`assetsResolver` referansının tamamı için bkz. [Varlıkları özelleştirme](get-pb-paywalls#customize-assets).
 
 ## Zayıf bağlantı için ayarlama \{#tune-for-poor-connectivity\}
 
-Sürekli zayıf bağlantının yaşandığı pazarlar için (kırsal alanlar, toplu taşıma, yönlendirme sorunları yaşanan bölgeler):
+Sürekli zayıf bağlantının yaşandığı pazarlar için (kırsal alanlar, toplu taşıma, yönlendirme sorunlarından etkilenen bölgeler):
 
-- İlk fetch dışındaki her fetch için `fetchPolicy: .returnCacheDataElseLoad` ayarlayın.
-- Adapty kontrol panelindeki her placement için bir [yedek paywall](fallback-paywalls) yapılandırın.
-- `loadTimeout` değerini 3–5 saniye olarak ayarlayın ve zaman aşımı gerçekleştiğinde yedek paywalle geçin.
-- Flow görüntülemeyi `getProfile()` sonucuna bağlamayın. Yavaş bir profilin arayüzü bloke etmemesi için `getFlow`'u bağımsız olarak çağırın.
+- İlk fetch hariç her fetch'te `fetchPolicy: .returnCacheDataElseLoad` ayarlayın.
+- Adapty kontrol panelinde her placement için bir [yedek paywall](fallback-paywalls) yapılandırın.
+- `loadTimeout` değerini hız ve hedefleme arasında dengeleyin. Daha kısa bir timeout ile kullanıcılar yedeği daha erken görür. Daha uzun bir timeout ile hedeflenen flow yüklenmek için daha fazla zaman bulur.
+- Flow'un daha hızlı yüklenmesi için [flow'u hafif tutun](flow-size).
+- Flow gösterimini `getProfile()` ile engellemeyin. `getFlow`'u bağımsız olarak çağırın; böylece yavaş bir profil arayüzü bloke etmez.

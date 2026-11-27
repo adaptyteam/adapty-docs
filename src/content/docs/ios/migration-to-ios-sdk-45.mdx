@@ -1,0 +1,83 @@
+---
+title: "Migrate Adapty iOS SDK to v4.5"
+description: "Migrate to Adapty iOS SDK v4.5: pass the user's languages to getFlowConfiguration instead of one locale, and check what users see differently."
+metadataTitle: "Migrating to Adapty iOS SDK v4.5 | Adapty Docs"
+---
+
+To update your app from Adapty iOS SDK 4.4 to 4.5, apply every change in this guide. An app on 4.3 or earlier needs the [v4.4 changes](migration-to-ios-sdk-44) first.
+
+In 4.5, `getFlowConfiguration` requires a list of languages in `preferredLocales`, instead of an optional locale code in `locale`. The SDK [selects a localization of the flow from this list](localizations-and-locale-codes).
+
+:::warning
+The build fails until every `getFlowConfiguration` call passes [`preferredLocales`](#replace-locale-with-the-users-languages). After you fix the build, SDK 4.5 can show users [a different localization of the same flow](#what-users-see-after-the-update) than SDK 4.4 did.
+:::
+
+## Quick reference
+
+| Before | After |
+|---|---|
+| `getFlowConfiguration(forFlow: flow, locale: "fr")` | `getFlowConfiguration(forFlow: flow, preferredLocales: Locale.preferredLanguages)` |
+| `locale`: optional | `preferredLocales`: required |
+| No `locale`: users see `en`, even when the default locale of the flow is another language. Without `en` in the flow, users see the default locale | `preferredLocales: []`: all users see the flow in its default locale, whatever their device languages |
+| No strategy parameter | `localizationStrategy:`, optional. The default, `.auto`, fits most apps. |
+
+## Replace `locale` with the user's languages
+
+In 4.5, both `getFlowConfiguration` methods, async and completion-handler, take a `preferredLocales` list instead of `locale`. The `preferredLocales` parameter is required. For a call with `locale` or without either parameter, Xcode reports:
+
+```text
+'getFlowConfiguration(forFlow:locale:…)' is unavailable: Pass preferredLocales: Locale.preferredLanguages to show the flow in the device's language, or [] to use the flow's default localization.
+```
+
+The `locale` parameter of `getOnboarding` doesn't change.
+
+```diff showLineNumbers
+  let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+      forFlow: flow,
+-     locale: "fr"
++     preferredLocales: Locale.preferredLanguages
+  )
+```
+
+What your app passed in 4.4 determines what to pass in 4.5:
+
+- If your app passed a device value, such as `Locale.current.identifier`, pass `Locale.preferredLanguages` instead. Delete any code that converted the value: case and separators don't matter in 4.5.
+- If your app passed a language that the user selected in the app, put it first: `[selectedLanguage] + Locale.preferredLanguages`. When a flow from the Flow & Paywall Builder lacks that language, the SDK tries the device's languages.
+- If your app called `getFlowConfiguration` without `locale`, add `preferredLocales: Locale.preferredLanguages`.
+
+To show the flow in the language of the UI of your app instead of the device languages, pass `Bundle.main.preferredLocalizations`. To compare the two lists, read [Pass the user's languages to the SDK](localizations-and-locale-codes#pass-the-users-languages-to-the-sdk).
+
+To show every user the flow in its default locale, pass an empty list: `preferredLocales: []`.
+
+You don't need to pass `localizationStrategy`. Its default, `.auto`, is suitable for flows from the Flow & Paywall Builder and for paywalls from the old Paywall Builder. The [other strategies](localizations-and-locale-codes#select-a-localization-strategy) change how the SDK matches languages.
+
+## What users see after the update
+
+With the default `localizationStrategy`, SDK 4.5 can show users a different localization of the same flow than SDK 4.4:
+
+| The app passes | The flow has | 4.4 | 4.5 |
+|---|---|---|---|
+| No languages: no `locale` in 4.4, `[]` in 4.5 | Any locales | `en`, if the flow has it; otherwise, the default locale | The default locale |
+| A code with another case or separator, such as `pt_BR` | `pt-BR` | The default locale | `pt-BR` |
+| A regional code, such as `pt-BR` | The language alone, such as `pt` | The default locale | `pt` |
+| A regional code that implies a script, such as `zh-TW` | The script, such as `zh-hant` | The default locale | `zh-hant`; on paywalls from the old Paywall Builder, the default locale |
+| Several languages, such as `fr`, then `de` | A later language, such as `de`, but not the first one | The default locale | The later language; on paywalls from the old Paywall Builder, the default locale |
+
+App versions on SDK 4.0–4.4 keep exact matching against your flows until users update the app. The `.legacy` strategy doesn't bring back the exact matching of 4.4.
+
+To see which localization appears on a device, read `flowConfiguration.locale`: the SDK doesn't log it. For a test procedure, read [Test which localization a user sees](localizations-and-locale-codes#test-which-localization-a-user-sees).
+
+## Review the locales of your flows
+
+SDK 4.5 displays your published flows with their current locales. To show users each flow in a language they read, follow three rules:
+
+- Translate the default locale fully. Users see it when the flow has none of their languages. To view or change the default, read [Set the default locale](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale).
+- For app versions on SDK 4.0–4.4 and apps on other Adapty SDKs, keep every locale code that they pass. Those apps don't use the 4.5 matching.
+- To cover more users, add [the locales that 4.5 matches better](localizations-and-locale-codes#select-which-locales-to-add-to-a-flow), such as `zh-hans` and `zh-hant` in addition to `zh`.
+
+## Add the AdaptyUIBuilder module
+
+In 4.5, some types for AdaptyUI come from the AdaptyUIBuilder module, such as the protocol for a [custom localization resolver](localizations-and-locale-codes#pick-a-flows-localization-in-your-own-code). To use these types in your code, add AdaptyUIBuilder to your app:
+
+1. In Xcode, in the **General** tab of your app target, under **Frameworks, Libraries, and Embedded Content**, add **AdaptyUIBuilder** from the AdaptySDK-iOS package.
+2. In each file that uses these types, add `import AdaptyUIBuilder`.

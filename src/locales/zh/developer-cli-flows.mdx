@@ -1,10 +1,10 @@
 ---
-title: "Flows 命令"
-description: "Adapty CLI 命令，用于创建流程、读写其编辑器配置、验证与预览、上传媒体、发布、列出并还原版本、复制，以及读取流程的数据图表和屏幕漏斗。"
-metadataTitle: "Flows CLI 命令 | Adapty 文档"
+title: "流程命令"
+description: "Adapty CLI 命令，用于创建流程、读写其编辑器配置、验证与预览、上传媒体文件和自定义字体、发布流程、列出并恢复版本、复制流程以及读取其数据图表和页面漏斗。"
+metadataTitle: "流程 CLI 命令 | Adapty 文档"
 ---
 
-[流程](adapty-flow-builder)是您在 Flow & Paywall Builder 中构建的付费墙和用户引导。CLI 负责管理流程记录、其编辑工具配置、发布状态以及[版本历史](flow-version-history)。编辑工具配置是一个大型 JSON 文档，通常由 Flow & Paywall Builder 生成，CLI 本身不会自动创建。如需通过终端编写或修改配置，请使用 [flow-generator 技能](flow-generator-skill)，它会替您驱动这些命令。在发布前，[flow-audit 技能](flow-audit-skill)会检查流程是否已准备好上线。`flows metrics` 命令用于读取[流程数据图表](flow-metrics)页面上的数据，需要 CLI 0.15.0 或更高版本。`flows funnel` 命令用于读取[流程漏斗](flow-funnel)，需要 CLI 0.19.0 或更高版本。以下命令仅供参考。
+[流程](adapty-flow-builder)是您在流程与付费墙编辑工具中构建的付费墙和用户引导。CLI 负责管理流程记录、其编辑工具配置、发布操作以及[版本历史](flow-version-history)。编辑工具配置是一个大型 JSON 文档，通常由流程与付费墙编辑工具生成，CLI 本身不会生成该配置。如需在终端中编写或编辑配置，请使用 [flow-generator 技能](flow-generator-skill)，它会为您驱动这些命令。在发布之前，[flow-audit 技能](flow-audit-skill)会检查流程是否已准备好上线。[`fonts` 命令](#custom-fonts)用于上传和管理流程所使用的自定义字体，需要 CLI 0.33.0 或更高版本。`flows metrics` 命令用于读取[流程数据图表](flow-metrics)页面的数据，需要 CLI 0.15.0 或更高版本。`flows funnel` 命令用于读取[流程漏斗](flow-funnel)数据，需要 CLI 0.19.0 或更高版本。以下命令仅供参考。
 
 ## adapty flows list \{#adapty-flows-list\}
 
@@ -96,9 +96,17 @@ adapty flows publish --app <app-id> <flow-id>
 
 由于发布操作会影响用户所看到的内容，该命令会打印流程名称并要求确认。除 `y` 以外的任何回答都会取消命令并以退出码 1 结束。在 `--json` 模式或管道中，命令会拒绝执行并以退出码 2 退出，而不是等待输入，因此在脚本和 Agent 会话中请传入 `--yes`。
 
+在 CLI 0.33.0 及更高版本中，当配置使用[自定义字体](#custom-fonts)时，命令会读取应用当前的字体。如果配置中的副本已过期，命令会先将当前字体保存到配置中，然后再发布。保存时会保留远程配置，如果在命令读取配置后有人修改了配置，则保存会失败。如果保存成功并开始发布，可读输出中会包含 `Fonts refreshed`。
+
+如果命令无法读取字体，它会在执行任何写入操作之前停止，并以退出码 2 退出。如果配置中的字体族名称匹配到多个字体族，同样会以退出码 2 退出。要解决匹配冲突，请重命名字体族，或在配置中使用字体族 ID。
+
+配置响应必须包含一个 `config` 对象和一个整数类型的 `updated_at`，即使无需保存也不例外。如果命令需要保存配置，响应还必须包含一个 `remote_configs` 列表。如果不满足上述要求，命令将在执行任何写入操作之前停止，退出码为 4，错误信息为 `malformed_response`。
+
+保存失败或结果不确定时，命令会在发送发布请求之前停止。如果 CLI 无法读取保存响应，或者保存过程中连接中断，保存操作可能已经执行成功。再次发布之前，请先用 [`flows config get`](#adapty-flows-config-get) 读取已存储的配置。如果在保存成功后发布失败，已保存的配置将保持不变。
+
 发布操作是异步的：响应会返回 `status: publishing`，此时流程尚未上线。请轮询 [`flows get`](#adapty-flows-get)，直到状态变为 `published` 或 `publication_failed`。若状态为 `publication_failed`，可通过 [`flows config get`](#adapty-flows-config-get) 查看失败原因。
 
-当流程没有配置、配置不可发布或当前版本已上线时，发布操作会返回 HTTP 400 错误。如需在发布前校验配置，请使用 [`flows config validate`](#adapty-flows-config-validate)。
+当流程没有配置、配置不可发布，或当前版本已是线上版本时，发布操作将因 HTTP 400 错误而失败。如需在发布前验证配置，请使用 [`flows config validate`](#adapty-flows-config-validate)。如果流程不存在，命令将以退出码 4 退出。在 CLI 0.33.0 版本之前，退出码为 1。
 
 ## adapty flows config get
 
@@ -239,6 +247,251 @@ adapty flows media upload-video --app <app-id> ./intro.mp4
 支持的格式：MP4 和 WebM。视频时长不得超过 30 秒，文件大小不得超过 50 MB，宽度和高度均不得小于 640 像素。不支持 GIF，该命令也不会将动图转换为视频。
 
 响应中包含视频 URL（HLS 播放列表）、预览图片 URL，以及视频的 `width` 和 `height`。在配置中，视频元素通过 `videoUrl`、`previewUrl`、`width` 和 `height` 来接收这些值。
+
+## 自定义字体 \{#custom-fonts\}
+
+`adapty fonts` 命令用于上传和管理应用的[自定义字体](using-custom-fonts-in-flow-builder)。应用中的所有流程共享同一套字体，与您在 Flow & Paywall Builder 中上传的字体一致。一个字体系列包含一个或多个字型，每个字型对应一个 `.ttf` 或 `.otf` 文件的特定字重和样式。`fonts` 命令需要 CLI 版本 0.33.0 或更高版本。如需查看当前版本，请运行 `adapty --version`。
+
+:::warning
+Adapty 不会将字体文件发送到用户设备。如需在应用中显示自定义字体，请[将相同的字体文件添加到应用包中](using-custom-fonts-in-flow-builder#add-the-font-files-to-your-apps-bundle)，并使用该字体在 Adapty 中对应的 iOS 和 Android 字体名称。
+:::
+
+要在流程配置中使用自定义字体，请通过字体族和字重来设置字体。在文本元素上，字体位于 `props.font` 中：`"font": {"family": {"type": "user", "id": "<font-family-id>"}, "weight": "bold"}`。在 `theme.typography` 中的文本样式上，`family` 和 `weight` 是样式 `settings` 的键，外层没有 `font` 对象包裹。字体族也可以直接用其字族名称来指定。斜体通过富文本 span 设置。发布流程时，Adapty 会使用与该字重和样式匹配的字体字形。如果该字族没有完全匹配的字形，Adapty 会先在同一样式中查找最接近字重的字形，若仍无匹配则在任意样式中查找。当两个字形的字重距离相同时，较轻的字形优先。
+
+更改字体族的命令会在 `flows_to_publish` 中列出受影响的流程。对每个流程执行 [`flows publish`](#adapty-flows-publish)，即可将变更推送给用户。以下两种情况下 `flows_to_publish` 为 `null`，命令会打印警告。使用 `--json` 时，`flows_to_publish_error` 会说明原因及后续操作：
+
+- **上传在某个文件处中断**，该文件是最后一个或唯一一个文件：Adapty 可能已存储了该文件，但受影响的字体系列尚不明确。请运行 [`fonts list`](#adapty-fonts-list) 查找它们，再对每个字体系列运行 [`fonts usage`](#adapty-fonts-usage)。
+- **仅读取流程时失败**：每个文件都有对应的结果。请对命令修改过的每个字体系列运行 [`fonts usage`](#adapty-fonts-usage)。
+
+## adapty fonts list
+
+列出应用的自定义字体系列及其字型。
+
+```bash
+adapty fonts list --app <app-id>
+```
+
+| 参数 | 必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+
+对于每个字体样式，响应中包含字重、斜体标识、iOS 和 Android 的字体名称、字体家族的默认样式，以及文件格式。`metadata_status` 表示该样式的字重和斜体信息是否已确认：`detected` 和 `confirmed` 表示已知；`needs_review` 和 `legacy_unconfirmed` 表示未知。如需设置这些信息，请使用 [`fonts faces update`](#adapty-fonts-faces-update)。
+
+## adapty fonts get
+
+获取某个字体族及其字型。
+
+```bash
+adapty fonts get --app <app-id> <font-family-id>
+```
+
+| 参数 | 描述 |
+|---|---|
+| `font-family-id` | 字体族 ID（UUID） |
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+
+## adapty fonts upload
+
+上传字体文件。Adapty 会将每个文件中存储的字体族名称与应用的字体族名称进行比较（忽略大小写）。如果有匹配的族，文件将加入该族；如果没有匹配项，Adapty 将创建一个新的字体族。
+
+如果两个或多个字体系列匹配，例如 `Brand` 和 `brand`，CLI 会报告 `refused`，错误码为 `font_family_name_ambiguous`。无论是否使用 `--choice`，此行为均会出现。使用 `--json` 时，`families` 数组会包含每个匹配项的 `family_id` 和 `family_name`。可使用 [`fonts add`](#adapty-fonts-add) 加上字体系列 ID 将文件添加到对应系列，或使用 [`fonts rename`](#adapty-fonts-rename) 直至只剩一个匹配项，然后重新上传文件。
+
+```bash
+adapty fonts upload --app <app-id> ./Brand-Regular.otf ./Brand-Bold.otf ./Brand-Italic.otf
+```
+
+| 参数 | 说明 |
+|---|---|
+| `file` | `.ttf` 或 `.otf` 文件的路径。如需上传多个文件，请逐一列出 |
+
+| 参数 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | App ID（UUID） |
+| `--choice` | 否 | 使用 `replace` 替换冲突的 face，或使用 `keep` 保留现有 face。该命令仍可上传新 face |
+| `--replace-face-id` | 否 | 配合 `--choice replace` 且仅上传单个文件时使用：精确替换指定的 face，即拒绝信息中列出的那些。以逗号分隔的列表形式提供 face ID，或重复使用该参数。若这些 face 与当前冲突不再匹配，Adapty 将拒绝替换 |
+
+A static font file creates one face. A variable font file creates one face for each named style in the file. Other formats, such as WOFF and WOFF2, aren't supported. The command reads every file before it sends the first one: if it can't read a file, it stops with exit code 2 and sends nothing.
+
+The command sends one file per request. After the last file, it prints the result of each file. With `--json`, the results are in `files`:
+
+| 结果 | 含义 |
+|---|---|
+| `created` | 该文件创建了一个新字体族 |
+| `added` | 该文件的字型已加入现有字体族 |
+| `partly_added` | 该文件的部分字型已加入字体族。`kept_faces` 列出字体族中已有的字型 |
+| `replaced` | 执行 `--choice replace` 后，该文件替换了发生冲突的字型文件。`replaced_faces` 列出了这些字型 |
+| `kept` | `--choice keep` 因该文件与已存储的字型冲突而跳过上传 |
+| `refused` | Adapty 拒绝了该文件。`error_code` 和 `message` 说明了原因 |
+| `failed` | 网络或身份验证错误，或 CLI 无法解析的响应，导致上传在此文件处中止。发生网络错误或响应无法解析时，Adapty 可能已存储该文件：请在重新发送前先运行 [`fonts list`](#adapty-fonts-list) 确认 |
+| `not_sent` | 该文件未被发送，因为上传在更早的文件处已中止 |
+
+静态字体文件在以下两种情况下会与某个字形发生冲突：该文件所加入字体系列中已存在相同粗细和斜体属性的字形，或者应用中任意字形具有相同的 iOS 字体名称。可变字体文件的处理结果请参见本段后面的列表。两个不同的字体系列都可以各自拥有一个 Regular 字形。Adapty 可能会在报告中以 `conflicts` 和 `choices` 字段拒绝冲突文件。当 `next_step` 提供替换方案时，请对该文件执行打印出的命令，并附上 `--choice replace` 和 `--replace-face-id` 参数。该命令会发出一次上传请求，并精确替换列出的字形。可变字体还可以新增字形。若要完全跳过该文件，请忽略重试操作。打印出的 `--choice keep` 命令可在冲突情况发生变化时保存新字形。
+
+- 如果列出的字体变体仍然存在且冲突集合发生变化，Adapty 可能会返回 HTTP 409 并附带当前的 `conflicts`。在决定是否执行新的替换命令之前，请先查看该列表。
+- 如果列出的某个字体变体已不存在，Adapty 会返回 `font_face_not_found`（HTTP 404）。如果没有任何冲突，Adapty 可能会返回 HTTP 400。这两种响应都不会替换任何字体变体。如果您希望在不替换任何字体变体的情况下上传该文件，请对该文件执行相同的命令，但不要添加 `--choice` 或 `--replace-face-id`，然后查看新的结果。
+
+:::warning
+单独使用 `--choice replace` 时，CLI 会先不带选择地发送文件。如果发生冲突，它会再次发送文件以替换本次运行找到的字形——这些字形可能与上次拒绝时涉及的字形不同。如果第一次请求没有发现冲突，则文件会作为新字形上传。请读取 `replaced_faces` 以查看该命令替换了哪些字形。Adapty 不会保留旧文件。如果只想替换其中部分字形，请对每个字形使用 [`fonts faces replace`](#adapty-fonts-faces-replace)。
+:::
+
+可变字体文件会产生以下结果之一：
+
+- **其所有样式都是该字体家族的新样式**：状态为 `created` 或 `added`，与静态文件类似。
+- **部分样式已存在于该字体家族中**：状态为 `partly_added`。新样式将加入该字体家族，`kept_faces` 列出该字体家族中已有的样式。
+- **所有样式均已存在于该字体家族中**：状态为 `refused`，无可选项。若要修改某个字型的文件，请使用 [`fonts faces replace`](#adapty-fonts-faces-replace)。
+- **某个新样式的 iOS 字体名称与该应用中另一个字型的名称冲突**：状态为 `refused`，并提供可选项，与其他冲突情况处理方式一致。
+
+上传后保存的字体面如果没有 iOS 或 Android 字体名称，会显示在 `warnings` 中。请使用 [`fonts faces update`](#adapty-fonts-faces-update) 为其设置名称。
+
+| 退出码 | 原因 | 处理方法 |
+|---|---|---|
+| `0` | 所有文件均已存储或跳过 | — |
+| `2` | CLI 无法读取某个文件。或 `--replace-face-id` 指定了无效的 UUID、缺少 `--choice replace`，或与多个文件同时使用。没有文件被发送 | 修正路径或参数，然后重新运行整个命令 |
+| `3` | Adapty 拒绝了 CLI 会话，或该账户无权访问此应用。该文件之后的文件未被发送 | 若会话被拒绝，请重新登录。若无访问权限，请验证应用 ID，或使用有权访问该应用的账户登录，然后上传未存储的文件 |
+| `4` | Adapty 拒绝了至少一个文件，其他文件已发送。或 CLI 无法读取响应，上传在该文件处中止。或所有文件均有结果（已存储或已跳过），但关于使用已更改字体族的流程的响应格式有误：`flows_to_publish` 为 `null` | 查看每个被拒绝文件的结果。对于 `failed` 文件，请先运行 [`fonts list`](#adapty-fonts-list) 再重新发送。若仅流程读取失败，请对命令更改的每个字体族运行 [`fonts usage`](#adapty-fonts-usage) |
+| `5` | 网络错误。该文件之后的文件未被发送 | 运行 [`fonts list`](#adapty-fonts-list) 查看 `failed` 文件是否已存储，然后上传未存储的文件 |
+
+## adapty fonts add
+
+将字体文件的字形添加到您选择的字体系列中，无论文件本身携带何种字体系列名称。
+
+```bash
+adapty fonts add --app <app-id> <font-family-id> ./Brand-Bold.otf
+```
+
+| 参数 | 说明 |
+|---|---|
+| `font-family-id` | 字体系列 ID（UUID） |
+| `file` | `.ttf` 或 `.otf` 文件的路径。如需添加多个文件，请逐一列出 |
+
+| 参数 | 是否必填 | 说明 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+| `--choice` | 否 | 使用 `replace` 替换冲突的字体样式，或使用 `keep` 保留已有字体样式。该命令仍可添加新的字体样式 |
+| `--replace-face-id` | 否 | 配合 `--choice replace` 且仅上传单个文件时使用：替换指定的字体样式，即拒绝列表中列出的那些，参见 [`fonts upload`](#adapty-fonts-upload) |
+
+冲突规则、结果和退出代码与 [`fonts upload`](#adapty-fonts-upload) 相同。使用 `--choice keep` 时，如果某个可变字体文件的重叠部分仅为该字体族已有的字重和斜体组合，该文件仍会添加其新样式。
+
+## adapty fonts rename
+
+重命名字体族。族内的文件和字型不会改变。
+
+```bash
+adapty fonts rename --app <app-id> <font-family-id> "Brand Sans"
+```
+
+| 参数 | 描述 |
+|---|---|
+| `font-family-id` | 字体族 ID（UUID） |
+| `name` | 新的族名 |
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+
+同一应用下其他字体族不能使用相同的名称。仅大小写不同的名称是允许的。
+
+## adapty fonts usage \{#adapty-fonts-usage\}
+
+列出使用某个字体系列的流程和付费墙。
+
+```bash
+adapty fonts usage --app <app-id> <font-family-id>
+```
+
+| 参数 | 描述 |
+|---|---|
+| `font-family-id` | 字体系列 ID（UUID） |
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+
+响应列出了使用该字体族的流程（包括草稿）和付费墙。对于每个字形，它会列出使用该字形的付费墙，当 Adapty 无法区分各字形时则显示 `null`。只有当流程配置通过 ID 引用该字体族时，该流程才会被列出。仅通过名称引用字体族的流程不会被列出。
+
+## adapty fonts faces update
+
+更改字体变体的粗细、斜体属性，或其 iOS、Android 字体名称。
+
+```bash
+adapty fonts faces update --app <app-id> <font-face-id> --ios-name BrandSans-Bold --android-name brand_sans_bold
+```
+
+| 参数 | 描述 |
+|---|---|
+| `font-face-id` | 字体变体 ID（UUID），如 [`fonts list`](#adapty-fonts-list) 所示 |
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+| `--weight` | 否 | 字体粗细，例如 `400` 表示常规，`700` 表示粗体。与 `--italic` 配合使用 |
+| `--italic` | 否 | `true` 表示斜体，`false` 表示直立体。与 `--weight` 配合使用 |
+| `--ios-name` | 否 | iOS 字体名称：字体文件中存储的 PostScript 名称。同一应用的其他字体不能重复使用该名称 |
+| `--android-name` | 否 | Android 字体名称：`res/font/` 目录中不含扩展名的文件名。须以小写字母开头，且只能包含小写字母、数字和下划线 |
+
+设置字重和斜体样式后，该字体变体的 `metadata_status` 将变为 `confirmed`。同一文件中所有字体变体的 Android 字体名称会同步更新，使用了该名称的付费墙也会自动获取新名称。
+
+## adapty fonts faces default \{#adapty-fonts-faces-default\}
+
+将某个字型设置为其字体家族的默认字型。原来的默认字型将不再是默认。
+
+```bash
+adapty fonts faces default --app <app-id> <font-face-id>
+```
+
+| 参数 | 说明 |
+|---|---|
+| `font-face-id` | 字型 ID（UUID） |
+
+| 标志 | 是否必填 | 说明 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+
+## adapty fonts faces move \{#adapty-fonts-faces-move\}
+
+将某个字体字面移动到另一个字体族。字面文件本身不会改变。
+
+```bash
+adapty fonts faces move --app <app-id> <font-face-id> --to <font-family-id>
+```
+
+| 参数 | 描述 |
+|---|---|
+| `font-face-id` | 字体字面 ID（UUID） |
+
+| 标志 | 必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+| `--to` | 是 | 目标字体族的 ID（UUID） |
+
+字体族的默认字面无法移动。如果某个字面已知其字重和斜体属性，则不能将其移动到已有相同字重和斜体字面的字体族中。
+
+## adapty fonts faces replace \{#adapty-fonts-faces-replace\}
+
+为字体字形上传新文件。
+
+```bash
+adapty fonts faces replace --app <app-id> <font-face-id> ./Brand-Bold.otf
+```
+
+| 参数 | 描述 |
+|---|---|
+| `font-face-id` | 字体字形 ID（UUID） |
+| `file` | 新 `.ttf` 或 `.otf` 文件的路径 |
+
+| 参数 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+| `--weight` | 否 | 字体字重。与 `--italic` 搭配使用 |
+| `--italic` | 否 | `true` 或 `false`。与 `--weight` 搭配使用 |
+| `--yes` | 否 | 直接替换文件，不再询问确认。在使用 `--json`、管道或无终端环境时为必填项 |
+
+字形会保留其 ID、默认标记和 Android 字体名称。其 iOS 字体名称来自新文件。Adapty 不会保留旧文件，且无法恢复。因此，该命令会要求确认。使用 `--json`、在管道中运行或在无终端环境下，命令需要加上 `--yes`：若不加，命令将以退出码 6（`confirm_required`）退出，且不做任何更改。若要为粗细和斜体未知的字形使用可变字体文件，请传入 `--weight` 和 `--italic`。
+
+如果某个字体外观已经有已解析的字重和斜体设置，新文件必须与二者匹配。如果同一字族中的另一个外观具有相同的字重和斜体设置，或者应用中的另一个外观已使用该新文件的 iOS 字体名称，Adapty 也会拒绝该文件。在每种情况下，该外观都会保留其原有文件。如果该 iOS 字体名称已被占用，请上传一个具有不同 PostScript 名称的文件，或替换使用该名称的外观所对应的文件。
 
 ## adapty flows versions list \{#adapty-flows-versions-list\}
 

@@ -13,9 +13,15 @@ customSlug: /react-native-localizations-and-locale-codes
 
 语言区域代码比较复杂，不同平台之间可能存在差异，因此 Adapty 在其支持的所有平台上统一采用一套内部标准。了解这套标准有助于你预测用户将获得哪种本地化内容。
 
-## Adapty 中的语言代码标准 \{#locale-code-standard-at-adapty\}
+## Adapty 的语言代码标准 \{#locale-code-standard-at-adapty\}
 
-Adapty 的语言代码采用略微修改过的 [BCP 47 标准](https://en.wikipedia.org/wiki/IETF_language_tag)：每个代码由小写子标签组成，以连字符分隔。例如：`en`（英语）、`pt-br`（葡萄牙语（巴西））、`zh`（简体中文）、`zh-hant`（繁体中文）。
+Adapty 语言代码遵循 [BCP 47 标准](https://en.wikipedia.org/wiki/IETF_language_tag)：由语言子标签和可选的文字或地区子标签组成，以连字符分隔。代码出现的位置决定了其字母大小写：
+
+- **Select languages** 字段中所有代码均为小写：`pt-br`、`zh-hant`。
+- 通过 Flow & Paywall Builder 发布的流程，其代码中地区部分首字母大写，文字部分首字母大写：`pt-BR`、`zh-Hant`。
+- 旧版付费墙编辑工具生成的付费墙，所有代码均保持小写：`pt-br`、`zh-hant`。
+
+像 `en`、`pt` 和 `es-419` 这样的代码，在任何地方看起来都是一样的。
 
 ## 语言代码匹配 \{#locale-code-matching\}
 
@@ -23,18 +29,20 @@ Adapty 的语言代码采用略微修改过的 [BCP 47 标准](https://en.wikipe
 
 ### 流程与付费墙 \{#flows-and-paywalls\}
 
-Adapty 渲染的付费墙在 SDK v4 中以流程形式呈现，因此以下规则同时适用于两者。
+在 SDK v4 中，Adapty 渲染的付费墙以流程的形式交付，因此以下规则同时适用于两者。
 
-匹配规则为精确匹配。SDK 会将你传入的代码与流程本地化代码逐字符比对：不会转换大小写，不会将下划线（`_`）替换为连字符（`-`），也不会回退到语言子标签。对于包含 `pt-br` 本地化的流程，只有 `pt-br` 能匹配：`pt-BR`、`pt_BR` 和 `pt-PT` 均无法匹配。
+匹配是精确的。SDK 会逐字符比对你传入的代码与流程的本地化代码：不会转换大小写，不会将下划线（`_`）替换为连字符（`-`），也不会回退到语言子标签。对于包含 `pt-BR` 本地化的流程，只有 `pt-BR` 能匹配：`pt-br`、`pt_BR` 和 `pt-PT` 均无法匹配。
 
 当代码未匹配到任何本地化时，流程会静默地以其[默认语言环境](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale)渲染——SDK 不会返回错误，也不会记录警告。
 
 当代码匹配成功时，Adapty 会将匹配到的本地化与默认本地化合并：匹配到的本地化中未定义的字符串和资源将从默认本地化中获取。
 
-省略区域设置代码并不等同于请求流程的默认本地化：SDK 会固定替换为 `en`。如果一个流程的默认语言是 `de`，但同时包含 `en` 本地化，则仍会以 `en` 渲染；只有当该流程不包含 `en` 本地化时，才会回退到 `de`。
+省略语言区域代码并不等同于请求流程的默认本地化：SDK 会固定替换为 `en`。如果一个流程的默认语言区域是 `de`，但它包含 `en` 本地化，则仍会以 `en` 渲染；只有当它没有 `en` 本地化时，才会回退到 `de`。
 
 :::warning
-请严格按照看板中配置的格式传递语言代码——使用连字符分隔的小写子标签。不要直接传递设备语言环境标识符：[`react-native-localize`](https://github.com/zoontek/react-native-localize) 中的 `getLocales()[0].languageTag` 返回的是 `pt-BR`，会回退到默认本地化。请在传递之前在应用内对该值进行转换。
+请严格按照已发布流程中的语言区域代码传入：例如从 **Select languages** 字段传入 `pt-BR`，而非 `pt-br`。对于旧版付费墙编辑工具创建的付费墙，请传入小写代码，例如 `pt-br`。
+
+不要直接传递设备语言标识符。在语言设置为英语（美国）的设备上，[`react-native-localize`](https://github.com/zoontek/react-native-localize) 中的 `getLocales()[0].languageTag` 返回 `en-US`，这会导致只有 `en` 的流程被遗漏。在传递设备语言标识符之前，请将其转换为流程中存在的代码。
 :::
 
 ### 用户引导 \{#onboardings\}
@@ -50,7 +58,7 @@ Adapty 渲染的付费墙在 SDK v4 中以流程形式呈现，因此以下规�
 
 ## 实现本地化 \{#implementing-localizations\}
 
-在 SDK v4 中，获取流程时无需传入语言区域代码——`getFlow` 会返回包含所有本地化内容的流程，Adapty 在构建流程视图时会自动应用其中一个。
+在 SDK v4 中，获取流程时无需传入语言区域代码——SDK 会在构建流程视图时加载所有本地化内容，并自动应用其中之一。
 
 - **在编辑工具中构建的流程**：SDK 不会读取设备语言环境，请在应用中自行解析并通过 `createFlowView` 的 `locale` 参数传入，或在嵌入式 `AdaptyFlowView` 组件的 `params` 属性中传入。该参数为可选项——若省略，流程将以 `en` 渲染；若流程没有 `en` 本地化版本，则以其[默认语言环境](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale)渲染。
 
@@ -60,11 +68,11 @@ Adapty 渲染的付费墙在 SDK v4 中以流程形式呈现，因此以下规�
   const view = await createFlowView(flow, { locale: 'es' });
   ```
 
-`view.locale` 会反映视图实际使用的本地化语言——如果请求的语言存在，则使用你所请求的语言；否则回退到该流程的默认语言。`locale` 参数和 `view.locale` 均需要 React Native SDK 4.0.2 或更高版本，在更早版本中 `view.locale` 为 `undefined`。
+  `view.locale` 会反映视图实际使用的本地化语言——如果请求的语言存在，则使用你所请求的语言；否则回退到该流程的默认语言。`locale` 参数和 `view.locale` 均需要 React Native SDK 4.0.2 或更高版本，在更早版本中 `view.locale` 为 `undefined`。
 
   嵌入式 `AdaptyFlowView` 组件会自行创建视图，因此你的代码无法从中读取 `locale`。请改为从其 [`onAppeared` 处理器](react-native-handling-events-1#the-view-argument)接收到的对象中获取本地化信息：
 
-```typescript showLineNumbers
+  ```typescript showLineNumbers
   <AdaptyFlowView
     flow={flow}
     params={{ locale: 'es' }}
@@ -94,9 +102,9 @@ Adapty 将 `lang` 代码存储为 [Adapty 语言代码标准](#locale-code-stand
 
 由于语言区域代码较为复杂，且在不同平台之间可能存在差异，我们为所有支持的平台制定了统一的内部标准。但正因为这些代码比较复杂，了解你实际发送给服务器的内容是什么、以及后续处理流程如何，就显得尤为重要——只有这样，你才能始终获取到预期的语言版本。
 
-## Adapty 的语言代码标准 \{#locale-code-standard-at-adapty\}
+## Adapty 中的语言代码标准 \{#locale-code-standard-at-adapty\}
 
-在语言代码方面，Adapty 使用略经调整的 [BCP 47 标准](https://en.wikipedia.org/wiki/IETF_language_tag)：每个代码由小写子标签组成，以连字符分隔。示例：`en`（英语）、`pt-br`（葡萄牙语（巴西））、`zh`（简体中文）、`zh-hant`（繁体中文）。
+Adapty 的语言代码采用略微修改过的 [BCP 47 标准](https://en.wikipedia.org/wiki/IETF_language_tag)：每个代码由小写子标签组成，以连字符分隔。例如：`en`（英语）、`pt-br`（葡萄牙语（巴西））、`zh`（简体中文）、`zh-hant`（繁体中文）。
 
 ## 语言区域代码匹配 \{#locale-code-matching\}
 

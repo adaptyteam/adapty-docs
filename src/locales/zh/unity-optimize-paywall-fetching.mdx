@@ -12,11 +12,11 @@ metadataTitle: "优化流程与付费墙获取 | Unity SDK | Adapty 文档"
 
 ## 规则与注意事项 \{#rules-and-pitfalls\}
 
-| 推荐做法 | 避免做法 | 原因 |
+| 应该这样做 | 不要这样做 | 原因 |
 |---|---|---|
-| 获取即将展示的版位，或通过 [`PreloadFlows`](#preload-placements)（SDK 4.3.0+）预热缓存。 | 在启动时自行发起并发的 `GetFlow` 调用。 | 手动预取会阻塞主线程并导致黑屏。`PreloadFlows` 专为此场景设计，只需一次调用即可将批量请求发送到原生 SDK。 |
-| 在归因数据有机会解析之后再调用 `GetFlow`——例如在 `Activate` 后 1–2 秒，或等 `OnLoadLatestProfile` 触发后再调用。 | 在 `Awake()` 中调用 `GetFlow`。 | 此时归因数据尚未到达，流程将按默认目标受众进行解析，悄悄绕过市场细分和 ASA 个性化设置。 |
-| 设置 `loadTimeout` 并为每个版位配置[备用付费墙](fallback-paywalls)。 | 无限期等待 `GetFlow`。 | 若不设置超时，网络较差的用户将看到空白屏幕，直到网络恢复——或直接关闭应用。 |
+| 获取即将展示的版位，或通过 [`PreloadFlows`](#preload-placements)（SDK 4.3.0+）预热缓存。 | 在启动时自行并发调用多个 `GetFlow`。 | 自行实现的预取批量请求会阻塞主线程并导致黑屏。`PreloadFlows` 专为此场景设计，只需一次调用即可将批量请求发送至原生 SDK。 |
+| 在归因有机会完成解析后再调用 `GetFlow`——例如，在 `Activate` 之后等待 1–2 秒，或等待 `OnLoadLatestProfile` 触发后再调用。 | 在 `Awake()` 中调用 `GetFlow`。 | 此时归因数据尚未到达。流程将基于默认目标受众进行解析，悄无声息地跳过市场细分和 ASA 个性化设置。 |
+| 保留默认的 5 秒 `loadTimeout`，或设置其他合适的值，并为每个版位配置[备用付费墙](fallback-paywalls)。 | 给 `GetFlow` 传入一个极大的 `loadTimeout`，使其永远不会触发。 | 如果超时永远不触发，网络状况较差的用户会一直看到空白屏幕，直到网络恢复——或者直接关闭应用。 |
 
 有关 `fetchPolicy` 和 `loadTimeout` 参数的说明，请参阅[获取自定义付费墙与产品](fetch-paywalls-and-products-unity)；有关如何选择合适版位的说明，请参阅[版位](placements)。
 
@@ -75,15 +75,21 @@ Adapty.GetFlow(
 
 流程到达屏幕需要经过多个层级。预加载涵盖第一个层级，与 `GetFlow` 的作用完全相同：
 
-| 层级 | 获取方式 | 是否通过预加载预热 |
+| 层级 | 由谁获取 | 是否通过预加载预热 |
 |---|---|---|
 | Flow JSON — 所选实验变体、其产品 ID 及远程配置 | `GetFlow` | 是 |
-| UI 布局 — 页面的结构、样式与文本 | `CreateFlowView` | 否 |
-| 图片，包括用于替代视频元素的静态帧 | `CreateFlowView`（后台加载） | 否 |
+| UI 布局 — 屏幕的结构、样式与文本 | `CreateFlowView` | 否 |
+| 图片，包括用于替代视频元素的静态帧 | `CreateFlowView`，在后台执行 | 否 |
 | 产品 | `CreateFlowView` 或 `GetPaywallProducts` | 否 |
-| 视频文件 | 系统播放器，在页面渲染时加载 | SDK 不缓存 |
+| 视频文件 | 系统播放器，在屏幕渲染时加载 | SDK 不缓存 |
 
-因此，给定版位的第一次 `CreateFlowView` 在预加载之后仍需一次网络往返。此后，原生 SDK 会将该版位缓存到磁盘，重启应用后缓存依然有效，所以这笔开销只发生在首次请求时，而非每次都要付出。
+`CreateFlowView` 按以下顺序在三个位置查找布局：
+
+1. 原生 SDK 的磁盘缓存，应用重启后仍然有效。
+2. 如果您在最后一次发布流程后才下载了备用文件，则适用于 SDK 4.4 或更高版本的[备用文件](unity-use-fallback-paywalls)。
+3. 通过网络请求 Adapty。即使已预加载，也会产生一次网络往返。每次应用首次展示某个已发布版本的流程时，原生 SDK 都会发起该请求，然后将布局保存到磁盘缓存中。
+
+当 `CreateFlowView` 的 `LoadTimeout` 触发时，原生 SDK 不会回退：它会再次向 Adapty API 请求布局。`LoadTimeout` 不会限制第二次请求的时间。
 
 ### 跳过目标受众细分 \{#skip-audience-segmentation\}
 
@@ -125,15 +131,18 @@ AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
 
 打包文件会增加应用的下载体积，因此只需打包用户首次看到的媒体资源。
 
-未捆绑的媒体文件也能立即呈现：流程布局中包含每张图片（以及视频静帧）的低分辨率缩略图，并在完整文件加载完成前持续显示。
+捆绑的图片会立即显示，无需等待，但原生 SDK 仍会在后台下载已上传的图片。
 
-完整的 `customAssets` 参考，请参阅[自定义资源](unity-get-pb-paywalls#customize-assets)。
+未捆绑的媒体资源同样会立即呈现：流程布局中包含每张图片（包括视频的静帧）的低分辨率缩略图，在完整文件加载完成前会先显示该缩略图。
 
-## 针对弱网环境的优化 \{#tune-for-poor-connectivity\}
+有关 `customAssets` 的完整参考，请参阅[自定义资源](unity-get-pb-paywalls#customize-assets)。
 
-对于网络连接持续较差的市场（农村地区、交通枢纽、受路由影响的区域）：
+## 针对弱网环境进行调优 \{#tune-for-poor-connectivity\}
 
-- 除首次请求外，将 `fetchPolicy` 设置为 `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad`。
+对于网络连接持续较差的市场（农村地区、交通沿线、受路由影响的地区）：
+
+- 除首次请求外，每次请求均将 `fetchPolicy` 设置为 `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad`。
 - 在 Adapty 看板中为每个版位配置[备用付费墙](fallback-paywalls)。
-- 将 `loadTimeout` 设置为 3–5 秒，并在超时触发时接受备用付费墙。
-- 不要将流程显示与 `GetProfile` 绑定。独立调用 `GetFlow`，避免因用户画像加载缓慢而阻塞 UI。
+- 在速度与精准定向之间合理权衡 `loadTimeout`。超时时间越短，用户越早看到备用内容；超时时间越长，目标流程就有更多时间完成加载。
+- [保持流程轻量化](flow-size)，以便布局能更快下载完成。
+- 不要将流程显示与 `GetProfile` 耦合。独立调用 `GetFlow`，避免因用户画像加载缓慢而阻塞 UI。

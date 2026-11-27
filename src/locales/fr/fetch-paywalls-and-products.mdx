@@ -68,12 +68,31 @@ Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID") { result in
 | **fetchPolicy** | par défaut : `.reloadRevalidatingCacheData` | <p>`fetchPolicy` détermine quelle couche le SDK lit en premier, et non s'il peut utiliser le cache. Par défaut, le SDK interroge d'abord le serveur et renvoie les données en cache si cette requête échoue. Nous recommandons cette option, car elle garantit que vos utilisateurs reçoivent toujours les données les plus récentes.</p><p></p><p>Cependant, si vous pensez que vos utilisateurs ont une connexion internet instable, envisagez `.returnCacheDataElseLoad`, qui inverse cet ordre — il lit d'abord le cache et ne contacte le serveur que si rien n'est en cache. Les utilisateurs n'obtiennent peut-être pas les toutes dernières données, mais le chargement sera plus rapide, quelle que soit la qualité de leur connexion. Le cache est mis à jour régulièrement, il est donc sûr de l'utiliser pendant la session pour éviter les requêtes réseau.</p><p></p><p>Une troisième politique, `.returnCacheDataIfNotExpiredElseLoad(maxAge:)`, se situe entre les deux : elle lit d'abord le cache tant que la copie en cache a moins de `maxAge` secondes, et interroge le serveur une fois qu'elle est plus ancienne.</p><p></p><p>Notez que le cache est conservé lors du redémarrage de l'application et n'est effacé que lors de la désinstallation ou via un nettoyage manuel.</p><p></p><p>Le SDK Adapty stocke les flows et les paywalls en deux couches : le cache mis à jour régulièrement décrit ci-dessus et les [paywalls de secours](fallback-paywalls). Nous utilisons également un CDN pour récupérer les flows et les paywalls plus rapidement, ainsi qu'un serveur de secours indépendant au cas où le CDN serait inaccessible.</p> |
 | **loadTimeout** | par défaut : 5 sec | <p>Cette valeur limite le délai d'attente de cette méthode. Si le serveur Adapty ne répond pas à temps ou renvoie une erreur, le SDK retourne le flow en cache. Si rien n'est en cache et que le serveur a expiré ou renvoyé une erreur serveur, le SDK demande le flow au serveur de secours (une copie CDN qui ne sert que l'audience **All Users** du placement). En dernier recours, le SDK renvoie le flow depuis votre [fichier de secours](ios-use-fallback-paywalls).</p><p></p><p>Notez que dans de rares cas, cette méthode peut expirer légèrement après le délai spécifié dans `loadTimeout`, car l'opération peut être composée de différentes requêtes en arrière-plan.</p> |
 
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 ou version ultérieure" default>
+
 :::note
-Dans la v4, le paramètre `locale` a été déplacé hors de `getFlow` vers `getFlowConfiguration` (utilisé uniquement lors du rendu avec AdaptyUI). Pour les paywalls personnalisés, toutes les locales disponibles sont retournées ensemble dans `flow.remoteConfigs` — sélectionnez la locale qui correspond aux paramètres de l'appareil de l'utilisateur ou à ceux de votre application.
+Dans la v4, `getFlow` n'a pas de paramètre `locale`, et le SDK ne lit pas les langues préférées définies sur l'appareil. Lisez-les dans votre application, par exemple avec `Locale.preferredLanguages`. C'est l'élément qui affiche le flow ou le paywall qui détermine où vous les utilisez :
+
+- Le SDK affiche les flows depuis le Flow & Paywall Builder. Pour afficher un flow dans la première langue préférée disponible, [transmettez les langues](localizations-and-locale-codes#pass-the-users-languages-to-the-sdk) à `getFlowConfiguration` dans `preferredLocales`.
+- Votre application affiche elle-même des paywalls personnalisés. `getFlow` retourne leurs Remote Configs pour toutes les locales dans `flow.remoteConfigs` : choisissez le Remote Config correspondant aux langues préférées.
 :::
 
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
+
+:::note
+En v4, `getFlow` n'a pas de paramètre `locale`, et le SDK ne lit pas la locale de l'appareil. Choisissez le [code de locale](localizations-and-locale-codes#pass-the-users-languages-to-the-sdk) dans votre application, en vous basant sur la locale de l'appareil ou sur la langue sélectionnée par l'utilisateur dans l'application. C'est ce qui affiche le flow ou le paywall qui détermine où vous utilisez le code :
+
+- Le SDK affiche les flows depuis le Flow & Paywall Builder. Pour sélectionner la localisation d'un flow, passez le code de langue à `getFlowConfiguration` dans `locale`.
+- Votre app affiche elle-même ses paywalls personnalisés. `getFlow` retourne leurs Remote Configs pour toutes les locales dans `flow.remoteConfigs` : choisissez le Remote Config qui correspond au code de langue.
+:::
+
+</TabItem>
+</Tabs>
+
 :::tip
-Pour alimenter ce cache avant que l'utilisateur n'ait besoin du flow, appelez [`preloadFlows`](ios-optimize-paywall-fetching#preload-placements) (iOS SDK 4.1+) pour plusieurs placements à la fois. Passez `fetchPolicy: .returnCacheDataElseLoad` pour lire la copie préchargée avant de faire une requête réseau.
+Pour remplir ce cache avant que l'utilisateur n'ait besoin du flow, appelez [`preloadFlows`](ios-optimize-paywall-fetching#preload-placements) (iOS SDK 4.1+) pour plusieurs placements à la fois. Passez `fetchPolicy: .returnCacheDataElseLoad` pour lire la copie mise en cache avant d'effectuer une requête réseau.
 :::
 
 N'encodez pas en dur les identifiants de produits ! Puisque les flows sont configurés à distance, les produits disponibles, leur nombre et les offres spéciales (comme les essais gratuits) peuvent changer avec le temps. Assurez-vous que votre code gère ces scénarios.

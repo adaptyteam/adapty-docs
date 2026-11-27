@@ -1,0 +1,83 @@
+---
+title: "Migrate Adapty iOS SDK to v4.5"
+description: "Migrate to Adapty iOS SDK v4.5: pass the user's languages to getFlowConfiguration instead of one locale, and check what users see differently."
+metadataTitle: "Migrate lên Adapty iOS SDK v4.5 | Tài liệu Adapty"
+---
+
+Để cập nhật ứng dụng từ Adapty iOS SDK 4.4 lên 4.5, hãy áp dụng tất cả các thay đổi trong hướng dẫn này. Nếu ứng dụng đang dùng SDK 4.3 hoặc cũ hơn, bạn cần thực hiện [các thay đổi v4.4](migration-to-ios-sdk-44) trước.
+
+Trong phiên bản 4.5, `getFlowConfiguration` yêu cầu danh sách ngôn ngữ trong `preferredLocales` thay vì mã ngôn ngữ tùy chọn trong `locale`. SDK [chọn bản ngôn ngữ của flow từ danh sách này](localizations-and-locale-codes).
+
+:::warning
+Bản build sẽ thất bại cho đến khi mọi lời gọi `getFlowConfiguration` đều truyền [`preferredLocales`](#replace-locale-with-the-users-languages). Sau khi bạn sửa xong build, SDK 4.5 có thể hiển thị cho người dùng [một bản ngôn ngữ khác của cùng một flow](#what-users-see-after-the-update) so với SDK 4.4.
+:::
+
+## Tham khảo nhanh \{#quick-reference\}
+
+| Trước | Sau |
+|---|---|
+| `getFlowConfiguration(forFlow: flow, locale: "fr")` | `getFlowConfiguration(forFlow: flow, preferredLocales: Locale.preferredLanguages)` |
+| `locale`: tùy chọn | `preferredLocales`: bắt buộc |
+| Không có `locale`: người dùng thấy `en`, dù ngôn ngữ mặc định của flow là ngôn ngữ khác. Nếu flow không có `en`, người dùng thấy ngôn ngữ mặc định | `preferredLocales: []`: tất cả người dùng đều thấy flow theo ngôn ngữ mặc định của nó, bất kể ngôn ngữ trên thiết bị |
+| Không có tham số strategy | `localizationStrategy:`, tùy chọn. Giá trị mặc định `.auto` phù hợp với hầu hết ứng dụng. |
+
+## Thay thế `locale` bằng ngôn ngữ của người dùng \{#replace-locale-with-the-users-languages\}
+
+Trong phiên bản 4.5, cả hai phương thức `getFlowConfiguration` — dạng async và completion-handler — đều nhận danh sách `preferredLocales` thay vì `locale`. Tham số `preferredLocales` là bắt buộc. Nếu truyền `locale` hoặc không truyền tham số nào, Xcode sẽ báo lỗi:
+
+```text
+'getFlowConfiguration(forFlow:locale:…)' is unavailable: Pass preferredLocales: Locale.preferredLanguages to show the flow in the device's language, or [] to use the flow's default localization.
+```
+
+Tham số `locale` của `getOnboarding` không thay đổi.
+
+```diff showLineNumbers
+  let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+      forFlow: flow,
+-     locale: "fr"
++     preferredLocales: Locale.preferredLanguages
+  )
+```
+
+Những gì app của bạn truyền vào ở phiên bản 4.4 sẽ quyết định giá trị cần truyền ở phiên bản 4.5:
+
+- Nếu ứng dụng của bạn truyền giá trị thiết bị như `Locale.current.identifier`, hãy thay bằng `Locale.preferredLanguages`. Xóa mọi đoạn code chuyển đổi giá trị đó: chữ hoa/thường và ký tự phân cách không quan trọng trong phiên bản 4.5.
+- Nếu ứng dụng của bạn truyền ngôn ngữ mà người dùng đã chọn trong ứng dụng, hãy đặt nó lên đầu: `[selectedLanguage] + Locale.preferredLanguages`. Khi một flow từ Flow & Paywall Builder không có ngôn ngữ đó, SDK sẽ thử các ngôn ngữ của thiết bị.
+- Nếu ứng dụng của bạn gọi `getFlowConfiguration` mà không có `locale`, hãy thêm `preferredLocales: Locale.preferredLanguages`.
+
+Để hiển thị flow theo ngôn ngữ giao diện ứng dụng của bạn thay vì ngôn ngữ của thiết bị, hãy truyền `Bundle.main.preferredLocalizations`. Để so sánh hai danh sách này, hãy đọc [Truyền ngôn ngữ người dùng vào SDK](localizations-and-locale-codes#pass-the-users-languages-to-the-sdk).
+
+Để hiển thị flow cho mọi người dùng theo ngôn ngữ mặc định của nó, hãy truyền danh sách rỗng: `preferredLocales: []`.
+
+Bạn không cần truyền `localizationStrategy`. Giá trị mặc định `.auto` phù hợp với các flow từ Flow & Paywall Builder và các paywall từ Paywall Builder cũ. [Các chiến lược khác](localizations-and-locale-codes#select-a-localization-strategy) thay đổi cách SDK khớp ngôn ngữ.
+
+## Người dùng thấy gì sau khi cập nhật \{#what-users-see-after-the-update\}
+
+Với `localizationStrategy` mặc định, SDK 4.5 có thể hiển thị cho người dùng một bản ngôn ngữ khác của cùng một flow so với SDK 4.4:
+
+| Ứng dụng truyền | Flow có | 4.4 | 4.5 |
+|---|---|---|---|
+| Không có ngôn ngữ: không có `locale` trong 4.4, `[]` trong 4.5 | Bất kỳ locale nào | `en`, nếu flow có; nếu không, locale mặc định | Locale mặc định |
+| Mã có chữ hoa/thường hoặc dấu phân cách khác, chẳng hạn `pt_BR` | `pt-BR` | Locale mặc định | `pt-BR` |
+| Mã khu vực, chẳng hạn `pt-BR` | Chỉ ngôn ngữ, chẳng hạn `pt` | Locale mặc định | `pt` |
+| Mã khu vực ngụ ý script, chẳng hạn `zh-TW` | Script đó, chẳng hạn `zh-hant` | Locale mặc định | `zh-hant`; trên các paywall từ Paywall Builder cũ, locale mặc định |
+| Nhiều ngôn ngữ, chẳng hạn `fr`, rồi `de` | Một ngôn ngữ sau, chẳng hạn `de`, nhưng không phải ngôn ngữ đầu tiên | Locale mặc định | Ngôn ngữ sau đó; trên các paywall từ Paywall Builder cũ, locale mặc định |
+
+Các phiên bản ứng dụng dùng SDK 4.0–4.4 vẫn áp dụng khớp chính xác với các flow của bạn cho đến khi người dùng cập nhật ứng dụng. Chiến lược `.legacy` không khôi phục lại tính năng khớp chính xác của SDK 4.4.
+
+Để xem localization nào đang hiển thị trên thiết bị, hãy đọc `flowConfiguration.locale`: SDK không ghi log thông tin này. Để biết quy trình kiểm thử, hãy xem [Kiểm tra localization nào người dùng thấy](localizations-and-locale-codes#test-which-localization-a-user-sees).
+
+## Xem lại ngôn ngữ của các flow \{#review-the-locales-of-your-flows\}
+
+SDK 4.5 hiển thị các flow đã xuất bản của bạn với ngôn ngữ hiện tại. Để hiển thị mỗi flow cho người dùng bằng ngôn ngữ họ đọc, hãy tuân theo ba quy tắc sau:
+
+- Dịch đầy đủ locale mặc định. Người dùng sẽ thấy locale này khi flow không có ngôn ngữ của họ. Để xem hoặc thay đổi locale mặc định, đọc [Đặt locale mặc định](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale).
+- Với các phiên bản app dùng SDK 4.0–4.4 và các app dùng SDK Adapty khác, giữ nguyên mọi mã locale mà chúng truyền vào. Những app đó không sử dụng tính năng matching của 4.5.
+- Để tiếp cận nhiều người dùng hơn, hãy thêm [các locale mà 4.5 match tốt hơn](localizations-and-locale-codes#select-which-locales-to-add-to-a-flow), chẳng hạn như `zh-hans` và `zh-hant` bên cạnh `zh`.
+
+## Thêm module AdaptyUIBuilder \{#add-the-adaptyuibuilder-module\}
+
+Trong phiên bản 4.5, một số kiểu dữ liệu cho AdaptyUI đến từ module AdaptyUIBuilder, chẳng hạn như giao thức cho [custom localization resolver](localizations-and-locale-codes#pick-a-flows-localization-in-your-own-code). Để sử dụng các kiểu này trong code của bạn, hãy thêm AdaptyUIBuilder vào ứng dụng:
+
+1. Trong Xcode, ở tab **General** của app target, trong mục **Frameworks, Libraries, and Embedded Content**, thêm **AdaptyUIBuilder** từ package AdaptySDK-iOS.
+2. Trong mỗi file sử dụng các kiểu này, thêm `import AdaptyUIBuilder`.

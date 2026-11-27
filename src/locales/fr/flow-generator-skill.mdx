@@ -163,11 +163,35 @@ Les formats et les limites de taille correspondent à un téléversement manuel 
 
 Avant de téléverser un fichier PNG ou JPEG de plus de 1 Mo, le skill le convertit en WebP. Lorsque la réponse au téléversement contient un [avertissement de grande image](developer-cli-flows#adapty-flows-media-upload), le skill indique le nom de l'image et son poids, puis propose de la réduire, en ne passant à chaque étape qu'après votre confirmation. Le poids de l'image ne bloque jamais l'enregistrement ou la publication du flow.
 
+Avant chaque sauvegarde et chaque publication, le skill mesure le flow et ses images et vidéos. Si quelque chose est [trop lourd](flow-size), le skill le signale et propose un correctif.
+
 Le skill télécharge une vidéo avec [`adapty flows media upload-video`](developer-cli-flows#adapty-flows-media-upload-video). La vidéo doit être un fichier MP4 ou WebM, d'une durée maximale de 30 secondes et d'une taille maximale de 50 Mo, avec une largeur et une hauteur d'au moins 640 pixels chacune. Les GIF ne sont pas pris en charge, et le skill ne convertit pas une image animée en vidéo. Lorsque le skill s'exécute uniquement via le serveur MCP, il ne peut pas encore télécharger de vidéo : il place un élément vidéo avec un espace réservé vide, et vous téléchargez la vidéo dans le Flow & Paywall Builder.
 
 Chaque upload ajoute un asset distinct à votre médiathèque, et aucune commande CLI ne permet d'en supprimer un, donc relancer un build laisse des copies derrière.
 
 Si vous nommez un fichier que l'outil ne trouve pas, il demande plutôt que d'en substituer un qui ressemble. Un mauvais fichier produit un écran qui s'affiche correctement mais avec la mauvaise image, ce que rien dans le workflow ne détecte.
+
+## Donnez-lui vos polices \{#give-it-your-fonts\}
+
+Le skill importe vos [polices personnalisées](using-custom-fonts-in-flow-builder) dans l'application avec [`adapty fonts upload`](developer-cli-flows#adapty-fonts-upload) et les utilise dans le flow. Fournissez-lui les fichiers `.ttf` ou `.otf`, un par graisse et style, ou un fichier de police variable :
+
+```
+The brand font is in ./design/fonts/: BrandSans-Regular.otf and BrandSans-Bold.otf.
+Use it for the headings and the buttons.
+```
+
+Le skill effectue ensuite :
+
+1. Charge les fichiers. Si Adapty propose de remplacer des faces en conflit, le skill les nomme et vous demande si vous souhaitez remplacer ces faces ou ignorer le fichier. Après un remplacement, le skill vous indique quelles faces ont changé. Si Adapty refuse avec une nouvelle liste de faces en conflit, le skill vous demande à nouveau pour cette liste. Si une face listée a disparu ou qu'Adapty indique qu'il n'y a plus de conflit, le skill tente à nouveau l'upload sans remplacement et vous en communique le résultat. Si plusieurs familles correspondent au nom dans le fichier, le skill vous demande quelle famille utiliser. Si la réponse à l'upload est perdue, le skill vérifie quelles faces Adapty a enregistrées avant de réessayer. Si la famille possède déjà tous les styles d'un fichier de police variable, le skill vous interroge sur chaque face avant de remplacer son fichier. Adapty ne conserve pas les anciens fichiers.
+2. Vérifie le poids, le style ainsi que les noms de police iOS et Android de chaque face. Aucun fichier de police ne contient le nom de police Android, aussi le skill vous demande le nom utilisé par votre application.
+3. Définit la police des styles de texte et des éléments par famille de polices et par poids. Sur l'appareil, le flow utilise la face correspondant à ce poids et ce style. Si la famille ne possède pas cette face, il utilise le poids le plus proche dans le même style, puis dans n'importe quel style, et la face la plus légère lorsque deux poids sont à égale distance.
+4. Lorsque vous lui demandez de publier le flow, il le publie et attend que le flow soit publié.
+
+:::warning
+Adapty n'envoie pas les fichiers de polices téléversés sur les appareils des utilisateurs. Pour afficher la police dans votre app, [ajoutez les mêmes fichiers de polices dans le bundle de votre app](using-custom-fonts-in-flow-builder#add-the-font-files-to-your-apps-bundle).
+:::
+
+Si l'app dispose déjà d'une famille de polices adaptée, le skill l'utilise et ne téléverse rien. Si la famille est absente et que vous n'avez pas de fichiers de polices, le skill utilise une police de substitution et vous indique laquelle. Lorsque le skill s'exécute uniquement via le serveur MCP, il ne peut pas encore téléverser de police : téléversez la police dans le Flow & Paywall Builder, puis indiquez au skill son nom de famille.
 
 ## Apportez votre propre agent \{#bring-your-own-agent\}
 
@@ -190,13 +214,13 @@ Utilisez l'éditeur IA lorsque vous êtes déjà dans le builder et souhaitez re
 
 Le skill considère vos flows comme du contenu en production, car un flow publié est utilisé par de vrais utilisateurs.
 
-- **La publication reste entre vos mains** : le skill s'arrête à un brouillon sauvegardé et ne publie jamais. Publiez vous-même dans le Flow & Paywall Builder, ou avec [`adapty flows publish`](developer-cli-flows#adapty-flows-publish).
-- **L'écrasement requiert votre accord** : une sauvegarde remplace l'intégralité de la configuration, sans écriture partielle ni annulation possible pour un brouillon. La confirmation indique le nom du flow, son ID, son statut et le fichier de sauvegarde créé par le skill avant la modification.
-- **Une restauration reste un brouillon** : le skill restaure une version antérieure en tant que brouillon et ne la publie jamais. Avant de remplacer un brouillon, il vous demande confirmation.
-- **Les modifications non sauvegardées vous appartiennent** : avant d'ouvrir ou de restaurer une autre version, le skill vous demande si vous souhaitez sauvegarder les modifications en attente, les ignorer ou rester sur la version actuelle.
-- **Une modification simultanée fait échouer l'écriture** : chaque écriture après la première renvoie le timestamp `updated_at` de la configuration à Adapty. Si un membre de l'équipe a sauvegardé le flow entre-temps, Adapty rejette l'écriture plutôt que d'écraser son travail.
-- **La suppression d'un flow reste une action du tableau de bord** : le CLI ne dispose pas de commande de suppression, donc un flow créé par le skill restera jusqu'à ce que vous le supprimiez depuis le tableau de bord.
-- **Les données réelles et les ressources viennent de vous** : les notes, le nombre d'avis, les pourcentages de réduction et les prix en store ne sont jamais inventés. Lorsqu'un modèle en requiert un que vous n'avez pas fourni, le skill vous le demande ou omet l'élément concerné, et vous indique ce qu'il a fait.
+- **La publication reste entre vos mains** : Le skill enregistre les modifications sous forme de brouillon. Il ne publie un flow que si vous le demandez. Pour publier sans le skill, utilisez le Flow & Paywall Builder ou [`adapty flows publish`](developer-cli-flows#adapty-flows-publish).
+- **L'écrasement nécessite votre accord** : Un enregistrement remplace l'intégralité de la configuration, sans écriture partielle ni annulation possible pour un brouillon. L'approbation indique le nom du flow, son identifiant, son statut et le fichier de sauvegarde créé par le skill avant la modification.
+- **Une restauration reste un brouillon** : Le skill restaure une version antérieure en tant que brouillon et ne la publie jamais. Avant de remplacer un brouillon, il vous le demande.
+- **Les modifications non enregistrées restent les vôtres** : Avant d'ouvrir ou de restaurer une autre version, le skill vous demande si vous souhaitez enregistrer les modifications non sauvegardées, les ignorer ou rester sur la version actuelle.
+- **Une modification simultanée fait échouer l'écriture** : Chaque écriture après la première renvoie le timestamp `updated_at` de la configuration à Adapty. Si un collègue a enregistré le flow entre-temps, Adapty rejette l'écriture au lieu d'écraser son travail.
+- **La suppression d'un flow reste une action du tableau de bord** : Le CLI ne dispose pas de commande de suppression, donc un flow créé par le skill restera jusqu'à ce que vous le supprimiez depuis le tableau de bord.
+- **Les données réelles et les assets viennent de vous** : Les notes, le nombre d'avis, les pourcentages de réduction et les prix en store ne sont jamais inventés. Lorsqu'un modèle en nécessite un que vous n'avez pas fourni, le skill vous le demande ou omet l'élément, et vous indique ce qu'il a fait.
 
 :::note
 Les lectures, validations et prévisualisations ne coûtent rien et ne modifient rien. Enregistrer une configuration est la seule action qui atteint votre tableau de bord, et elle nécessite votre approbation.
@@ -206,15 +230,11 @@ Les lectures, validations et prévisualisations ne coûtent rien et ne modifient
 
 #### Les runs prennent du temps \{#runs-take-time\}
 
-Le skill valide et restitue après chaque modification, ce qui permet d'éviter qu'une configuration cassée n'atterrisse sur votre tableau de bord — et cela rend un run plus lent qu'une réponse en chat. Une petite modification se termine en quelques minutes. La création d'un flow multi-écrans avec des branchements prend **10 à 40 minutes**. Lancez-le et revenez plutôt que de rester à le regarder tourner.
+Le skill valide et effectue un nouveau rendu après chaque modification, ce qui permet d'éviter qu'une configuration cassée n'atterrisse sur votre tableau de bord — et cela rend un run plus lent qu'une réponse en chat. Une petite modification se termine en quelques minutes. La création d'un flow multi-écrans avec branchements prend **10 à 40 minutes**. Lancez-le et revenez plutôt que de rester à le regarder.
 
-#### Les polices personnalisées restent manuelles \{#custom-fonts-stay-manual\}
+#### L'aperçu affiche un écran, dans un état \{#the-preview-renders-one-screen-in-one-state\}
 
-Le skill ne télécharge pas les fichiers de [police personnalisée](using-custom-fonts-in-flow-builder). Il crée les styles de texte requis par votre design et les associe à une police de substitution. Téléchargez la police dans le Flow & Paywall Builder et assignez-la à ces styles.
-
-#### La prévisualisation affiche un seul écran, dans un seul état \{#the-preview-renders-one-screen-in-one-state\}
-
-La page de prévisualisation du skill affiche un seul écran et ne parcourt pas le flow. Elle ne peut pas vous montrer les éléments suivants. Testez chacun sur un vrai appareil — [Prévisualiser les flows](paywall-device-compatibility-preview) vous explique comment :
+La page d'aperçu du skill n'affiche qu'un seul écran et ne parcourt pas le flow. Elle ne peut pas vous montrer les éléments suivants. Testez chacun d'eux sur un appareil réel — [Prévisualiser les flows](paywall-device-compatibility-preview) explique comment procéder :
 
 - **Navigation et embranchement** : un bouton portant une action de navigation reste à sa place dans l'aperçu, donc une route conditionnelle ne peut pas se déclencher. Chaque écran est un rendu séparé.
 - **Sélection par bascule et choix multiple** : une ligne à bascule et une ligne à choix multiple s'affichent dans leur état désactivé, quel que soit leur état par défaut. Les lignes à choix unique et les cartes produit affichent bien leur état sélectionné.
