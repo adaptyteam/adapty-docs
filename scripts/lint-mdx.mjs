@@ -225,6 +225,64 @@ function checkReusableCalloutDirective(file, content, lines) {
 // Comparing across locales (not against the English source) is intentional:
 // the English file uses a different relative-path convention than locales.
 // Other locales share the same path convention, so they're a reliable oracle.
+// Same failure mode as the callout rule above, generalised: an imported reusable
+// has no component scope at all, so EVERY component it renders must be imported
+// in the file itself. Remark plugins introduce three of these without the author
+// writing the name, so they are mapped here:
+//   :::note / :::tip / …   → Callout    (remark-aside)
+//   <details>              → Details    (remark-normalize-details)
+//   <img>                  → MDXImage   (remark-transform-require)
+// A missing import fails at Astro build time with "Expected component X to be
+// defined"; when the reusable is globbed eagerly by the route, that takes down
+// every page, so it must never reach a deploy.
+const PLUGIN_INTRODUCED = [
+  { test: (s) => new RegExp(`^\\s*:::(?:${CALLOUT_DIRECTIVES.join('|')})\\b`, 'm').test(s), name: 'Callout', module: 'src/components/Callout.astro' },
+  { test: (s) => /<details[\s>]/.test(s), name: 'Details', module: 'src/components/Details.astro' },
+  { test: (s) => /<img[\s>]/.test(s), name: 'MDXImage', module: 'src/components/MDXImage.astro' },
+];
+
+// Components the reusable renders as JSX under their own name.
+function renderedComponentNames(stripped) {
+  const names = new Set();
+  for (const m of stripped.matchAll(/<([A-Z][A-Za-z0-9]*)[\s/>]/g)) names.add(m[1]);
+  return names;
+}
+
+function checkReusableComponentImports(file, content, lines) {
+  if (!isReusableFile(file)) return [];
+  // .md reusables render through Astro's plain-markdown path: no JSX, no scope
+  // problem. Only .mdx is affected.
+  if (!file.endsWith('.mdx')) return [];
+  const stripped = stripCodeBlocks(content);
+  const imports = importedNames(findImportLines(lines));
+
+  const needed = new Map();
+  for (const { test, name, module } of PLUGIN_INTRODUCED) {
+    if (test(stripped)) needed.set(name, module);
+  }
+  for (const name of renderedComponentNames(stripped)) {
+    if (!needed.has(name)) needed.set(name, `src/components/${name}.astro`);
+  }
+
+  const issues = [];
+  for (const [name, module] of needed) {
+    if (imports.has(name)) continue;
+    issues.push({
+      file,
+      line: 0,
+      rule: 'reusable-missing-import',
+      message:
+        `reusable renders <${name}> but does not import it; an imported reusable does not `
+        + `inherit the page's <Content components> prop, so the build will fail with `
+        + `"Expected component ${name} to be defined"`,
+      _autofixImportName: name,
+      _autofixModule: module,
+      _autofixDefault: true,
+    });
+  }
+  return issues;
+}
+
 function checkLocaleReusableImportDrift(localeReusables) {
   const issues = [];
   for (const [basename, byLocale] of localeReusables) {
@@ -463,6 +521,7 @@ for await (const file of walkMdx(path.join(ROOT, 'src'))) {
   allIssues.push(...checkBlankAfterImports(rel, lines));
   allIssues.push(...checkClientLoadImports(rel, content, lines));
   allIssues.push(...checkReusableCalloutDirective(rel, content, lines));
+  allIssues.push(...checkReusableComponentImports(rel, content, lines));
   allIssues.push(...checkNestedQuotes(rel, content));
 
   // Stash locale reusables for the cross-locale drift pass below.

@@ -1,0 +1,47 @@
+---
+no_index: true
+---
+
+コールバックは2つのイベントを配信します。`flow_user_input` イベントのみを表示するには、`name` でフィルタリングしてください。レスポンスの JSON ペイロードは次のようになります：
+
+```json
+{
+  "name": "flow_user_input",
+  "instanceId": "scr_registration",
+  "isBackendEvent": false,
+  "isCustomerEvent": true,
+  "element_id": "email",
+  "element_type": "email_input",
+  "value": "jane@example.com"
+}
+```
+
+| パラメーター        | 説明 |
+|:------------------|:------------|
+| `name`            | 入力イベントの場合は `flow_user_input`、画面表示の場合は `flow_screen_showed`。 |
+| `instanceId`      | 入力欄が属する画面の ID。要素 ID は画面内でユニークですが、フロー全体ではユニークではありません。複数の画面に入力欄がある場合は、イベントをフィルタリングする際に `instanceId` と `element_id` を組み合わせて使用してください。 |
+| `element_id`      | [入力欄](builder-inputs-and-forms) の **Element ID**、または[選択可能グループ](flow-selectable-elements) の **Group ID**。 |
+| `element_type`    | イベントを送信した要素のタイプ。以下のパラメーターのうちどれが入力値を保持するかを決定します。 |
+| `value`           | **テキストフィールド、ピッカー、トグルのみ。** 入力値：テキストフィールドの場合は文字列、日付・時刻ピッカーの場合は整数、数値ピッカーの場合は小数を含む可能性がある数値、トグルの場合はブール値。 |
+| `item_ids`        | **単一選択・複数選択の選択可能グループのみ。** 選択されたオプションの **Element ID** を、ビルダーでの表示順に並べたもの。単一選択グループの場合はエントリーが1つ、複数選択グループの場合は任意の数。 |
+| `item_titles`     | **単一選択・複数選択の選択可能グループのみ。** `item_ids` に列挙されたオプションのタイトルを同じ順序で並べたもの。空になることはありません：タイトルが設定されていないオプションはその ID を報告します。 |
+| `isCustomerEvent` | ユーティリティフラグ。このイベントでは常に `true`。SDK がコールバックに配信するイベントにマークを付けます。すべてのフローイベントをアナリティクスに転送する1つのハンドラーがある場合に、`name` ではなくこのフラグで条件分岐するのに便利です。 |
+| `isBackendEvent`  | ユーティリティフラグ。このイベントでは常に `false`。Adapty が自身のアナリティクス用に記録するイベントにマークを付けます。`false` であることは、ユーザーが入力した内容がアプリにのみ届き、他には届かないことを確認します。Adapty はそれを受信・保存しません。 |
+
+各要素が報告する内容：
+
+| ビルダー上の要素 | `element_type` | 値を保持するパラメーター | 保持する内容 |
+|:---------------|:---------------|:----------------------------|:--------------|
+| **Text**、**Number**、**Phone number** 入力欄 | `text_input`, `number_input`, `phone_input` | `value` | ユーザーが入力した生の文字列。数値も数値型ではなく文字列として届きます。 |
+| **E-mail** 入力欄 | `email_input` | `value` | ユーザーが入力した生の文字列。ビルダーのフォーマット検証に失敗した場合も同様。使用前に自分でバリデーションしてください。 |
+| **Password** 入力欄 | なし | なし | イベントを送信しません。 |
+| **Date** 入力欄 | `date_picker` | `value` | 選択された日付のローカル深夜0時の Unix タイム（ミリ秒、整数）。 |
+| **Time** 入力欄 | `time_picker` | `value` | 分単位で切り捨てた Unix タイム（ミリ秒、整数）。 |
+| **Date & Time** 入力欄 | `date_picker` と `time_picker` | `value` | 日付ピッカーと時刻ピッカーの2要素。それぞれが個別のイベントを送信します。 |
+| **Type** ドロップダウンで **Date & Time** に切り替えた入力欄 | `date_time_picker` | `value` | 分単位で切り捨てた Unix タイム（ミリ秒、整数）。 |
+| **Number picker** | `wheel_range_picker` | `value` | ユーザーが選択した数値。ホイールを操作していない場合はデフォルト値。`70.5` のように小数を含む場合があります。**Number** 入力欄の値とは異なり、文字列ではなく数値型として届きます。 |
+| **Single choice** グループ | `single_choice` | `item_ids`, `item_titles` | 2つの配列。`item_ids`：選択されたオプションの Element ID を含む配列。`item_titles`：そのオプションのタイトルを含む配列。 |
+| **Multi-choice** グループ | `multi_choice` | `item_ids`, `item_titles` | 2つの配列。`item_ids`：選択されたすべてのオプションの Element ID をビルダーでの表示順に並べたもの。`item_titles`：同じ順序のタイトル。何も選択されていない場合はどちらの配列も空です。 |
+| **Toggle** グループ | `toggle` | `value` | ブール値。 |
+
+回答に基づいて分岐する場合は、`item_titles` ではなく `item_ids` で比較してください。タイトルは派生値です：**Element Title** が設定されている場合はその値、なければデフォルトロケールのテキスト、それもなければ Element ID が使われます。別の言語でフローを読んだユーザーは異なるテキストを見ています。

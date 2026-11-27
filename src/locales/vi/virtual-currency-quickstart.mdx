@@ -1,6 +1,6 @@
 ---
 title: "Hướng dẫn nhanh về tiền tệ ảo"
-description: "Thiết lập tiền tệ ảo từ đầu đến cuối: tạo tiền tệ token, cấp token kèm theo gói đăng ký, và tiêu token qua API phía máy chủ."
+description: "Thiết lập tiền tệ ảo từ đầu đến cuối: tạo đơn vị tiền tệ token, cấp token kèm theo gói đăng ký, và sử dụng token thông qua server-side API."
 metadataTitle: "Hướng dẫn nhanh về tiền tệ ảo | Tài liệu Adapty"
 ---
 
@@ -8,39 +8,51 @@ metadataTitle: "Hướng dẫn nhanh về tiền tệ ảo | Tài liệu Adapty"
 Bài viết chính: [Tiền tệ ảo](virtual-currencies)
 :::
 
-Hướng dẫn nhanh này thiết lập một tiền tệ token từ đầu đến cuối: một gói đăng ký cấp cho người dùng 1000 token mỗi tháng, và các hành động có trả phí trong ứng dụng sẽ tốn token. Adapty quản lý toàn bộ số dư, vì vậy backend của bạn chỉ cần đọc và tiêu token.
+Hướng dẫn nhanh này thiết lập một đơn vị tiền tệ token từ đầu đến cuối: một gói đăng ký hàng tháng cấp cho người dùng 1000 token mỗi chu kỳ thanh toán, và các hành động trả phí trong ứng dụng sẽ tiêu tốn token. Adapty quản lý toàn bộ số dư, vì vậy backend của bạn chỉ cần đọc và tiêu token.
 
-1. Làm theo hướng dẫn [Tạo tiền tệ ảo](create-virtual-currency) để tạo loại tiền tệ `TOKENS`. Liên kết nó với gói đăng ký Pro và đặt **Credit per cycle** thành 1000. Để bán thêm token, hãy liên kết thêm các sản phẩm gói token mua một lần.
+1. Làm theo hướng dẫn [Tạo tiền tệ ảo](create-virtual-currency) để tạo một loại tiền tệ `TOKENS`. Liên kết nó với gói đăng ký Pro của bạn và đặt **Credit per cycle** là 1000. Adapty cấp **Credit per cycle** một lần mỗi chu kỳ thanh toán của gói đăng ký: mỗi tháng với gói đăng ký hàng tháng, mỗi tuần với gói đăng ký hàng tuần. Để bán thêm token, hãy liên kết các sản phẩm gói token mua một lần.
 
    <ZoomImage id="new-currency-combined.webp" width="700px" alt="Màn hình tạo tiền tệ ảo mới" />
 
-2. Gọi [Lấy danh sách số dư tiền tệ ảo](api-adapty/operations/listVirtualCurrencyBalances) để đọc số dư của người dùng, ví dụ trước khi bắt đầu một lần tạo nội dung:
+2. Gọi [List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances) để đọc số dư của người dùng, ví dụ, trước khi bắt đầu một lần tạo nội dung:
 
-```bash title="Read balances"
+   ```bash title="Read balances"
    curl https://api.adapty.io/api/v2/server-side-api/vc/balances/ \
      -H "Authorization: Api-Key {your secret key}" \
      -H "adapty-customer-user-id: user-42"
    ```
 
-   Phản hồi liệt kê tất cả các loại tiền tệ mà người dùng có, ví dụ 1000 `TOKENS`:
+   Phản hồi liệt kê tất cả các loại tiền tệ trong ứng dụng của bạn, bao gồm cả những loại có số dư bằng 0. Ví dụ, 1000 `TOKENS`:
 
-```json title="Response"
+   ```json title="Response"
    {
+     "response_created_at": 1794477600123,
      "data": [
-       { "code": "TOKENS", "name": "Tokens", "balance": 1000, "held": 0, "available": 1000 }
+       {
+         "code": "TOKENS",
+         "name": "Tokens",
+         "balance": 1000,
+         "held": 0,
+         "available": 1000,
+         "expiry": { "non_expiring": 1000, "expiring": [], "expiring_later": 0, "expired": 0 }
+       }
      ]
    }
    ```
-3. Khi người dùng chạy một lần tạo ảnh, hãy trừ token bằng cách gọi [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction) với `amount` âm. Trong ví dụ này, một lần tạo ảnh tốn 100 token:
+3. Khi người dùng chạy một lần tạo ảnh, hãy trừ token bằng cách gọi [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction) với `amount` âm. Trong ví dụ này, mỗi lần tạo ảnh tốn 100 token. Để ghi lại mục đích sử dụng token, request cũng đặt `operation` thành `spend` và `feature` thành `image_generation` (xem [Label transactions](virtual-currencies#label-transactions)):
 
    ```bash title="Spend tokens"
    curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
      -H "Authorization: Api-Key {your secret key}" \
      -H "adapty-customer-user-id: user-42" \
      -H "Content-Type: application/json" \
-     -d '{"items": [{"currency_code": "TOKENS", "amount": -100}]}'
+     -d '{
+           "items": [{"currency_code": "TOKENS", "amount": -100}],
+           "operation": "spend",
+           "feature": "image_generation"
+         }'
    ```
 
-Giao dịch mang tính nguyên tử và trả về số dư đã cập nhật. Nếu người dùng không đủ số dư để thanh toán, yêu cầu sẽ trả về `insufficient_balance` và không có gì thay đổi. Hãy thêm header `Idempotency-Key` để retry yêu cầu một cách an toàn.
-4. Để chạy promo ưu đãi thu hút khách hàng cũ, cấp token thông qua cùng một endpoint với `amount` dương. Các khoản tín dụng bạn cấp theo cách này không bao giờ hết hạn.
-5. Xem lại mọi thay đổi trong [hồ sơ người dùng](virtual-currency-balance) hoặc trong [lịch sử giao dịch](api-adapty/operations/listVirtualCurrencyTransactions), để bạn có thể kiểm toán kinh tế ảo bất kỳ lúc nào.
+   Giao dịch mang tính nguyên tử và trả về số dư đã cập nhật. Một giao dịch có thể thay đổi tối đa 20 loại tiền tệ, mỗi loại được liệt kê một lần trong `items`. Nếu người dùng không đủ số dư để thanh toán, yêu cầu sẽ trả về `insufficient_balance` và không có gì thay đổi. Hãy thêm header `Idempotency-Key` để có thể thử lại yêu cầu một cách an toàn. Để mở flow nạp tiền khi số dư không đủ để chi tiêu, hãy xem hướng dẫn cho [iOS](ios-virtual-currency-top-up).
+4. Để chạy chương trình ưu đãi thu hút khách hàng cũ, hãy cấp token thông qua cùng endpoint với `amount` dương. Các khoản tín dụng bạn cấp theo cách này không bao giờ hết hạn. Để cấp số dư cho người dùng trước lần mua đầu tiên của họ, xem [Cấp số dư ban đầu](grant-initial-balance).
+5. Xem lại mọi thay đổi trong [hồ sơ người dùng](virtual-currency-balance) hoặc trong [lịch sử giao dịch](api-adapty/operations/listVirtualCurrencyTransactions) để bạn có thể kiểm tra kinh tế trong game bất cứ lúc nào.

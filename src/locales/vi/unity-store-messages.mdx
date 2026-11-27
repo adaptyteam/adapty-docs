@@ -1,0 +1,145 @@
+---
+title: "Kiểm soát thông báo cửa hàng trong Unity SDK"
+description: "Chọn thời điểm ứng dụng Unity của bạn hiển thị thông báo từ App Store và Google Play về việc tăng giá, vấn đề thanh toán và thanh toán bị từ chối, để chúng không làm gián đoạn flow hoặc onboarding."
+metadataTitle: "Kiểm soát thông báo cửa hàng | Unity SDK | Tài liệu Adapty"
+---
+
+App Store và Google Play đôi khi cần hiển thị thông báo cho người dùng về gói đăng ký của họ:
+
+- **App Store**: Yêu cầu đồng ý tăng giá, thông báo vấn đề thanh toán, hoặc ưu đãi thu hút khách hàng cũ. Theo mặc định, StoreKit tự hiển thị các thông báo này khi ứng dụng đang mở.
+- **Google Play**: Thông báo rằng thanh toán gói đăng ký bị từ chối và cần cập nhật phương thức thanh toán. Bắt đầu từ SDK 4.3.0, Adapty SDK mặc định yêu cầu các thông báo này mỗi khi một `Activity` của ứng dụng khởi động sau khi kích hoạt, bao gồm cả khi ứng dụng quay lại foreground và khi một flow hoặc onboarding mở hoặc đóng.
+
+Dù sao đi nữa, một thông báo có thể xuất hiện trên một flow, một onboarding, hoặc một màn hình thanh toán. Để tự chọn thời điểm hiển thị, hãy chuyển SDK sang chế độ xử lý thông báo thủ công, và gọi `Adapty.ShowStoreMessages` vào lúc thông báo không làm gián đoạn người dùng.
+
+:::warning
+Ở chế độ thủ công, các cửa hàng sẽ không tự hiển thị thông báo. Nếu ứng dụng của bạn không bao giờ gọi `Adapty.ShowStoreMessages`, người dùng sẽ không bao giờ thấy yêu cầu đồng ý tăng giá, thông báo về vấn đề thanh toán, hay thông báo thanh toán bị từ chối.
+:::
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+Bạn cần:
+
+- **Adapty Unity SDK 4.3.0 trở lên**: Các phiên bản cũ hơn không có API thông báo từ cửa hàng.
+- **iOS 16 trở lên** cho thông báo App Store: StoreKit không gửi thông báo đến ứng dụng trên các phiên bản cũ hơn. Trên iOS 15, `Adapty.GetPendingStoreMessageTypes` và `Adapty.ShowStoreMessages` sẽ trả về lỗi `DecodingFailed`, vì vậy nếu ứng dụng của bạn hỗ trợ iOS 15, hãy chỉ gọi chúng trên iOS 16 trở lên:
+
+```csharp showLineNumbers title="C#"
+#if UNITY_IOS && !UNITY_EDITOR
+var iosMajorVersion = int.Parse(UnityEngine.iOS.Device.systemVersion.Split('.')[0]);
+if (iosMajorVersion >= 16) {
+    Adapty.ShowStoreMessages((error) => {
+        // handle the error
+    });
+}
+#endif
+```
+
+## Bật xử lý thủ công \{#enable-manual-handling\}
+
+Để chỉ hiển thị thông báo từ cửa hàng khi ứng dụng của bạn gọi `Adapty.ShowStoreMessages`, hãy gọi `SetStoreMessagesHandling` với `AdaptyStoreMessagesHandling.Manual` khi bạn [kích hoạt SDK](sdk-installation-unity#activate-adapty-module-of-adapty-sdk):
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetStoreMessagesHandling(AdaptyStoreMessagesHandling.Manual); // Auto is the default
+
+Adapty.Activate(builder.Build(), (error) => {
+    // handle the error
+});
+```
+
+Trên iOS, SDK sẽ thêm từng thông báo App Store vào danh sách chờ của phiên ứng dụng hiện tại. Trên Android, SDK ngừng tự yêu cầu thông báo Google Play. Với giá trị mặc định `Auto`, SDK không chặn thông báo App Store, do đó trên iOS, `Adapty.GetPendingStoreMessageTypes` và `Adapty.ShowStoreMessages` sẽ không có gì để trả về hoặc hiển thị.
+
+## Lấy các loại tin nhắn đang chờ xử lý \{#get-pending-message-types\}
+
+Trên iOS, để kiểm tra xem có tin nhắn nào từ App Store đang chờ hay không, hãy gọi `Adapty.GetPendingStoreMessageTypes`. Hàm này trả về các loại tin nhắn đang chờ mà không hiển thị hoặc xóa chúng:
+
+```csharp showLineNumbers title="C#"
+Adapty.GetPendingStoreMessageTypes((pendingTypes, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    if (pendingTypes == null) {
+        // Android: Google Play decides whether a message applies when you show it
+    } else if (pendingTypes.Contains(AdaptyStoreMessageType.BillingIssue)) {
+        // For example, skip the upsell and show the billing message first
+    }
+});
+```
+
+Trên Android, phương thức trả về `null` mà không có lỗi: Google Play không báo cáo các tin nhắn đang chờ xử lý và chỉ quyết định liệu tin nhắn có áp dụng hay không khi ứng dụng của bạn yêu cầu. Danh sách trống có nghĩa là không có tin nhắn đang chờ xử lý trên iOS. Cho đến khi `Adapty.Activate` hoàn tất, danh sách luôn trống.
+
+Mỗi tin nhắn App Store có một trong các loại sau:
+
+| Loại | Thông báo |
+|:-----|:--------|
+| `AdaptyStoreMessageType.Generic` | Thông báo chung từ App Store. |
+| `AdaptyStoreMessageType.PriceIncreaseConsent` | Yêu cầu đồng ý tăng giá gói đăng ký. |
+| `AdaptyStoreMessageType.BillingIssue` | Thông báo về sự cố thanh toán gói đăng ký. Khả dụng trên iOS 16.4 trở lên. |
+| `AdaptyStoreMessageType.WinBackOffer` | Một [ưu đãi thu hút khách hàng cũ](app-store-offers#win-back-offers) đủ điều kiện. Khả dụng trên iOS 18 trở lên. |
+
+Các loại thông báo StoreKit mới sẽ có `RawValue` là `storekit_<number>`. Để kiểm tra một loại, hãy so sánh nó với `==` với một trong các giá trị trên, và xử lý bất kỳ giá trị nào khác như một loại mà SDK không nhận ra.
+
+## Hiển thị tin nhắn \{#show-messages\}
+
+Khi ứng dụng của bạn đến một thời điểm mà tin nhắn từ cửa hàng sẽ không làm gián đoạn người dùng — ví dụ: sau khi người dùng đóng một flow hoặc hoàn tất onboarding — hãy gọi `Adapty.ShowStoreMessages`:
+
+```csharp showLineNumbers title="C#"
+Adapty.ShowStoreMessages((error) => {
+    if (error != null) {
+        // handle the error
+    }
+});
+```
+
+- **iOS**: SDK hiển thị các tin nhắn đang chờ lần lượt từng cái một. Sau khi StoreKit hiển thị một tin nhắn, SDK xóa nó khỏi danh sách chờ. Nếu StoreKit không hiển thị được tin nhắn, SDK giữ lại tin nhắn đó cho lần gọi tiếp theo và tiếp tục xử lý các tin nhắn còn lại.
+- **Android**: SDK yêu cầu Google Play hiển thị tin nhắn cho `Activity` hiện tại. Google Play tự quyết định xem tin nhắn có áp dụng cho người dùng hay không, vì vậy một yêu cầu không phải lúc nào cũng hiển thị tin nhắn. Nếu người dùng sửa phương thức thanh toán từ tin nhắn, SDK sẽ đồng bộ các giao dịch mua của người dùng với Adapty, và [profile listener](unity-listen-subscription-changes) của bạn sẽ nhận được mức độ truy cập đã được cập nhật.
+
+### Hiển thị tin nhắn khi khởi động trên Android \{#show-messages-at-launch-on-android\}
+
+Trong chế độ `Auto` mặc định, một `Activity` được khởi động trước khi kích hoạt sẽ không kích hoạt yêu cầu, vì vậy các tin nhắn Google Play sẽ không xuất hiện khi khởi động. Để hiển thị chúng khi khởi động, hãy gọi `Adapty.ShowStoreMessages` một lần sau khi `Adapty.Activate` hoàn tất, chỉ trên Android:
+
+```csharp showLineNumbers title="C#"
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+#if UNITY_ANDROID
+    Adapty.ShowStoreMessages((showError) => {
+        // handle the error
+    });
+#endif
+});
+```
+
+Đừng gọi hàm này trên iOS: ở chế độ `Auto`, nó không có gì để hiển thị, và trên iOS 15 thì sẽ bị lỗi.
+
+### Chỉ hiển thị một số loại tin nhắn \{#show-only-some-message-types\}
+
+Để chỉ hiển thị một số tin nhắn App Store đang chờ xử lý, hãy truyền các loại tin nhắn làm đối số đầu tiên. Các tin nhắn còn lại vẫn ở trạng thái chờ:
+
+```csharp showLineNumbers title="C#"
+var iosFilter = new List<AdaptyStoreMessageType> {
+    AdaptyStoreMessageType.BillingIssue,
+    AdaptyStoreMessageType.PriceIncreaseConsent,
+};
+
+Adapty.ShowStoreMessages(iosFilter, (error) => {
+    // handle the error
+});
+```
+
+Không có filter, hoặc với `null`, SDK hiển thị tất cả các tin nhắn đang chờ xử lý, bao gồm cả các loại mà nó không nhận ra. Danh sách rỗng sẽ không hiển thị tin nhắn nào. Android bỏ qua filter và yêu cầu tất cả các tin nhắn từ Google Play.
+
+### Lỗi \{#errors\}
+
+`Adapty.ShowStoreMessages` có thể thất bại với [`AdaptyError`](error-handling-on-flutter-react-native-unity) kèm theo một trong các mã lỗi sau. Tất cả các mã lỗi này ngoại trừ `WrongParam` chỉ xảy ra trên iOS:
+
+| Code | Tên | Nguyên nhân |
+|:-----|:-----|:------|
+| 2006 | `DecodingFailed` | Thiết bị đang chạy iOS 15 hoặc thấp hơn. Chỉ gọi phương thức này trên iOS 16 trở lên. |
+| 3201 | `OperationInProgress` | Một lệnh gọi `Adapty.ShowStoreMessages` khác vẫn đang hiển thị thông báo, và lệnh gọi này cũng có thông báo cần hiển thị. Hãy chờ lệnh gọi đầu tiên hoàn tất rồi thử lại. |
+| 3202 | `ResolverFailure` | SDK không tìm thấy window scene nào đang hoạt động ở foreground để hiển thị thông báo. Hãy gọi lại phương thức khi ứng dụng đang ở foreground. |
+| 3001 | `WrongParam` | Danh sách bộ lọc chứa `null`. SDK từ chối lệnh gọi trước khi nó được gửi đến cửa hàng. |

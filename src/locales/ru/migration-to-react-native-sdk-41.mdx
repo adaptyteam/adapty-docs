@@ -1,0 +1,126 @@
+---
+title: "Миграция Adapty React Native SDK на v4.1"
+description: "Миграция на Adapty React Native SDK v4.1: явное включение Adapty Attribution, переименованные API внешней атрибуции и обновлённый формат резервного файла."
+metadataTitle: "Миграция на Adapty React Native SDK v4.1 | Документация Adapty"
+---
+
+Adapty React Native SDK 4.1 изменяет способ включения Adapty Attribution, переименовывает API внешней атрибуции и меняет формат резервного файла. Также теперь ваше приложение может перехватывать продвигаемые встроенные покупки App Store, а флаг `hasViewConfiguration` возвращается в `AdaptyFlow`.
+
+:::warning
+Переименованные API — это жёсткий разрыв. Старые имена удалены полностью — никаких устаревших алиасов для совместимости не предусмотрено. Код, который проходил проверку типов на 4.0.x, не скомпилируется на 4.1 до тех пор, пока вы не переименуете каждый из перечисленных ниже вызовов.
+:::
+
+Если вы ещё на версии 3.x, сначала выполните [миграцию на v4.0](migration-to-react-native-sdk-v4), а затем следуйте этому руководству.
+
+## Краткий справочник \{#quick-reference\}
+
+| v4.0 | v4.1 |
+|---|---|
+| Атрибуция Adapty включена автоматически | Атрибуция Adapty отключена по умолчанию; включите с помощью `adaptyAttributionEnabled: true` |
+| `adapty.updateAttribution(attribution, source)` | `adapty.updateExternalAttribution(attribution, provider)` |
+| `AttributionSource` | `AdaptyExternalAttributionProvider`, с новым значением `'custom'` |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+| Резервный файл загружен для версии 4.0 | Новый формат резервного файла; загрузите файл повторно |
+| Встроенные покупки по промоакциям завершаются автоматически, без возможности их перехватить | Событие `'onPromotedPurchaseReceived'` и `adapty.makePromotedPurchase(product)` передают управление завершением покупки в ваше приложение |
+| `hasViewConfiguration` отсутствует в `AdaptyFlow` | `hasViewConfiguration` возвращён в `AdaptyFlow` |
+| iOS-проект интегрирован через CocoaPods | CocoaPods или SPM-интеграция React Native в чистом React Native проекте |
+
+## Установка \{#installation\}
+
+Обновите пакет `react-native-adapty`:
+
+```bash showLineNumbers
+npm install react-native-adapty@latest
+# or
+yarn add react-native-adapty@latest
+```
+
+Системные требования не изменились с версии 4.0: **iOS 15.0** и **React Native 0.75**. Подробнее об установке — в разделе [Установка Adapty SDK](sdk-installation-reactnative).
+
+4.1 также поддерживает интеграцию React Native через SPM, которая заменяет CocoaPods для вашего iOS-проекта и требует **React Native 0.87** или новее. Это касается только чистых React Native-проектов, CocoaPods по-прежнему остаётся вариантом по умолчанию, а переход необязателен — подробнее в разделе [Настройка iOS-проекта](sdk-installation-react-native-pure#set-up-your-ios-project). Если ваше приложение использует [Kids Mode](kids-mode-react-native), каждый менеджер пакетов применяет его по-разному.
+
+## ⚠️ Атрибуция Adapty отключена по умолчанию \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+Если вы обновитесь до SDK 4.1 и не подключите эту функцию явно, [атрибуция Adapty](user-acquisition) перестанет работать без каких-либо предупреждений — установки просто перестанут регистрироваться.
+:::
+
+В версии 4.0 и ранее SDK автоматически регистрировал установки для [Adapty Attribution](user-acquisition). Начиная с версии 4.1, это отключено по умолчанию: SDK не регистрирует установки, события `'onInstallationDetailsSuccess'` и `'onInstallationDetailsFail'` не срабатывают, а `getCurrentInstallationStatus` возвращает статус `not_available`.
+
+Если вы используете Adapty Attribution, включите эту функцию при активации SDK:
+
+```diff showLineNumbers
+  adapty.activate('YOUR_PUBLIC_SDK_KEY', {
++   adaptyAttributionEnabled: true,
+  });
+```
+
+Если вы не используете Adapty Attribution, никаких изменений не требуется.
+
+## Переименованные внешние Attribution API \{#renamed-external-attribution-apis\}
+
+API, которые передают данные атрибуции от внешних провайдеров (Adjust, AppsFlyer, Branch, Tenjin или других), переименованы в соответствии с нативными SDK.
+
+### updateAttribution → updateExternalAttribution
+
+Метод переименован, а его второй параметр переименован с `source` на `provider`. Данные атрибуции по-прежнему передаются как обычный объект:
+
+```diff showLineNumbers
+- await adapty.updateAttribution(attribution, 'adjust');
++ await adapty.updateExternalAttribution(attribution, 'adjust');
+```
+
+### AttributionSource → AdaptyExternalAttributionProvider
+
+Тип провайдера переименован. Это по-прежнему открытый union — предопределённые значения: `'apple_search_ads'`, `'adjust'`, `'appsflyer'`, `'branch'`, `'tenjin'` и новое `'custom'` для провайдеров, с которыми Adapty не интегрируется напрямую. Любая другая строка тоже принимается, так что провайдеры, добавленные Adapty позже, будут работать без обновления SDK:
+
+```diff showLineNumbers
+- import type { AttributionSource } from 'react-native-adapty';
++ import type { AdaptyExternalAttributionProvider } from 'react-native-adapty';
+```
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+Свойство профиля, которое содержит список провайдеров атрибуции, применённых к профилю, переименовано, а тип его элементов изменён соответствующим образом:
+
+```diff showLineNumbers
+- if (profile.appliedAttributionSources?.includes('apple_search_ads')) {
++ if (profile.appliedExternalAttributionProviders?.includes('apple_search_ads')) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+Код, который обращается к этому свойству, нужно обновить — см. [Показ пейвола с таргетингом Apple Ads](react-native-show-aa-targeted-paywall).
+
+## Резервные файлы \{#fallback-files\}
+
+Формат [резервного файла](fallback-flows) изменился в SDK 4.1. Скачайте файл заново в разделе **[Placements](https://app.adapty.io/placements)** > **Fallbacks** и добавьте его в приложение, даже если вы уже скачивали его для версии 4.0.
+
+:::warning
+Этот шаг не вызывает ошибок сборки. Если пропустить его, `setFallback` отклонит устаревший файл и все плейсменты лишатся резервного пейвола.
+:::
+
+## hasViewConfiguration возвращается в AdaptyFlow \{#hasviewconfiguration-returns-to-adaptyflow\}
+
+В версии 4.0 `hasViewConfiguration` был удалён при переименовании `AdaptyPaywall` в `AdaptyFlow`. В версии 4.1 он возвращается в `AdaptyFlow`, так что ветка `hasViewConfiguration` из эпохи v3 снова работает — достаточно переименовать функцию и объект, с которым она работает:
+
+```diff showLineNumbers
+- if (paywall.hasViewConfiguration) {
+-   const view = await createPaywallView(paywall);
++ if (flow.hasViewConfiguration) {
++   const view = await createFlowView(flow);
+    await view.present();
+  }
+```
+
+В версии 4.0, где флаг отсутствует, `createFlowView` выбрасывает `AdaptyError` для флоу без конфигурации представления. Это актуально и в версии 4.1 — флаг является альтернативой обработке исключений, а не заменой. См. [Получение конфигурации представления](react-native-get-pb-paywalls#fetch-the-view-configuration).
+
+## Продвигаемые встроенные покупки в App Store \{#app-store-promoted-in-app-purchases\}
+
+В версии 4.0 [встроенная покупка, продвигаемая на странице продукта в App Store](react-native-making-purchases#in-app-purchases-from-the-app-store), завершалась самостоятельно, Adapty фиксировал транзакцию как обычно, но у приложения не было возможности её перехватить. В версии 4.1 появился соответствующий хук — это новая возможность, а не шаг миграции: если вы не добавляете свой код, SDK по-прежнему самостоятельно завершает продвигаемые покупки.
+
+Напишите собственный код для перехвата завершения покупки — например, чтобы сначала показать экран. Зарегистрируйте слушатель для нового события `'onPromotedPurchaseReceived'` и завершите покупку с помощью `adapty.makePromotedPurchase`. Пока этот слушатель зарегистрирован, SDK перестаёт самостоятельно завершать promoted purchases.
+
+:::warning
+Хук основан на StoreKit 2 и требует **iOS 16.4** или новее. На версиях ниже iOS 16.4 событие никогда не срабатывает, и promoted purchases завершаются так же, как в версии 4.0. Событие также никогда не срабатывает на Android.
+:::

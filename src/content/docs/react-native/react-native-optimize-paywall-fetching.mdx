@@ -1,10 +1,10 @@
 ---
-title: "Optimize paywall fetching in React Native SDK"
-description: "Fetch Adapty paywalls reliably: timing, caching, and fallback patterns for React Native."
-metadataTitle: "Optimize Paywall Fetching | React Native SDK | Adapty Docs"
+title: "Optimize flow & paywall fetching in React Native SDK"
+description: "Fetch Adapty flows and paywalls reliably: timing, caching, and fallback patterns for React Native."
+metadataTitle: "Optimize Flow & Paywall Fetching | React Native SDK | Adapty Docs"
 ---
 
-A reliable paywall fetch on React Native does three things: renders fast, returns the audience-targeted paywall, and falls back gracefully when the network is slow. The rules below cover the timing, caching, and fallback patterns to get there.
+A reliable flow or paywall fetch on React Native does three things: renders fast, returns the audience-targeted variation, and falls back gracefully when the network is slow. The rules below cover the timing, caching, and fallback patterns to get there.
 
 :::tip
 The rules assume `adapty.activate()` and `adapty.identify()` have already resolved. See [Call order in React Native SDK](react-native-sdk-call-order).
@@ -14,17 +14,119 @@ The rules assume `adapty.activate()` and `adapty.identify()` have already resolv
 
 | Do this | Don't do this | Why |
 |---|---|---|
-| Fetch the placement you're about to show.                                                                                  | Prefetch all placements concurrently on launch.        | Bulk prefetch blocks the JS thread and produces a black screen during the burst.                                  |
-| Fetch `getPaywall` after attribution has had a chance to resolve — for example, 1–2 seconds after `activate` or after `onProfileUpdate` fires. | Call `getPaywall` at the root component mount. | Attribution hasn't landed yet. The paywall resolves against the default audience and silently bypasses segments and ASA personalization. |
-| Set a `loadTimeoutMs` and configure a [fallback paywall](fallback-paywalls) for every placement.                             | Wait on `getPaywall` indefinitely.                     | Without a timeout, users on poor connectivity see a blank screen until the network resolves — or close the app.     |
+| Fetch the placement you're about to show, or warm the cache with [`preloadFlows`](#preload-placements) (SDK 4.3.0+). | Fan out your own concurrent `getFlow` calls on launch. | A hand-rolled prefetch burst blocks the JS thread and produces a black screen. `preloadFlows` is built for this and sends the batch to the native SDK in one call. |
+| Fetch `getFlow` after attribution has had a chance to resolve — for example, 1–2 seconds after `activate` or after `onLatestProfileLoad` fires. | Call `getFlow` at the root component mount. | Attribution hasn't landed yet. The flow resolves against the default audience and silently bypasses segments and ASA personalization. |
+| Keep the default `loadTimeoutMs` of 5000 milliseconds or set another value, and configure a [fallback paywall](fallback-paywalls) for every placement. | Pass `getFlow` a `loadTimeoutMs` so large that it never fires. | If the timeout never fires, users on poor connectivity see a blank screen until the network resolves — or close the app. |
 
-See [Fetch paywalls and products](fetch-paywalls-and-products-react-native) for the `fetchPolicy` and `loadTimeoutMs` parameter reference, and [Placements](placements) for picking the right placement.
+See [Fetch custom paywalls and products](fetch-paywalls-and-products-react-native) for the `fetchPolicy` and `loadTimeoutMs` parameter reference, and [Placements](placements) for picking the right placement.
+
+## Preload placements
+
+:::info
+`preloadFlows` and `preloadFlowsForDefaultAudience` are available starting from SDK version 4.3.0.
+:::
+
+`preloadFlows` caches the flow JSON ahead of time — one request per placement. You then use it as usual: `getFlow` for the flow, `createFlowView` for its view.
+
+`fetchPolicy` decides which layer a later `getFlow` reads first, not whether it can reach the cache at all:
+
+- `'return_cache_data_else_load'` reads the preloaded copy first and goes to the network only when nothing is cached. `'return_cache_data_if_not_expired_else_load'` does the same while the copy is younger than `maxAgeSeconds`.
+- The default, `'reload_revalidating_cache_data'`, goes to the network first and falls back to the preloaded copy when the request fails or times out.
+
+A preload pays off either way, but differently: a cache-first policy removes the request, while the default keeps it and gains a warm copy to fall back on.
+
+Use it when you know which placements the session will need but don't want to show them yet — for example, right after `activate` and `identify` resolve, for the flow behind a button the user hasn't tapped.
+
+```typescript showLineNumbers
+try {
+  await adapty.preloadFlows(['onboarding', 'main_paywall'], {
+    loadTimeoutMs: 5000,
+  });
+} catch (error) {
+  // at least one placement failed to preload
+}
+
+// Later, when the user reaches the paywall:
+const flow = await adapty.getFlow('main_paywall', {
+  fetchPolicy: 'return_cache_data_else_load',
+});
+```
+
+**Parameters:**
+
+- `placementIds` (required): the placements to preload.
+- `loadTimeoutMs` (optional): the timeout in milliseconds. Defaults to 5000, and values below 1000 are raised to 1000. On iOS, the timeout applies to the whole batch; on Android, to each placement.
+
+**Behavior worth knowing:**
+
+- The promise rejects only after every placement has been attempted, and the error aggregates the per-placement failures. A failure for one placement doesn't stop the others, and the placements that loaded stay in the cache.
+- If a placement times out or fails with a network error, the SDK falls back to the default-audience variation for that placement. Other failures are reported as-is.
+- Preloading only warms the cache. It doesn't return content — you still call `getFlow` to display it.
+
+### What a preload covers
+
+A flow reaches the screen in layers. A preload covers the first, exactly as `getFlow` does:
+
+| Layer | Fetched by | Warmed by a preload |
+|---|---|---|
+| Flow JSON — the chosen variation, its product IDs, and the remote config | `getFlow` | Yes |
+| UI layout — the screen's structure, styling, and text | `createFlowView` | No |
+| Images, including the still frame that stands in for a video element | `createFlowView`, in the background | No |
+| Video files | The system player, as the screen renders | Not cached by the SDK |
+
+`createFlowView` looks for the layout in three places, in this order:
+
+1. The disk cache of the native SDK, which survives app restarts.
+2. Your [fallback file](react-native-use-fallback-paywalls) for SDK 4.4 or later, if you downloaded it after you last published the flow.
+3. Adapty, over the network. This costs a round trip, even after a preload. The first time the app shows each published version of the flow, the native SDK makes this request. Then it saves the layout to the disk cache.
+
+When the `loadTimeoutMs` of `createFlowView` fires, the native SDK doesn't fall back: it requests the layout again from the Adapty API. `loadTimeoutMs` doesn't limit that second request.
+
+### Skip audience segmentation
+
+To warm the cache without waiting for audience segmentation at all, use the default-audience variant. It takes no timeout:
+
+```typescript showLineNumbers
+await adapty.preloadFlowsForDefaultAudience(['main_paywall']);
+```
+
+## Show first-screen media from the app bundle
+
+A flow downloads its images and videos from Adapty. To show the first screen's media instantly, serve it from the app bundle instead. This is a good way to reuse media you already ship, such as the visuals of an existing native onboarding.
+
+1. In the Flow & Paywall Builder, set a [custom media ID](custom-media#custom-media-id) on the image or video. The file you upload there stays as the fallback.
+2. Add the file to the native projects: the iOS app bundle and the Android `assets` folder.
+3. When you create the flow view, pass the bundled file for that ID in `customAssets`:
+
+```typescript showLineNumbers
+// "welcome_video" is the custom media ID set in the Flow & Paywall Builder
+const bundledAssets: Record<string, AdaptyCustomAsset> = {
+  'welcome_video': {
+    type: 'video',
+    fileLocation: {
+      ios: { fileName: 'welcome.mp4' },
+      android: { relativeAssetPath: 'videos/welcome.mp4' },
+    },
+  },
+};
+
+const view = await createFlowView(flow, { customAssets: bundledAssets });
+```
+
+Bundled files add to your app's download size, so bundle only the media users see first.
+
+A bundled image appears without a wait, but the native SDK still downloads the uploaded image in the background.
+
+Media you don't bundle still appears right away: the flow's layout includes a small low-resolution copy of each image, including a video's still frame, and shows it until the full file loads.
+
+For the full `customAssets` reference, see [Customize assets](react-native-get-pb-paywalls#customize-assets).
 
 ## Tune for poor connectivity
 
 For markets with consistently poor connectivity (rural areas, transit, regions affected by routing):
 
-- Set `fetchPolicy: .returnCacheDataElseLoad` on every fetch except the very first.
+- Set `fetchPolicy: 'return_cache_data_else_load'` on every fetch except the very first.
 - Configure a [fallback paywall](fallback-paywalls) for every placement in the Adapty dashboard.
-- Set `loadTimeoutMs` to 3–5 seconds and accept the fallback when the timeout fires.
-- Don't gate paywall display on `getProfile()`. Call `getPaywall` independently so a slow profile doesn't block the UI.
+- Balance `loadTimeoutMs` between speed and targeting. With a shorter timeout, users see the fallback sooner. With a longer timeout, the targeted flow has more time to load.
+- [Keep the flow light](flow-size), so its layout downloads sooner.
+- Don't gate flow display on `getProfile()`. Call `getFlow` independently so a slow profile doesn't block the UI.

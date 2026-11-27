@@ -1,0 +1,61 @@
+---
+title: "Show an AA-targeted paywall on first launch in Kotlin Multiplatform SDK"
+description: "Wait for Apple Ads attribution before requesting the paywall in Kotlin Multiplatform using AdaptyProfile.appliedAttributionSources."
+metadataTitle: "Show AA-targeted paywall on first launch | Kotlin Multiplatform SDK | Adapty Docs"
+---
+
+This article applies to the iOS build of your app. Apple Ads attribution exists on iOS only.
+
+Apple Ads (AA) attribution arrives asynchronously after `Adapty.activate()`. If you call `getFlow` early, attribution often hasn't landed yet and Adapty resolves the placement against the default audience — bypassing your AA-segmented paywalls. `AdaptyProfile.appliedAttributionSources` lets the app detect when AA attribution has been applied to the profile, so the paywall request can wait until AA segmentation will resolve correctly.
+
+:::important
+This property only reports Apple Ads. Attribution from other providers is visible on user profiles and available in segment filters, but not yet here.
+:::
+
+## Before you start
+
+You need:
+- Adapty Kotlin Multiplatform SDK **4.0** or later.
+- Apple Ads configured for the app in Adapty. See [Apple Ads](apple-search-ads).
+
+:::note
+The examples use the API names from SDK 4.0. On SDK 3.x, paywalls are fetched with `getPaywall`/`getPaywallForDefaultAudience`, which return an `AdaptyPaywall`. See [Migrate Adapty Kotlin Multiplatform SDK to v4](migration-to-kmp-sdk-v4).
+:::
+
+## How it works
+
+After `Adapty.activate()`, the SDK requests Apple Ads attribution from Apple in the background and forwards the result to Adapty's backend. When AA becomes the active attribution source for the profile, the SDK delivers an updated `AdaptyProfile` to your `OnProfileUpdatedListener`, with `"apple_search_ads"` in its `appliedAttributionSources` list.
+
+An empty list can mean any of:
+
+- Apple Ads attribution hasn't been processed yet for this profile.
+- No attribution has arrived at all.
+- Attribution arrived from another provider, which this list doesn't report.
+
+Even with an empty list, `getFlow` is still safe to call — Adapty resolves the request against whichever audience matches the current profile state, typically the default audience.
+
+:::important
+The wait only applies to **first launch**. Once Apple Ads attribution has been recorded, it's stored on the profile permanently. On every subsequent launch, the cached profile already carries `"apple_search_ads"` in `appliedAttributionSources`, the listener fires with that value immediately, and `getFlow` returns the Apple-Ads-segmented paywall without any delay.
+:::
+
+## Implementation
+
+On first launch, watch for `"apple_search_ads"` in the profile and apply a hard timeout — if the Apple Ads attribution never arrives, those users still need to see a paywall.
+
+1. **Activate the SDK.** See [Install & configure the Kotlin Multiplatform SDK](sdk-installation-kotlin-multiplatform).
+2. **Subscribe to profile updates** with `Adapty.setOnProfileUpdatedListener`. If you haven't set up the listener yet, see [Listen to subscription updates](kmp-check-subscription-status#listen-to-subscription-updates).
+3. **Watch for `"apple_search_ads"` in `appliedAttributionSources`.** When it appears, request the paywall — Adapty will return the AA-segmented variant:
+
+```kotlin
+Adapty.setOnProfileUpdatedListener { profile ->
+    if ("apple_search_ads" in profile.appliedAttributionSources) {
+        // load the paywall via Adapty.getFlow(placementId)
+    }
+}
+```
+
+4. **Start a 3–5 second timer in parallel with the subscription.** If the timer fires before `"apple_search_ads"` appears, request the default-audience paywall with `getFlowForDefaultAudience` instead. It returns the paywall without waiting for segmentation.
+
+Whichever path fires first should load the paywall; the other path should be skipped. Use a single state flag (for example, `hasLoadedPaywall`) to deduplicate so the paywall isn't fetched twice. Configure a [fallback paywall](kmp-use-fallback-paywalls) for the placement so the user is never stuck if the network request fails.
+
+`setOnProfileUpdatedListener` accepts one listener. If your app already uses it for other purposes (for example, [listening to subscription updates](kmp-check-subscription-status#listen-to-subscription-updates)), add the check to the existing listener instead of registering a second one.

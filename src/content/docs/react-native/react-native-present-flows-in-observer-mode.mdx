@@ -1,36 +1,27 @@
 ---
 title: "Present flows in Observer mode - React Native"
-description: "Present flows and Paywall Builder paywalls in Observer mode in your React Native app while handling purchases with your own code."
+description: "Present flows in Observer mode in your React Native app while handling purchases with your own code."
 metadataTitle: "Present flows in Observer mode - React Native | Adapty Docs"
 ---
 
-If you've customized a flow or paywall using the builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a flow or paywall contains both what should be shown and how it should be shown.
+If you use [Observer mode](observer-vs-full-mode), you are responsible for your own purchase logic. But you can delegate the paywall UI to the [Flow & Paywall Builder](adapty-flow-builder).
 
-:::warning
-This section refers to [Observer mode](observer-vs-full-mode) only. If you do not work in the Observer mode, refer to the [Display flows & paywalls](react-native-present-paywalls) topic.
-:::
+Design the screen in the builder, and the Adapty SDK renders it natively. Update its copy, layout, and pricing whenever you want, without an app release.
 
-:::info
-This capability requires Adapty React Native SDK 4.0 or later — previously it was available only in the native iOS and Android SDKs. See the [migration guide](migration-to-react-native-sdk-v4) to upgrade.
-:::
+This guide shows how to present a flow and handle the purchase callbacks. If Adapty completes purchases for you, see [Display flows & paywalls](react-native-present-paywalls) instead.
 
-:::tip
-Build the flow itself in [the Flow Builder](adapty-flow-builder).
-:::
+## Before you start
 
-<details>
-   <summary>Before you start presenting flows (Click to Expand)</summary>
+You need:
 
-   1. Set up initial integration of Adapty [with the App Store](initial_ios) and [with Google Play](initial-android).
-   2. Install and configure Adapty SDK. Make sure to set the `observerMode` parameter to `true`. Refer to the [React Native SDK installation guide](sdk-installation-reactnative).
-   3. [Create products](create-product) in the Adapty Dashboard.
-   4. [Configure flows or paywalls in the builders](create-paywall) and assign products to them.
-   5. [Create placements and assign your flows or paywalls to them](create-placement).
-   6. [Fetch flows and their configuration](react-native-get-pb-paywalls) in your mobile app code.
+- **Adapty React Native SDK 4.0 or later**: Earlier versions can't render flows. On Android, use 4.4.0 or later: earlier versions may not link reported purchases to the flow. To move an existing app, see the [migration guide](migration-to-react-native-sdk-v4).
+- **`observerMode` set to `true`**: See the [React Native SDK installation guide](sdk-installation-reactnative).
+- **Initial store integration**: Set up Adapty [with the App Store](initial_ios) and [with Google Play](initial-android).
+- **A published flow with products**: Build it in the [Flow & Paywall Builder](adapty-flow-builder) and assign [products](create-product) to it.
+- **A flow placement**: [Create a placement](create-placement) and assign your flow to it.
+- **The flow fetched in your app**: [Get the flow and its configuration](react-native-get-pb-paywalls) before you present it.
 
-</details>
-
-In Observer mode, the SDK does not make purchases for you. When a user taps the purchase or restore button in an Adapty-rendered flow or paywall, the SDK invokes your `onObserverPurchaseInitiated` or `onObserverRestoreInitiated` event handler instead — perform the purchase or restore with your own code there.
+In Observer mode, the SDK does not make purchases for you. When a user taps the purchase or restore button in an Adapty-rendered flow, the SDK invokes your `onObserverPurchaseInitiated` or `onObserverRestoreInitiated` event handler instead — perform the purchase or restore with your own code there.
 
 ## Set the observer-mode event handlers
 
@@ -52,9 +43,9 @@ function MyFlow({ flow }) {
   >((product, onStartPurchase, onFinishPurchase) => {
     onStartPurchase(); // the flow shows its loading indicator
     myPurchaseApi(product.vendorProductId)
-      .then((transactionId) => adapty.reportTransaction(transactionId, flow.variationId))
+      .then((transactionId) => adapty.reportTransaction(transactionId, product.variationId))
       .finally(() => onFinishPurchase()); // the flow hides the loading indicator
-  }, [flow]);
+  }, []);
 
   const onObserverRestoreInitiated = useCallback<
     FlowEventHandlers['onObserverRestoreInitiated']
@@ -75,7 +66,7 @@ function MyFlow({ flow }) {
 ```
 
 :::note
-In the embedded component, the value a handler returns does not close the flow — unmount the component yourself after a successful purchase or restore.
+In the embedded component, the value a handler returns does not close the flow. Unmount the component yourself once a purchase or a purchase restoration succeeds.
 :::
 
 </TabItem>
@@ -92,9 +83,9 @@ const unsubscribe = view.setEventHandlers({
   onObserverPurchaseInitiated(product, onStartPurchase, onFinishPurchase) {
     onStartPurchase(); // the flow shows its loading indicator
     myPurchaseApi(product.vendorProductId)
-      .then((transactionId) => adapty.reportTransaction(transactionId, flow.variationId))
+      .then((transactionId) => adapty.reportTransaction(transactionId, product.variationId))
       .finally(() => onFinishPurchase()); // the flow hides the loading indicator
-    return false; // keep the flow open; dismiss it yourself after success
+    return false; // keep the flow open; dismiss it yourself after success, or let the flow continue
   },
   onObserverRestoreInitiated(onStartRestore, onFinishRestore) {
     onStartRestore();
@@ -118,10 +109,12 @@ Also, remember to invoke the following callbacks to notify AdaptyUI about the pr
 | onStartRestore()   | The callback should be invoked to notify AdaptyUI that the restore is started.   |
 | onFinishRestore()  | The callback should be invoked to notify AdaptyUI that the restore is finished.  |
 
+After `onFinishPurchase()`, the flow runs the same [outcome actions](respond-to-purchase-outcomes#add-actions-for-a-result) whatever happened, a canceled purchase included: the **When pending** actions on iOS and the **When succeeded** actions on Android. Show any screen that depends on the purchase result, such as a thank-you screen, from your code: only your code knows the result. After `onFinishRestore()`, the flow runs the **When restore completed** actions, whatever happened.
+
 ## Present the flow
 
 Present the flow as usual: [fetch the flow and create its view](react-native-get-pb-paywalls), then [present it](react-native-present-paywalls). No extra parameters are needed — the handlers fire only when the SDK was activated with `observerMode: true`.
 
 :::warning
-Don't forget to [report the transaction and associate it with the paywall](report-transactions-observer-mode-react-native). Otherwise, Adapty will not recognize the transaction and will not determine the source paywall of the purchase.
+Don't forget to [report the transaction and associate it with the paywall](report-transactions-observer-mode-react-native). Otherwise, Adapty will not recognize the transaction and will not determine the source paywall of the purchase. Pass the `variationId` of the `AdaptyPaywallProduct` the user bought, not `AdaptyFlow.variationId`: a flow's own variation ID doesn't link the purchase to the flow.
 :::

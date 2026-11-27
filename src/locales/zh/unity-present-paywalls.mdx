@@ -1,34 +1,32 @@
 ---
 title: "展示流程与付费墙 - Unity"
-description: "在 Unity 应用中向用户呈现流程和付费墙。"
+description: "在 Unity 应用中向用户展示流程和付费墙。"
 metadataTitle: "展示流程与付费墙 - Unity | Adapty 文档"
 customSlug: /unity-present-paywalls
 displayed_sidebar: sdkunity
 ---
 
-import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md'; 
-
 <SDKv4>
 
-<MethodPromo method="GetFlow" label="展示流程和付费墙" />
+<MethodPromo method="GetFlow" label="展示流程与付费墙" />
 
-如果您已创建了流程或付费墙，无需在移动应用代码中手动处理渲染逻辑来向用户展示它。此类流程或付费墙本身已包含展示内容及展示方式的完整定义。
+如果你已经创建了流程或使用旧版付费墙编辑工具创建了付费墙，则无需在移动应用代码中手动处理其渲染逻辑来向用户展示。这类流程或付费墙本身已包含展示内容及展示方式的完整定义。
 
 :::warning
 
-本指南适用于由 Adapty 渲染的流程以及**新版付费墙编辑工具付费墙**。远程配置付费墙和 [Observer 模式](observer-vs-full-mode)的处理方式有所不同。
+本指南介绍由 Adapty 渲染的流程和付费墙。自定义付费墙和 [Observer 模式](observer-vs-full-mode) 的处理方式有所不同。
 
-- 如需展示**远程配置付费墙**，请参阅[展示远程配置设计的付费墙](present-remote-config-paywalls-unity)。
-- 如需在**观察者模式**下展示流程，请参阅[在观察者模式下展示流程](unity-present-flows-in-observer-mode)。
+- 要展示自定义付费墙，请参阅[展示自定义付费墙](present-remote-config-paywalls-unity)。
+- 要在 **Observer mode** 下展示流程，请参阅[在 Observer mode 下展示流程](unity-present-flows-in-observer-mode)。
 
 :::
 
-如需获取下面使用的 `view` 对象，请参阅[获取流程与付费墙](unity-get-pb-paywalls)。
+如需获取下方使用的 `view` 对象，请参阅[获取流程与付费墙](unity-get-pb-paywalls)。
 
-使用 [`CreateFlowView`](unity-get-pb-paywalls#fetch-the-view-configuration) 方法创建的 `view`，调用 `view.Present()` 方法来展示流程或付费墙。每个 `view` 只能使用一次：已关闭的 `view` 会被销毁。如需再次展示流程，请重新调用 `CreateFlowView` 创建新的 `view` 实例。
+要显示流程或付费墙，请对由 [`CreateFlowView`](unity-get-pb-paywalls#fetch-the-view-configuration) 方法创建的 `view` 调用 `view.Present()` 方法。默认情况下，关闭的视图会被销毁。若要再次显示该流程，请再次调用 `CreateFlowView` 创建新的 `view` 实例，或在关闭时[保留该视图](#keep-the-view-to-present-it-again)。
 
 :::warning
-不重新创建而直接复用同一个 `view` 可能会导致错误。
+重复使用已销毁的 `view` 会导致错误。
 :::
 
 ```csharp showLineNumbers title="Unity"
@@ -38,6 +36,64 @@ view.Present((error) => {
 ```
 
 <SampleApp />
+
+## 保存视图以便再次呈现 \{#keep-the-view-to-present-it-again\}
+
+:::info
+保存视图功能从 SDK 4.3.0 版本开始支持。
+:::
+
+`view.Dismiss()` 会将视图从内存中释放。如果想保留视图，请将 `false` 作为 `destroy` 参数传入：
+
+```csharp showLineNumbers title="Unity"
+view.Dismiss(false, (error) => {
+    // handle the error
+});
+```
+
+再次呈现该视图时，用户会回到离开时的界面，流程已积累的状态也会完整保留。视图的 `Id` 保持不变，因此其事件仍会以相同的 `view.Id` 传递给你的监听器。
+
+保留的视图会一直占用内存，直到你主动释放它。当不再需要时，调用 `view.Destroy()`：
+
+```csharp showLineNumbers title="Unity"
+view.Destroy((error) => {
+    // handle the error
+});
+```
+
+`Destroy()` 会先关闭仍在屏幕上显示的视图，再释放它。它同样适用于已创建但从未展示的视图，以及用户在 iOS 上向下滑动关闭的页面弹出式视图。不要在常规 `Dismiss()` 之后调用它：该视图已经被释放，再次调用会失败。
+
+当用户点击 **Close** 按钮时，如需保留视图而不销毁它，请在 [`Close` 动作处理器](unity-handle-paywall-actions#close-flows-and-paywalls)中使用 `destroy: false` 来关闭它。`FlowViewDidPerformAction` 方法会在应用中所有流程和付费墙上触发，因此需要通过对比 `view.Id` 来确定哪个视图是你打算再次展示的。在创建视图时将其存入一个字段，以便后续进行对比并重新展示：
+
+```csharp showLineNumbers title="Unity"
+private AdaptyUIFlowView keptView;
+
+void CreateKeptView(AdaptyFlow flow) {
+    AdaptyUI.CreateFlowView(flow, new AdaptyUICreateFlowViewParameters(), (view, error) => {
+        if (error != null) {
+            // handle the error
+            return;
+        }
+        keptView = view;
+    });
+}
+
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Close:
+            view.Dismiss(view.Id != keptView?.Id, null);
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+保留好 `view`：你需要用它再次呈现流程或付费墙，并通过 `Destroy()` 释放它。调用 `keptView.Destroy()` 后，将 `keptView` 置为 `null`，这样上面的比较就不会匹配到已释放的视图。任何其他 `view.Dismiss()` 调用也会释放视图，包括 [`FlowViewDidReceiveError`](unity-handling-events#rendering-and-runtime-errors) 中的调用。视图出错后，请使用 `CreateFlowView` 创建新视图。
 
 ## 显示对话框 \{#show-dialog\}
 
@@ -65,7 +121,7 @@ AdaptyUI.ShowDialog(view, dialog, (action, error) => {
 
 ## 配置 iOS 呈现样式 \{#configure-ios-presentation-style\}
 
-通过向 `Present()` 方法传递 `iosPresentationStyle` 参数，可以配置流程或付费墙在 iOS 上的呈现方式。该参数接受 `AdaptyUIIOSPresentationStyle.FullScreen`（默认值）或 `AdaptyUIIOSPresentationStyle.PageSheet` 两个值。
+通过向 `Present()` 方法传递 `iosPresentationStyle` 参数，可以配置流程或付费墙在 iOS 上的呈现方式。该参数接受 `AdaptyUIIOSPresentationStyle.FullScreen`（默认值）或 `AdaptyUIIOSPresentationStyle.PageSheet`。
 
 ```csharp showLineNumbers title="Unity"
 view.Present(AdaptyUIIOSPresentationStyle.PageSheet, (error) => {
@@ -73,21 +129,23 @@ view.Present(AdaptyUIIOSPresentationStyle.PageSheet, (error) => {
 });
 ```
 
+用户可以通过向下滑动页面来关闭它。关闭后，视图仍保留在内存中，不会调用 `Dismiss()`：可以再次显示，或者在 SDK 4.3.0 及更高版本中，使用 [`Destroy()`](#keep-the-view-to-present-it-again) 释放它。
+
 </SDKv4>
 
 <SDKv3>
 
-如果您已使用付费墙编辑工具自定义了付费墙，则无需在移动应用代码中手动渲染即可将其展示给用户。此类付费墙已同时包含展示内容与展示方式。
+如果你使用付费墙编辑工具自定义了付费墙，则无需在移动应用代码中手动处理其渲染逻辑来向用户展示它。这类付费墙已包含展示内容和展示方式的完整配置。
 
 :::warning
 
-本指南适用于**新版付费墙编辑工具**，需要 Adapty SDK 3.3.0 或更高版本。
+本指南适用于**旧版付费墙编辑工具**，需要 Adapty SDK 3.3.0 或更高版本。
 
-如需展示使用远程配置设计的付费墙，请参阅[渲染使用远程配置设计的付费墙](present-remote-config-paywalls)。
+要展示自定义付费墙，请参阅[展示自定义付费墙](present-remote-config-paywalls-unity)。
 
 :::
 
-要显示付费墙，请对由 [`CreatePaywallView`](unity-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) 方法创建的 `view` 调用 `view.Present()` 方法。每个 `view` 只能使用一次。如需再次显示付费墙，请重新调用 `CreatePaywallView` 以创建新的 `view` 实例。
+要展示付费墙，请在由 [`CreatePaywallView`](unity-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) 方法创建的 `view` 上调用 `view.Present()` 方法。每个 `view` 只能使用一次。如果需要再次展示付费墙，请再次调用 `CreatePaywallView` 创建一个新的 `view` 实例。
 
 :::warning
 

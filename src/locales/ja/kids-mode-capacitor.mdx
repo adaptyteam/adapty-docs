@@ -58,9 +58,15 @@ try {
 
 <SDKv4>
 
-IDFAの収集をコード上で無効にしていても（上記参照）、ビルドには`AdSupport`および`AppTrackingTransparency`フレームワークが含まれたままになります。App StoreのKidsカテゴリではこれらのフレームワークは許可されていません。また、v4 SDKはネイティブのiOS SDKをSwift Package Manager経由でインストールするため、Podfileでこれらを除外するステップが存在しません。
+コード上でIDFAの収集を無効にしていても（上記参照）、ビルドには`AdSupport`および`AppTrackingTransparency`フレームワークが含まれたままです。App StoreのKidsカテゴリではこれらのフレームワークは使用できません。
 
-Appleの要件に準拠するには、SDKに同梱されている`adapty-kids-mode`コマンドをアプリの`postinstall`に追加してください。これにより、SDKの`KidsMode`トレイトが有効になり、該当コードがコンパイル時に除外されます。このコマンドはインストールのたびに再適用されます。
+Appleの要件に準拠するには、ネイティブiOS SDKをKidsモードでビルドしてください。これにより、IDFA、AdSupport、AppTrackingTransparencyに関するコードがすべてコンパイル時に除外されます。有効にする方法は、iOSプロジェクトのパッケージマネージャーによって異なります。詳細は[iOSプロジェクトのセットアップ](sdk-installation-capacitor#set-up-your-ios-project)を参照してください。
+
+<Tabs groupId="ios-package-manager" queryString>
+
+<TabItem value="spm" label="Swift Package Manager" default>
+
+SDKに同梱されている `adapty-kids-mode` コマンドをアプリの `postinstall` に追加してください。これにより、SDKの `KidsMode` トレイトが有効になります。このコマンドはインストールのたびに再適用されます。
 
 ```json showLineNumbers title="package.json"
 {
@@ -70,25 +76,65 @@ Appleの要件に準拠するには、SDKに同梱されている`adapty-kids-mo
 }
 ```
 
-その後、iOS パッケージを再インストール・再解決し、**Xcode 26** 以降でビルドします：
+次に、iOSパッケージを再インストール・再解決し、**Xcode 26** 以降でビルドしてください。
 
 ```sh showLineNumbers title="Shell"
 npm install
 npx cap sync ios
 ```
 
-Kids Mode を無効にするには、`adapty-kids-mode disable` を実行して再度同期してください。
+キッズモードをオフにするには、`postinstall` から `adapty-kids-mode` を削除するか `adapty-kids-mode disable` に変更し、`npx adapty-kids-mode disable` を実行してから再度同期してください。そうしないと、次回の `npm install` 時にキッズモードが再び有効になります。
+
+:::note
+SDK 4.2.0 以降では、`adapty-kids-mode` は iOS プロジェクトが見つからない場合や、Podfile がコマンドと一致しない場合（`enable` を指定しているのに Podfile に `adapty_enable_kids_mode` の呼び出しがない、または `disable` を指定しているのに呼び出しが残っている）、インストールを失敗させずに警告を出力します。警告を表示しないようにするには、`--no-warnings` を渡すか、`ADAPTY_KIDS_MODE_NO_WARNINGS=1` を設定してください。インストール元のディレクトリとは別の場所にアプリがある場合は、`--app-root=path/to/app` を渡してください。
+:::
+
+</TabItem>
+
+<TabItem value="cocoapods" label="CocoaPods">
+
+このオプションを使用するには、SDK 4.2.0以降と、[iOSプロジェクトのセットアップ](sdk-installation-capacitor#set-up-your-ios-project)で提供されているAdapty Podfileヘルパーが必要です。`ios/App/Podfile`の`post_install`ブロック内で`adapty_enable_kids_mode`を呼び出してください：
+
+```ruby showLineNumbers title="ios/App/Podfile" {3}
+post_install do |installer|
+  assertDeploymentTarget(installer)
+  adapty_enable_kids_mode(installer)
+end
+```
+
+ヘルパーは `Adapty` pod に `KidsMode` コンパイル条件を追加し、AdSupport フレームワークのリンクを解除します。これは `post_install` でのみ動作します。`post_integrate` では変更が保存されません。プロジェクト内の別の pod が AdSupport をリンクしている場合、フレームワークがビルドに残ってしまうため `pod install` が失敗します。
+
+次に iOS プロジェクトを同期します：
+
+```sh showLineNumbers title="Shell"
+npx cap sync ios
+```
+
+キッズモードをオフにするには、`adapty_enable_kids_mode` の行を削除して再度同期してください。
+
+</TabItem>
+
+</Tabs>
+
+キッズモードが有効になっているかを確認するには、アクティベーションログの行を確認してください。ネイティブSDKは、`activate`に渡す`logLevel`を適用する前に`verbose`レベルでこのログを書き込むため、アクティベーションの前にログレベルを設定してください：
+
+```typescript showLineNumbers
+await adapty.setLogLevel({ logLevel: 'verbose' });
+await adapty.activate({ apiKey: 'YOUR_PUBLIC_SDK_KEY' });
+```
+
+Xcodeコンソールでは、`Calling Adapty activate`の行にパラメーターの1つとして`"kids_mode_enabled": true`が表示されます。
 
 </SDKv4>
 
 <SDKv3>
 
-iOS に CocoaPods を使用している場合は、ネイティブレベルで Kids Mode を有効にすることもできます：
+iOSにCocoaPodsを使用している場合は、ネイティブレベルでキッズモードを有効にすることもできます：
 
-1. Podfile を更新します：
+1. Podfileを更新してください：
 
-- **`post_install` セクションがない**場合は、以下のコードブロック全体を追加してください。
-   - **`post_install` セクションがある**場合は、ハイライトされた行をそのセクションにマージしてください。
+   - `post_install` セクションが**ない**場合は、以下のコードブロック全体を追加してください。
+   - `post_install` セクションが**ある**場合は、ハイライトされた行をその中にマージしてください。
 
    ```ruby showLineNumbers title="Podfile"
    def adapty_enable_kids_mode(installer)

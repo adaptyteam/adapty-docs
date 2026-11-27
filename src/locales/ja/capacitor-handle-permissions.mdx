@@ -1,0 +1,81 @@
+---
+title: "フローでの権限リクエストの処理 - Capacitor"
+description: "onRequestPermission ハンドラーを使用して、Capacitor アプリのフローからプッシュ通知の権限をユーザーにリクエストし、その回答をフローに返します。"
+metadataTitle: "フローの権限処理 - Capacitor | Adapty ドキュメント"
+---
+
+[フロー](adapty-flow-builder)は、**Request permission** アクションを使って、ユーザーにプッシュ通知の送信許可を求めることができます。たとえば、通知の目的を説明するオンボーディング画面などで利用できます。Adapty SDK 自体がシステムの許可ダイアログを表示するわけではありません。リクエストはアプリ内の `onRequestPermission` ハンドラーに渡されます。アプリがダイアログを表示し、ユーザーの回答を返すと、フローが続行されます。
+
+## 始める前に \{#before-you-start\}
+
+必要なもの:
+
+- **Adapty Capacitor SDK 4.1.0 以降**: バージョン 4.1.0 は `onRequestPermission` ハンドラーを含む最初の安定版リリースです。
+- **Request permission アクションを含むフロー**: フロー & ペイウォールビルダーで、要素の **On Tap** または **On Screen Appear** トリガーに **Request permission** アクションを追加します。**After response** セクションに、ユーザーが回答した後に実行するアクション（**Navigate Next** など）を追加します。アクションの設定については、[Request permission](onboarding-actions#request-permission) を参照してください。
+- **通知ダイアログを表示するライブラリ**: この例では [`@capacitor/push-notifications`](https://capacitorjs.com/docs/apis/push-notifications) プラグインを使用しています。ダイアログを表示できるプラグインであれば他のものでも問題ありません。
+- **Android マニフェストの `POST_NOTIFICATIONS` パーミッションと `targetSdk` 33 以降**: Android 13 以降では、パーミッションを宣言し Android 13 以降をターゲットにしているアプリにのみ通知パーミッションダイアログが表示されます。
+
+  ```xml title="android/app/src/main/AndroidManifest.xml"
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  ```
+
+## フローが権限をリクエストする仕組み \{#how-the-flow-requests-a-permission\}
+
+1. フローが **Request permission** アクションに到達します（ユーザーが要素をタップするか、画面が表示されたとき）。
+2. Adapty SDK が `push` 権限とともにあなたの `onRequestPermission` ハンドラーを呼び出します。
+3. アプリがシステムダイアログを表示し、ハンドラーのプロミスを `{ status: 'granted' }` または `{ status: 'denied' }` に解決します。
+4. フローが **After response** アクションを実行します。どちらの回答でも同じアクションが実行されます。
+
+フローは、ハンドラーのPromiseが解決されるまでそのスクリーンで待機します。Promiseが解決されない場合、フローはそのスクリーンに留まります。たとえばユーザーがすでに回答済みの場合など、OSがダイアログを表示しないときは、`PushNotifications.requestPermissions()` が現在のステータスをすぐに返し、フローは **After response** アクションをすぐに実行します。Android 12以前では、アプリに通知のランタイム権限が不要なため、プラグインはダイアログなしで `granted` を返します。**After response** アクションがスクリーンを離れる場合、ユーザーは権限をリクエストするスクリーンを一瞬だけ目にします。
+
+**On Screen Appear**では、ユーザーが**Navigate back**アクションで画面に戻ってきたときに、フローはリクエストを再送しません。**On Tap**では、タップのたびに新しいリクエストが送信されますが、リクエストが回答待ちの間のタップは例外です。
+
+## ハンドラーを実装する \{#implement-the-handler\}
+
+`onRequestPermission` ハンドラーは非同期です。ユーザーの回答を含むオブジェクトに解決される Promise を返します。
+
+```typescript showLineNumbers title="permissions.ts"
+
+export const onRequestPermission: FlowEventHandlers['onRequestPermission'] = async (permission) => {
+  if (permission !== 'push') {
+    // Answer every request: the flow waits on the screen until it gets the answer.
+    return { status: 'denied' };
+  }
+
+  // Shows the system dialog, or returns the current status without showing it.
+  const { receive } = await PushNotifications.requestPermissions();
+  return { status: receive === 'granted' ? 'granted' : 'denied' };
+};
+```
+
+`onRequestPermission` が受け取る引数:
+
+- **`permission`**: フローがリクエストするパーミッション。**Request permission** アクションは `push` を送信します。それ以外の値の場合は `denied` を返し、フローを継続させます。
+- **`customArgs`**: リクエストのカスタム引数。**Request permission** アクションは何も送信しないため、オブジェクトは空になります。
+
+ユーザーが通知を許可した場合にのみ、プロミスを `{ status: 'granted' }` に解決してください。ハンドラーがエラーをスローするか、プロミスが reject された場合、Adapty SDK は `denied` を返します。
+
+付与された権限により、アプリが通知を表示できるようになります。プッシュ通知を受け取るには、フロー外でアプリが行うのと同様に、プッシュプロバイダーにデバイスを登録してください。
+
+## ハンドラーを登録する \{#register-the-handler\}
+
+:::warning
+**`onRequestPermission` ハンドラーがないと、ユーザーに許可を求めるダイアログが表示されません。** ハンドラーが設定されていないフロービューでは、Adapty SDK はダイアログを表示せず `denied` を返してログに警告を書き込み、フローはすぐに **After response** アクションを実行します。
+:::
+
+フローイベントハンドラーを設定するときと同様に、アプリが作成するすべてのフロービューに対して、表示する前にハンドラーを設定してください。フローの作成者はいつでも **Request permission** アクションを任意のフローに追加できます（アプリのアップデートは不要）。ハンドラーが設定されていないフロービューは、ユーザーに確認せずに `denied` を返します。
+
+```typescript showLineNumbers title="Capacitor"
+
+const view = await createFlowView(flow);
+
+await view.setEventHandlers({
+  onRequestPermission,
+});
+
+await view.present();
+```
+
+## 通知許可リクエストをテストする \{#test-the-permission-request\}
+
+iOS はアプリのインストールごとに通知ダイアログを1回だけ表示します。Android はユーザーが通知を許可するか、2回拒否した時点で表示を停止します。フローをテストする際にダイアログを再表示するには、デバイスからアプリを削除して再インストールしてください。その後、フローを開いて **Request permission** アクションに到達してください。ダイアログが表示されずにフローが進んだ場合は、フロービューに `onRequestPermission` ハンドラーが設定されているか、また Android アプリが `POST_NOTIFICATIONS` を宣言して Android 13 以降をターゲットにしているかを確認してください。

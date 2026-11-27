@@ -1,10 +1,10 @@
 ---
-title: "Tối ưu hóa việc tải paywall trong Android SDK"
-description: "Tải paywall Adapty đáng tin cậy: thời điểm, bộ nhớ đệm và các mẫu dự phòng cho Android."
-metadataTitle: "Tối ưu hóa Tải Paywall | Android SDK | Tài liệu Adapty"
+title: "Tối ưu hóa việc tải flow & paywall trong Android SDK"
+description: "Tải flow và paywall Adapty một cách đáng tin cậy: thời điểm, bộ nhớ đệm và các mô hình dự phòng cho Android."
+metadataTitle: "Tối ưu hóa việc tải Flow & Paywall | Android SDK | Tài liệu Adapty"
 ---
 
-Một lần tải paywall đáng tin cậy trên Android cần đảm bảo ba điều: hiển thị nhanh, trả về paywall đúng với đối tượng mục tiêu, và xử lý dự phòng linh hoạt khi mạng chậm. Các quy tắc dưới đây đề cập đến thời điểm, bộ nhớ đệm và các mẫu dự phòng để đạt được điều đó.
+Một lần tải flow hoặc paywall đáng tin cậy trên Android cần đảm bảo ba điều: hiển thị nhanh, trả về biến thể đúng đối tượng mục tiêu, và có phương án dự phòng hợp lý khi mạng chậm. Các quy tắc dưới đây đề cập đến thời điểm, bộ nhớ đệm và các mô hình dự phòng để đạt được điều đó.
 
 :::tip
 Các quy tắc này giả định rằng `Adapty.activate()` và `Adapty.identify()` đã hoàn thành. Xem [Thứ tự gọi trong Android SDK](android-sdk-call-order).
@@ -12,19 +12,175 @@ Các quy tắc này giả định rằng `Adapty.activate()` và `Adapty.identif
 
 ## Quy tắc và lưu ý \{#rules-and-pitfalls\}
 
-| Nên làm | Không nên làm | Lý do |
+| Làm điều này | Đừng làm điều này | Lý do |
 |---|---|---|
-| Tải placement mà bạn sắp hiển thị.                                                                                  | Tải trước tất cả các placement cùng lúc khi khởi động.        | Tải trước hàng loạt sẽ chặn luồng chính và gây màn hình đen trong suốt thời gian đó.                                  |
-| Gọi `getPaywall` sau khi attribution đã có cơ hội xử lý xong — ví dụ, 1–2 giây sau `activate` hoặc sau khi `setOnProfileUpdatedListener` kích hoạt. | Gọi `getPaywall` trong `Application.onCreate()`.         | Attribution chưa được xử lý xong. Paywall sẽ được phân giải theo đối tượng mặc định và bỏ qua phân khúc cũng như ASA personalization mà không có cảnh báo. |
-| Đặt `loadTimeout` và cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement.                             | Chờ `getPaywall` vô thời hạn.                     | Nếu không có timeout, người dùng ở kết nối kém sẽ thấy màn hình trắng cho đến khi mạng phục hồi — hoặc thoát ứng dụng.     |
+| Fetch placement bạn sắp hiển thị, hoặc làm ấm cache bằng [`preloadFlows`](#preload-placements) (SDK 4.1+). | Tự tạo các lệnh gọi `getFlow` đồng thời khi khởi chạy. | Một đợt prefetch tự triển khai sẽ chặn luồng chính và gây màn hình đen. `preloadFlows` được thiết kế cho mục đích này và chạy batch đồng thời cho bạn. |
+| Gọi `getFlow` sau khi attribution có cơ hội xử lý xong — ví dụ: 1–2 giây sau `activate` hoặc sau khi `setOnProfileUpdatedListener` được kích hoạt. | Gọi `getFlow` trong `Application.onCreate()`. | Attribution chưa được nhận. Flow sẽ phân giải theo đối tượng mặc định và âm thầm bỏ qua các phân khúc cũng như cá nhân hóa ASA. |
+| Giữ `loadTimeout` mặc định là 5 giây hoặc đặt giá trị khác, và cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement. | Truyền vào `getFlow` một `loadTimeout` quá lớn đến mức không bao giờ kích hoạt. | Nếu timeout không bao giờ kích hoạt, người dùng có kết nối kém sẽ thấy màn hình trắng cho đến khi mạng phục hồi — hoặc thoát khỏi ứng dụng. |
 
-Xem [Tải paywalls và sản phẩm](fetch-paywalls-and-products-android) để tham khảo tham số `fetchPolicy` và `loadTimeout`, và [Placements](placements) để chọn đúng placement.
+Xem [Tải paywall và sản phẩm tùy chỉnh](fetch-paywalls-and-products-android) để biết thêm về tham chiếu tham số `fetchPolicy` và `loadTimeout`, và [Placements](placements) để chọn placement phù hợp.
 
-## Tối ưu cho kết nối kém \{#tune-for-poor-connectivity\}
+## Tải trước các placement \{#preload-placements\}
 
-Đối với các thị trường có kết nối kém thường xuyên (khu vực nông thôn, phương tiện giao thông công cộng, vùng bị ảnh hưởng bởi routing):
+:::info
+`preloadFlows` và `preloadFlowsForDefaultAudience` khả dụng từ SDK phiên bản 4.1 trở lên.
+:::
 
-- Đặt `fetchPolicy` thành `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` cho mọi lần tải, trừ lần đầu tiên.
-- Cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement trong Adapty Dashboard.
-- Đặt `loadTimeout` từ 3–5 giây và chấp nhận paywall dự phòng khi timeout xảy ra.
-- Không để việc hiển thị paywall phụ thuộc vào `getProfile`. Gọi `getPaywall` độc lập để hồ sơ người dùng chậm không làm trì hoãn giao diện.
+`preloadFlows` lưu flow JSON vào bộ nhớ đệm trước — một request cho mỗi placement. Sau đó bạn sử dụng như bình thường: `getFlow` để lấy flow, `getFlowConfiguration` để lấy cấu hình view của nó.
+
+`fetchPolicy` quyết định layer nào mà `getFlow` gọi sau sẽ đọc trước, không phải quyết định có thể truy cập cache hay không:
+
+- `ReturnCacheDataElseLoad` đọc bản đã tải sẵn trước, chỉ kết nối mạng khi không có cache. `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)` hoạt động tương tự khi bản cache còn trẻ hơn `maxAgeMillis`.
+- Mặc định là `ReloadRevalidatingCacheData` — ưu tiên kết nối mạng, chỉ dùng bản đã tải sẵn khi request thất bại hoặc hết thời gian chờ.
+
+Việc tải trước đều có lợi trong cả hai trường hợp, nhưng theo cách khác nhau: chính sách ưu tiên cache loại bỏ hoàn toàn request, còn chính sách mặc định vẫn gửi request nhưng có sẵn bản dự phòng đã được làm ấm.
+
+Dùng cách này khi bạn biết trước placement nào sẽ cần trong phiên nhưng chưa muốn hiển thị ngay — ví dụ, ngay sau khi `activate` và `identify` hoàn thành, cho flow đằng sau một nút mà người dùng chưa nhấn.
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+...
+
+Adapty.preloadFlows(listOf("onboarding", "main_paywall"), loadTimeout = 5.seconds) { error ->
+    if (error != null) {
+        // at least one placement failed to preload
+    }
+}
+
+// Later, when the user reaches the paywall:
+Adapty.getFlow(
+    "main_paywall",
+    fetchPolicy = AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad,
+) { result ->
+    // ...
+}
+```
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers
+
+...
+
+Adapty.preloadFlows(Arrays.asList("onboarding", "main_paywall"), TimeInterval.seconds(5), error -> {
+    if (error != null) {
+        // at least one placement failed to preload
+    }
+});
+
+// Later, when the user reaches the paywall:
+Adapty.getFlow("main_paywall", AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad, result -> {
+    // ...
+});
+```
+</TabItem>
+</Tabs>
+
+**Tham số:**
+
+- `placementIds` (bắt buộc): các placement cần tải trước. Các ID trống và trùng lặp sẽ bị bỏ qua.
+- `loadTimeout` (tùy chọn): timeout áp dụng cho từng placement trong batch, không phải cho toàn bộ batch. Mặc định là 5 giây, và các giá trị dưới 1 giây sẽ được nâng lên thành 1 giây.
+
+**Những điều cần lưu ý về hành vi:**
+
+- Callback chỉ được kích hoạt sau khi tất cả các placement đã được xử lý, và nó báo cáo các lỗi theo từng placement cùng nhau. Lỗi ở một placement không ảnh hưởng đến các placement khác.
+- Nếu một placement bị timeout, gặp lỗi server, hoặc lỗi mạng, SDK sẽ chuyển sang dùng các biến thể dự phòng cho placement đó. Các lỗi khác được báo cáo nguyên trạng.
+- Preloading chỉ làm ấm cache. Nó không trả về nội dung — bạn vẫn phải gọi `getFlow` để hiển thị.
+
+### Những gì preload bao gồm \{#what-a-preload-covers\}
+
+Một flow hiển thị trên màn hình theo từng lớp. Preload bao gồm lớp đầu tiên, giống hệt như `getFlow` làm:
+
+| Lớp | Được tải bởi | Được làm ấm bởi preload |
+|---|---|---|
+| Flow JSON — biến thể được chọn, các ID sản phẩm của nó, và Remote Config | `getFlow` | Có |
+| Bố cục UI — cấu trúc, kiểu dáng và văn bản của màn hình | `getFlowConfiguration` | Không |
+| Hình ảnh, bao gồm khung tĩnh thay thế cho phần tử video | `getFlowConfiguration`, ở chế độ nền | Không |
+| Tệp video | ExoPlayer, khi màn hình hiển thị | Không. SDK cache tối đa 50 MB video đã phát |
+
+`getFlowConfiguration` tìm kiếm layout theo thứ tự ở ba nơi sau:
+
+1. Bộ nhớ cache trên đĩa của SDK, được giữ lại sau khi khởi động lại ứng dụng.
+2. [Tệp dự phòng](android-use-fallback-paywalls) của bạn dành cho SDK 4.4 trở lên, nếu bạn đã tải xuống sau lần cuối bạn xuất bản flow.
+3. Adapty, qua mạng. Điều này tốn một lần round trip, ngay cả sau khi preload. Lần đầu tiên ứng dụng hiển thị từng phiên bản đã xuất bản của flow, SDK sẽ thực hiện yêu cầu này. Sau đó, nó lưu layout vào cache trên đĩa.
+
+Khi SDK đã có layout, nó bắt đầu cache hình ảnh độc lập với lần gọi đó: quá trình này không giữ màn hình lại, và cũng không có callback hay lỗi nào báo khi hoàn tất.
+
+Khi `loadTimeout` của `getFlowConfiguration` kích hoạt, SDK không chuyển sang dự phòng: nó yêu cầu lại layout từ Adapty API. `loadTimeout` không giới hạn yêu cầu lần thứ hai đó.
+
+### Tìm hiểu placement nào gặp lỗi \{#find-out-which-placement-failed\}
+
+Callback nhận về một `AdaptyPreloadPlacementsError` bao quát toàn bộ batch, với mã lỗi `REQUEST_FAILED` (2005). Để xem chi tiết từng lỗi riêng lẻ, hãy đọc thuộc tính `preloadErrors` — một map được đánh key theo placement ID:
+
+```kotlin showLineNumbers
+Adapty.preloadFlows(listOf("onboarding", "main_paywall")) { error ->
+    if (error is AdaptyPreloadPlacementsError) {
+        error.preloadErrors.forEach { (placementId, placementError) ->
+            // log or retry the individual placement
+        }
+    }
+}
+```
+
+`preloadErrors` exists only on `AdaptyPreloadPlacementsError`, so confirm the type first — any other `AdaptyError` came from something other than a per-placement failure.
+
+### Bỏ qua phân khúc đối tượng \{#skip-audience-segmentation\}
+
+Để làm ấm cache mà không cần chờ phân khúc đối tượng, hãy dùng biến thể default-audience. Cách này không cần `loadTimeout`:
+
+```kotlin showLineNumbers
+Adapty.preloadFlowsForDefaultAudience(listOf("main_paywall")) { error -> }
+```
+
+## Hiển thị media màn hình đầu tiên từ app bundle \{#show-first-screen-media-from-the-app-bundle\}
+
+Một flow tải hình ảnh và video từ Adapty. Để hiển thị media của màn hình đầu tiên ngay lập tức, hãy phục vụ nó từ app bundle thay thế. Đây là cách hay để tái sử dụng media bạn đã đóng gói sẵn, chẳng hạn như hình ảnh của một onboarding gốc hiện có.
+
+1. Trong Flow & Paywall Builder, đặt [ID media tùy chỉnh](custom-media#custom-media-id) cho hình ảnh hoặc video. File bạn tải lên đó sẽ là file dự phòng.
+2. Thêm file vào thư mục `res/raw` hoặc `assets` của ứng dụng.
+3. Khi tạo flow view bằng `getFlowView`, truyền file đã đóng gói sẵn cho ID đó vào `customAssets`:
+
+```kotlin showLineNumbers
+// "welcome_video" is the custom media ID set in the Flow & Paywall Builder
+val bundledAssets = AdaptyCustomAssets.of(
+    "welcome_video" to
+            AdaptyCustomVideoAsset.file(
+                FileLocation.fromResId(requireContext(), R.raw.welcome),
+                preview = AdaptyCustomImageAsset.file(
+                    FileLocation.fromResId(requireContext(), R.drawable.welcome_poster),
+                ),
+                resolution = AdaptyCustomVideoAsset.Resolution(width = 1080, height = 1920),
+            ),
+)
+
+val flowView = AdaptyUI.getFlowView(
+    activity,
+    flowConfiguration,
+    products,
+    eventListener,
+    insets,
+    bundledAssets,
+)
+```
+
+Các tệp được đóng gói sẽ làm tăng dung lượng tải xuống của ứng dụng, vì vậy chỉ nên đóng gói những media mà người dùng nhìn thấy đầu tiên.
+
+Hình ảnh được đóng gói sẽ hiển thị ngay lập tức mà không cần chờ đợi, nhưng SDK vẫn tải xuống hình ảnh đã upload ở chế độ nền.
+
+Các media không được đóng gói vẫn hiển thị ngay lập tức: cấu hình view chứa một bản sao độ phân giải thấp nhỏ của từng hình ảnh, kể cả khung tĩnh của video, và hiển thị bản sao đó cho đến khi tệp đầy đủ được tải xong.
+
+Để xem tài liệu tham khảo đầy đủ về `customAssets`, hãy xem [Tùy chỉnh assets](android-get-pb-paywalls#customize-assets).
+
+## Điều chỉnh cho kết nối kém \{#tune-for-poor-connectivity\}
+
+Đối với các thị trường có kết nối kém liên tục (vùng nông thôn, phương tiện giao thông, khu vực bị ảnh hưởng bởi định tuyến):
+
+- Đặt `fetchPolicy` thành `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` cho mọi lần fetch trừ lần đầu tiên.
+- Cấu hình [paywall dự phòng](fallback-paywalls) cho mọi placement trong Adapty Dashboard.
+- Cân bằng `loadTimeout` giữa tốc độ và targeting. Timeout ngắn hơn thì người dùng thấy fallback sớm hơn. Timeout dài hơn thì flow được nhắm mục tiêu có thêm thời gian để tải.
+- [Giữ flow nhẹ](flow-size), để layout tải về nhanh hơn.
+- Đừng chặn việc hiển thị flow bởi `getProfile`. Gọi `getFlow` độc lập để một profile tải chậm không làm cản trở UI.

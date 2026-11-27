@@ -1,0 +1,188 @@
+---
+title: "CLI'dan Attribution Sorgulama"
+description: "Adapty Attribution raporlarını terminalden okuyun: kanal, kampanya, reklam, ülke ve tarihe göre harcama, kurulum, gelir, ROAS, kohort ve tahminler."
+metadataTitle: "Geliştirici CLI'da Attribution | Adapty Dokümanları"
+---
+
+Adapty CLI, `adapty attribution` konusu altında terminalden [Adapty Attribution](adapty-user-acquisition) analizlerini okur. [Attribution kontrol paneli](ua-analytics) ile aynı rakamları döndürür: harcama, kurulum, gelir, ROAS, kohort değerleri ve tahminler; kanala, kampanyaya, reklam setine, reklama, anahtar kelimeye, ülkeye, mağazaya veya tarihe göre gruplandırılmış olarak.
+
+Bunu bir AI ajanına canlı edinim verilerine erişim sağlamak, bir raporu bir betiğe çekmek veya kontrol panelinde bir görünüm oluşturmadan tek bir soruyu yanıtlamak için kullanın.
+
+:::tip
+"Geçen ay hangi kanal en iyi geri dönüşü sağladı?" gibi soruları bir AI kodlama aracına yanıtlatmak için [Attribution skill](developer-cli-attribution-skill)'i yükleyin. Hangi komutların çalıştırılacağını ve sonuçların nasıl okunacağını bilir.
+:::
+
+Her `attribution` komutu salt okunurdur. Çalıştırdığınız hiçbir şey bir kampanyayı, takip bağlantısını veya entegrasyonu değiştirmez.
+
+## Başlamadan önce \{#before-you-start\}
+
+`attribution` konusu, CLI'nin geri kalanıyla aynı kurulum ve oturum açma işlemini kullanır. Bunu henüz ayarlamadıysanız, [hızlı başlangıç kılavuzunun](developer-cli-quickstart) 1. ve 2. adımlarını takip edin. Bu konu için CLI sürüm 0.8.8 veya üzeri gereklidir. Sürümünüzü görmek için `adapty --version` komutunu çalıştırın.
+
+İki koşul daha geçerlidir:
+
+- **Attribution erişimi**: Bu olmadan, `report` ve `values` işlemleri `402 attribution_access_required` hatasıyla başarısız olur. Yeniden giriş yapmanız bu durumu değiştirmez. `metrics` ve `dimensions` erişim olmadan çalışır, dolayısıyla çalışan bir `metrics` çağrısı Attribution erişiminizi değil yalnızca girişinizi kanıtlar.
+- **Attribution'da kurulu bir uygulama**: `report` ve `values`, uygulamanın UUID'sini `adapty apps list` komutundan alır. Attribution'da kurulu olmayan veya Adapty kullanıcınızın okuma yetkisine sahip olmadığı bir uygulama, `404 attribution_app_not_found` hatasıyla başarısız olur.
+
+## Rapor Oluşturma \{#build-a-report\}
+
+Her raporu aynı sırayla oluşturun: kataloglardan isimleri seçin, filtre değerlerini bulun, ardından raporu çalıştırın.
+
+1. **Metrikleri listeleyin**. Her metrik, birimi ve oranlar için böldüğü metriklerle birlikte gelir:
+
+   ```bash
+   adapty attribution metrics
+   ```
+
+   Bazı isimler `d{N}_roas` gibi şablondur. Gün değerini kendiniz doldurun: `d7_roas`, `d30_roas`. `d07_roas` gibi baştaki sıfır kabul edilmez.
+
+2. **Gruplamak veya filtrelemek istediğiniz boyutları listeleyin**:
+
+   ```bash
+   adapty attribution dimensions
+   ```
+
+`--group-by` parametresi `date`, `campaign`, `adset`, `ad`, `keyword`, `channel`, `country` ve `store` değerlerini kabul eder. Kampanyalar, reklam grupları ve reklamlar ID'ye göre filtrelenir, isme göre değil.
+
+3. **Filtre değerlerini arayın**. Filtreleme yapmıyorsanız bu adımı atlayın. Kampanyalar için dönem boyunca her kampanyanın ID, ad ve kanalını döndürür:
+
+   ```bash
+   adapty attribution values --app <app-id> --date-from 2026-08-01 --date-to 2026-08-31 --dimension campaign
+   ```
+
+4. **Raporu çalıştırın**:
+
+```bash
+   adapty attribution report --app <app-id> --date-from 2026-08-01 --date-to 2026-08-31 \
+     --metrics spend,installs,cpi,roas,d7_roas --group-by campaign --sort roas:desc
+   ```
+
+Bir rapor, `--group-by` boyutlarının her kombinasyonu için bir satır ve `totals` döndürür. Toplamları satırları toplayarak değil, `totals` üzerinden okuyun: oranlar ve tekil sayımlar satırlar arasında toplanamaz.
+
+### Örnekler
+
+Bir kampanyada iki ülke için haftalık trend:
+
+```bash
+adapty attribution report --app <app-id> --date-from 2026-07-01 --date-to 2026-08-31 \
+  --metrics spend,installs,cost_per_trial,d7_roas --group-by date,channel --granularity week \
+  --filter campaign=<campaign-id> --filter country=US,GB
+```
+
+Mağaza komisyonu sonrası gelire göre kampanya bazlı deneme kalitesi:
+
+```bash
+adapty attribution report --app <app-id> --date-from 2026-07-01 --date-to 2026-08-15 \
+  --metrics spend,count_trial_started,d14_count_trial_converted,cost_per_trial,d30_roas \
+  --group-by campaign --revenue-basis proceeds
+```
+
+Kurulum başına günlük tahmini geri ödeme süresi:
+
+```bash
+adapty attribution report --app <app-id> --date-from 2026-09-01 --date-to 2026-09-29 \
+  --metrics spend,d7_revenue,d90_predict_roas,d365_predict_roas --group-by date,campaign --granularity day
+```
+
+Ham yanıtı bir script veya agent için almak istiyorsanız herhangi bir komuta `--json` ekleyin.
+
+## Sonuçları okuma \{#read-the-results\}
+
+- **Para Birimi**: Para birimi USD'dir. Gelir, `--revenue-basis` parametresine göre belirlenir: `gross` (varsayılan; kontrol panelinin de varsayılanı), `proceeds` (mağaza komisyonu düşüldükten sonra) veya `net` (komisyon ve vergiler düşüldükten sonra). Yanıttaki `meta.query`, geçerli olan temeli belirtir.
+- **Yüzdeler**: ROAS ve oranlar 0–100 ölçeğindedir. `roas` değeri 150, %150 veya 1,5 katı anlamına gelir.
+- **Boş değerler**: Boş bir değer, sıfır anlamına değil, hesaplanamaz anlamına gelir. Bölünecek hiçbir şey yoksa bir oran boş olur; model o gün için değer üretemiyorsa bir tahmin boş olur; Attribution'ın harcama verisi bulunmayan kanallarda ise harcamaya dayalı her metrik boş olur. `--json` çıktısında bu değerler `null` olarak gösterilir; tablo görünümünde `—` olarak yazdırılır.
+- **Kohort metrikleri**: Bir kohort metriği, yalnızca kohortun o ana kadar yaptıklarını sayar. Geçen haftaki kurulumlar için `d30_roas`, bir haftalık geliri kapsar ve yükselmeye devam eder. Kampanyaları yalnızca, dönemdeki her kohortun ulaştığı bir gün üzerinden karşılaştırın.
+- **Tarihler**: Tarihler, uygulamanızın raporlama saat dilimiyle ifade edilen günlerdir. Saat dilimi bayrağı yoktur. Saat dilimi, `report` ve `values` komutlarının `--json` çıktısında `meta.query.timezone` olarak görünür.
+
+### Apple Search Ads harcaması \{#apple-search-ads-spend\}
+
+Attribution, Meta, TikTok ve Google Ads'den reklam harcamalarını toplar. Apple Search Ads satırları kurulum ve gelir verisi içerir, ancak harcama, CPI, ROAS ve diğer tüm harcama tabanlı metrikler bu satırlarda boş görünür. Apple Ads'i bağlamak, harcama verisini Attribution'a eklemez: Apple Search Ads harcaması ve ROAS, [Ads Manager](developer-cli-ads-manager) içinde `adapty asa metrics` altında yer alır.
+
+Ads Manager rakamlarını Attribution satırlarına veya toplamlarına eklemeyin. Ads Manager, kampanya grubunuzun para birimiyle raporlar ve kurulumları farklı şekilde ilişkilendirir.
+
+## Sınırlar \{#limits\}
+
+En ayrıntılı tarih gruplandırması, bir raporun kapsayabileceği en uzun dönemi belirler:
+
+| Gruplandırma | En uzun dönem |
+|---|---|
+| `--granularity day` | 31 gün |
+| `--granularity week` | 180 gün |
+| `--granularity month`, `quarter` veya `year` | 366 gün |
+| `date` gruplandırması yok | 92 gün |
+
+Daha uzun bir dönem için daha kaba bir `--granularity` kullanın. Bir yıllık veri, `--granularity month` ile tek bir rapordur.
+
+Bir raporun ayrıca şu sınırları da vardır:
+
+- En fazla 10.000 satır. Daha fazlası için tarih gruplama ayrıntısını azaltın, `keyword` veya `ad` gruplamalarını kaldırın ya da filtreleyin.
+- En fazla 25 metrik ve bir filtrede en fazla 100 değer.
+- Tahmin metrikleri (`d{N}_predict_…`), `--group-by date --granularity day` gerektirir ve en fazla 2 ek gruplama ile en fazla 4 farklı horizon (365 güne kadar) destekler.
+
+`adapty attribution metrics --json` komutu bu limitleri `data.limits` içinde döndürür.
+
+Raporları paralel değil, birbiri ardına çalıştırın: hizmet aynı anda şirket başına yalnızca birkaç sorgu çalıştırabilir.
+
+## Hatalar \{#errors\}
+
+Servisin reddettiği bir istek, 4 koduyla çıkar. CLI'nin göndermeden önce reddettiği girdiler (örneğin hatalı biçimlendirilmiş bir tarih veya `--group-by date` olmadan kullanılan `--granularity`) 2 koduyla çıkar. `--json` kullanıldığında hata, servisin `error_code` bilgisini de içerir.
+
+| Kod | HTTP | Ne yapmalı |
+|---|---|---|
+| `auth_required` | 401 | `adapty auth login` ile yeniden giriş yapın. |
+| `attribution_access_required` | 402 | Şirketinizin Attribution erişimi yok. Yeniden giriş yapmak sorunu çözmez. |
+| `attribution_app_not_found` | 404 | Uygulama ID'sini `adapty apps list` ile arayın; bu komut yalnızca okuma erişiminiz olan uygulamaları listeler. |
+| `attribution_unknown_metric` | 422 | Metrik adlarını `adapty attribution metrics` çıktısına göre düzeltin. Mesaj geçersiz olanların her birini ayrıca belirtir ve rapordaki hiçbir şey çalışmaz. |
+| `attribution_validation_error` | 422 | Mesajda belirtilen boyut, filtre, sıralama alanı veya tarihleri düzeltin. Bir boyuta ait tüm değerleri tek bir `--filter` içine koyun. |
+| `attribution_query_too_large` | 422 | Raporu mesajın belirttiği şekilde küçültün. Bkz. [Limitler](#limits). |
+| `attribution_busy` | 429 | Şirketiniz için çok fazla sorgu çalışıyor. `retry_after_seconds` kadar bekleyip raporu bir kez daha çalıştırın. |
+| `attribution_upstream_unavailable`, `attribution_query_unavailable` | 503 | `retry_after_seconds` kadar bekleyip tekrar çalıştırın. `attribution_query_unavailable` hatası tekrarlanıyorsa raporu küçültün. |
+
+CLI, `report` veya `values` işlemlerini hiçbir zaman sizin için yeniden denemez; bu nedenle başarısız bir rapor, siz tekrar çalıştırana kadar başarısız olarak kalır.
+
+## Komut referansı \{#command-reference\}
+
+### `attribution metrics` \{#attribution-metrics\}
+
+Her raporun kabul ettiği metrikleri birim, açıklama ve bir oranın böldüğü metriklerle birlikte listeler; ayrıca rapor sınırlarını gösterir. `--json` dışında herhangi bir bayrak almaz.
+
+### `attribution dimensions`
+
+`--group-by` ve `--filter` parametrelerinin neyi kabul ettiğini, her boyutun ID'ye mi yoksa değere göre mi filtrelendiğini ve `date` boyutunun ayrıntı düzeylerini listeler. `--json` dışında başka bayrak almaz.
+
+### `attribution values`
+
+Bir uygulamanın belirli bir dönemde tek bir boyut için aldığı değerleri listeler. Bu değerler, `report --filter` parametresinin kabul ettiği değerlerdir.
+
+| Flag | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | `adapty apps list` komutuyla elde edilen uygulama UUID'si. |
+| `--date-from` | Evet | Dönemin ilk günü (dahil), uygulamanın saat dilimine göre `YYYY-MM-DD` formatında. |
+| `--date-to` | Evet | Dönemin son günü (dahil). `--date-from` tarihinden önce olamaz. |
+| `--dimension` | Evet | `adapty attribution dimensions` komutundan alınan filtrelenebilir bir boyut. |
+| `--revenue-basis` | Hayır | `gross`, `proceeds` veya `net`. |
+
+`campaign`, `adset` ve `ad` için her değer bir kimlik (ID), bir ad ve bir kanal içerir. Kimliği boş olan bir değer, organik veya mağaza yönlendirici trafiği temsil eder ve hiçbir filtre tarafından seçilemez.
+
+### `attribution report`
+
+Bir rapor çalıştırır: belirli bir dönem için boyutlara göre gruplandırılmış metrikler.
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | `adapty apps list` komutundan alınan uygulama UUID'si. |
+| `--date-from` | Evet | Dönemin ilk günü (dahil), uygulamanın saat dilimine göre `YYYY-MM-DD` formatında. |
+| `--date-to` | Evet | Dönemin son günü (dahil). |
+| `--metrics` | Evet | `adapty attribution metrics` komutundan alınan metrik adları; virgülle ayrılmış veya tekrarlı olarak belirtilir. En fazla 25 adet. |
+| `--group-by` | Evet | `date`, `campaign`, `adset`, `ad`, `keyword`, `channel`, `country` veya `store`; virgülle ayrılmış veya tekrarlı olarak belirtilir. |
+| `--granularity` | `--group-by date` ile birlikte | `day`, `week`, `month`, `quarter` veya `year`. `date` ile gruplandırma yapıldığında zorunludur, aksi hâlde kabul edilmez. |
+| `--filter` | Hayır | `dimension=value[,value]`. Birden fazla değer, bunlardan herhangi biriyle eşleşir; farklı boyutlardaki filtreler birlikte uygulanır. Boyut başına bir `--filter` kullanılır. Bir değerin içindeki virgül için `\,` yazın. |
+| `--revenue-basis` | Hayır | `gross` (varsayılan), `proceeds` veya `net`. |
+| `--sort` | Hayır | `field:asc` veya `field:desc`; alan, istenen bir metrik ya da `--group-by` boyutu olabilir. Yön belirtilmezse artan sırada sıralanır. Boş değerler en sona yerleştirilir. |
+
+`campaign`, `adset` veya `ad` bazında gruplandırılan satırlar, o varlığın ID'sini, adını ve kanalını taşır. Bir kampanyanın adı, dönem içinde sahip olduğu en güncel addır; bu nedenle dönemler arasında kampanyaları ID ile eşleştirin. `date` değeri, ilgili zaman dilimine ait ilk gündür.
+
+## Sırada ne var \{#whats-next\}
+
+- [Attribution'ı bir AI kodlama aracıyla analiz edin](developer-cli-attribution-skill) — bu komutları sizin için çalıştıran skill.
+- [Metrikler](ua-metrics) — her metriğin kontrol panelinde neyi ölçtüğü.
+- [Tahminler](ua-predicted-metrics) — tahmini gelirin nasıl modelleneceği.

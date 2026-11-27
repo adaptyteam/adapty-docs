@@ -1,14 +1,20 @@
 ---
-title: "Migrate Adapty Unity SDK sang v4.0"
-description: "Migrate sang Adapty Unity SDK v4.0 (beta) bằng cách thay thế API paywall bằng API flow, tương thích với cả Flow Builder và Paywall Builder."
-metadataTitle: "Migrate sang Adapty Unity SDK v4.0 (beta) | Tài liệu Adapty"
+title: "Migrate Adapty Unity SDK lên v4.1"
+description: "Migrate lên Adapty Unity SDK v4.1: thay thế API paywall bằng API flow, áp dụng API attribution đã được đổi tên, bật Adapty Attribution một cách tường minh, và tải lại file dự phòng."
+metadataTitle: "Migrate lên Adapty Unity SDK v4.1 | Tài liệu Adapty"
 ---
 
-Adapty Unity SDK 4.0 (beta) giới thiệu các flow và đổi tên API paywall tương ứng. Các API mới hoạt động với cả Flow Builder mới và Paywall Builder hiện có — không cần thay đổi cài đặt nào trên Adapty Dashboard.
+Adapty Unity SDK 4.1 là bản phát hành ổn định đầu tiên của dòng 4.x — 4.0 chỉ được phát hành dưới dạng beta, vì vậy nếu bạn đang dùng 3.x, hãy migrate thẳng lên 4.1. Hướng dẫn này bao gồm toàn bộ quá trình migration: các flow được giới thiệu trong 4.0 và các thay đổi của 4.1 bổ sung thêm.
+
+Dòng 4.x giới thiệu flows và đổi tên các API paywall cho phù hợp. Các API mới hoạt động với flows, đồng thời vẫn tương thích với các paywall từ builder cũ — không cần thay đổi cấu hình nào trên Adapty Dashboard. Ngoài ra, 4.1 đổi tên các API attribution bên ngoài, chuyển Adapty Attribution sang dạng opt-in, bổ sung một phương thức listener bắt buộc, và thay đổi định dạng file fallback.
+
+:::note
+Đến từ bản beta 4.0? Hãy thay thẻ beta đã ghim bằng bản [cài đặt 4.1.0](#installation), sau đó chỉ có bốn phần áp dụng: [phương thức listener mới](#new-required-method-onreceivepromotedpurchase), [các API attribution bên ngoài được đổi tên](#renamed-external-attribution-apis), [Adapty Attribution bị tắt theo mặc định](#adapty-attribution-is-disabled-by-default), và [các tệp dự phòng](#fallback-files).
+:::
 
 ## Tham khảo nhanh \{#quick-reference\}
 
-| v3 | v4 |
+| v3 | v4.1 |
 |---|---|
 | `Adapty.GetPaywall(placementId, locale, ...)` | `Adapty.GetFlow(placementId, ...)` |
 | `Adapty.GetPaywallForDefaultAudience(placementId, locale, ...)` | `Adapty.GetFlowForDefaultAudience(placementId, ...)` |
@@ -21,32 +27,37 @@ Adapty Unity SDK 4.0 (beta) giới thiệu các flow và đổi tên API paywall
 | `AdaptyUI.PresentPaywallView(view, ...)` / `DismissPaywallView(view, ...)` | `AdaptyUI.PresentFlowView(view, ...)` / `DismissFlowView(view, ...)` |
 | `Adapty.SetPaywallsEventsListener(listener)` | `Adapty.SetFlowsEventsListener(listener)` |
 | `AdaptyPaywallsEventsListener` | `IAdaptyFlowsEventsListener` |
-| `AdaptyEventListener` | `IAdaptyEventListener` |
+| `AdaptyEventListener` | `IAdaptyEventListener`, với phương thức `OnReceivePromotedPurchase` bắt buộc mới |
 | `AdaptyOnboardingsEventsListener` | `IAdaptyOnboardingsEventsListener` |
 | `PaywallViewDidPerformAction`, `PaywallViewDidAppear`, và các callback `PaywallView...` khác | `FlowViewDidPerformAction`, `FlowViewDidAppear`, và các callback `FlowView...` khác |
 | `PaywallViewDidFailRendering` | `FlowViewDidReceiveError` |
-| `Adapty.SetFallbackPaywalls(...)` (deprecated trong v3) | đã xóa — dùng `Adapty.SetFallback(fileName, ...)` |
-| `Builder.SetIDFACollectionDisabled(...)` (deprecated trong v3) | đã xóa — dùng `Builder.SetAppleIDFACollectionDisabled(...)` |
-| `paywall.Products` (danh sách `AdaptyProductReference`) | đã xóa — dùng `ProductIdentifiers` hoặc `VendorProductIds`, hoặc gọi `GetPaywallProducts(flow)` để lấy đầy đủ sản phẩm |
-| `AdaptyProductReference` | đã xóa khỏi kiểu public — xem [Mô hình dữ liệu](#data-model) |
-| `paywall.RemoteConfigString` | đã xóa — dùng `flow.RemoteConfig?.Data` |
+| `Adapty.UpdateAttribution(data, source, ...)` với nguồn kiểu `string` | `Adapty.UpdateExternalAttribution(jsonString, provider, ...)` với `AdaptyExternalAttributionProvider` |
+| `AdaptyProfile.AppliedAttributionSources` kiểu `IReadOnlyList<string>` | `AdaptyProfile.AppliedExternalAttributionProviders` kiểu `IReadOnlyList<AdaptyExternalAttributionProvider>` |
+| Attribution của Adapty được bật tự động | tắt theo mặc định — bật bằng `Builder.SetAdaptyAttributionEnabled(true)` |
+| File dự phòng đã tải xuống cho phiên bản 3.x | định dạng file dự phòng mới — tải xuống lại file |
+| `Adapty.SetFallbackPaywalls(...)` (đã lỗi thời ở v3) | đã bị xóa — dùng `Adapty.SetFallback(fileName, ...)` |
+| `Builder.SetIDFACollectionDisabled(...)` (đã lỗi thời ở v3) | đã bị xóa — dùng `Builder.SetAppleIDFACollectionDisabled(...)` |
+| `paywall.Products` (danh sách `AdaptyProductReference`) | đã bị xóa — dùng `ProductIdentifiers` hoặc `VendorProductIds`, hoặc gọi `GetPaywallProducts(flow)` để lấy đầy đủ sản phẩm |
+| `AdaptyProductReference` | đã bị xóa khỏi kiểu public — xem [Mô hình dữ liệu](#data-model) |
+| `paywall.RemoteConfigString` | đã bị xóa — dùng `flow.RemoteConfig?.Data` |
 
-`AdaptyPaywallProduct` giữ nguyên tên — sản phẩm vẫn thuộc về một flow, và `GetPaywallProducts` cũng giữ nguyên tên, hiện nhận một `AdaptyFlow`. Các phương thức `GetFlow` và `GetFlowForDefaultAudience` không còn nhận tham số `locale` nữa. Các API mua hàng và hồ sơ người dùng (`MakePurchase`, `RestorePurchases`, `GetProfile`, `Identify`, `UpdateProfile`) và fallback qua `SetFallback` không thay đổi. Các phương thức onboarding vẫn hoạt động nhưng đã bị deprecated — xem [Deprecated Onboarding API](#onboarding-api-deprecation). Một số hành vi mặc định đã thay đổi — xem [Thay đổi hành vi mặc định](#default-behavior-changes).
+`AdaptyPaywallProduct` giữ nguyên tên — các sản phẩm vẫn thuộc về một flow, và `GetPaywallProducts` cũng giữ nguyên tên, nay nhận một `AdaptyFlow`. Các phương thức `GetFlow` và `GetFlowForDefaultAudience` không còn nhận tham số `locale` nữa. Các API mua hàng và hồ sơ người dùng (`MakePurchase`, `RestorePurchases`, `GetProfile`, `Identify`, `UpdateProfile`) không thay đổi. `SetFallback` giữ nguyên chữ ký, nhưng file mà nó đọc phải được tải xuống lại — xem [Fallback files](#fallback-files). Các phương thức onboarding vẫn hoạt động nhưng đã bị deprecated — xem [Onboarding API deprecation](#onboarding-api-deprecation). Một số hành vi mặc định đã thay đổi — xem [Default behavior changes](#default-behavior-changes).
 
 ## Cài đặt \{#installation\}
 
-v4.0 là phiên bản pre-release, vì vậy hãy chỉ định chính xác thẻ beta. Để cài đặt qua Unity Package Manager, thêm thẻ vào Git URL:
+Để cài đặt SDK 4.1 qua Unity Package Manager, thêm thẻ phiên bản vào URL Git:
 
 ```
-https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unity-sdk#4.0.0-beta.1
+https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unity-sdk#4.1.0
 ```
 
-Nếu bạn cài đặt qua Unity package, hãy tải `adapty-unity-plugin-4.0.0-beta.1.unitypackage` từ [bản phát hành 4.0.0-beta.1](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.0.0-beta.1). Xem [Cài đặt Adapty SDK](sdk-installation-unity#install-adapty-sdk) để biết hướng dẫn thiết lập đầy đủ.
+Nếu bạn cài đặt qua Unity package, tải `adapty-unity-plugin-4.1.0.unitypackage` từ [bản phát hành 4.1.0](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.1.0). Xem [Cài đặt Adapty SDK](sdk-installation-unity#install-adapty-sdk) để biết hướng dẫn thiết lập đầy đủ.
 
-v4 đi kèm với hai thay đổi trong cấu hình build:
+Phiên bản 4.x có ba thay đổi về cấu hình build:
 
-- **Các dependency iOS chuyển sang Swift Package Manager.** SDK iOS gốc của Adapty 4.0 được khai báo là remote Swift package thay vì CocoaPods pod. Hãy cập nhật [External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver#getting-started) lên **1.2.188 trở lên** — các phiên bản cũ hơn không hỗ trợ dependency của Swift Package Manager. Các bước CocoaPods (`iOS Resolver -> Install Cocoapods`, mở `Unity-iPhone.xcworkspace`) không còn áp dụng nữa.
-- **iOS deployment target phải là 15.0 trở lên.** Một build validator mới trong Unity Editor sẽ dừng iOS build nếu target thấp hơn mức này.
+- **Phụ thuộc iOS chuyển sang Swift Package Manager.** SDK Adapty iOS gốc được khai báo là một Swift package từ xa thay vì một CocoaPods pod. Cập nhật [External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver#getting-started) lên **1.2.188 hoặc mới hơn** — các phiên bản cũ hơn không hỗ trợ phụ thuộc Swift Package Manager. Các bước CocoaPods (`iOS Resolver -> Install Cocoapods`, mở `Unity-iPhone.xcworkspace`) không còn áp dụng nữa. Việc build cho iOS giờ yêu cầu **Xcode 26** hoặc mới hơn, vì Swift package được build bằng Swift tools 6.2.
+- **Deployment target iOS phải là 15.0 hoặc mới hơn.** Một trình xác thực build mới trong Unity Editor sẽ dừng việc build iOS nếu target thấp hơn mức này.
+- **Build Android phải compile với API level 35 hoặc mới hơn.** Thư viện Adapty UI sử dụng Jetpack Compose 1.8, vốn yêu cầu điều này.
 
 Các SDK gốc bên dưới được nâng lên phiên bản 4.x trên cả hai nền tảng và được phân giải tự động — không cần thay đổi build nào khác.
 
@@ -54,7 +65,7 @@ Các SDK gốc bên dưới được nâng lên phiên bản 4.x trên cả hai 
 
 ### GetPaywall → GetFlow
 
-Kiểu trả về thay đổi từ `AdaptyPaywall` sang `AdaptyFlow`, và tham số `locale` bị loại bỏ — khi bạn render một flow, locale sẽ được tự động xác định; đối với các paywall tùy chỉnh, tất cả các locale được trả về trong `flow.RemoteConfigs`:
+Kiểu trả về thay đổi từ `AdaptyPaywall` sang `AdaptyFlow`, và tham số `locale` chuyển sang tham số view của flow (`AdaptyUICreateFlowViewParameters.SetLocale`) — xem [Khớp locale là chính xác](#locale-matching-is-exact); đối với các paywall tùy chỉnh, tất cả các locale được trả về trong `flow.RemoteConfigs`:
 
 ```diff showLineNumbers
 - Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
@@ -74,6 +85,19 @@ Kiểu trả về thay đổi từ `AdaptyPaywall` sang `AdaptyFlow`, và tham s
 - Adapty.GetPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", (paywall, error) => { /* ... */ });
 + Adapty.GetFlowForDefaultAudience("YOUR_PLACEMENT_ID", (flow, error) => { /* ... */ });
 ```
+
+### Khớp locale là chính xác \{#locale-matching-is-exact\}
+
+:::warning
+Trong v3, server Adapty chọn bản địa hóa và dự phòng theo ngôn ngữ: yêu cầu `pt-br` sẽ nhận bản địa hóa `pt` khi paywall không có `pt-br`. Trong v4, SDK chọn bản địa hóa trên thiết bị và chỉ dùng kết quả khớp chính xác. Mã không khớp với bất kỳ bản địa hóa nào sẽ hiển thị flow theo bản địa hóa mặc định, không có lỗi hay cảnh báo.
+:::
+
+Trước khi nâng cấp, hãy kiểm tra các mã locale mà ứng dụng của bạn truyền vào:
+
+- Với mỗi mã vùng bạn truyền vào, hãy thêm một bản địa hóa với mã đó — ví dụ: `pt-BR` ngoài `pt` — hoặc ánh xạ mã đó sang mã mà flow đang sử dụng.
+- Truyền mã chính xác như flow đã xuất bản: `pt-BR`, không phải `pt-br` từ trường **Select languages**. Đối với paywall từ Paywall Builder cũ, hãy truyền mã chữ thường, chẳng hạn `pt-br`. Không truyền nguyên xi một định danh locale hệ thống: trên thiết bị đặt ngôn ngữ English (United States), `CultureInfo.CurrentCulture.Name` trả về `en-US`, và sẽ bỏ sót flow chỉ có `en`.
+
+Xem [Localizations và mã ngôn ngữ](unity-localizations-and-locale-codes#flows-and-paywalls).
 
 ### GetPaywallProducts(paywall) → GetPaywallProducts(flow)
 
@@ -122,20 +146,24 @@ Kiểu trả về thay đổi từ `AdaptyPaywall` sang `AdaptyFlow`, và tham s
 
 ### LogShowPaywall → LogShowFlow
 
-`LogShowPaywall` được đổi tên thành `LogShowFlow` và hiện nhận vào một `AdaptyFlow`. Sự kiện vẫn được ghi nhận theo cùng một biến thể, vì vậy các chỉ số funnel và A/B test hiện tại vẫn hoạt động bình thường mà không cần thay đổi trên dashboard.
+`LogShowPaywall` được đổi tên thành `LogShowFlow` và nhận vào một `AdaptyFlow`. Sự kiện vẫn được ghi nhận theo cùng một biến thể, nên các chỉ số funnel và A/B test hiện có vẫn hoạt động bình thường mà không cần thay đổi trên dashboard.
 
 ```diff showLineNumbers
 - Adapty.LogShowPaywall(paywall, (error) => { /* ... */ });
 + Adapty.LogShowFlow(flow, (error) => { /* ... */ });
 ```
 
-Tương tự như v3, bạn không cần gọi phương thức này khi hiển thị các flow hoặc paywall được render bởi [Flow Builder](adapty-flow-builder) hoặc [Paywall Builder](adapty-paywall-builder) — Adapty tự động theo dõi những lượt xem đó.
+Cũng như trong v3, bạn không cần gọi phương thức này khi hiển thị các flow hoặc paywall được Adapty render — Adapty sẽ tự động theo dõi các lượt xem đó.
 
 ## Hiển thị flow \{#displaying-flows\}
 
 ### CreatePaywallView → CreateFlowView
 
 Đổi tên factory method và truyền vào `AdaptyFlow`. Kiểu view trả về được đổi tên từ `AdaptyUIPaywallView` thành `AdaptyUIFlowView`, nhưng các phương thức của nó (`Present`, `Dismiss`) không thay đổi, và đối tượng tham số tùy chọn vẫn giữ nguyên các trường (`LoadTimeout`, `PreloadProducts`, `CustomTags`, `CustomTimers`, `CustomAssets`, `ProductPurchaseParameters`) dưới tên mới `AdaptyUICreateFlowViewParameters`, cùng với hai trường mới — `Locale` và `EnableSafeAreaPaddings`:
+
+:::note
+`CustomTimers` vẫn tồn tại, nhưng nó chỉ ảnh hưởng đến các paywall được tạo bằng legacy Paywall Builder. [Đồng hồ đếm ngược](flow-timer) của một flow chạy theo hành vi được thiết lập trong Flow & Paywall Builder, vì vậy flow sẽ bỏ qua bất kỳ giá trị nào bạn truyền vào đây.
+:::
 
 ```diff showLineNumbers
 - AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
@@ -148,7 +176,7 @@ Tương tự như v3, bạn không cần gọi phương thức này khi hiển t
   });
 ```
 
-`CreateFlowView` trả về lỗi nếu flow không có view được cấu hình — điều này thay thế kiểm tra `HasViewConfiguration` của v3:
+`CreateFlowView` trả về lỗi nếu flow không có view được cấu hình — điều này thay thế kiểm tra `HasViewConfiguration` trong v3:
 
 ```diff showLineNumbers
 - if (paywall.HasViewConfiguration) {
@@ -164,7 +192,7 @@ Tương tự như v3, bạn không cần gọi phương thức này khi hiển t
 ```
 
 :::note
-Flow view chỉ dùng một lần: sau khi gọi `Dismiss`, view sẽ bị hủy, vì vậy hãy gọi lại `CreateFlowView` nếu muốn hiển thị flow thêm một lần nữa.
+Một flow view chỉ dùng một lần: sau khi bạn gọi `Dismiss`, view đó sẽ bị hủy, vì vậy hãy gọi lại `CreateFlowView` để hiển thị flow thêm một lần nữa.
 :::
 
 ### Padding vùng an toàn trên Android \{#android-safe-area-paddings\}
@@ -210,25 +238,99 @@ Một callback được đổi tên: `PaywallViewDidFailRendering` thành `FlowV
 
 Xem [Xử lý sự kiện flow & paywall](unity-handling-events) để biết danh sách đầy đủ các callback.
 
+### Phương thức bắt buộc mới: OnReceivePromotedPurchase \{#new-required-method-onreceivepromotedpurchase\}
+
+Bắt đầu từ SDK phiên bản 4.1, `IAdaptyEventListener` có thêm một phương thức mới, do đó mọi class implement nó sẽ không thể biên dịch cho đến khi bạn thêm:
+
+```csharp showLineNumbers
+public void OnReceivePromotedPurchase(AdaptyPromotedProduct product) {
+    // The user tapped one of your in-app purchases on your App Store product page.
+    // Complete the purchase through Adapty:
+    Adapty.MakePromotedPurchase(product, (result, error) => { /* ... */ });
+}
+```
+
+Phương thức này dành cho in-app purchase được quảng bá trên App Store và không bao giờ được gọi trên Android. Đừng để thân hàm trống: trên iOS 16.4 trở lên, SDK chuyển giao giao dịch mua tại đây và chờ bạn hoàn tất, nên nếu thân hàm trống sẽ làm mất giao dịch mà người dùng đã bắt đầu. Các phiên bản trước đó tự động hoàn tất các giao dịch như vậy. Xem [In-app purchase được quảng bá từ App Store](unity-making-purchases#in-app-purchases-from-the-app-store).
+
 ### API mới \{#new-apis\}
 
-- `Adapty.SetObserverModeResolver(...)` với `IAdaptyUIObserverModeResolver` — xử lý các giao dịch mua và khôi phục được khởi tạo từ flow khi SDK chạy ở [chế độ Observer](implement-observer-mode-unity). Trước đây tính năng này chỉ khả dụng trong SDK iOS và Android gốc. Xem [Hiển thị flow trong chế độ Observer](unity-present-flows-in-observer-mode).
-- `Adapty.SetSystemRequestsHandler(...)` với `IAdaptyUISystemRequestsHandler` — dành cho các yêu cầu hệ thống từ flow: lời nhắc cấp quyền của OS (`FlowViewDidAskPermission`) và yêu cầu đánh giá ứng dụng (`FlowViewDidRequestAppReview`). Hiện tại flow chưa kích hoạt các yêu cầu này, nên bạn chưa cần đăng ký handler.
-- `AdaptyUICreateFlowViewParameters.Locale` (đặt bằng `SetLocale`) — hiển thị flow hoặc paywall với một [bản địa hóa Builder](add-paywall-locale-in-adapty-paywall-builder) cụ thể thay vì bản mặc định của flow. Flow được bản địa hóa khi view của nó được tạo, vì vậy đây là nơi duy nhất để chọn bản địa hóa, và view được tạo sẽ báo cáo bản địa hóa mà nó được xây dựng bằng thuộc tính `view.Locale`. Xem [Sử dụng bản địa hóa và mã locale](unity-localizations-and-locale-codes).
-- Callback `FlowViewDidReceiveAnalyticEvent` mới trên `IAdaptyFlowsEventsListener` báo cáo các sự kiện analytics từ flow, bắt đầu bằng sự kiện xem màn hình cho mỗi màn hình người dùng mở. Xem [Theo dõi lượt xem màn hình flow](unity-flow-screen-views).
-- `AdaptyUI.OpenUrl(url, openIn, ...)` và `AdaptyUI.RequestAppReview(...)` — xử lý gốc cho các hành động `open_url` và yêu cầu đánh giá ứng dụng. Gọi `OpenUrl` từ `FlowViewDidPerformAction` để giữ nguyên hành vi URL mặc định; `RequestAppReview` hỗ trợ lời nhắc đánh giá ứng dụng mặc định, mà hiện tại flow chưa kích hoạt.
+- `Adapty.SetObserverModeResolver(...)` với `IAdaptyUIObserverModeResolver` — xử lý các giao dịch mua và khôi phục được khởi tạo từ flow khi SDK chạy ở chế độ [Observer mode](implement-observer-mode-unity). Trước đây tính năng này chỉ có trên iOS và Android SDK gốc. Xem [Hiển thị flow trong Observer mode](unity-present-flows-in-observer-mode).
+- `Adapty.SetSystemRequestsHandler(...)` với `IAdaptyUISystemRequestsHandler` — phản hồi các yêu cầu hệ thống từ flow: lời nhắc cấp quyền của hệ điều hành (`FlowViewDidAskPermission`) và yêu cầu đánh giá ứng dụng (`FlowViewDidRequestAppReview`). Đăng ký một handler nếu flow của bạn sử dụng action **Request permission**: xem [Xử lý yêu cầu quyền trong flow](unity-handle-permissions).
+- `AdaptyUICreateFlowViewParameters.Locale` (đặt bằng `SetLocale`) — hiển thị flow hoặc paywall với một [ngôn ngữ cụ thể trong Builder](add-paywall-locale-in-adapty-paywall-builder). Khi bạn tạo view, SDK tải tất cả các ngôn ngữ của flow, và `Locale` chọn ngôn ngữ sẽ hiển thị. Nếu không có `Locale`, view sẽ hiển thị bằng `en`, hoặc bằng ngôn ngữ mặc định khi flow không có `en`. View được tạo sẽ báo cáo ngôn ngữ nó được xây dựng bằng trong `view.Locale`. Xem [Sử dụng ngôn ngữ và mã locale](unity-localizations-and-locale-codes).
+- Callback `FlowViewDidReceiveAnalyticEvent` mới trên `IAdaptyFlowsEventsListener` báo cáo các sự kiện phân tích từ flow, bắt đầu với sự kiện xem màn hình cho mỗi màn hình người dùng mở. Xem [Theo dõi lượt xem màn hình flow](unity-flow-screen-views).
+- `AdaptyUI.OpenUrl(url, openIn, ...)` và `AdaptyUI.RequestAppReview(...)` — xử lý gốc đằng sau các action `open_url` và yêu cầu đánh giá ứng dụng. Gọi `OpenUrl` từ `FlowViewDidPerformAction` để giữ nguyên hành vi URL mặc định; `RequestAppReview` hỗ trợ lời nhắc đánh giá ứng dụng mặc định, mà các flow chưa kích hoạt được.
+
+## Đổi tên API attribution từ nguồn ngoài \{#renamed-external-attribution-apis\}
+
+Bắt đầu từ SDK phiên bản 4.1, các API dùng để truyền dữ liệu attribution từ nhà cung cấp bên ngoài (Adjust, AppsFlyer, Branch, Tenjin hoặc nguồn tùy chỉnh) được đổi tên để khớp với các native SDK, và tham số nhà cung cấp chuyển từ kiểu string sang kiểu type. Không có alias deprecated nào, vì vậy các đoạn code hiện tại sẽ không biên dịch được cho đến khi bạn cập nhật chúng:
+
+| Trước 4.1 | 4.1 |
+|---|---|
+| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(jsonString, provider, ...)` |
+| `source` là `string` | `provider` là `AdaptyExternalAttributionProvider` |
+| `AdaptyProfile.AppliedAttributionSources` là `IReadOnlyList<string>` | `AdaptyProfile.AppliedExternalAttributionProviders` là `IReadOnlyList<AdaptyExternalAttributionProvider>` |
+
+Chỉ đổi tên phương thức thôi chưa đủ — hãy đổi luôn đối số provider trong cùng một lần chỉnh sửa:
+
+```diff showLineNumbers
+- Adapty.UpdateAttribution(attributionJsonString, "adjust", (error) => { /* ... */ });
++ Adapty.UpdateExternalAttribution(attributionJsonString, AdaptyExternalAttributionProvider.Adjust, (error) => { /* ... */ });
+```
+
+`AdaptyExternalAttributionProvider` chứa định danh mà backend dùng để nhận biết nhà cung cấp, với sáu instance dùng chung: `AppleAds` (`apple_search_ads`), `Adjust`, `Appsflyer`, `Branch`, `Tenjin`, và `Custom`. Đối với nhà cung cấp mà Adapty bổ sung sau lần phát hành SDK này, hãy khởi tạo từ định danh của nó — `new AdaptyExternalAttributionProvider("your_provider")` — và dữ liệu sẽ được gửi đến backend nguyên vẹn. Khoảng trắng ở đầu và cuối sẽ được tự động loại bỏ.
+
+Dữ liệu attribution được truyền vào dưới dạng **chuỗi JSON đã được serialize**. Nếu bạn đang giữ dữ liệu dưới dạng dictionary, hãy serialize trước:
+
+```csharp showLineNumbers
+var attributionJsonString = Newtonsoft.Json.JsonConvert.SerializeObject(attribution);
+```
+
+Về phía hồ sơ người dùng, đọc các provider đã được áp dụng thông qua kiểu mới:
+
+```diff showLineNumbers
+- if (profile.AppliedAttributionSources.Contains("apple_search_ads")) {
++ if (profile.AppliedExternalAttributionProviders.Contains(AdaptyExternalAttributionProvider.AppleAds)) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+## Adapty Attribution bị tắt theo mặc định \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+Nếu bạn đang dùng [Adapty Attribution](user-acquisition) và cập nhật lên SDK 4.1 mà không opt in, hệ thống sẽ bị lỗi âm thầm — các lượt cài đặt ngừng được ghi nhận mà không có bất kỳ cảnh báo nào.
+:::
+
+Ở các phiên bản trước, SDK tự động ghi nhận lượt cài đặt cho [Adapty Attribution](user-acquisition). Kể từ SDK phiên bản 4.1, tính năng này bị tắt theo mặc định: SDK không ghi nhận lượt cài đặt, các callback listener `OnInstallationDetailsSuccess` và `OnInstallationDetailsFail` sẽ không bao giờ được gọi, và `GetCurrentInstallationStatus` trả về trạng thái `NotAvailable`.
+
+Nếu bạn sử dụng Adapty Attribution, hãy bật tính năng này khi khởi tạo SDK:
+
+```csharp showLineNumbers
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetAdaptyAttributionEnabled(true);
+```
+
+Nếu bạn không sử dụng Adapty Attribution, không cần thay đổi gì.
+
+## Tệp dự phòng \{#fallback-files\}
+
+Định dạng [tệp dự phòng](unity-use-fallback-paywalls) đã thay đổi trong SDK 4.1. Hãy tải lại tệp dự phòng cho iOS và Android từ **[Placements](https://app.adapty.io/placements)** > **Fallbacks** và thay thế các tệp hiện có trong `Assets/StreamingAssets`, dù bạn đã tải chúng cho phiên bản trước đó.
+
+:::warning
+Bước này không tạo ra lỗi biên dịch. Nếu bỏ qua, `SetFallback` sẽ báo lỗi `DecodingFailed` (`adapty_code: 2006`), và mọi placement sẽ mất paywall dự phòng.
+:::
 
 ## Thay đổi hành vi mặc định \{#default-behavior-changes\}
 
 Những thay đổi này không gây ra lỗi biên dịch, vì vậy hãy kiểm tra chúng tại runtime:
 
-- **Hoàn tất mua hàng**: Ở v3, view tự động đóng sau khi mua thành công. Ở v4, **flow vẫn mở sau khi mua hàng hoặc xảy ra lỗi cho đến khi bạn đóng nó** — SDK không áp dụng hành vi mặc định nào. Hãy tự gọi `view.Dismiss(...)` trong `FlowViewDidFinishPurchase` khi người dùng có quyền truy cập.
-- **Nút back trên Android**: Nút back hệ thống (hoặc thao tác vuốt back) được chuyển đến `FlowViewDidPerformAction` dưới dạng action `SystemBack` và không còn tự đóng flow nữa — giống với iOS, nơi flow không thể bị đóng bằng thao tác hệ thống. Hãy cung cấp cho người dùng cách thoát rõ ràng (nút **Close** hoặc action `on_device_back`), hoặc tự đóng view khi xử lý action đó.
-- **View chỉ dùng một lần**: Sau khi gọi `Dismiss`, view sẽ bị hủy. Gọi lại `CreateFlowView` nếu muốn hiển thị flow thêm lần nữa.
-- **Giao dịch ở Observer mode**: `ReportTransaction` không còn trả về lỗi giải mã khi thành công nữa — ở v3, response thành công bị phân tích sai, khiến mọi báo cáo thành công đều kết thúc với lỗi.
+- **Bản địa hóa flow**: Mã locale khu vực không còn fallback về ngôn ngữ của nó nữa — `pt-br` sẽ không lấy bản địa hóa `pt`. Mã không khớp chính xác sẽ hiển thị flow theo bản địa hóa mặc định. Xem [Khớp locale là chính xác](#locale-matching-is-exact).
+- **Hoàn tất mua hàng**: Trong v3, view tự động bị đóng sau khi mua thành công. Trong v4, **flow vẫn mở sau khi mua hoặc gặp lỗi cho đến khi bạn đóng nó** — SDK không áp dụng hành vi mặc định nào. Hãy tự gọi `view.Dismiss(...)` trong `FlowViewDidFinishPurchase` khi người dùng đã được cấp quyền truy cập.
+- **Nút Back của Android**: Nút back hệ thống (hoặc cử chỉ vuốt back) được chuyển đến `FlowViewDidPerformAction` dưới dạng action `SystemBack` và không còn tự đóng flow nữa — giống với iOS, nơi flow không thể bị đóng bằng cử chỉ hệ thống. Hãy cung cấp cho người dùng cách thoát rõ ràng (nút **Close** hoặc action `on_device_back`), hoặc tự đóng view khi xử lý action đó.
+- **View chỉ dùng một lần**: Sau khi `Dismiss`, view bị hủy. Gọi lại `CreateFlowView` để hiển thị flow một lần nữa.
+- **Giao dịch ở Observer mode**: `ReportTransaction` không còn trả về lỗi giải mã khi thành công nữa — trong v3, phản hồi thành công bị phân tích sai, khiến mọi báo cáo thành công đều kết thúc với lỗi.
 
-## Onboarding API không còn được hỗ trợ \{#onboarding-api-deprecation\}
+## Ngừng hỗ trợ Onboarding API \{#onboarding-api-deprecation\}
 
-API onboarding cũ đã bị deprecated trong v4.0, thay thế bằng [Flow Builder](adapty-flow-builder). API này vẫn hoạt động, nhưng sẽ bị xóa trong các phiên bản tương lai, vì vậy hãy lên kế hoạch migrate các onboarding của bạn sang Flow Builder.
+Onboarding API cũ đã bị ngừng hỗ trợ trong v4, thay thế bằng [Flow & Paywall Builder](adapty-flow-builder). API này vẫn hoạt động, nhưng sẽ bị xóa trong một phiên bản tương lai, vì vậy hãy lên kế hoạch migrate các onboarding của bạn sang Flow & Paywall Builder.
 
-Các ký hiệu đã bị deprecated: `GetOnboarding`, `GetOnboardingForDefaultAudience`, `AdaptyUI.CreateOnboardingView`, `AdaptyUI.PresentOnboardingView`, `AdaptyUI.DismissOnboardingView`, và `Adapty.SetOnboardingsEventsListener`.
+Các ký hiệu đã ngừng hỗ trợ: `GetOnboarding`, `GetOnboardingForDefaultAudience`, `AdaptyUI.CreateOnboardingView`, `AdaptyUI.PresentOnboardingView`, `AdaptyUI.DismissOnboardingView`, và `Adapty.SetOnboardingsEventsListener`.

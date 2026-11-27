@@ -8,7 +8,6 @@ rank: 85
 ---
 
 import Details from '@site/src/components/Details';
-import SampleApp from '@site/src/components/reusable/SampleApp.md';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
@@ -16,26 +15,30 @@ import TabItem from '@theme/TabItem';
 
 <MethodPromo method="getFlow" />
 
-After [you designed your flow or Paywall Builder paywall](adapty-paywall-builder), you can display it in your mobile app. The first step is to get the flow or paywall associated with the placement and its view configuration as described below.
+After [you designed your flow](adapty-flow-builder), you can display it in your mobile app. The first step is to get the flow or paywall associated with the placement and its view configuration as described below.
 
-Please be aware that this topic refers to flows and Paywall Builder-customized paywalls. If you are implementing your paywalls manually, please refer to the [Fetch paywalls and products for remote config paywalls in your mobile app](fetch-paywalls-and-products-flutter) topic.
+Please be aware that this topic refers to flows and paywalls designed in Adapty's builders. If you implement custom paywalls, please refer to the [Fetch paywalls and products for custom paywalls in your mobile app](fetch-paywalls-and-products-flutter) topic.
 
 <SampleApp />
 
-<details>
-   <summary>Before you start displaying flows and paywalls in your mobile app (click to expand)</summary>
+## Before you start
 
-1. [Create your products](create-product) in the Adapty Dashboard.
-2. [Create a flow/paywall and incorporate the products into it](create-paywall) in the Adapty Dashboard.
-3. [Create placements and incorporate your flow/paywall into it](create-placement) in the Adapty Dashboard.
-4. Install [Adapty SDK](sdk-installation-flutter) in your mobile app.
-</details>
+You need:
+
+- **Products in the Adapty Dashboard**: [Create your products](create-product).
+- **A flow with products**: Build it in the [Flow & Paywall Builder](adapty-flow-builder) and [assign products to it](paywall-product-block).
+- **A placement**: [Create a placement](create-placement) and assign your flow to it.
+- **Adapty SDK installed**: See the [Flutter SDK installation guide](sdk-installation-flutter).
 
 ## Fetch flow/paywall
 
-If you've designed a flow or paywall using the Flow Builder or Paywall Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a flow or paywall contains both what should be shown within it and how it should be shown. Nevertheless, you need to get its ID via the placement, its view configuration, and then present it in your mobile app.
+If you've designed a flow or paywall in the builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a flow or paywall contains both what should be shown within it and how it should be shown. Nevertheless, you need to get its ID via the placement, its view configuration, and then present it in your mobile app.
 
 Fetch the flow or paywall and create its [view](flutter-get-pb-paywalls#fetch-the-view-configuration) as early as possible — ideally well before you present it. The `createFlowView` method loads the view configuration and starts downloading and caching its images in the background. The earlier you call it, the more time these downloads have to complete. By the time you present the flow or paywall, its configuration and images can already be cached and ready to display.
+
+:::tip
+To warm several placements at once, call [`preloadFlows`](flutter-optimize-paywall-fetching#preload-placements) (Flutter SDK 4.3.0+). It caches the placement JSON only, so `createFlowView` still loads the layout and images.
+:::
 
 To get a flow or paywall, use the `getFlow` method:
 
@@ -55,8 +58,8 @@ Parameters:
 | Parameter | Presence | Description |
 |---------|--------|-----------|
 | **placementId** | required | The identifier of the desired [Placement](placements). This is the value you specified when creating a placement in the Adapty Dashboard. |
-| **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `.returnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p><p></p><p>Adapty SDK stores paywalls locally in two layers: regularly updated cache described above and [fallback paywalls](fallback-paywalls). We also use CDN to fetch paywalls faster and a stand-alone fallback server in case the CDN is unreachable. This system is designed to make sure you always get the latest version of your paywalls while ensuring reliability even in cases where internet connection is scarce.</p> |
-| **loadTimeout** | default: 5 sec | <p>A `Duration` that limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.</p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p> |
+| **fetchPolicy** | default: `AdaptyFlowFetchPolicy.reloadRevalidatingCacheData` | <p>`fetchPolicy` sets which layer the SDK reads first, not whether it can use the cache. By default the SDK goes to the server first and returns cached data if that request fails. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider `AdaptyFlowFetchPolicy.returnCacheDataElseLoad`, which reverses that order — it reads the cache first and goes to the server only when nothing is cached. Users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>A third policy, `AdaptyFlowFetchPolicy.returnCacheDataIfNotExpiredElseLoad(maxAge)`, sits between the two: it reads the cache first while the cached copy is younger than the `Duration` you pass, and goes to the server once it is older.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p><p></p><p>Adapty SDK stores paywalls locally in two layers: regularly updated cache described above and [fallback paywalls](fallback-paywalls). We also use CDN to fetch paywalls faster and a stand-alone fallback server in case the CDN is unreachable. This system is designed to make sure you always get the latest version of your paywalls while ensuring reliability even in cases where internet connection is scarce.</p> |
+| **loadTimeout** | default: 5 sec | <p>A `Duration` that limits the timeout for this method. If the Adapty server doesn't respond in time or returns an error, the SDK returns the cached flow. If nothing is cached and the server timed out or returned a server error, the SDK requests the flow from the fallback server (a CDN copy that serves only the placement's **All Users** audience). As a last resort, the SDK returns the flow from your [fallback file](flutter-use-fallback-paywalls).</p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p> |
 
 Response parameters:
 
@@ -67,13 +70,13 @@ Response parameters:
 ## Fetch the view configuration
 
 :::important
-Make sure to enable the **Show on device** toggle in the builder. If this option isn't turned on, the view configuration won't be available to retrieve.
+Make sure to [publish the flow](builder-save-publish). A flow with unpublished edits has the **Dirty** status, and its placement keeps serving the last published version.
 :::
 
-If the placement was designed in the **Flow Builder** or the **Paywall Builder**, Adapty renders the UI for you — the `hasViewConfiguration` property of the fetched flow is `true`. Create the view with `createFlowView`, then [present the flow or paywall](flutter-present-paywalls). If the placement is a custom paywall with no Builder UI (`hasViewConfiguration` is `false`), [handle it as a remote config paywall](present-remote-config-paywalls-flutter) instead.
+If the placement was designed in the **Flow & Paywall Builder** or the **old Paywall Builder**, Adapty renders the UI for you — the `hasViewConfiguration` property of the fetched flow is `true`. Create the view with `createFlowView`, then [present the flow or paywall](flutter-present-paywalls). If the placement is a custom paywall with no Builder UI (`hasViewConfiguration` is `false`), [render it yourself](present-remote-config-paywalls-flutter) instead.
 
 :::warning
-The result of the `createFlowView` method can only be presented once. If you need to present it again, call the `createFlowView` method anew.
+By default, dismissing the result of the `createFlowView` method releases it, so you can't present it again. If you need to present the flow or paywall again, call the `createFlowView` method anew, or [dismiss without releasing it](flutter-present-paywalls#dismiss-the-flow-or-paywall) on SDK 4.1 and later.
 :::
 
 ```dart showLineNumbers
@@ -137,7 +140,7 @@ try {
 | Parameter | Presence | Description |
 |---------|--------|-----------|
 | **placementId** | required | The identifier of the [Placement](placements). This is the value you specified when creating a placement in your Adapty Dashboard. |
-| **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `.returnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p> |
+| **fetchPolicy** | default: `AdaptyFlowFetchPolicy.reloadRevalidatingCacheData` | <p>`fetchPolicy` sets which layer the SDK reads first, not whether it can use the cache. By default the SDK goes to the server first and returns cached data if that request fails. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider `AdaptyFlowFetchPolicy.returnCacheDataElseLoad`, which reverses that order — it reads the cache first and goes to the server only when nothing is cached. Users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>A third policy, `AdaptyFlowFetchPolicy.returnCacheDataIfNotExpiredElseLoad(maxAge)`, sits between the two: it reads the cache first while the cached copy is younger than the `Duration` you pass, and goes to the server once it is older.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p> |
 
 ## Customize assets
 
@@ -152,6 +155,7 @@ For example, you can:
 - Show a different image or video to some users.
 - Show a local preview image while a remote main image is loading.
 - Show a preview image before running a video.
+- Show media bundled with the app, so the first screen renders without a download. See [Show first-screen media from the app bundle](flutter-optimize-paywall-fetching#show-first-screen-media-from-the-app-bundle).
 
 Here’s an example of how you can provide custom assets via a simple dictionary:
 
@@ -188,7 +192,9 @@ If an asset is not found, the flow/paywall will fall back to its default appeara
 
 ## Set up developer-defined timers
 
-To use custom timers in your mobile app, pass a `customTimers` map to the `createFlowView` method. Each map key is a timer ID, and its value is a `DateTime` object that defines when the timer ends. Here is an example:
+Use this section for a timer with the **Developer defined** behavior in the Flow & Paywall Builder. In the builder, each such timer has a **Timer ID** (see [Let your app set the end date](flow-timer#let-your-app-set-the-end-date)), and your app sets the end date for it. Use the same Timer ID in your code as in the builder, character for character, including letter case and spaces. If the IDs differ, the timer gets no end date from your app.
+
+To set the end dates, pass a `customTimers` map to the `createFlowView` method. Each map key is a Timer ID, and its value is a `DateTime` object that defines when the timer ends. Here is an example:
 
 ```dart showLineNumbers
 import 'package:adapty_flutter/adapty_flutter.dart';
@@ -197,8 +203,8 @@ try {
   final view = await AdaptyUI().createFlowView(
     flow: flow,
     customTimers: {
-      'CUSTOM_TIMER_6H': DateTime.now().add(const Duration(seconds: 3600 * 6)),
-      'CUSTOM_TIMER_NY': DateTime(2027, 1, 1), // New Year 2027
+      'CUSTOM_TIMER_6H': DateTime.now().add(const Duration(hours: 6)),
+      'CUSTOM_TIMER_NY': DateTime(DateTime.now().year + 1), // next New Year's Day
     },
   );
 } on AdaptyError catch (e) {
@@ -208,22 +214,26 @@ try {
 }
 ```
 
-In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s of developer-defined timers you set in the Adapty Dashboard. The `customTimers` map ensures your app dynamically updates each timer with the correct value. For example:
+For a flow embedded with `AdaptyUIFlowPlatformView`, pass the same map to its `customTimers` parameter.
 
-- `CUSTOM_TIMER_NY`: The time remaining until the timer’s end, such as New Year’s Day.
-- `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the flow.
+In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the Timer IDs of two **Developer defined** timers in the builder:
+
+- `CUSTOM_TIMER_NY`: The time left until the next New Year's Day.
+- `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when your app created the view.
+
+The SDK reads `customTimers` once, when it creates the view, so a computed date such as `CUSTOM_TIMER_6H` counts from that moment, also when the user opens the screen again. If the date is in the past, the timer shows zero at once and its **On timer end** trigger runs. If `customTimers` has no key for a Timer ID, the timer counts down one hour from the screen open.
 
 </SDKv4>
 
 <SDKv3>
 
-After [you designed the visual part for your paywall](adapty-paywall-builder) with the new Paywall Builder in the Adapty Dashboard, you can display it in your mobile app. The first step in this process is to get the paywall associated with the placement and its view configuration as described below.
+After [you designed the visual part for your paywall](adapty-paywall-builder) with the old Paywall Builder in the Adapty Dashboard, you can display it in your mobile app. The first step in this process is to get the paywall associated with the placement and its view configuration as described below.
 
 :::warning
-The new Paywall Builder works with Flutter SDK version 3.3.0 or higher.
+Paywalls built in the SDK 3.x Paywall Builder require Flutter SDK version 3.3.0 or higher.
 :::
 
-Please be aware that this topic refers to Paywall Builder-customized paywalls. If you are implementing your paywalls manually, please refer to the [Fetch paywalls and products for remote config paywalls in your mobile app](fetch-paywalls-and-products-flutter) topic.
+Please be aware that this topic refers to Paywall Builder-customized paywalls. If you implement custom paywalls, please refer to the [Fetch paywalls and products for custom paywalls in your mobile app](fetch-paywalls-and-products-flutter) topic.
 
 <SampleApp />
 
@@ -259,9 +269,9 @@ Parameters:
 | Parameter | Presence | Description |
 |---------|--------|-----------|
 | **placementId** | required | The identifier of the desired [Placement](placements). This is the value you specified when creating a placement in the Adapty Dashboard. |
-| **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the [paywall localization](add-paywall-locale-in-adapty-paywall-builder). This parameter is expected to be a language code composed of one or two subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p>See [Localizations and locale codes](flutter-localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p> |
-| **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `.returnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p><p></p><p>Adapty SDK stores paywalls locally in two layers: regularly updated cache described above and [fallback paywalls](fallback-paywalls). We also use CDN to fetch paywalls faster and a stand-alone fallback server in case the CDN is unreachable. This system is designed to make sure you always get the latest version of your paywalls while ensuring reliability even in cases where internet connection is scarce.</p> |
-| **loadTimeout** | default: 5 sec | <p>This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.</p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p><p>For Android: You can create `TimeInterval` with extension functions (like `5.seconds`, where `.seconds` is from `import com.adapty.utils.seconds`), or `TimeInterval.seconds(5)`. To set no limitation, use `TimeInterval.INFINITE`.</p> |
+| **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the paywall localization. This parameter is expected to be a language code composed of one or two subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p>See [Localizations and locale codes](flutter-localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p> |
+| **fetchPolicy** | default: `AdaptyPaywallFetchPolicy.reloadRevalidatingCacheData` | <p>`fetchPolicy` sets which layer the SDK reads first, not whether it can use the cache. By default the SDK goes to the server first and returns cached data if that request fails. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider `AdaptyPaywallFetchPolicy.returnCacheDataElseLoad`, which reverses that order — it reads the cache first and goes to the server only when nothing is cached. Users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>A third policy, `AdaptyPaywallFetchPolicy.returnCacheDataIfNotExpiredElseLoad(maxAge)`, sits between the two: it reads the cache first while the cached copy is younger than the `Duration` you pass, and goes to the server once it is older.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p><p></p><p>Adapty SDK stores paywalls locally in two layers: regularly updated cache described above and [fallback paywalls](fallback-paywalls). We also use CDN to fetch paywalls faster and a stand-alone fallback server in case the CDN is unreachable. This system is designed to make sure you always get the latest version of your paywalls while ensuring reliability even in cases where internet connection is scarce.</p> |
+| **loadTimeout** | default: 5 sec | <p>A `Duration` that limits the timeout for this method. If the Adapty server doesn't respond in time or returns an error, the SDK returns the paywall from the fallback server (a CDN copy that serves only the placement's **All Users** audience), the cache, or your [fallback file](flutter-use-fallback-paywalls).</p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p> |
 
 Response parameters:
 
@@ -275,7 +285,7 @@ Response parameters:
 Make sure to enable the **Show on device** toggle in the paywall builder. If this option isn't turned on, the view configuration won't be available to retrieve.
 :::
 
-After fetching the paywall, check if it includes a `ViewConfiguration`, which indicates that it was created using Paywall Builder. This will guide you on how to display the paywall. If the `ViewConfiguration` is present, treat it as a Paywall Builder paywall; if not, [handle it as a remote config paywall](present-remote-config-paywalls-flutter).
+After fetching the paywall, check if it includes a `ViewConfiguration`, which indicates that it was created using Paywall Builder. This will guide you on how to display the paywall. If the `ViewConfiguration` is present, treat it as a Paywall Builder paywall; if not, [handle it as a custom paywall](present-remote-config-paywalls-flutter).
 
 ```dart showLineNumbers
 import 'package:adapty_flutter/adapty_flutter.dart';
@@ -328,7 +338,7 @@ The `getPaywallForDefaultAudience` method is available starting from Flutter SDK
 |---------|--------|-----------|
 | **placementId** | required | The identifier of the [Placement](placements). This is the value you specified when creating a placement in your Adapty Dashboard. |
 | **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the [paywall localization](add-remote-config-locale). This parameter is expected to be a language code composed of one or more subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p></p><p>See [Localizations and locale codes](localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p> |
-| **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `.returnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p> |
+| **fetchPolicy** | default: `AdaptyPaywallFetchPolicy.reloadRevalidatingCacheData` | <p>`fetchPolicy` sets which layer the SDK reads first, not whether it can use the cache. By default the SDK goes to the server first and returns cached data if that request fails. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider `AdaptyPaywallFetchPolicy.returnCacheDataElseLoad`, which reverses that order — it reads the cache first and goes to the server only when nothing is cached. Users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>A third policy, `AdaptyPaywallFetchPolicy.returnCacheDataIfNotExpiredElseLoad(maxAge)`, sits between the two: it reads the cache first while the cached copy is younger than the `Duration` you pass, and goes to the server once it is older.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p> |
 
 ## Customize assets
 

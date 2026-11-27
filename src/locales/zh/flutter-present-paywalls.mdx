@@ -1,28 +1,29 @@
 ---
 title: "展示流程与付费墙 - Flutter"
-description: "使用 Adapty 的变现功能在 Flutter 应用中展示流程和付费墙。"
+description: "在 Flutter 应用中使用 Adapty 的变现功能展示流程和付费墙。"
 metadataTitle: "在 Flutter 中展示流程与付费墙 | Adapty 文档"
 ---
 
-import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md'; 
-
 <SDKv4>
-如果你已经使用流程编辑工具（Flow Builder）或付费墙编辑工具（Paywall Builder）设计了流程或付费墙，则无需在移动应用代码中手动实现渲染逻辑来向用户展示它。这类流程或付费墙本身已经包含了展示内容与展示方式的完整定义。
+
+如果你已创建了流程，或在旧版付费墙编辑工具中创建了付费墙，无需在移动端代码中手动渲染即可向用户展示。此类流程或付费墙本身已包含展示内容和展示方式。
 
 :::warning
 
-本指南适用于流程和付费墙编辑工具构建的付费墙。如需展示**远程配置付费墙**，请参阅[渲染远程配置设计的付费墙](present-remote-config-paywalls-flutter)。
+本指南适用于由 Adapty 渲染的流程和付费墙。如需展示自定义付费墙，请参阅[展示自定义付费墙](present-remote-config-paywalls-flutter)。
 
 :::
 
 Adapty Flutter SDK 提供两种展示流程和付费墙的方式：
 
-- **独立页面**
+- **独立屏幕**
 
 - **嵌入式组件**
-## 作为独立屏幕展示 \{#present-as-standalone-screen\}
 
-要将流程或付费墙作为独立屏幕显示，请对通过 [`createFlowView`](flutter-get-pb-paywalls#fetch-the-view-configuration) 方法创建的 `view` 调用 `view.present()` 方法。每个 `view` 只能展示一次：关闭后，该 view 会从内存中释放。如需再次显示流程或付费墙，请重新调用 `createFlowView` 创建新的 `view` 实例。
+## 以独立页面形式展示 \{#present-as-standalone-screen\}
+
+要将流程或付费墙以独立页面形式展示，请对由 [`createFlowView`](flutter-get-pb-paywalls#fetch-the-view-configuration) 方法创建的 `view` 调用 `view.present()` 方法。默认情况下，关闭 `view` 后会将其从内存中释放，因此无法再次展示。如需再次显示该流程或付费墙，请再次调用 `createFlowView` 创建新的 `view` 实例，或在 SDK 4.1 及更高版本中使用[关闭但不释放](#dismiss-the-flow-or-paywall)的方式。
+
 ```dart showLineNumbers title="Flutter"
 try {
   await view.present();
@@ -33,9 +34,10 @@ try {
 }
 ```
 <SampleApp />
+
 ### 关闭流程或付费墙 \{#dismiss-the-flow-or-paywall\}
 
-当需要以编程方式关闭流程或付费墙时，请使用 `dismiss()` 方法：
+如需通过代码关闭流程或付费墙，请使用 `dismiss()` 方法：
 
 ```dart showLineNumbers title="Flutter"
 try {
@@ -48,11 +50,51 @@ try {
 ```
 
 :::note
-关闭视图会将其从内存中释放——已关闭的视图无法再次呈现。请改用 `createFlowView` 创建新的视图。
+关闭视图会将其从内存中释放——已关闭的视图无法再次显示。请改用 `createFlowView` 创建新视图。
 :::
+
+从 SDK 4.1 起，传入 `destroy: false` 可保留视图在内存中：
+
+```dart showLineNumbers title="Flutter"
+await view.dismiss(destroy: false);
+```
+
+再次展示该视图时，用户会回到离开时的页面，流程已积累的状态也会保留。以这种方式保留的视图会一直占用内存，直到你主动释放它。
+
+从 SDK 4.3.0 起，当你不再需要保留的视图时，可调用 `destroy()` 释放它：
+
+```dart showLineNumbers title="Flutter"
+await view.dismiss(destroy: false);
+// ...
+await view.destroy();
+```
+
+`destroy()` 还会释放你已创建但从未展示的视图，以及用户在 iOS 上向下滑动关闭的页面弹窗视图。不要在常规 `dismiss()` 之后调用它：该视图已被释放，调用会以 `wrongParam` 错误失败。在较早版本的 SDK 中，请重新展示保留的视图，并使用 `destroy: true` 参数调用 dismiss 来释放它。
+
+默认的关闭操作会调用 `view.dismiss()`，即使你之前通过 `destroy: false` 保留了该视图，它也会被释放。若要在用户关闭时保留视图，请覆盖 `flowViewDidPerformAction` 并自行关闭视图。该方法会在应用中的每个流程和付费墙上触发，因此需通过比较 `view.id` 来确保只保留你计划再次呈现的视图。保留 `OpenUrlAction` 的处理逻辑以维持 URL 跳转功能：
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+  switch (action) {
+    case const CloseAction():
+      // keptView is the view your app stored to present again
+      view.dismiss(destroy: view.id != keptView?.id);
+      break;
+    case OpenUrlAction(:final url, :final openIn):
+      AdaptyUI().openUrl(url, openIn: openIn);
+      break;
+    default:
+      break;
+  }
+}
+```
+
+保留 `view`：你需要用它再次展示流程或付费墙，以及通过 `destroy()` 释放它。其他任何 `view.dismiss()` 调用也会释放视图，包括 [`flowViewDidReceiveError`](flutter-handling-events#view-errors) 中的调用。视图出错后，请使用 `createFlowView` 创建新视图。
+
 ### 显示对话框 \{#show-dialog\}
 
 在 Android 上展示流程或付费墙视图时，请使用此方法替代原生的弹窗对话框。在 Android 上，普通弹窗会出现在视图背后，用户无法看到。此方法可确保对话框在所有平台上都能正确显示在流程或付费墙的上方。
+
 ```dart showLineNumbers title="Flutter"
 try {
   final action = await view.showDialog(
@@ -74,7 +116,7 @@ try {
 
 ### 配置 iOS 展示样式 \{#configure-ios-presentation-style\}
 
-通过向 `present()` 方法传递 `iosPresentationStyle` 参数，可以配置流程或付费墙在 iOS 上的展示方式。该参数接受 `AdaptyUIIOSPresentationStyle.fullScreen`（默认值）或 `AdaptyUIIOSPresentationStyle.pageSheet`。
+通过向 `present()` 方法传入 `iosPresentationStyle` 参数，可以配置流程或付费墙在 iOS 上的展示方式。该参数接受 `AdaptyUIIOSPresentationStyle.fullScreen`（默认值）或 `AdaptyUIIOSPresentationStyle.pageSheet`。
 
 ```dart showLineNumbers
 try {
@@ -85,9 +127,13 @@ try {
   // handle the error
 }
 ```
+
+用户可以向下滑动页面面板将其关闭。此后视图会保留在内存中，不会自动调用 `dismiss()`：你可以再次展示它，也可以在 SDK 4.3.0 及更高版本中通过 [`destroy()`](#dismiss-the-flow-or-paywall) 将其释放。
+
 ## 嵌入到 widget 层级中 \{#embed-in-widget-hierarchy\}
 
 如需将流程或付费墙嵌入到现有的 widget 树中，可以直接在 Flutter widget 层级里使用 `AdaptyUIFlowPlatformView` widget。
+
 ```dart showLineNumbers title="Flutter"
 AdaptyUIFlowPlatformView(
   flow: flow, // The flow object you fetched
@@ -121,8 +167,26 @@ AdaptyUIFlowPlatformView(
 )
 ```
 
+要关闭嵌入式流程，需将 `AdaptyUIFlowPlatformView` 组件从组件树中移除。`view.dismiss()` 对嵌入式流程无效，默认的关闭处理也不会将流程从屏幕上移除。当 `onDidPerformAction` 收到 `CloseAction` 时（Android 上还需处理 `AndroidSystemBackAction`），移除该组件：
+
+```dart showLineNumbers title="Flutter"
+onDidPerformAction: (view, action) {
+  switch (action) {
+    case CloseAction():
+    case AndroidSystemBackAction():
+      setState(() => _showFlow = false); // removes the widget from the tree
+    default:
+      break;
+  }
+},
+```
+
+在 iOS 上，当 Widget 无法显示流程时，`AdaptyUIFlowPlatformView` 的 `onDidReceiveError` 回调会收到错误。这可能发生在流程加载失败，或设备运行 iOS 15（不支持流程）时。请移除该 Widget 并显示自己的内容。如需重试临时性错误（如 `AdaptyErrorCode.networkFailed`），可使用新的 `Key` 重新构建 Widget。
+
+在 Android 上，Widget 不会上报流程加载失败的情况：`onDidReceiveError` 和 `onDidAppear` 均不会触发。
+
 :::note
-对于 Android 平台视图，请确保你的 `MainActivity` 继承自 `FlutterFragmentActivity`：
+对于 Android 平台视图，请确保您的 `MainActivity` 继承自 `FlutterFragmentActivity`：
 
 ```kotlin showLineNumbers title="Kotlin"
 class MainActivity : FlutterFragmentActivity() {
@@ -137,20 +201,22 @@ class MainActivity : FlutterFragmentActivity() {
 
 <SDKv3>
 
-如果你已使用付费墙编辑工具自定义了付费墙，则无需在移动应用代码中手动处理其渲染逻辑来向用户展示它。此类付费墙已包含展示内容及展示方式的完整配置。
+如果您已使用付费墙编辑工具自定义了付费墙，则无需在移动应用代码中手动处理其渲染逻辑来向用户展示它。此类付费墙已包含展示内容和展示方式的完整配置。
 
 :::warning
-本指南仅适用于**新版付费墙编辑工具**创建的付费墙，需要 SDK v3.2.0 或更高版本。不同版本付费墙编辑工具设计的付费墙及远程配置付费墙的展示流程各有不同。
 
-- 如需展示**远程配置付费墙**，请参阅[展示远程配置设计的付费墙](present-remote-config-paywalls-flutter)。
+本指南仅适用于在旧版付费墙编辑工具中为 **Adapty SDK 3.x** 构建的付费墙，需要 SDK v3.2.0 或更高版本。展示为 SDK 2.x 或更早版本构建的付费墙，或自定义付费墙，方式有所不同。
+
+- 要展示自定义付费墙，请参阅[展示自定义付费墙](present-remote-config-paywalls-flutter)。
 
 :::
 
-Adapty Flutter SDK 提供两种付费墙展示方式：
+Adapty Flutter SDK 提供两种展示付费墙的方式：
 
-- **独立页面**
+- **独立屏幕**
 
-- **嵌入式组件**
+- **嵌入式 widget**
+
 ## 作为独立页面展示 \{#present-as-standalone-screen\}
 
 要将付费墙作为独立页面展示，请在由 [`createPaywallView`](flutter-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) 方法创建的 `view` 上调用 `view.present()` 方法。每个 `view` 只能使用一次。如果需要再次展示付费墙，请重新调用 `createPaywallView` 创建新的 `view` 实例。
@@ -159,6 +225,7 @@ Adapty Flutter SDK 提供两种付费墙展示方式：
 
 重复使用同一个 `view` 而不重新创建，可能会导致 `AdaptyUIError.viewAlreadyPresented` 错误。
 :::
+
 ```dart showLineNumbers title="Flutter"
 try {
   await view.present();
@@ -169,6 +236,7 @@ try {
 }
 ```
 <SampleApp />
+
 ### 关闭付费墙 \{#dismiss-the-paywall\}
 
 当你需要以编程方式关闭付费墙时，请使用 `dismiss()` 方法：
@@ -182,9 +250,11 @@ try {
   // handle the error
 }
 ```
+
 ### 显示对话框 \{#show-dialog\}
 
 在 Android 上展示付费墙视图时，请使用此方法代替原生的提示对话框。在 Android 上，普通提示框会出现在付费墙视图的后面，导致用户看不到它。此方法可确保对话框在所有平台上都能正确显示在付费墙的上方。
+
 ```dart showLineNumbers title="Flutter"
 try {
   final action = await view.showDialog(
@@ -204,9 +274,9 @@ try {
 }
 ```
 
-### 配置 iOS 呈现样式 \{#configure-ios-presentation-style\}
+### 配置 iOS 展示样式 \{#configure-ios-presentation-style\}
 
-通过向 `present()` 方法传递 `iosPresentationStyle` 参数，可以配置付费墙在 iOS 上的呈现方式。该参数接受 `AdaptyUIIOSPresentationStyle.fullScreen`（默认值）或 `AdaptyUIIOSPresentationStyle.pageSheet` 两个值。
+通过向 `present()` 方法传递 `iosPresentationStyle` 参数，可以配置付费墙在 iOS 上的展示方式。该参数接受 `AdaptyUIIOSPresentationStyle.fullScreen`（默认值）或 `AdaptyUIIOSPresentationStyle.pageSheet` 两个值。
 
 ```dart showLineNumbers
 try {
@@ -217,9 +287,11 @@ try {
   // handle the error
 }
 ```
+
 ## 嵌入到组件层级中 \{#embed-in-widget-hierarchy\}
 
 如需将付费墙嵌入到现有的组件树中，可以直接在 Flutter 组件层级里使用 `AdaptyUIPaywallPlatformView` 组件。
+
 ```dart showLineNumbers title="Flutter"
 AdaptyUIPaywallPlatformView(
   paywall: paywall, // The paywall object you fetched

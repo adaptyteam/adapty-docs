@@ -1,30 +1,28 @@
 ---
-title: "Afficher les flows & paywalls - Flutter"
-description: "Présentez les flows et paywalls dans les applications Flutter grâce aux fonctionnalités de monétisation d'Adapty."
-metadataTitle: "Afficher les flows & paywalls dans Flutter | Documentation Adapty"
+title: "Afficher les flows et paywalls - Flutter"
+description: "Présentez les flows et les paywalls dans les applications Flutter grâce aux fonctionnalités de monétisation d'Adapty."
+metadataTitle: "Afficher les flows et paywalls dans Flutter | Documentation Adapty"
 ---
-
-import SampleApp from '@site/src/locales/fr/reusable/SampleApp.md'; 
 
 <SDKv4>
 
-Si vous avez conçu un flow ou un paywall avec le Flow Builder ou le Paywall Builder, vous n'avez pas à vous soucier de son rendu dans le code de votre application mobile pour l'afficher à l'utilisateur. Un tel flow ou paywall contient à la fois ce qui doit être affiché et comment cela doit l'être.
+Si vous avez créé un flow ou un paywall dans l'ancien Paywall Builder, vous n'avez pas à vous soucier de son rendu dans le code de votre application mobile pour l'afficher à l'utilisateur. Un tel flow ou paywall contient à la fois ce qui doit être affiché et comment il doit l'être.
 
 :::warning
 
-Ce guide concerne les flows et les paywalls créés avec le Paywall Builder. Pour afficher des **paywalls Remote Config**, consultez [Afficher un paywall conçu avec la Remote Config](present-remote-config-paywalls-flutter).
+Ce guide est destiné aux flows et paywalls rendus par Adapty. Pour présenter des paywalls personnalisés, consultez [Présenter des paywalls personnalisés](present-remote-config-paywalls-flutter).
 
 :::
 
-Le SDK Flutter d'Adapty propose deux façons d'afficher les flows et les paywalls :
+Le SDK Flutter d'Adapty propose deux façons de présenter des flows et des paywalls :
 
 - **Écran autonome**
 
 - **Widget intégré**
 
-## Afficher en tant qu'écran autonome \{#present-as-standalone-screen\}
+## Présenter comme écran autonome \{#present-as-standalone-screen\}
 
-Pour afficher un flow ou un paywall en tant qu'écran autonome, utilisez la méthode `view.present()` sur la `view` créée par la méthode [`createFlowView`](flutter-get-pb-paywalls#fetch-the-view-configuration). Chaque `view` ne peut être présentée qu'une seule fois : une fois fermée, la vue est libérée de la mémoire. Si vous devez afficher à nouveau le flow ou le paywall, appelez `createFlowView` une nouvelle fois pour créer une nouvelle instance de `view`.
+Pour afficher un flow ou un paywall comme écran autonome, utilisez la méthode `view.present()` sur le `view` créé par la méthode [`createFlowView`](flutter-get-pb-paywalls#fetch-the-view-configuration). Par défaut, fermer un `view` le libère de la mémoire, vous ne pouvez donc pas le présenter à nouveau. Si vous avez besoin d'afficher le flow ou le paywall une nouvelle fois, appelez `createFlowView` une nouvelle fois pour créer une nouvelle instance de `view`, ou [fermez-le sans le libérer](#dismiss-the-flow-or-paywall) avec le SDK 4.1 ou une version ultérieure.
 
 ```dart showLineNumbers title="Flutter"
 try {
@@ -37,9 +35,9 @@ try {
 ```
 <SampleApp />
 
-### Fermer le flow ou le paywall \{#dismiss-the-flow-or-paywall\}
+### Fermer le flow ou le paywall
 
-Quand vous devez fermer un flow ou un paywall par programmation, utilisez la méthode `dismiss()` :
+Quand vous avez besoin de fermer le flow ou le paywall par programmation, utilisez la méthode `dismiss()` :
 
 ```dart showLineNumbers title="Flutter"
 try {
@@ -54,6 +52,44 @@ try {
 :::note
 Fermer une vue la libère de la mémoire — une vue fermée ne peut plus être réaffichée. Créez-en une nouvelle avec `createFlowView` à la place.
 :::
+
+À partir du SDK 4.1, passez `destroy: false` pour conserver la vue en mémoire :
+
+```dart showLineNumbers title="Flutter"
+await view.dismiss(destroy: false);
+```
+
+Réaffichez cette vue et l'utilisateur retrouve l'écran qu'il avait quitté, avec l'état accumulé par le flow. Une vue conservée de cette façon reste en mémoire jusqu'à ce que vous la libériez.
+
+À partir du SDK 4.3.0, lorsque vous n'avez plus besoin d'une vue conservée, libérez-la avec `destroy()` :
+
+```dart showLineNumbers title="Flutter"
+await view.dismiss(destroy: false);
+// ...
+await view.destroy();
+```
+
+`destroy()` libère également une vue que vous avez créée mais jamais présentée, ainsi qu'une vue page-sheet que l'utilisateur a fermée en faisant glisser vers le bas sur iOS. N'appelez pas cette méthode après un `dismiss()` classique : cette vue est déjà libérée, et l'appel échoue avec l'erreur `wrongParam`. Sur les versions antérieures du SDK, présentez à nouveau la vue conservée puis fermez-la avec `destroy: true` pour la libérer.
+
+L'action de fermeture par défaut appelle `view.dismiss()`, ce qui libère la vue même si vous l'avez conservée avec `destroy: false`. Pour garder une vue quand l'utilisateur la ferme, surchargez `flowViewDidPerformAction` et effectuez vous-même la fermeture. Cette méthode s'exécute pour chaque flow et chaque paywall de votre application, donc comparez `view.id` pour ne conserver que la vue que vous comptez réafficher. Conservez le cas `OpenUrlAction` pour préserver l'ouverture des URLs :
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+  switch (action) {
+    case const CloseAction():
+      // keptView is the view your app stored to present again
+      view.dismiss(destroy: view.id != keptView?.id);
+      break;
+    case OpenUrlAction(:final url, :final openIn):
+      AdaptyUI().openUrl(url, openIn: openIn);
+      break;
+    default:
+      break;
+  }
+}
+```
+
+Conservez la `view` que vous avez gardée : vous en aurez besoin pour présenter à nouveau le flow ou le paywall, et pour le libérer avec `destroy()`. Tout autre appel à `view.dismiss()` libère également la vue, y compris l'appel dans [`flowViewDidReceiveError`](flutter-handling-events#view-errors). Après une erreur de vue, créez une nouvelle vue avec `createFlowView`.
 
 ### Afficher une boîte de dialogue \{#show-dialog\}
 
@@ -80,7 +116,7 @@ try {
 
 ### Configurer le style de présentation iOS \{#configure-ios-presentation-style\}
 
-Configurez la façon dont le flow ou le paywall est présenté sur iOS en passant le paramètre `iosPresentationStyle` à la méthode `present()`. Ce paramètre accepte les valeurs `AdaptyUIIOSPresentationStyle.fullScreen` (par défaut) ou `AdaptyUIIOSPresentationStyle.pageSheet`.
+Configurez la façon dont le flow ou le paywall est présenté sur iOS en passant le paramètre `iosPresentationStyle` à la méthode `present()`. Le paramètre accepte les valeurs `AdaptyUIIOSPresentationStyle.fullScreen` (par défaut) ou `AdaptyUIIOSPresentationStyle.pageSheet`.
 
 ```dart showLineNumbers
 try {
@@ -91,6 +127,8 @@ try {
   // handle the error
 }
 ```
+
+L'utilisateur peut glisser vers le bas pour fermer la page sheet. La vue reste alors en mémoire sans appel à `dismiss()` : présentez-la à nouveau, ou, à partir du SDK 4.3.0, libérez-la avec [`destroy()`](#dismiss-the-flow-or-paywall).
 
 ## Intégrer dans la hiérarchie de widgets \{#embed-in-widget-hierarchy\}
 
@@ -129,8 +167,26 @@ AdaptyUIFlowPlatformView(
 )
 ```
 
+Pour fermer un flow intégré, retirez le widget `AdaptyUIFlowPlatformView` de l'arbre de widgets. `view.dismiss()` ne fonctionne pas pour un flow intégré, et la gestion de fermeture par défaut laisse le flow à l'écran. Retirez le widget lorsque `onDidPerformAction` reçoit `CloseAction`, et sur Android, `AndroidSystemBackAction` :
+
+```dart showLineNumbers title="Flutter"
+onDidPerformAction: (view, action) {
+  switch (action) {
+    case CloseAction():
+    case AndroidSystemBackAction():
+      setState(() => _showFlow = false); // removes the widget from the tree
+    default:
+      break;
+  }
+},
+```
+
+Sur iOS, le callback `onDidReceiveError` de `AdaptyUIFlowPlatformView` reçoit une erreur quand le widget ne peut pas afficher le flow. Cela se produit quand le flow ne parvient pas à se charger, ou quand l'appareil est sous iOS 15, qui ne prend pas en charge les flows. Supprimez le widget et affichez votre propre contenu. Pour relancer une erreur temporaire comme `AdaptyErrorCode.networkFailed`, reconstruisez le widget avec une nouvelle `Key`.
+
+Sur Android, le widget ne signale pas un flow qui échoue à se charger : ni `onDidReceiveError` ni `onDidAppear` ne se déclenchent.
+
 :::note 
-Pour que la vue de la plateforme Android fonctionne, assurez-vous que votre `MainActivity` étend `FlutterFragmentActivity` :
+Pour que la vue de plateforme Android fonctionne, assurez-vous que votre `MainActivity` étend `FlutterFragmentActivity` :
 
 ```kotlin showLineNumbers title="Kotlin"
 class MainActivity : FlutterFragmentActivity() {
@@ -149,13 +205,13 @@ Si vous avez personnalisé un paywall avec le Paywall Builder, vous n'avez pas �
 
 :::warning
 
-Ce guide concerne uniquement les **paywalls créés avec le nouveau Paywall Builder**, qui nécessitent SDK v3.2.0 ou une version ultérieure. Le processus de présentation des paywalls diffère selon la version du Paywall Builder utilisée et selon les paywalls de Remote Config.
+Ce guide couvre uniquement les paywalls créés dans l'ancien Paywall Builder pour **Adapty SDK 3.x**. Ils nécessitent SDK v3.2.0 ou une version ultérieure. La présentation d'un paywall créé pour SDK 2.x ou antérieur, ou d'un paywall personnalisé, fonctionne différemment.
 
-- Pour présenter des **paywalls de Remote Config**, consultez [Afficher un paywall conçu avec Remote Config](present-remote-config-paywalls-flutter).
+- Pour présenter des paywalls personnalisés, consultez [Présenter des paywalls personnalisés](present-remote-config-paywalls-flutter).
 
 :::
 
-Le SDK Flutter d'Adapty propose deux façons de présenter les paywalls :
+Le SDK Adapty Flutter propose deux façons de présenter les paywalls :
 
 - **Écran autonome**
 
@@ -220,7 +276,7 @@ try {
 
 ### Configurer le style de présentation iOS \{#configure-ios-presentation-style\}
 
-Configurez la façon dont le paywall est présenté sur iOS en passant le paramètre `iosPresentationStyle` à la méthode `present()`. Ce paramètre accepte les valeurs `AdaptyUIIOSPresentationStyle.fullScreen` (par défaut) ou `AdaptyUIIOSPresentationStyle.pageSheet`.
+Configurez la façon dont le paywall est affiché sur iOS en passant le paramètre `iosPresentationStyle` à la méthode `present()`. Ce paramètre accepte les valeurs `AdaptyUIIOSPresentationStyle.fullScreen` (par défaut) ou `AdaptyUIIOSPresentationStyle.pageSheet`.
 
 ```dart showLineNumbers
 try {

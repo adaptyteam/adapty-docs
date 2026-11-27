@@ -1,0 +1,132 @@
+---
+title: "Skill d'agent pour la Retention Messaging"
+description: "Installez le skill retention-messaging pour que votre outil IA configure Apple Retention Messaging dans Adapty, crée et modifie les messages vus par les abonnés lors d'une annulation, et consulte les performances de chaque message."
+metadataTitle: "Skill d'agent Retention Messaging | Documentation Adapty"
+---
+
+[Apple Retention Messaging](retention-messaging) affiche votre message, ou une offre, aux abonnés sur l'écran **Cancel Subscription** d'Apple juste avant qu'ils confirment leur résiliation, pour en retenir le plus grand nombre. Le skill retention-messaging le configure et le gère depuis votre outil IA. Votre agent lit l'état de configuration de votre app et vous guide à travers chaque étape restante : il définit l'URL d'Adapty dans Apple, exécute le test de performance d'Apple et vous fait passer en production. Il rédige ensuite vos messages par défaut et promotionnels dans chaque langue dont vous avez besoin, les active et les désactive, et indique combien d'abonnés chaque message retient. Il fonctionne via les [commandes CLI `adapty retention-messaging`](developer-cli-retention-messaging) ou le [serveur MCP Adapty](adapty-mcp).
+
+:::note
+Une fois qu'Apple approuve un message, les abonnés qui annulent les produits qu'il couvre le voient. Avant que le skill configure l'URL d'Adapty dans Apple ou crée, modifie, active ou désactive un message, il vous explique en termes clairs ce que le changement implique. Il n'effectue le changement qu'après votre confirmation.
+:::
+
+## Ce que vous pouvez demander \{#what-you-can-ask\}
+
+Parlez comme vous le feriez avec un collègue. Vous n'avez pas besoin de nommer le skill :
+
+```
+Set up retention messaging for my app.
+
+Is retention messaging on, and what is missing?
+
+Create a retention message for my Annual plan in English and German.
+
+Show my 50% off promotional offer to monthly subscribers who cancel.
+
+Offer monthly subscribers who cancel a switch to the Annual plan.
+
+Add a German translation to my retention message.
+
+How are my retention messages doing?
+
+Deactivate the Black Friday message.
+```
+
+<AgentChat title="retention-messaging" caption="Exemple de conversation avec un exemple d'application. Vos produits et messages seront différents.">
+<ChatTurn role="user">Crée un message de rétention pour mon offre Annuelle en anglais et en allemand.</ChatTurn>
+<ChatTurn role="tool" summary="Lire la configuration et les messages">
+
+- `adapty retention-messaging setup-status`
+- `adapty retention-messaging products suggest --mode production --type default`
+- `adapty retention-messaging messages list --mode production`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+Production is ready, and the Annual plan has no default message yet. Here is the message I'd create.
+
+</ChatTurn>
+<ChatTurn role="confirm" summary="Créer le message de rétention">
+
+Create "Annual: stay" as a default message in production.
+
+- Products: Annual. Languages: English, German. No image.
+- English: "Before you go" / "Keep your plan and your saved progress."
+- German: "Bevor du gehst" / "Behalte deinen Plan und deinen Fortschritt."
+- Apple reviews it now. **Once approved, subscribers who cancel the Annual plan see it.**
+
+Create it?
+
+1. Yes
+2. No
+
+</ChatTurn>
+</AgentChat>
+
+## Avant de commencer \{#before-you-start\}
+
+- **L'approbation d'Apple pour votre app** : Apple n'accorde l'accès à la Retention Messaging API qu'aux apps qu'il approuve, et son examen peut prendre jusqu'à un mois. Vous envoyez vous-même la demande à Apple. Lorsque votre app n'a pas encore accès, le skill vous fournit l'URL Adapty à saisir dans [le formulaire de demande d'Apple](retention-messaging-setup#request-access-from-apple).
+- **La configuration App Store dans Adapty** : Votre app doit disposer d'une [configuration App Store](app-store-connection-configuration) complète, avec la clé d'achat intégré. Pour les messages promotionnels, ajoutez également la clé dans la section **App Store promotional offers** et, pour proposer un changement de plan, la [clé API App Store Connect](app-store-connect-api-key).
+- **Des produits dans Adapty** : Au moins un [produit](create-product) que vos messages doivent couvrir.
+- **Un outil IA connecté à votre compte Adapty** : Le skill fonctionne via le [serveur MCP Adapty](adapty-mcp) ou l'[Adapty CLI](developer-cli). Dans Claude Code et Codex, le plugin ajoute le serveur MCP, vous n'avez qu'à vous connecter. Avec les deux, le skill utilise le CLI (voir [Limites](#limits)). Si vous choisissez le CLI, le skill l'installe ou le met à jour. Dans claude.ai, ChatGPT ou l'application mobile de votre outil IA, le skill utilise uniquement le serveur MCP et vous invite à le connecter. Sur un ordinateur où aucun des deux n'est disponible, le skill vous demande lequel configurer. Si votre CLI ne peut pas exécuter les commandes Retention Messaging, le skill bascule sur le serveur MCP s'il est connecté. Sinon, il vous renvoie vers [la configuration de Retention Messaging dans le tableau de bord](retention-messaging-setup).
+
+## Installer le skill \{#install-the-skill\}
+
+Le skill retention-messaging fait partie du [plugin Adapty](manage-adapty-with-ai).
+
+<AdaptySkillsInstall />
+
+## Comment le skill configure les messages de rétention \{#how-the-skill-sets-up-retention-messaging\}
+
+Apple dispose de deux environnements, sandbox et production. Une seule URL Adapty sert les deux, mais Apple la stocke séparément pour chaque environnement. Chaque environnement a ses propres messages.
+
+Le skill commence par lire l'état de configuration de votre app, puis propose l'étape suivante :
+
+1. **Les clés App Store ou les notifications serveur sont manquantes** : le skill vous redirige vers la configuration App Store dans le tableau de bord.
+2. **Apple n'a pas encore approuvé l'app** : le skill vous fournit l'URL Adapty à saisir dans le formulaire de demande d'Apple.
+3. **Apple n'envoie pas encore les requêtes sandbox à Adapty** : le skill propose de définir l'URL d'Adapty dans Apple pour le sandbox.
+4. **Le test de performance n'a pas réussi** : pour préparer le [test de performance d'Apple](retention-messaging-setup#pass-the-performance-test), achetez votre produit de plus longue durée avec un [compte sandbox](test-purchases-in-sandbox) ou via TestFlight juste avant le test, et conservez l'abonnement actif. Ensuite, le skill lance le test. Les abonnés ne voient pas le test, donc cette étape ne nécessite pas de confirmation. Le test peut prendre jusqu'à une heure. Pendant son exécution, le skill relit le statut et ne lance pas un nouveau test.
+5. **Le test a réussi** : le skill propose de définir l'URL d'Adapty dans Apple pour la production, puis de créer votre premier message par défaut.
+
+## Comment le skill rédige les messages \{#how-the-skill-writes-messages\}
+
+- **Le message par défaut en premier** : un message promo nécessite un message par défaut sur le même produit. Le skill crée d'abord le message par défaut, puis les messages promo.
+- **Uniquement les produits libres pour le message** : le skill ne propose pas un produit qu'un autre message du même type couvre déjà dans le même environnement. Pour un message promo, il ne propose pas non plus un produit sans message par défaut.
+- **Uniquement les offres et plans existants** : un message promo associe chaque produit à une offre promotionnelle ou à un passage vers un autre plan du même groupe d'abonnement. Le skill ne suggère que les offres et plans déjà présents dans App Store Connect et dans Adapty.
+- **Chaque langue demandée** : le skill rédige le texte en anglais et chaque traduction dans les limites imposées par Apple. Tant qu'Apple n'a pas approuvé une langue, les abonnés qui l'utilisent voient le texte anglais.
+- **Les modifications ne touchent que ce que vous nommez** : tout autre texte, langue, produit et image reste intact. Le skill ne supprime une langue, un point, un produit ou l'image que si vous le demandez explicitement.
+
+Pour en savoir plus sur la signification de chaque champ, consultez [Créer un message de rétention](retention-messaging-create).
+
+## Ce que le skill demande avant chaque modification \{#what-the-skill-asks-before-each-change\}
+
+Seule votre réponse à la question du skill compte. Un « allez-y » général donné avant que le skill affiche la modification ne compte pas. Si vous répondez non, le skill ne change rien.
+
+| Changement | Ce que le skill vous indique |
+|---|---|
+| Définir l'URL d'Adapty dans Apple | Pour l'environnement choisi, Apple envoie les requêtes depuis l'écran **Cancel Subscription** vers Adapty. Si Apple envoie actuellement les requêtes de cet environnement vers un autre serveur, le skill vous avertit que cet autre serveur cessera de les recevoir et demande une seconde confirmation. |
+| Créer un message | Apple examine le message. Une fois approuvé, les abonnés qui annulent les produits concernés le voient s'afficher. En sandbox, seuls les testeurs sandbox le voient. |
+| Modifier un message | Toute modification, même un simple changement de nom, soumet à nouveau le message à l'examen d'Apple. Une fois approuvé, un message inactif recommence à s'afficher. Une modification effectuée dans le tableau de bord entre la lecture et l'écriture par le skill peut être perdue. |
+| Activer ou désactiver un message | Après activation, Apple affiche le message dès qu'il l'a approuvé. Les langues déjà approuvées par Apple n'attendent pas à nouveau. Après désactivation, Apple cesse d'afficher le message. Les abonnés qui l'ont déjà vu ne sont pas affectés. |
+
+Via le serveur MCP, deux lectures attendent également une confirmation, une fois par conversation. La première lecture du statut de configuration peut enregistrer le résultat du test de performance d'Apple. La première lecture des messages soumet chaque message à la validation d'Apple et peut commencer à afficher un message approuvé aux abonnés. Via la CLI, ces lectures ont le même effet et ne nécessitent aucune confirmation.
+
+Si Adapty ne répond pas après que le skill a créé un message, le skill ne recrée pas le message. Il recherche le nom dans la liste des messages, vous affiche chaque correspondance et vous demande laquelle, le cas échéant, est la vôtre.
+
+## Comment le skill lit les performances des messages \{#how-the-skill-reads-message-performance\}
+
+Demandez comment vos messages se portent, et le skill lit la liste des messages en production avec ses colonnes **Shown**, **Retained users**, **Saved users**, **Retention rate**, **Save rate** et **Saved revenue**. Chaque chiffre couvre toute la durée de vie du message. Les messages sandbox ne sont pas inclus. **Retained users** n'est renseigné qu'après la prochaine date de facturation de chaque abonné. Pour comprendre la signification de chaque chiffre, consultez [Suivre les performances des messages](retention-messaging-analytics).
+
+## Avec d'autres skills \{#with-other-skills\}
+
+- **Décider d'utiliser la Retention Messaging** : le [skill growth-advisor](export-analytics-with-ai) lit le statut de votre Retention Messaging et les messages de production lorsque les annulations sur l'App Store arrivent en tête de vos fins d'abonnement. Sur votre accord, il transmet la configuration et les messages au skill retention-messaging.
+- **Ajouter une offre promotionnelle à un produit** : un message promo qui offre une réduction nécessite une offre promotionnelle qui existe dans App Store Connect et dans Adapty. Pour ajouter une offre store existante à un produit dans Adapty, indiquez son identifiant d'offre à votre agent, par exemple : « Ajoute l'offre App Store `annual_50_off` à mon produit Annual. » Le skill growth-advisor effectue le changement après votre accord.
+
+## Limites \{#limits\}
+
+- **Pas de suppression** : Vous ne pouvez pas supprimer un message de rétention. Lorsque vous demandez à le supprimer, le skill propose de le désactiver.
+- **Les images et les listes à puces nécessitent la CLI** : Via le serveur MCP, le skill ne peut pas ajouter d'image d'en-tête ni de liste à puces à un message par défaut, car les deux nécessitent un envoi de fichier. Dans ce cas, il vous fournit la commande CLI ou l'étape à effectuer dans le tableau de bord.
+- **La position du titre est fixe** : Indiquez au skill la **Title position** lors de la création d'un message par défaut. Vous ne pouvez plus la modifier ensuite, ni dans le skill ni dans le tableau de bord.
+- **Aucune modification sans supervision** : Lors d'une exécution planifiée ou d'un script, sans personne pour répondre, le skill se contente de lire. Pour une modification, il indique ce que le changement implique et la commande à exécuter.
+
+Pour exécuter vous-même les commandes sans le skill, consultez [Gérer les messages de rétention depuis le CLI](developer-cli-retention-messaging).

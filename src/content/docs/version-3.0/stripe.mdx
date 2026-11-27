@@ -58,7 +58,7 @@ At the bottom of the permission pop-up, you can select whether to install the ap
       <img src="/assets/shared/img/stripe4.png"/>
 </Zoom>
 
-4. Copy the generated key from the pop-up and go to Adapty's [App Settings → Stripe](https://app.adapty.io/settings/stripe). Paste the key in the **Stripe App Restricted API Key** section depending on your mode. Note that you must generate different keys for test and live modes.
+4. Copy the generated key from the pop-up and go to Adapty's [App Settings → Stripe](https://app.adapty.io/settings/stripe). Paste the key in the **Stripe App Restricted API Key** section depending on your mode. Note that you must generate different keys for test and live modes. Use a key from Stripe's **Test mode**, not from a Stripe **Sandbox** — Adapty doesn't support Stripe Sandboxes.
 
 <Zoom>
       <img src="/assets/shared/img/Stripe3.png"/>
@@ -293,6 +293,14 @@ That's it!
 Your users can now complete purchases on the web and access paid features in your app. And you can also see all your subscription analytics in a single place.
 :::
 
+## Troubleshooting
+
+### Stripe shows 100% delivery, but no events reach Adapty
+
+Adapty only captures a webhook signing secret when it creates the endpoint itself. If a webhook endpoint already exists at Adapty's URL in your Stripe account — for example, from an earlier connection attempt, or from following the deprecated manual setup above — reconnecting skips creating a new one, and Adapty never receives (or re-receives) the signing secret. Every event still reaches the existing endpoint and gets a `200`, but fails signature verification on Adapty's side and is discarded.
+
+To fix it, in [Developers → Webhooks](https://dashboard.stripe.com/webhooks) delete the endpoint pointing at your Adapty webhook URL, then reconnect the Stripe integration from [App Settings → Stripe](https://app.adapty.io/settings/stripe) so Adapty can create a fresh one and capture its secret.
+
 ## Profile creation behavior
 
 Adapty has to tie a purchase to a [customer profile](profiles-crm) for it to be available on the mobile — so by default it creates profiles upon receiving webhooks from Stripe. You can choose what to use as customer user ID in Adapty:
@@ -333,6 +341,17 @@ When a customer encounters an issue with their payment, Adapty will generate a b
 ### Refunds
 
 Adapty tracks only full refunds. Proration or partial refunds are currently not supported.
+
+### Net revenue and tax
+
+Proceeds and net revenue for a Stripe transaction can differ between charts and integration events:
+
+- **Charts**: For subscriptions, Adapty deducts the Stripe fee and any tax that Stripe reports. For one-time purchases, Adapty deducts a flat 4.5% of the price as the Stripe fee. The Stripe payment data for these purchases has no tax amount, so Adapty doesn't deduct tax.
+- **Integration events** (sent to webhooks, Amazon S3, Google Cloud Storage, and other integrations): Adapty deducts a flat 4.5% of the price as the Stripe fee. It deducts no tax, so `tax_amount_usd` and `tax_amount_local` are always `0`.
+
+### Coupons and promo codes
+
+Revenue in Adapty is the amount that Stripe charged, after any coupon or promo code discount. Adapty doesn't store which coupon or promo code a customer used. To see it, find the subscription or payment in your Stripe Dashboard.
 
 ### Transaction ID uniqueness
 
@@ -377,6 +396,8 @@ Refunds for these purchases are not applied yet: Stripe delivers `charge.refunde
 
 The webhook endpoint that receives an event decides which Adapty app processes it — each Adapty app has its own endpoint URL — not the restricted API key. Every endpoint you register in Stripe receives every event, and each app processes its copy independently. An app ignores events for products that aren't added to it, so apps with separate product sets coexist safely. However, if the same Stripe product and price are added to more than one app, each of those apps records the transaction.
 
+In [Developers → Webhooks](https://dashboard.stripe.com/webhooks), the path of each Adapty endpoint URL ends in `/<Adapty app ID>/production/` for live mode or `/<Adapty app ID>/sandbox/` for test mode. When you save a restricted key for an app, Adapty reuses the endpoint with that app's URL for that mode and creates one only if it doesn't exist, so other apps' endpoints don't change.
+
 ## Get more from your Stripe data
 Once you integrate with Stripe, Adapty is ready to provide insights right away. To make the most of your Stripe data, you can set up additional Adapty integrations to forward Stripe events—bringing all your subscription analytics into a single Adapty Dashboard.
 
@@ -394,11 +415,15 @@ Note that `variation_id` is only read from metadata in Stripe Subscription (`sub
 :::
 
 Integrations you can use to forward and analyze your Stripe events:
+- [Adjust](adjust)
 - [Amplitude](amplitude/)
+- [AppsFlyer](appsflyer)
 - [Webhook](webhook)
 - [Firebase](firebase-and-google-analytics)
 - [Mixpanel](mixpanel)
 - [Posthog](posthog)
+
+Adjust has no Stripe fields: Adapty sends a Stripe purchase to Adjust with the app token of the platform the buyer installed your app on. See [Web purchases (Stripe and Paddle)](adjust#web-purchases-stripe-and-paddle).
 
 ### Supported Stripe events
 Adapty supports the following Stripe events:

@@ -1,0 +1,82 @@
+---
+title: "Adapty iOS SDK を v4.4 に移行する"
+description: "Adapty iOS SDK v4.4 への移行: カスタムアクションおよびカスタムアセットのコードを更新し、料金プランの請求期間を読み取り、新しいフォールバックファイルをダウンロードします。"
+metadataTitle: "Adapty iOS SDK v4.4 への移行 | Adapty ドキュメント"
+---
+
+Adapty iOS SDK 4.3 から 4.4 へアップデートするには、このガイドのすべての変更を適用してください。4.1 または 4.2 のアプリは先に [v4.3 の変更](migration-to-ios-sdk-43) を、4.0 のアプリはその前に [v4.1 の変更](migration-to-ios-sdk-41) を適用する必要があります。4.5 へ続ける場合は、次に [v4.5 への移行](migration-to-ios-sdk-45) に従ってください。
+
+:::warning
+フォールバックファイルのフォーマットが 4.4 で変更されましたが、コンパイラは古いファイルを検出できません。[新しいフォールバックファイル](#fallback-files) を使用しないと、すべてのプレースメントでフォールバックが機能しなくなります。
+:::
+
+## クイックリファレンス \{#quick-reference\}
+
+| 変更前 | 変更後 |
+|---|---|
+| `case let .custom(id)` | `case let .custom(id, _)` |
+| `AdaptyUICustomAsset` | `AdaptyUIAsset`；`AdaptyCustomAsset` は変更なし |
+| `.color(.uiColor(x))` および `.color(.swiftUIColor(c))` | `.color(Color(uiColor: x))` および `.color(c)` |
+| `AdaptyUICustomFontAsset(font:defaultColor:defaultLetterSpacing:defaultLineHeight:)` | `AdaptyUIFontAsset(font:color:letterSpacing:lineHeight:)` |
+| データアセットなし | `AdaptyUIAsset` に `.data`（データアセット用）が追加 |
+| `AdaptyProduct.localizedBillingPeriod` | `subscriptionPricingTerms?.localizedBillingPeriod` |
+| 4.1〜4.3 向けにダウンロードしたフォールバックファイル | フォールバックファイルの形式が変更されました。ファイルを再度ダウンロードしてください |
+
+## AdaptyUI.Action.custom に2つの値が含まれるようになりました \{#custom-actions\}
+
+ユーザーがカスタムアクションのボタンをタップすると、アプリは `AdaptyUI.Action.custom` を受け取ります。4.4 では、アクション ID の後に `arguments` という2つ目の値が追加されました。`didPerformAction` クロージャおよび `flowController(_:didPerform:)` デリゲートメソッドで、この2つ目の値に `_` を追加してください。
+
+```diff showLineNumbers
+  switch action {
+- case let .custom(id):
++ case let .custom(id, _):
+      if id == "openNewPaywall" {
+          // Display another flow or paywall
+      }
+  default:
+      break
+  }
+```
+
+Code that compares `id` to a string stops compiling until you add `_`. Other code still builds, with the warning "enum case 'custom' has 2 associated values; matching them as a tuple is deprecated". In that code, `id` contains both values, not the action ID alone. Add `_` wherever Xcode shows this warning.
+
+## カスタムアセット \{#custom-assets\}
+
+4.4 では、`AdaptyUICustomAsset` が `AdaptyUIAsset` に名称変更されました。旧名を使用すると非推奨の警告が表示されます。
+
+カラー、フォント、データアセットには以下の3つの変更があります：
+
+- **カラーアセット**：`.color` は SwiftUI の `Color` を受け取ります。`AdaptyUICustomColorAsset` は削除されました。`UIColor` を `Color(uiColor:)` でラップするか、SwiftUI の `Color` を直接渡してください：
+
+  ```diff showLineNumbers
+  - "brand_color": .color(.uiColor(brandColor)),
+  + "brand_color": .color(Color(uiColor: brandColor)),
+  ```
+
+- **フォントアセット**: `AdaptyUIFontAsset` では `defaultColor:`、`defaultLetterSpacing:`、`defaultLineHeight:` の代わりに `color:`、`letterSpacing:`、`lineHeight:` を使用します。`color:` パラメータには SwiftUI の `Color` を指定します:
+
+  ```diff showLineNumbers
+  - "title_font": .font(AdaptyUICustomFontAsset(font: titleFont, defaultColor: .uiColor(.white), defaultLineHeight: 24)),
+  + "title_font": .font(AdaptyUIFontAsset(font: titleFont, color: .white, lineHeight: 24)),
+  ```
+
+- **データアセット**: `AdaptyUIAsset` に新しいアセットタイプ `.data` が追加されました。すべてのアセットタイプを列挙する `switch` 文で `default` ブランチがない場合、コンパイルが停止します。データアセットを読み取るのは[カスタム要素](ios-flow-custom-elements)のみであるため、新しいブランチは空のままにできます: `case .data: break`。
+
+## AdaptyProduct.localizedBillingPeriod は非推奨です \{#localizedbillingperiod-is-deprecated\}
+
+`AdaptyProduct` には、プロダクトの各支払いを説明する [`subscriptionPricingTerms`](fetch-paywalls-and-products) プロパティがあります。このプロパティには、価格とユーザーが支払う頻度が含まれています。バージョン 4.4 では、ユーザーが支払う頻度を示すテキストである `localizedBillingPeriod` が、`AdaptyProduct` から `subscriptionPricingTerms` に移動しました。`AdaptyProduct.localizedBillingPeriod` は引き続き使用できますが、非推奨の警告が表示されます。これは `subscriptionPricingTerms?.localizedBillingPeriod` を返します。警告を解消するには、プライシングタームからプロパティを読み取ってください：
+
+```diff showLineNumbers
+- let period = product.localizedBillingPeriod
++ let period = product.subscriptionPricingTerms?.localizedBillingPeriod
+```
+
+## フォールバックファイル
+
+[フォールバックファイル](fallback-flows)のフォーマットは SDK 4.4 で変更されました。**[Placements](https://app.adapty.io/placements)** > **Fallbacks** から再度ファイルをダウンロードし、**Adapty SDK v4.4.0 and higher** を選択して、アプリにバンドルしてください。
+
+ダウンロードしたファイルの名前は `ios_4_4_0_fallback.json` です。アプリが `Bundle.main.url(forResource:withExtension:)` に渡している名前に合わせて変更するか、その呼び出し内の名前を更新してください。
+
+:::warning
+フォールバックファイルが古くなっていても、コンパイルエラーは発生しません。すべてのプレースメントでフォールバックが静かに失われます。その後、SDKのログに「The fallback paywalls version is not correct. Download a new one from the Adapty Dashboard.」と表示されます。
+:::

@@ -1,0 +1,169 @@
+---
+title: "Gestionar solicitudes de permisos en flows - Unity"
+description: "Solicita a los usuarios permiso para notificaciones push desde un flow en tu aplicación Unity con IAdaptyUISystemRequestsHandler, y devuelve su respuesta al flow."
+metadataTitle: "Gestionar permisos de flow - Unity | Documentación de Adapty"
+---
+
+Un [flow](adapty-flow-builder) puede pedirle al usuario permiso para enviar notificaciones push mediante la acción **Request permission**, por ejemplo en una pantalla de onboarding que explica para qué son las notificaciones. El SDK de Adapty no muestra el diálogo de permiso del sistema por sí mismo. Pasa la solicitud a un `IAdaptyUISystemRequestsHandler` en tu app. Tu app muestra el diálogo y devuelve la respuesta del usuario, y el flow continúa.
+
+## Antes de empezar \{#before-you-start\}
+
+Necesitas:
+
+- **Adapty Unity SDK 4.1.0 o posterior, y 4.3.0 o posterior en Android**: Las versiones anteriores no tienen `IAdaptyUISystemRequestsHandler` con esta firma. En Android, 4.1.x entrega la respuesta enviada desde un callback de permiso del SO solo después de que el flow se cierra. La versión 4.3.0 requiere Unity 6.
+- **Un flow con la acción Request permission**: En el Flow & Paywall Builder, añade la acción **Request permission** al disparador **On Tap** o **On Screen Appear** de un elemento. En su sección **After response**, añade las acciones que se ejecutarán después de que el usuario responda, como **Navigate Next**. Para la configuración de la acción, consulta [Request permission](onboarding-actions#request-permission).
+- **Para iOS**: El paquete [Mobile Notifications](https://docs.unity3d.com/Packages/com.unity.mobile.notifications@latest), que el handler de esta guía usa para mostrar el diálogo de iOS. En **Project Settings > Mobile Notifications > iOS**, desactiva **Request Authorization on App Launch** para que el diálogo aparezca cuando el flow lo solicite.
+- **Para Android**: El permiso `android.permission.POST_NOTIFICATIONS` en tu Android manifest y un nivel de API objetivo de 33 o superior en **Player Settings**. Android 13 y versiones posteriores muestran el diálogo de permiso de notificaciones solo a las apps que declaran el permiso y tienen como objetivo Android 13 o posterior.
+
+## Cómo solicita un permiso el flow \{#how-the-flow-requests-a-permission\}
+
+1. El flow llega a la acción **Request permission**: el usuario toca el elemento o aparece la pantalla.
+2. El SDK de Adapty llama a `FlowViewDidAskPermission` en tu handler con el permiso `push`.
+3. Tu app solicita el permiso al SO y llama a `respond` una vez con la respuesta.
+4. El flow ejecuta las acciones **After response**. Son las mismas para ambas respuestas.
+
+El flow permanece en la pantalla hasta que tu app llame a `respond`. Si tu app no lo llama nunca, el flow se queda en la pantalla. Si el sistema operativo no muestra el diálogo, por ejemplo porque el usuario ya lo respondió, tu app obtiene la respuesta de inmediato y el flow ejecuta las acciones de **After response** al instante. Si esas acciones abandonan la pantalla, el usuario verá la pantalla de solicitud de permiso solo un momento.
+
+Con **On Screen Appear**, el flow no vuelve a enviar la solicitud cuando el usuario regresa a la pantalla con una acción **Navigate back**. Con **On Tap**, cada toque envía una nueva solicitud, excepto los toques que se producen mientras una solicitud espera tu respuesta.
+
+## Implementar el handler \{#implement-the-handler\}
+
+Para responder a las solicitudes de permisos, implementa la interfaz `IAdaptyUISystemRequestsHandler`. Responde `false` para los permisos que tu app no solicita.
+
+```csharp showLineNumbers title="Unity"
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using AdaptySDK;
+using UnityEngine;
+#if UNITY_ANDROID
+using UnityEngine.Android;
+#endif
+#if UNITY_IOS
+using Unity.Notifications.iOS;
+#endif
+
+public class FlowSystemRequestsHandler : MonoBehaviour, IAdaptyUISystemRequestsHandler
+{
+    public void FlowViewDidAskPermission(
+        AdaptyUIFlowView view,
+        string permission,
+        IReadOnlyDictionary<string, string> customArgs,
+        Action<bool, string> respond
+    ) {
+        if (permission != "push") {
+            // Answer every request, or the flow waits on the screen.
+            respond(false, null);
+            return;
+        }
+
+#if UNITY_IOS
+        StartCoroutine(RequestPushOnIOS(respond));
+#elif UNITY_ANDROID
+        RequestPushOnAndroid(respond);
+#else
+        respond(false, null);
+#endif
+    }
+
+    public void FlowViewDidRequestAppReview(AdaptyUIFlowView view)
+    {
+        // Shows the native store review prompt, as the SDK does without a handler.
+        AdaptyUI.RequestAppReview(null);
+    }
+
+#if UNITY_IOS
+    private IEnumerator RequestPushOnIOS(Action<bool, string> respond)
+    {
+        var options = AuthorizationOption.Alert | AuthorizationOption.Badge | AuthorizationOption.Sound;
+
+        using (var request = new AuthorizationRequest(options, false))
+        {
+            while (!request.IsFinished) {
+                yield return null;
+            }
+            respond(request.Granted, null);
+        }
+    }
+#endif
+
+#if UNITY_ANDROID
+    private void RequestPushOnAndroid(Action<bool, string> respond)
+    {
+        const string postNotifications = "android.permission.POST_NOTIFICATIONS";
+
+        using (var version = new AndroidJavaClass("android.os.Build$VERSION"))
+        {
+            if (version.GetStatic<int>("SDK_INT") < 33) {
+                // Android 12 and earlier: no dialog; answer whether notifications are on.
+                using (var player = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+                using (var activity = player.GetStatic<AndroidJavaObject>("currentActivity"))
+                using (var managerClass = new AndroidJavaClass("androidx.core.app.NotificationManagerCompat"))
+                using (var manager = managerClass.CallStatic<AndroidJavaObject>("from", activity))
+                {
+                    respond(manager.Call<bool>("areNotificationsEnabled"), null);
+                }
+                return;
+            }
+        }
+
+        if (Permission.HasUserAuthorizedPermission(postNotifications)) {
+            respond(true, null);
+            return;
+        }
+
+        var callbacks = new PermissionCallbacks();
+        callbacks.PermissionGranted += _ => respond(true, null);
+        callbacks.PermissionDenied += _ => respond(false, null);
+#if UNITY_6000_0_OR_NEWER
+        callbacks.PermissionRequestDismissed += _ => respond(false, null);
+#else
+        callbacks.PermissionDeniedAndDontAskAgain += _ => respond(false, null);
+#endif
+        Permission.RequestUserPermission(postNotifications, callbacks);
+    }
+#endif
+}
+```
+
+`FlowViewDidAskPermission` recibe:
+
+- **`view`**: La vista del flow que envió la solicitud.
+- **`permission`**: El permiso que solicita el flow. La acción **Request permission** envía `push`.
+- **`customArgs`**: Argumentos personalizados de la solicitud. La acción **Request permission** no envía ninguno, por lo que el valor es `null`.
+- **`respond`**: El callback que devuelve la respuesta al flow. Pasa `true` si el usuario concedió el permiso y `false` en caso contrario. El segundo argumento es una cadena de detalle opcional, y `null` es un valor válido.
+
+Llama a `respond` exactamente una vez por cada solicitud. El SDK de Adapty ignora una segunda llamada y muestra una advertencia en la consola de Unity. A partir de la versión 4.3.0, puedes llamar a `respond` desde cualquier hilo, incluido un callback de permisos del sistema operativo.
+
+Si `FlowViewDidAskPermission` lanza una excepción antes de llamar a `respond`, el SDK de Adapty registra la excepción y no envía ninguna respuesta, por lo que el flow permanece en pantalla. Captura las excepciones y llama a `respond(false, null)`.
+
+Un permiso concedido permite a tu app mostrar notificaciones. Para recibir notificaciones push, registra el dispositivo con tu proveedor de push, tal como hace tu app fuera de los flows.
+
+`IAdaptyUISystemRequestsHandler` también requiere `FlowViewDidRequestAppReview`. Con un handler registrado, el SDK de Adapty no solicita una reseña en la store por su cuenta, así que llama a `AdaptyUI.RequestAppReview(null)` en él para mantener el prompt de reseña nativo, como en el ejemplo.
+
+## Registrar el handler \{#register-the-handler\}
+
+:::warning
+**Sin un handler, el flow se detiene en la solicitud de permisos.** Si tu app no registra ningún handler, el SDK de Adapty no envía respuesta al flow, ni en iOS ni en Android, y la consola de Unity muestra el aviso `System requests handler is not set`. El flow se queda en la pantalla que envió la solicitud y no ejecuta las acciones de **After response**.
+:::
+
+Para enviar las solicitudes de permisos de todos los flows a tu handler, regístralo con `Adapty.SetSystemRequestsHandler()` antes de presentar un flow, en el mismo lugar donde registras el [listener de eventos de flows](unity-handle-paywall-actions#set-up-the-flows-events-listener). Adjunta el handler a un GameObject que viva mientras dure tu app, y añade estos métodos a la clase del handler:
+
+```csharp showLineNumbers title="Unity"
+void Awake()
+{
+    DontDestroyOnLoad(gameObject);
+    Adapty.SetSystemRequestsHandler(this);
+}
+
+void OnDestroy()
+{
+    Adapty.SetSystemRequestsHandler(null);
+}
+```
+
+`Adapty.SetSystemRequestsHandler()` mantiene un handler por cada flow en la app. Una segunda llamada reemplaza el primer handler, y `null` lo elimina.
+
+## Probar la solicitud de permiso \{#test-the-permission-request\}
+
+iOS solo muestra el diálogo de notificaciones una vez por instalación. Android deja de mostrarlo después de que el usuario permite las notificaciones o las deniega dos veces. Para ver el diálogo de nuevo mientras pruebas el flow, desinstala la app del dispositivo e instálala de nuevo. Luego abre el flow y llega a la acción **Request permission**. Si la pantalla se queda parada y no aparece ningún diálogo, el flow no recibió respuesta: asegúrate de que tu app registre el handler antes de presentar el flow. Si el flow avanza sin mostrar un diálogo, comprueba que la app de Android declare `POST_NOTIFICATIONS` y tenga como objetivo API level 33 o superior, y que **Request Authorization on App Launch** esté desactivado.

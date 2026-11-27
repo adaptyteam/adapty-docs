@@ -1,25 +1,132 @@
 ---
-title: "React Native SDK'da paywall getirmeyi optimize etme"
-description: "Adapty paywall'larını güvenilir şekilde getirin: React Native için zamanlama, önbellek ve yedek paywall desenleri."
-metadataTitle: "Paywall Getirmeyi Optimize Etme | React Native SDK | Adapty Dokümanları"
+title: "React Native SDK'da flow ve paywall getirme işlemini optimize edin"
+description: "Adapty flow'larını ve paywall'larını güvenilir şekilde getirin: React Native için zamanlama, önbellekleme ve yedek desenler."
+metadataTitle: "Flow ve Paywall Getirme İşlemini Optimize Edin | React Native SDK | Adapty Dokümanları"
 ---
 
-React Native'de güvenilir bir paywall getirme işlemi üç şeyi başarır: hızlı render eder, kitleye yönelik paywall'ı döndürür ve ağ yavaş olduğunda sorunsuz yedek paywall'a geçer. Aşağıdaki kurallar, bunu sağlamak için zamanlama, önbellek ve yedek paywall desenlerini kapsamaktadır.
+React Native'de güvenilir bir flow veya paywall getirme işlemi üç şeyi yapar: hızlı render eder, kitleye özel varyantı döndürür ve ağ yavaş olduğunda sorunsuz şekilde yedek içeriğe geçer. Aşağıdaki kurallar bu hedeflere ulaşmak için gereken zamanlama, önbellekleme ve yedek desenlerini kapsar.
+
 :::tip
 Bu kurallar, `adapty.activate()` ve `adapty.identify()` işlemlerinin zaten tamamlandığını varsayar. Daha fazla bilgi için bkz. [React Native SDK'da çağrı sırası](react-native-sdk-call-order).
 :::
+
 ## Kurallar ve yaygın hatalar \{#rules-and-pitfalls\}
-| Bunu yap | Bunu yapma | Neden |
+
+| Bunu yapın | Bunu yapmayın | Neden |
 |---|---|---|
-| Göstermek üzere olduğun placement'ı getir. | Uygulama açılışında tüm placement'ları eş zamanlı olarak önceden getir. | Toplu önceden getirme JS thread'ini bloklar ve bu süre zarfında siyah ekran görünür. |
-| Attribution'ın çözülmesine fırsat tanındıktan sonra — örneğin `activate`'ten 1–2 saniye sonra ya da `onProfileUpdate` tetiklendikten sonra — `getPaywall`'ı çağır. | `getPaywall`'ı kök bileşen mount'lanırken çağır. | Attribution henüz gelmemiştir. Paywall, varsayılan kitleye göre çözümlenir ve segmentler ile ASA kişiselleştirmesi sessizce atlanır. |
-| Her placement için bir `loadTimeoutMs` belirle ve bir [yedek paywall](fallback-paywalls) yapılandır. | `getPaywall`'ın sonuçlanmasını süresiz bekle. | Timeout olmazsa, bağlantısı zayıf olan kullanıcılar ağ çözümlenene kadar boş ekran görür — ya da uygulamayı kapatır. |
-Bkz. `fetchPolicy` ve `loadTimeoutMs` parametre referansı için [Paywall ve ürünleri getirme](fetch-paywalls-and-products-react-native), doğru placement'ı seçmek için ise [Placement'lar](placements).
+| Göstermek üzere olduğunuz placement'ı getirin ya da [`preloadFlows`](#preload-placements) ile önbelleği ısıtın (SDK 4.3.0+). | Başlangıçta kendi paralel `getFlow` çağrılarınızı kullanmayın. | El yapımı bir prefetch patlaması JS thread'ini bloke eder ve siyah ekrana neden olur. `preloadFlows` bunun için tasarlanmıştır ve toplu isteği tek bir çağrıyla native SDK'ya gönderir. |
+| Attribution'ın çözümlenmesine fırsat tanındıktan sonra `getFlow`'u çağırın — örneğin `activate`'ten 1–2 saniye sonra veya `onLatestProfileLoad` tetiklendikten sonra. | `getFlow`'u kök bileşen mount'unda çağırmayın. | Attribution henüz gelmemiştir. Flow varsayılan kitleye göre çözümlenir ve segment ile ASA kişiselleştirmelerini sessizce atlar. |
+| Varsayılan `loadTimeoutMs` değeri olan 5000 milisaniyeyi koruyun ya da başka bir değer ayarlayın ve her placement için bir [yedek paywall](fallback-paywalls) yapılandırın. | `getFlow`'a hiçbir zaman tetiklenmeyecek kadar büyük bir `loadTimeoutMs` değeri geçmeyin. | Timeout hiç tetiklenmezse, bağlantısı zayıf kullanıcılar ağ çözümlenene kadar boş ekran görür ya da uygulamayı kapatır. |
+
+Özel paywall'lar ve ürünler hakkında daha fazla bilgi için `fetchPolicy` ve `loadTimeoutMs` parametre referansını [Özel paywall'ları ve ürünleri getirme](fetch-paywalls-and-products-react-native) sayfasında, doğru placement'ı seçmek için ise [Placement'lar](placements) sayfasında bulabilirsiniz.
+
+## Placement'leri önceden yükleme \{#preload-placements\}
+
+:::info
+`preloadFlows` ve `preloadFlowsForDefaultAudience`, SDK sürüm 4.3.0'dan itibaren kullanılabilir.
+:::
+
+`preloadFlows`, flow JSON'ını önceden önbelleğe alır — placement başına bir istek. Ardından her zamanki gibi kullanırsınız: flow için `getFlow`, görünümü için `createFlowView`.
+
+`fetchPolicy`, daha sonraki bir `getFlow` çağrısının hangi katmanı önce okuyacağını belirler; önbelleğe erişip erişemeyeceğini değil:
+
+- `'return_cache_data_else_load'` önce önceden yüklenmiş kopyayı okur ve yalnızca önbellekte hiçbir şey yoksa ağa gider. `'return_cache_data_if_not_expired_else_load'` aynısını yapar, ancak kopya `maxAgeSeconds` değerinden daha yeni olduğu sürece.
+- Varsayılan olan `'reload_revalidating_cache_data'` önce ağa gider ve istek başarısız olduğunda ya da zaman aşımına uğradığında önceden yüklenmiş kopyaya geri döner.
+
+Her iki durumda da önceden yükleme işe yarar; ancak farklı biçimlerde: önbellek öncelikli politika isteği tamamen ortadan kaldırırken, varsayılan politika isteği korur ve başarısız olduğunda devreye girecek sıcak bir kopya elde eder.
+
+Hangi placement'ların oturumda kullanılacağını bildiğinizde ancak henüz göstermek istemediğinizde kullanın — örneğin, `activate` ve `identify` tamamlandıktan hemen sonra, kullanıcının henüz dokunmadığı bir butonun arkasındaki flow için.
+
+```typescript showLineNumbers
+try {
+  await adapty.preloadFlows(['onboarding', 'main_paywall'], {
+    loadTimeoutMs: 5000,
+  });
+} catch (error) {
+  // en az bir placement ön yükleme başarısız oldu
+}
+
+// Daha sonra, kullanıcı paywalle ulaştığında:
+const flow = await adapty.getFlow('main_paywall', {
+  fetchPolicy: 'return_cache_data_else_load',
+});
+```
+
+**Parametreler:**
+
+- `placementIds` (zorunlu): önceden yüklenecek placement'lar.
+- `loadTimeoutMs` (isteğe bağlı): milisaniye cinsinden zaman aşımı. Varsayılan değeri 5000'dir; 1000'in altındaki değerler 1000'e yükseltilir. iOS'ta zaman aşımı tüm grup için geçerliyken Android'de her placement için ayrı ayrı uygulanır.
+
+**Bilinmesi gereken davranışlar:**
+
+- Promise, yalnızca her placement denenip tamamlandıktan sonra reddedilir; hata, placement bazındaki başarısızlıkları bir arada toplar. Bir placement'taki başarısızlık diğerlerini durdurmaz; yüklenen placement'lar önbellekte kalır.
+- Bir placement zaman aşımına uğrar ya da ağ hatasıyla başarısız olursa SDK, o placement için varsayılan kitle varyasyonuna geri döner. Diğer hatalar olduğu gibi raporlanır.
+- Ön yükleme yalnızca önbelleği ısıtır. İçerik döndürmez — göstermek için yine `getFlow` çağırmanız gerekir.
+
+### Bir preload'un kapsadıkları \{#what-a-preload-covers\}
+
+Bir flow, ekrana katmanlar hâlinde ulaşır. Preload, `getFlow`'un yaptığı gibi yalnızca ilk katmanı kapsar:
+
+| Katman | Kim tarafından alınır | Preload ile ısıtılır mı |
+|---|---|---|
+| Flow JSON — seçilen varyant, ürün kimlikleri ve remote config | `getFlow` | Evet |
+| UI düzeni — ekranın yapısı, stili ve metni | `createFlowView` | Hayır |
+| Görseller, bir video öğesinin yerine geçen sabit kare dahil | `createFlowView`, arka planda | Hayır |
+| Video dosyaları | Ekran render edilirken sistem oynatıcısı | SDK tarafından önbelleğe alınmaz |
+
+`createFlowView`, layout'u üç yerde ve bu sırayla arar:
+
+1. Uygulama yeniden başlatmalarında da korunan native SDK'nın disk önbelleği.
+2. SDK 4.4 veya sonraki sürümler için [yedek dosyanız](react-native-use-fallback-paywalls); yalnızca flow'u en son yayımladıktan sonra indirdiyseniz geçerlidir.
+3. Ağ üzerinden Adapty. Bu, önceden yükleme yapılmış olsa bile bir gidiş-dönüş gerektirir. Uygulama her yayımlanmış flow sürümünü ilk kez gösterdiğinde, native SDK bu isteği yapar ve ardından layout'u disk önbelleğine kaydeder.
+
+`createFlowView` öğesinin `loadTimeoutMs` süresi dolduğunda, native SDK yedek bir seçeneğe geçmez: Adapty API'den düzeni yeniden ister. `loadTimeoutMs` bu ikinci isteği sınırlamaz.
+
+### Kitle segmentasyonunu atlama \{#skip-audience-segmentation\}
+
+Cache'i ısıtmak için kitle segmentasyonunu hiç beklemek istemiyorsanız, varsayılan kitle varyantını kullanın. Timeout almaz:
+
+```typescript showLineNumbers
+await adapty.preloadFlowsForDefaultAudience(['main_paywall']);
+```
+
+## Uygulama paketinden ilk ekran medyasını göster \{#show-first-screen-media-from-the-app-bundle\}
+
+Bir flow, görselleri ve videoları Adapty'den indirir. İlk ekranın medyasını anında göstermek için bunları uygulama paketinden sunun. Bu, zaten gönderdiğiniz medyayı (örneğin mevcut bir native onboarding'in görsellerini) yeniden kullanmanın iyi bir yoludur.
+
+1. Flow & Paywall Builder'da görsel veya videoya [özel medya ID'si](custom-media#custom-media-id) belirleyin. Oraya yüklediğiniz dosya, yedek olarak kalır.
+2. Dosyayı yerel projelere ekleyin: iOS uygulama bundle'ı ve Android `assets` klasörü.
+3. Flow görünümünü oluştururken, `customAssets` içinde söz konusu ID için bundle'lanmış dosyayı geçin:
+
+```typescript showLineNumbers
+// "welcome_video", Flow & Paywall Builder'da ayarlanan özel medya kimliğidir
+const bundledAssets: Record<string, AdaptyCustomAsset> = {
+  'welcome_video': {
+    type: 'video',
+    fileLocation: {
+      ios: { fileName: 'welcome.mp4' },
+      android: { relativeAssetPath: 'videos/welcome.mp4' },
+    },
+  },
+};
+
+const view = await createFlowView(flow, { customAssets: bundledAssets });
+```
+
+Paketlenmiş dosyalar uygulamanızın indirme boyutunu artırır; bu nedenle yalnızca kullanıcıların ilk gördüğü medyayı paketleyin.
+
+Paketlenmiş bir görsel bekleme olmadan görünür, ancak yerel SDK yine de yüklenen görseli arka planda indirir.
+
+Paketlemediğiniz medyalar da hemen görünür: flow'un düzeni, video için durağan kare dahil her görselin küçük, düşük çözünürlüklü bir kopyasını içerir ve tam dosya yüklenene kadar bunu gösterir.
+
+`customAssets` referansının tamamı için [Varlıkları özelleştir](react-native-get-pb-paywalls#customize-assets) bölümüne bakın.
+
 ## Zayıf bağlantı için ayarlama \{#tune-for-poor-connectivity\}
 
-Sürekli zayıf bağlantının yaşandığı pazarlar için (kırsal alanlar, toplu taşıma, yönlendirme sorunları olan bölgeler):
+Sürekli zayıf bağlantının yaşandığı pazarlar için (kırsal alanlar, toplu taşıma, yönlendirme sorunlarından etkilenen bölgeler):
 
-- İlk istek dışındaki her fetch işleminde `fetchPolicy: .returnCacheDataElseLoad` kullanın.
-- Adapty kontrol panelindeki her placement için bir [yedek paywall](fallback-paywalls) yapılandırın.
-- `loadTimeoutMs` değerini 3–5 saniye olarak ayarlayın ve zaman aşımı gerçekleştiğinde yedek paywalle geçin.
-- Paywall görüntülemeyi `getProfile()` işlemine bağlamayın. `getPaywall` çağrısını bağımsız yapın; böylece yavaş bir profil yanıtı arayüzü bloke etmez.
+- Her fetch işleminde (ilk hariç) `fetchPolicy: 'return_cache_data_else_load'` ayarlayın.
+- Adapty kontrol panelinde her placement için bir [yedek paywall](fallback-paywalls) yapılandırın.
+- `loadTimeoutMs` değerini hız ve hedefleme arasında dengeli tutun. Daha kısa bir timeout, kullanıcıların yedek içeriği daha erken görmesini sağlar. Daha uzun bir timeout ise hedeflenen flow'un yüklenmesi için daha fazla zaman tanır.
+- [Flow'u hafif tutun](flow-size), böylece layout daha hızlı indirilir.
+- Flow gösterimini `getProfile()` çağrısına bağlamayın. `getFlow`'u bağımsız olarak çağırın; böylece yavaş bir profil yüklemesi UI'ı bloke etmez.

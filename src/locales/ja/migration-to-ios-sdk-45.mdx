@@ -1,0 +1,83 @@
+---
+title: "Adapty iOS SDK v4.5 への移行"
+description: "Adapty iOS SDK v4.5 への移行: getFlowConfiguration にロケールを1つではなくユーザーの言語リストを渡す方法と、ユーザーに表示される内容の確認方法について説明します。"
+metadataTitle: "Adapty iOS SDK v4.5 への移行 | Adapty ドキュメント"
+---
+
+Adapty iOS SDK 4.4 から 4.5 へアップデートするには、このガイドのすべての変更を適用してください。4.3 以前のバージョンをお使いの場合は、先に [v4.4 の変更](migration-to-ios-sdk-44) を適用してください。
+
+4.5では、`getFlowConfiguration`は`locale`のオプションのロケールコードの代わりに、`preferredLocales`に言語のリストを必要とします。SDKは[このリストからフローのローカライズを選択します](localizations-and-locale-codes)。
+
+:::warning
+すべての`getFlowConfiguration`の呼び出しに[`preferredLocales`](#replace-locale-with-the-users-languages)を渡すまで、ビルドは失敗します。ビルドを修正した後、SDK 4.5はSDK 4.4とは[同じフローの異なるローカライズ](#what-users-see-after-the-update)をユーザーに表示する場合があります。
+:::
+
+## クイックリファレンス \{#quick-reference\}
+
+| 変更前 | 変更後 |
+|---|---|
+| `getFlowConfiguration(forFlow: flow, locale: "fr")` | `getFlowConfiguration(forFlow: flow, preferredLocales: Locale.preferredLanguages)` |
+| `locale`: 任意 | `preferredLocales`: 必須 |
+| `locale` なし: ユーザーはフローのデフォルトロケールが別の言語であっても `en` で表示される。フローに `en` がない場合はデフォルトロケールで表示される | `preferredLocales: []`: デバイスの言語設定に関わらず、全ユーザーがフローのデフォルトロケールで表示される |
+| ストラテジーパラメーターなし | `localizationStrategy:`: 任意。デフォルトの `.auto` はほとんどのアプリに適している |
+
+## `locale` をユーザーの言語に置き換える \{#replace-locale-with-the-users-languages\}
+
+4.5 では、`getFlowConfiguration` の両メソッド（async 版とコールバック版）で、`locale` の代わりに `preferredLocales` リストを受け取るようになりました。`preferredLocales` パラメータは必須です。`locale` を使用した呼び出し、またはどちらのパラメータも指定しない呼び出しでは、Xcode が次のエラーを報告します：
+
+```text
+'getFlowConfiguration(forFlow:locale:…)' is unavailable: Pass preferredLocales: Locale.preferredLanguages to show the flow in the device's language, or [] to use the flow's default localization.
+```
+
+`getOnboarding` の `locale` パラメータに変更はありません。
+
+```diff showLineNumbers
+  let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+      forFlow: flow,
+-     locale: "fr"
++     preferredLocales: Locale.preferredLanguages
+  )
+```
+
+What your app passed in 4.4 determines what to pass in 4.5:
+
+- アプリが `Locale.current.identifier` のようなデバイス値を渡していた場合は、代わりに `Locale.preferredLanguages` を渡してください。値を変換するコードは削除してください。4.5 ではケースや区切り文字は関係ありません。
+- アプリ内でユーザーが選択した言語を渡していた場合は、先頭に配置してください: `[selectedLanguage] + Locale.preferredLanguages`。Flow & Paywall Builder のフローにその言語がない場合、SDK はデバイスの言語を順に試します。
+- `locale` なしで `getFlowConfiguration` を呼び出していた場合は、`preferredLocales: Locale.preferredLanguages` を追加してください。
+
+アプリのUI言語でフローを表示するには、デバイスの言語ではなく`Bundle.main.preferredLocalizations`を渡してください。2つのリストの違いについては、[ユーザーの言語をSDKに渡す](localizations-and-locale-codes#pass-the-users-languages-to-the-sdk)を参照してください。
+
+すべてのユーザーにデフォルトロケールでフローを表示するには、空のリストを渡してください：`preferredLocales: []`。
+
+`localizationStrategy` を渡す必要はありません。デフォルトの `.auto` は、フロー＆ペイウォールビルダーのフローや旧ペイウォールビルダーのペイウォールに適しています。[その他のストラテジー](localizations-and-locale-codes#select-a-localization-strategy)では、SDKの言語マッチング方法を変更できます。
+
+## アップデート後にユーザーに表示される内容 \{#what-users-see-after-the-update\}
+
+デフォルトの `localizationStrategy` を使用している場合、SDK 4.5 では SDK 4.4 とは異なるローカライズ版のフローがユーザーに表示されることがあります：
+
+| アプリが渡す値 | フローが持つロケール | 4.4 | 4.5 |
+|---|---|---|---|
+| 言語なし：4.4 では `locale` なし、4.5 では `[]` | 任意のロケール | フローに `en` があればそれ、なければデフォルトロケール | デフォルトロケール |
+| `pt_BR` のように大文字・区切り文字が異なるコード | `pt-BR` | デフォルトロケール | `pt-BR` |
+| `pt-BR` のような地域コード | `pt` のような言語のみのコード | デフォルトロケール | `pt` |
+| `zh-TW` のようにスクリプトを含意する地域コード | `zh-hant` のようなスクリプトコード | デフォルトロケール | `zh-hant`；旧ペイウォールビルダーのペイウォールではデフォルトロケール |
+| `fr`、次に `de` のような複数言語 | 最初の言語ではなく `de` のような後の言語 | デフォルトロケール | その後の言語；旧ペイウォールビルダーのペイウォールではデフォルトロケール |
+
+SDKバージョン4.0〜4.4を使用しているアプリは、ユーザーがアップデートするまでフローに対して完全一致でマッチングを行います。`.legacy`ストラテジーでは、4.4の完全一致マッチングには戻りません。
+
+デバイスでどのローカライゼーションが表示されるかを確認するには、`flowConfiguration.locale`を参照してください（SDKにはログが記録されません）。テスト手順については、[ユーザーに表示されるローカライゼーションのテスト](localizations-and-locale-codes#test-which-localization-a-user-sees)をお読みください。
+
+## フローのロケールを確認する \{#review-the-locales-of-your-flows\}
+
+SDK 4.5 では、公開済みのフローが現在のロケールで表示されます。ユーザーが読める言語でフローを表示するには、次の3つのルールに従ってください。
+
+- デフォルトロケールは必ず翻訳してください。フローにユーザーの言語がない場合、このロケールが表示されます。デフォルトの確認・変更方法については、[デフォルトロケールの設定](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale)を参照してください。
+- SDK 4.0〜4.4 を使用するアプリバージョン、およびその他の Adapty SDK を使用するアプリでは、渡すすべてのロケールコードをそのまま維持してください。これらのアプリは 4.5 のマッチングを使用しません。
+- より多くのユーザーをカバーするために、[4.5 がより適切にマッチングするロケール](localizations-and-locale-codes#select-which-locales-to-add-to-a-flow)（例：`zh` に加えて `zh-hans` や `zh-hant`）を追加してください。
+
+## AdaptyUIBuilder モジュールを追加する \{#add-the-adaptyuibuilder-module\}
+
+4.5 では、[カスタムローカライゼーションリゾルバー](localizations-and-locale-codes#pick-a-flows-localization-in-your-own-code)のプロトコルなど、AdaptyUI の一部の型が AdaptyUIBuilder モジュールから提供されるようになりました。これらの型をコードで使用するには、AdaptyUIBuilder をアプリに追加してください。
+
+1. Xcode で、アプリターゲットの **General** タブを開き、**Frameworks, Libraries, and Embedded Content** の下にある **AdaptyUIBuilder** を AdaptySDK-iOS パッケージから追加します。
+2. これらの型を使用する各ファイルに、`import AdaptyUIBuilder` を追加します。

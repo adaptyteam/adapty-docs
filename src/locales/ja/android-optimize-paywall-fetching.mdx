@@ -1,10 +1,10 @@
 ---
-title: "Android SDKでペイウォールの取得を最適化する"
-description: "Android向けにAdaptyペイウォールを確実に取得する：タイミング、キャッシュ、フォールバックのパターン。"
-metadataTitle: "ペイウォール取得の最適化 | Android SDK | Adapty ドキュメント"
+title: "Android SDKでのフローとペイウォールの取得を最適化する"
+description: "Adaptyのフローとペイウォールを確実に取得する：Android向けのタイミング、キャッシュ、フォールバックパターン。"
+metadataTitle: "フローとペイウォールの取得を最適化する | Android SDK | Adapty ドキュメント"
 ---
 
-Android上での信頼性の高いペイウォール取得は、3つのことを実現します：高速なレンダリング、オーディエンスターゲティングされたペイウォールの返却、そしてネットワークが遅い場合のグレースフルなフォールバック。以下のルールは、これを実現するためのタイミング、キャッシュ、フォールバックのパターンをカバーしています。
+Android でフローやペイウォールを確実に取得するには、3つのことを実現する必要があります：高速なレンダリング、オーディエンスターゲットのバリアントの返却、そしてネットワークが遅い場合のグレースフルなフォールバック。以下のルールでは、それを実現するためのタイミング、キャッシュ、フォールバックパターンを説明します。
 
 :::tip
 これらのルールは、`Adapty.activate()` と `Adapty.identify()` がすでに完了していることを前提としています。[Android SDKの呼び出し順序](android-sdk-call-order)を参照してください。
@@ -12,19 +12,175 @@ Android上での信頼性の高いペイウォール取得は、3つのことを
 
 ## ルールと注意点 \{#rules-and-pitfalls\}
 
-| こうする | こうしない | 理由 |
+| これをする | これはしない | 理由 |
 |---|---|---|
-| これから表示するプレースメントを取得する。                                                                                  | 起動時にすべてのプレースメントを並列でプリフェッチする。        | 一括プリフェッチはメインスレッドをブロックし、バースト中にブラックスクリーンが表示される。                                  |
-| アトリビューションが解決される機会を持った後に `getPaywall` を取得する — たとえば、`activate` の1〜2秒後、または `setOnProfileUpdatedListener` が発火した後。 | `Application.onCreate()` で `getPaywall` を呼び出す。         | アトリビューションがまだ反映されていない。ペイウォールはデフォルトのオーディエンスに対して解決され、セグメントやASAのパーソナライゼーションが暗黙的にスキップされる。 |
-| `loadTimeout` を設定し、すべてのプレースメントに[フォールバックペイウォール](fallback-paywalls)を設定する。                             | `getPaywall` を無期限に待つ。                     | タイムアウトがないと、接続が不安定なユーザーはネットワークが解決するまで、またはアプリを閉じるまで空白の画面を見続けることになる。     |
+| 表示しようとしているプレースメントをフェッチするか、[`preloadFlows`](#preload-placements)（SDK 4.1+）でキャッシュをウォームアップする。 | 起動時に独自の並列 `getFlow` 呼び出しを展開する。 | 自前のプリフェッチバーストはメインスレッドをブロックしてブラックスクリーンを引き起こす。`preloadFlows` はこの用途向けに設計されており、バッチを並列で実行する。 |
+| アトリビューションが解決される機会を得た後（たとえば `activate` から 1〜2 秒後、または `setOnProfileUpdatedListener` が発火した後）に `getFlow` をフェッチする。 | `Application.onCreate()` で `getFlow` を呼び出す。 | アトリビューションがまだ到達していない。フローはデフォルトのオーディエンスに対して解決され、セグメントや ASA パーソナライゼーションが暗黙的にスキップされる。 |
+| デフォルトの `loadTimeout`（5 秒）をそのまま使うか別の値を設定し、すべてのプレースメントに[フォールバックペイウォール](fallback-paywalls)を設定する。 | `getFlow` に非常に大きな `loadTimeout` を渡して、タイムアウトが発火しないようにする。 | タイムアウトが発火しない場合、接続状態の悪いユーザーはネットワークが解決するまでブランクスクリーンを見続けるか、アプリを閉じてしまう。 |
 
-`fetchPolicy` と `loadTimeout` パラメーターのリファレンスは[ペイウォールとプロダクトの取得](fetch-paywalls-and-products-android)を、適切なプレースメントの選び方は[プレースメント](placements)を参照してください。
+カスタムペイウォールとプロダクトの取得については [`fetchPolicy` および `loadTimeout` パラメータのリファレンス](fetch-paywalls-and-products-android)を、適切なプレースメントの選択については[プレースメント](placements)をご覧ください。
 
-## 接続が不安定な環境向けのチューニング \{#tune-for-poor-connectivity\}
+## プレースメントのプリロード \{#preload-placements\}
 
-接続が常に不安定な市場（農村部、交通機関、ルーティングの問題が多い地域）向けには：
+:::info
+`preloadFlows` と `preloadFlowsForDefaultAudience` は SDK バージョン 4.1 以降で利用できます。
+:::
 
-- 最初の取得を除くすべての取得で、`fetchPolicy` を `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` に設定する。
+`preloadFlows` はフローの JSON を事前にキャッシュします（プレースメントごとに 1 リクエスト）。その後は通常通り使用できます。フローには `getFlow`、ビュー設定には `getFlowConfiguration` を使います。
+
+`fetchPolicy` は後続の `getFlow` がどのレイヤーを最初に読み込むかを決定するもので、キャッシュへのアクセス可否を制御するものではありません。
+
+- `ReturnCacheDataElseLoad` はまずプリロード済みのコピーを読み込み、キャッシュに何もない場合のみネットワークにアクセスします。`ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)` は、コピーが `maxAgeMillis` より新しい間は同様の動作をします。
+- デフォルトの `ReloadRevalidatingCacheData` はまずネットワークにアクセスし、リクエストが失敗またはタイムアウトした場合にプリロード済みのコピーにフォールバックします。
+
+プリロードはどちらの場合も効果がありますが、動作は異なります。キャッシュファーストポリシーではリクエスト自体がなくなり、デフォルトではリクエストは維持されつつ、フォールバック用のウォームコピーが確保されます。
+
+ボタンをまだタップしていない状態で、セッションで使用するプレースメントは分かっているが、まだ表示したくない場合に使用します — たとえば、`activate` と `identify` が解決した直後、まだタップされていないボタンの裏にあるフローなどです。
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+...
+
+Adapty.preloadFlows(listOf("onboarding", "main_paywall"), loadTimeout = 5.seconds) { error ->
+    if (error != null) {
+        // at least one placement failed to preload
+    }
+}
+
+// Later, when the user reaches the paywall:
+Adapty.getFlow(
+    "main_paywall",
+    fetchPolicy = AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad,
+) { result ->
+    // ...
+}
+```
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers
+
+...
+
+Adapty.preloadFlows(Arrays.asList("onboarding", "main_paywall"), TimeInterval.seconds(5), error -> {
+    if (error != null) {
+        // at least one placement failed to preload
+    }
+});
+
+// Later, when the user reaches the paywall:
+Adapty.getFlow("main_paywall", AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad, result -> {
+    // ...
+});
+```
+</TabItem>
+</Tabs>
+
+**パラメーター:**
+
+- `placementIds` (必須): プリロードするプレースメント。空白や重複した ID は無視されます。
+- `loadTimeout` (オプション): バッチ全体ではなく、バッチ内の各プレースメントに適用されるタイムアウト。デフォルトは 5 秒で、1 秒未満の値は 1 秒に切り上げられます。
+
+**知っておくべき動作:**
+
+- コールバックはすべてのプレースメントの試行が完了した後にのみ発火し、プレースメントごとの失敗をまとめて報告します。あるプレースメントが失敗しても、他のプレースメントの処理は停止しません。
+- プレースメントがタイムアウト、サーバーエラー、またはネットワークエラーで失敗した場合、SDKはそのプレースメントのフォールバックバリアントにフォールバックします。その他の失敗はそのまま報告されます。
+- プリロードはキャッシュをウォームアップするだけです。コンテンツを返すわけではないため、表示するには引き続き `getFlow` を呼び出す必要があります。
+
+### プリロードがカバーする範囲 \{#what-a-preload-covers\}
+
+フローは複数のレイヤーに分かれて画面に到達します。プリロードは最初のレイヤーをカバーします（`getFlow` と同様です）。
+
+| レイヤー | 取得元 | プリロードでウォーミングされるか |
+|---|---|---|
+| フロー JSON — 選択されたバリアント、プロダクト ID、リモートコンフィグ | `getFlow` | はい |
+| UI レイアウト — 画面の構造、スタイリング、テキスト | `getFlowConfiguration` | いいえ |
+| 画像（動画要素の代わりに表示される静止フレームを含む） | `getFlowConfiguration`（バックグラウンド処理） | いいえ |
+| 動画ファイル | ExoPlayer（画面レンダリング時） | いいえ。SDK は再生済み動画を最大 50 MB キャッシュします |
+
+`getFlowConfiguration` は、以下の順番で3か所からレイアウトを検索します：
+
+1. SDKのディスクキャッシュ（アプリの再起動後も保持されます）。
+2. SDK 4.4以降の[フォールバックファイル](android-use-fallback-paywalls)（フローを最後に公開した後にダウンロードした場合）。
+3. ネットワーク経由でAdaptyから取得。プリロード後でもラウンドトリップが発生します。アプリが各公開済みバージョンのフローを初めて表示する際に、SDKがこのリクエストを行い、レイアウトをディスクキャッシュに保存します。
+
+SDKがレイアウトを取得すると、その呼び出しとは独立して画像のキャッシュを開始します。画面の表示を待機させることはなく、キャッシュ完了を通知するコールバックやエラーもありません。
+
+`getFlowConfiguration`の`loadTimeout`が発火した場合、SDKはフォールバックしません。代わりにAdapty APIに再度レイアウトをリクエストします。`loadTimeout`はその2回目のリクエストには適用されません。
+
+### どのプレースメントが失敗したかを確認する \{#find-out-which-placement-failed\}
+
+コールバックは、コード `REQUEST_FAILED` (2005) を持つ `AdaptyPreloadPlacementsError` をバッチ全体に対して受け取ります。個別の失敗を確認するには、プレースメント ID をキーとするマップである `preloadErrors` プロパティを参照してください。
+
+```kotlin showLineNumbers
+Adapty.preloadFlows(listOf("onboarding", "main_paywall")) { error ->
+    if (error is AdaptyPreloadPlacementsError) {
+        error.preloadErrors.forEach { (placementId, placementError) ->
+            // log or retry the individual placement
+        }
+    }
+}
+```
+
+`preloadErrors` は `AdaptyPreloadPlacementsError` にのみ存在するため、まず型を確認してください — それ以外の `AdaptyError` は、プレースメントごとの失敗とは別の原因によるものです。
+
+### オーディエンスセグメンテーションをスキップする \{#skip-audience-segmentation\}
+
+オーディエンスセグメンテーションを待たずにキャッシュをウォームアップするには、デフォルトオーディエンスのバリアントを使用します。`loadTimeout` は不要です:
+
+```kotlin showLineNumbers
+Adapty.preloadFlowsForDefaultAudience(listOf("main_paywall")) { error -> }
+```
+
+## アプリバンドルからファーストスクリーンのメディアを表示する \{#show-first-screen-media-from-the-app-bundle\}
+
+フローは画像や動画を Adapty からダウンロードします。ファーストスクリーンのメディアを即座に表示するには、アプリバンドルからメディアを提供してください。これは、既存のネイティブオンボーディングのビジュアルなど、すでにアプリに含まれているメディアを再利用する際に便利な方法です。
+
+1. フロービルダーまたはペイウォールビルダーで、画像または動画に[カスタムメディアID](custom-media#custom-media-id)を設定します。そこでアップロードしたファイルはフォールバックとして使用されます。
+2. アプリの `res/raw` または `assets` フォルダにファイルを追加します。
+3. `getFlowView` でフロービューを作成する際、`customAssets` にそのIDに対応するバンドル済みファイルを渡します。
+
+```kotlin showLineNumbers
+// "welcome_video" is the custom media ID set in the Flow & Paywall Builder
+val bundledAssets = AdaptyCustomAssets.of(
+    "welcome_video" to
+            AdaptyCustomVideoAsset.file(
+                FileLocation.fromResId(requireContext(), R.raw.welcome),
+                preview = AdaptyCustomImageAsset.file(
+                    FileLocation.fromResId(requireContext(), R.drawable.welcome_poster),
+                ),
+                resolution = AdaptyCustomVideoAsset.Resolution(width = 1080, height = 1920),
+            ),
+)
+
+val flowView = AdaptyUI.getFlowView(
+    activity,
+    flowConfiguration,
+    products,
+    eventListener,
+    insets,
+    bundledAssets,
+)
+```
+
+バンドルされたファイルはアプリのダウンロードサイズを増加させるため、ユーザーが最初に目にするメディアのみをバンドルしてください。
+
+バンドルされた画像は待ち時間なく表示されますが、SDKはバックグラウンドでアップロードされた画像を引き続きダウンロードします。
+
+バンドルしていないメディアもすぐに表示されます。ビューの設定には各画像の低解像度のコピー（動画のスチルフレームを含む）が含まれており、フルサイズのファイルが読み込まれるまでその画像が表示されます。
+
+`customAssets` の完全なリファレンスについては、[アセットのカスタマイズ](android-get-pb-paywalls#customize-assets)を参照してください。
+
+## 接続状況が悪い環境向けのチューニング \{#tune-for-poor-connectivity\}
+
+接続が常に不安定な市場（農村部、交通機関内、ルーティングの影響を受ける地域）向けに:
+
+- `fetchPolicy` を `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` に設定し、初回以外のすべてのフェッチで使用する。
 - Adapty ダッシュボードのすべてのプレースメントに[フォールバックペイウォール](fallback-paywalls)を設定する。
-- `loadTimeout` を3〜5秒に設定し、タイムアウト発生時はフォールバックを受け入れる。
-- `getProfile` にペイウォールの表示を依存させない。`getPaywall` は独立して呼び出し、プロファイルの取得が遅くてもUIをブロックしないようにする。
+- `loadTimeout` をスピードとターゲティングのバランスを考慮して調整する。タイムアウトを短くすると、フォールバックがより早く表示される。長くすると、ターゲティングされたフローのロード時間が増える。
+- [フローを軽量に保つ](flow-size)ことで、レイアウトのダウンロードを高速化する。
+- `getProfile` の完了を待ってフローを表示しない。`getFlow` は独立して呼び出し、プロファイルの取得が遅れても UI がブロックされないようにする。

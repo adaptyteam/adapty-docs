@@ -8,11 +8,29 @@ free prose for a human or agent to read, not for the parser.
 `kind` ∈ `local-clone` | `in-repo-spec` | `remote`. `remote:` is mandatory on every `local-clone` — it
 is the only way the source resolves in an environment with no local clones (unattended/Phase 3 runs).
 
+`path:` records one layout — the clones under `~/Documents` on the machine this file was authored on. If
+yours live elsewhere, don't edit `path:` here: list your locations in `sources.local.md` beside this file
+(gitignored; same `## <id>` heading and `path:` line, nothing else is read). `mill:status` and
+`mill:refs` apply it on top of this file. A `missing-path` warning on every source is the sign you need it.
+
 Established 2026-08-06 by inspecting the actual clones under `~/Documents`, not by assumption: every
 `default_ref` below is the real `git symbolic-ref refs/remotes/origin/HEAD` (or, where that failed, the
 branch a released tag is actually reachable from) for that clone, and every `ref_pattern` is checked
 against real remote branch names (`git ls-remote --heads origin`), not the org's most common
 convention. See `platforms.md` for the per-platform version/quirk layer that sits on top of these.
+
+**Only public sources are registered here.** This file ships in a public repository, so Adapty's
+closed-source code — the dashboard backend and frontend, the Flow & Paywall Builder, the User
+Acquisition service, the Adapty Mail backend and dashboard — has no entry, and briefs cite it only as
+"backend code" or "dashboard code" with a date. Three rules about those sources still hold without naming them:
+
+- **Attribution data lives in no SDK.** The SDKs carry an opaque payload string, so an SDK repo can
+  confirm how to read install data but never what is in it.
+- **A route being visible in a network tab is not evidence it may be documented.** The public API
+  surface is what the published OpenAPI specs in `src/api-reference/specs/` describe.
+- **The Adapty Mail dashboard deep-links three slugs**, so these filenames are frozen: `mail-get-started`,
+  `mail-send-data-via-api`, and `web-paywall-configuration`. Renaming one, or adding a `customSlug`,
+  breaks a link inside the product, and the link checker can't catch it.
 
 ## ios-sdk — iOS SDK
 path: ~/Documents/AdaptySDK-iOS
@@ -107,11 +125,14 @@ ref_pattern: release/*
 kind: local-clone
 
 **Do not treat this repo as the source of the public API — see `jscore` below**, same rule as
-`rn-sdk`: this package wraps `@adapty/core`. `origin/master` has **no v4 tag at all yet** (full tag
-list checked; latest reachable tag is `v3.17.1`) — Capacitor v4 is unreleased, in progress on
-`origin/release/4.0.0` and a newer `origin/release/4.0.1-beta.1`. The local clone's checked-out branch
-is `release/4.0.0`, pinning `@adapty/core@4.0.0-beta.1` — check `jscore`'s current state before writing
-docs against that pin, it may already be stale. Native iOS side is SPM-only: `Package.swift` present,
+`rn-sdk`: this package wraps `@adapty/core`. **Capacitor v4 is GA** (corrected 2026-09-07; an
+earlier version of this entry said v4 was unreleased). `v4.1.0` (2026-08-28) was announced in
+#product-tech-releases as "the first stable release of v4.x", `v4.1.1` followed on 2026-09-01, and
+npm's `latest` dist-tag is `4.1.1` (`beta` points at `4.0.1-beta.1`). The beta line ran
+`v4.0.0-beta.1` (2026-07-10) through `v4.0.2-beta.1` (2026-08-14). Every release has a matching
+`release/<version>` branch, `release/4.1.1` being the newest, so `ref_pattern` still holds. Each tag
+pins the same-numbered core (`v4.1.0` → `@adapty/core@4.1.0`, `v4.1.1` → `4.1.1`): read the tag's
+`package.json` pin, then that `jscore` ref — never a `jscore` branch tip. Native iOS side is SPM-only: `Package.swift` present,
 no `Podfile`/`.podspec` anywhere in the repo. No Kids Mode mechanism exists here or in `jscore`
 (grepped both `src/` trees for `kidsMode`/`KidsMode`/`kids_mode`, zero hits) — do not document a
 Capacitor Kids Mode toggle.
@@ -135,40 +156,6 @@ are `release/capacitor` and `release/beta-2-capacitor` — integration branches 
 not version releases. A `ref_pattern: release/*` match on this repo does not always mean "a new jscore
 version" — it can mean "a Capacitor integration branch." Read the branch name, not just the pattern
 match, before acting on a candidate here.
-
-## dashboard-backend — adapty-dashboard-api
-path: ~/Documents/adapty-dashboard-api
-remote: https://gitlab.adapty.io/adapty/adapty-dashboard-api.git
-default_ref: origin/develop
-kind: local-clone
-
-> **This clone goes stale faster than any other here — never read its working tree.** Measured
-> 2026-08-12: the local checkout sat at 2026-05-20 while `origin/develop` was at 2026-08-11, **1,989
-> commits ahead**. Two separate reviews found real differences between the two (a proceeds rate that
-> exists on the ref and not in the tree, among others). Always `git show origin/develop:<path>` or
-> `git grep <pattern> origin/develop -- <path>`. Note the default ref is `develop`, not `master`.
-
-Integration form field labels, `required` flags, and hint text shown on the dashboard's integration
-setup screens come from `portal/integration_context/constants/share.py` in this repo — confirmed at
-`src/portal/integration_context/constants/share.py` (e.g. the Mixpanel data-residency field's title and
-required flag live there). **Not** from `adapty-dashboard-interface` — see that entry below, which
-only carries the field key, not its display metadata. Branches here are Jira-ticket-numbered
-(`ADP-<n>-develop` / `ADP-<n>-DEVELOP`, casing inconsistent across tickets), not version-shaped, so
-`ref_pattern` is deliberately omitted: there is no mechanical pattern to filter candidates by, and
-`mill:refs` correctly reports "no branches match ref_pattern" for this source rather than a false
-positive. Confirm any specific change against the ticket branch actually named in the task.
-
-## dashboard-interface — adapty-dashboard-interface
-path: ~/Documents/adapty-dashboard-interface
-remote: https://gitlab.adapty.io/adapty/adapty-dashboard-interface.git
-default_ref: origin/master
-kind: local-clone
-
-Dashboard frontend, including the Flow Builder UI (`packages/unified-builder`) — the authority for
-exact builder labels and control naming (conditional actions, boolean operators, preset names). Does
-**not** carry integration-form display metadata — see `dashboard-backend`'s `share.py` rule above; this
-repo only has the field key, not its title/required/hint. Branches are Jira-ticket-numbered here too
-(`ADP-<n>-develop`); `ref_pattern` omitted for the same reason as `dashboard-backend`.
 
 ## server-side-api-spec — Server-side API v2 (maintained)
 path: src/api-reference/specs/adapty-api.yaml
@@ -249,95 +236,10 @@ other source here: this repo is pinned to our published docs, not to the SDKs.**
 `llms.txt`, and a cron files a `skill-drift` issue when our docs move — so a rename on our side breaks
 the skill, and the skill is never upstream of us.
 
-The gap that lint does *not* close is version pins: it checks symbols, never versions. So skill and docs
-can go stale together on a pre-release pin (its `references/kmp.md` pins `4.0.0-beta.1` while the KMP SDK
-has since tagged `4.0.1-beta.1`).
+The gap that lint does *not* close is version pins: it checks symbols, never versions, so a skill and our
+install articles can agree with each other and both be stale. Agreement between them is therefore not
+evidence of currency. Re-establish a pin from the platform source per `platforms.md`, never from the
+skill or from a neighbouring article.
 
 Registered 2026-08-11, same reason as `adapty-cli`.
 
-## ua-service — Adapty User Acquisition service
-
-path: ~/Documents/adapty-user-acquisition
-remote: https://gitlab.adapty.io/adapty/adapty-user-acquisition.git
-default_ref: origin/develop
-ref_pattern: release/*
-kind: local-clone
-
-The service behind `api-ua.adapty.io`, and ground truth for almost everything the `attribution` zone
-claims. **Note `default_ref` is `origin/develop`, not `origin/master`** — `git symbolic-ref
-refs/remotes/origin/HEAD` resolves there. Reading `master` or the working tree will mislead you.
-
-The attribution data model lives here and **in no SDK**: the SDKs carry an opaque JSON payload string,
-so an SDK repo can confirm how to read install data but never what is in it. Two lists that look alike
-and are not: the wire `channel` value (produced by a small partner map plus free text a marketer typed
-into a tracking link's Channel field) versus the analytics reporting taxonomy — `organic` legitimately
-exists only in the second. The daily export's writer and cron also live here, so a column difference
-between the three storage articles is drift, never a product difference.
-
-Registered 2026-08-11.
-
-## mail-backend — Adapty Mail backend (noty-wave)
-
-path: ~/Documents/noty-wave-backend
-remote: https://gitlab.adapty.io/noty-wave/backend.git
-default_ref: origin/develop
-ref_pattern: release/*
-kind: local-clone
-
-Ground truth for the `adapty-mail` zone: flow/trigger semantics, send eligibility, suppression, and the
-warm-up ladder. **`default_ref` is `origin/develop`.** The vocabulary does not match the docs — no
-backend symbol is called "flow" — so read the mapping in the zone brief before grepping for one.
-
-**There is no `main` here. Production is `origin/master`** (checked 2026-08-14; the other branches are
-`develop` and a `stage` last touched 2026-03-31). Asking "is this live?" means diffing `develop` against
-`master`, not against `main` — a `main` lookup fails outright and invites a fallback to `develop` that
-answers a different question. On 2026-08-14 the two were identical (`develop` `1a147338` ⊂ `master`
-`47d3d279`, empty tree diff), so develop-verified facts were shippable; that is a snapshot, not a rule.
-
-**The public API surface is decided by the auth dependency, not by the OpenAPI tag.** Only the routes
-taking the project-scoped Adapty Mail secret key are public; the same `Profile` tag also holds routes
-that take a dashboard account session and are internal. A route being visible in Swagger or a network
-tab is not evidence it may be documented.
-
-`docs/specs/` holds design records — useful, but **read the migrations and the code before trusting a
-spec's `Status:` header**. `MULTI_SOURCE_PROFILES.md` still says "approved design, not implemented"
-while all five of its releases have shipped.
-
-Registered 2026-08-11. Read at `1a147338` (2026-08-13).
-
-## mail-frontend — Adapty Mail dashboard (noty-wave)
-
-path: ~/Documents/noty-wave-frontend
-remote: https://gitlab.adapty.io/noty-wave/frontend.git
-default_ref: origin/develop
-ref_pattern: release/*
-kind: local-clone
-
-**Production is `origin/master`, and the `main` branch here is a decoy** — it exists but was abandoned
-on 2026-03-27, 491 commits behind (checked 2026-08-14). `master` `78402bf` then contained all of
-`develop` `8b5613a` plus one unrelated banner commit.
-
-Where a Mail dashboard control's enabled/disabled state is decided — useful when an article claims a
-setup ordering. Worked example: the *Enable Adapty integration* button is gated on a field the backend
-computes as "has an active flow **or** has ever called the ingestion API", and the gate is UI-only. So
-"enable sending last" is sound ordering advice, not an enforced invariant, and must not be written as one.
-
-Also the canonical source for **user-visible strings** — nav labels, chip labels, modal copy, disabled-state
-hints. Worked examples: the profile list is under a **Profiles** nav item, not "CRM"; `SES_META` in
-`features/crm/lib/meta.ts` defines the Journey chip labels, while the precedence between them —
-**Delivered** supersedes **Sent** rather than following it — is `buildChips` in `features/crm/ui/Journey.tsx`
-(corrected 2026-08-14; this entry credited `meta.ts` for both). And **Settings' tabs are Company /
-Project / DNS** (`TAB_LABELS` in `src/pages/settings/ui/SettingsPage.tsx`) — the docs described a
-"Settings → Email Domains" and a "Settings → Integrations" tab for weeks after `a49eb74` (2026-07-23)
-folded the domain UI into DNS. Section headings inside a tab are not tabs; grep the labels, don't infer
-the path from the section name.
-
-**The dashboard deep-links three of our slugs**, so those filenames are frozen: `mail-get-started`,
-`mail-send-data-via-api`, and `web-paywall-configuration` (grep `DOCS_URL` in `src/`). Renaming one — or
-adding a `customSlug` — 404s from inside the product, and the link checker can't catch it because the
-caller isn't in this repo. Moving an article between sidebar categories is safe; URLs come from the
-filename alone. Re-grep before any Mail rename.
-
-Read at `8b5613a` (2026-08-13).
-
-Registered 2026-08-11.

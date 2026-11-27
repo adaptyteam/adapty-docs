@@ -1,0 +1,91 @@
+---
+title: "Adapty iOS SDK'yı v4.4'e Taşıma"
+description: "Adapty iOS SDK v4.4'e geçiş yapın: özel eylem ve özel varlık kodunuzu güncelleyin, fiyatlandırma koşullarından fatura dönemini okuyun ve yeni bir yedek dosya indirin."
+metadataTitle: "Adapty iOS SDK v4.4'e Geçiş | Adapty Dokümanları"
+---
+
+Adapty iOS SDK 4.3'ten 4.4'e güncellemek için bu kılavuzdaki tüm değişiklikleri uygulayın. Uygulamanız 4.1 veya 4.2 sürümündeyse önce [v4.3 değişikliklerini](migration-to-ios-sdk-43) uygulamanız, 4.0 sürümündeyse bundan önce [v4.1 değişikliklerini](migration-to-ios-sdk-41) uygulamanız gerekir. 4.5'e geçmek için sıradaki adım olarak [v4.5'e Geçiş](migration-to-ios-sdk-45) rehberini takip edin.
+
+:::warning
+Yedek dosya formatı 4.4 sürümünde değişti ve derleyici eski bir dosyayı tespit edemez. [Yeni bir yedek dosyası](#fallback-files) olmadan tüm placement'lar yedeklerini kaybeder.
+:::
+
+## Hızlı başvuru kılavuzu \{#quick-reference\}
+
+| Önce | Sonra |
+|---|---|
+| `case let .custom(id)` | `case let .custom(id, _)` |
+| `AdaptyUICustomAsset` | `AdaptyUIAsset`; `AdaptyCustomAsset` değişmedi |
+| `.color(.uiColor(x))` ve `.color(.swiftUIColor(c))` | `.color(Color(uiColor: x))` ve `.color(c)` |
+| `AdaptyUICustomFontAsset(font:defaultColor:defaultLetterSpacing:defaultLineHeight:)` | `AdaptyUIFontAsset(font:color:letterSpacing:lineHeight:)` |
+| Veri asset'i yok | `AdaptyUIAsset`, veri asset'leri için `.data` içeriyor |
+| `AdaptyProduct.localizedBillingPeriod` | `subscriptionPricingTerms?.localizedBillingPeriod` |
+| 4.1–4.3 için indirilen yedek dosya | Yeni yedek dosya formatı; dosyayı yeniden indirin |
+
+## AdaptyUI.Action.custom İki Değer İçeriyor \{#custom-actions\}
+
+Bir kullanıcı özel bir aksiyona sahip butona dokunduğunda, uygulamanız `AdaptyUI.Action.custom` alır. 4.4 sürümünde, aksiyon kimliğinin ardından `arguments` adında ikinci bir değer içermektedir. `didPerformAction` closure'ında ve `flowController(_:didPerform:)` delegate metodunda, bu ikinci değer için `_` ekleyin:
+
+```diff showLineNumbers
+  switch action {
+- case let .custom(id):
++ case let .custom(id, _):
+      if id == "openNewPaywall" {
+          // Display another flow or paywall
+      }
+  default:
+      break
+  }
+```
+
+```swift
+switch action.id {
+case .system(let systemAction):
+    // handle system action
+case .custom(let id, _):
+    if id == "login" {
+        // handle login
+    }
+}
+```
+
+## Özel varlıklar \{#custom-assets\}
+
+4.4'te `AdaptyUICustomAsset`, `AdaptyUIAsset` olarak yeniden adlandırıldı. Eski ad, deprecation uyarısı tetikler.
+
+Renk, font ve data varlıkları üç şekilde değişti:
+
+- **Renk varlıkları**: `.color`, SwiftUI `Color` alır. `AdaptyUICustomColorAsset` kaldırıldı. Bir `UIColor`'ı `Color(uiColor:)` ile sarmalayın ve SwiftUI `Color`'ı doğrudan geçirin:
+
+  ```diff showLineNumbers
+  - "brand_color": .color(.uiColor(brandColor)),
+  + "brand_color": .color(Color(uiColor: brandColor)),
+  ```
+
+- **Font assets**: `AdaptyUIFontAsset` artık `defaultColor:`, `defaultLetterSpacing:` ve `defaultLineHeight:` yerine `color:`, `letterSpacing:` ve `lineHeight:` parametrelerini alıyor. `color:` parametresi SwiftUI `Color` alıyor:
+
+  ```diff showLineNumbers
+  - "title_font": .font(AdaptyUICustomFontAsset(font: titleFont, defaultColor: .uiColor(.white), defaultLineHeight: 24)),
+  + "title_font": .font(AdaptyUIFontAsset(font: titleFont, color: .white, lineHeight: 24)),
+  ```
+
+- **Veri varlıkları**: `AdaptyUIAsset`, `.data` adında yeni bir varlık türü içeriyor. `default` dalı olmayan ve her varlık türünü listeleyen bir `switch` ifadesi artık derlenmeyecektir. Veri varlıkları yalnızca [özel elementler](ios-flow-custom-elements) tarafından okunduğundan, yeni dal boş bırakılabilir: `case .data: break`.
+
+## AdaptyProduct.localizedBillingPeriod artık kullanımdan kaldırıldı \{#localizedbillingperiod-is-deprecated\}
+
+`AdaptyProduct`, ürün için her ödemeyi açıklayan bir [`subscriptionPricingTerms`](fetch-paywalls-and-products) özelliğine sahiptir: fiyatı ve kullanıcının ne sıklıkla ödeme yaptığını. 4.4 sürümünde, kullanıcının ne sıklıkla ödeme yaptığını gösteren metin olan `localizedBillingPeriod`, `AdaptyProduct`'tan `subscriptionPricingTerms`'e taşındı. `AdaptyProduct.localizedBillingPeriod` hâlâ çalışır ancak deprecation uyarısı verir: `subscriptionPricingTerms?.localizedBillingPeriod` değerini döndürür. Uyarıyı gidermek için özelliği pricing terms'ten okuyun:
+
+```diff showLineNumbers
+- let period = product.localizedBillingPeriod
++ let period = product.subscriptionPricingTerms?.localizedBillingPeriod
+```
+
+## Yedek dosyalar \{#fallback-files\}
+
+[Yedek dosya](fallback-flows) formatı SDK 4.4 ile değişti. Dosyayı **[Placements](https://app.adapty.io/placements)** > **Fallbacks** kısmından tekrar indirin, **Adapty SDK v4.4.0 and higher** seçeneğini belirleyin ve uygulamanıza ekleyin.
+
+İndirilen dosyanın adı `ios_4_4_0_fallback.json` olacaktır. Bu dosyaya, uygulamanızın `Bundle.main.url(forResource:withExtension:)` çağrısına geçirdiği adı verin ya da söz konusu çağrıdaki adı güncelleyin.
+
+:::warning
+Güncel olmayan bir yedek dosya derleme hatası üretmez. Her placement sessiz seçimde yedek paywall'ını kaybeder. SDK günlüğü daha sonra şunu gösterir: "The fallback paywalls version is not correct. Download a new one from the Adapty Dashboard."
+:::

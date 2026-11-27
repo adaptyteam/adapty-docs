@@ -1,0 +1,809 @@
+---
+title: "Flowsコマンド"
+description: "フローの作成、ビルダー設定の読み書き、検証とプレビュー、メディアとカスタムフォントのアップロード、公開、バージョン一覧と復元、複製、指標とスクリーンファネルの読み取りを行うAdapty CLIコマンド。"
+metadataTitle: "Flows CLIコマンド | Adapty ドキュメント"
+---
+
+[フロー](adapty-flow-builder)は、Flow & Paywall Builderで作成するペイウォールやオンボーディングです。CLIはフローのレコード、ビルダーの設定、公開、および[バージョン履歴](flow-version-history)を管理します。ビルダーの設定とは、Flow & Paywall Builderが通常生成する大きなJSONドキュメントであり、CLI自体はこれを生成しません。ターミナルから設定を作成・編集するには、これらのコマンドを代わりに実行してくれる[flow-generatorスキル](flow-generator-skill)を使用してください。公開前には、[flow-auditスキル](flow-audit-skill)がフローを本番環境に出す準備ができているか確認します。[`fonts`コマンド](#custom-fonts)は、フローで使用するカスタムフォントをアップロードして管理するもので、CLIバージョン0.33.0以降が必要です。`flows metrics`コマンドは[フロー指標](flow-metrics)ページの数値を読み取り、CLIバージョン0.15.0以降が必要です。`flows funnel`コマンドは[フローファネル](flow-funnel)を読み取り、CLIバージョン0.19.0以降が必要です。各コマンドはこちらにリファレンスとして記載しています。
+
+## adapty flows list \{#adapty-flows-list\}
+
+アプリのすべてのフローを一覧表示します。
+
+```bash
+adapty flows list --app <app-id>
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID (UUID) |
+
+[ページネーションフラグ](developer-cli-reference#global-flags)を使用できます。
+
+## adapty flows get
+
+特定のフローの詳細を取得します。
+
+```bash
+adapty flows get --app <app-id> <flow-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID (UUID) |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリ ID (UUID) |
+
+レスポンスには `id`、`name`、`status`、`published_flow_version_id`、`updated_at` が含まれます。`published_flow_version_id` は公開中のバージョンの ID で、フローが一度も公開されていない場合は `null` になります。ステータスは次のいずれかです：
+
+| ステータス | 意味 |
+|---|---|
+| `draft` | フローが一度も公開されていない |
+| `published` | 現在のバージョンが公開中 |
+| `dirty` | フローは以前に公開されており、現在のバージョンに未公開の変更がある。ユーザーには最後に公開されたバージョンが表示され続ける |
+| `publishing` | 公開処理中 |
+| `publication_failed` | 最後の公開が失敗した。設定を修正して再度公開してください |
+| `archived` | フローがアーカイブされている |
+
+## adapty flows create \{#adapty-flows-create\}
+
+フローを作成します。新しいフローには名前があり、設定はありません。設定を追加するには、[`flows config update`](#adapty-flows-config-update) を使用してください。
+
+```bash
+adapty flows create --app <app-id> --name "Onboarding"
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリ ID（UUID） |
+| `--name` | Yes | フロー名 |
+
+## adapty flows update
+
+フローの名前を変更します。
+
+```bash
+adapty flows update --app <app-id> <flow-id> --name "Onboarding v2"
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリ ID（UUID） |
+| `--name` | Yes | 新しいフロー名 |
+
+## adapty flows publish \{#adapty-flows-publish\}
+
+フローの現在のバージョンをユーザーに公開します。
+
+```bash
+adapty flows publish --app <app-id> <flow-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+| `--yes`, `-y` | いいえ | 確認なしで公開します。出力がパイプされている場合や `--json` を使用する場合に必要です |
+
+変更を公開するとユーザーが見る内容が変わるため、このコマンドはフロー名を表示して確認を求めます。`y` 以外の回答を入力した場合、コマンドは終了コード 1 でキャンセルされます。`--json` オプションを指定した場合、またはパイプ経由で実行した場合は、回答を待たずに終了コード 2 で拒否されます。スクリプトやエージェントセッションでは `--yes` を渡してください。
+
+CLIバージョン0.33.0以降では、コンフィグに[カスタムフォント](#custom-fonts)が使われている場合、コマンドはアプリの現在のフォントを読み込みます。コンフィグのコピーが古い場合は、現在のフォントでコンフィグを保存してから公開します。この保存ではリモートコンフィグが保持され、コマンドがコンフィグを読み込んだ後に誰かがコンフィグを変更した場合は失敗します。保存が成功して公開が開始されると、人間が読める出力に `Fonts refreshed` が含まれます。
+
+このコマンドは、フォントを読み取れない場合、書き込みを行う前に停止します。コンフィグ内のフォントファミリー名が複数のファミリーに一致する場合、終了コード2で終了します。一致を解決するには、ファミリー名を変更するか、コンフィグでファミリーIDを使用してください。
+
+コンフィグのレスポンスには、保存が不要な場合でも、`config` オブジェクトと整数の `updated_at` を含める必要があります。コマンドがコンフィグを保存する必要がある場合は、レスポンスに `remote_configs` リストも含める必要があります。これらの要件が満たされない場合、コマンドは書き込みを行う前に終了コード4と `malformed_response` で停止します。
+
+保存の失敗または不確かな保存が発生した場合、コマンドはパブリッシュリクエストを送信する前に停止します。CLIが保存レスポンスを読み取れない場合、または保存中に接続が失敗した場合、保存自体は完了している可能性があります。再度パブリッシュする前に、[`flows config get`](#adapty-flows-config-get) で保存済みの設定を確認してください。保存が成功した後にパブリッシュが失敗した場合、保存済みの設定は残ります。
+
+公開は非同期で行われます。レスポンスには `status: publishing` が返され、フローはまだライブ状態ではありません。ステータスが `published` または `publication_failed` になるまで [`flows get`](#adapty-flows-get) をポーリングしてください。`publication_failed` の場合、[`flows config get`](#adapty-flows-config-get) で失敗の原因を確認できます。
+
+フローにコンフィグがない場合、コンフィグが公開不可能な場合、または現在のバージョンがすでに公開済みの場合、公開は HTTP 400 で失敗します。公開前にコンフィグを検証するには、[`flows config validate`](#adapty-flows-config-validate) を使用してください。フローが存在しない場合、コマンドはコード 4 で終了します。CLI バージョン 0.33.0 より前は、コード 1 で終了していました。
+
+## adapty flows config get
+
+フローのビルダー設定を読み取ります。
+
+```bash
+adapty flows config get --app <app-id> <flow-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+
+レスポンスには `config`、`remote_configs`、`status`、`updated_at` が含まれます。`updated_at` は最後にコンフィグが変更されたときのミリ秒タイムスタンプです。同時編集による上書きを防ぐために、これを [`flows config update`](#adapty-flows-config-update) の `--expected-updated-at` として渡してください。コンフィグが一度も書き込まれていないフローは 404 を返します。
+
+パブリッシュを試みた後、レスポンスにはその結果を示す 3 つのフィールドも含まれます。[`flows get`](#adapty-flows-get) が `publication_failed` を返した場合はこれらを確認してください：
+
+| フィールド | 説明 |
+|---|---|
+| `publication_status` | このフローバージョンの公開がどの段階まで進んだか: `transforming`、`transformed`、`uploading`、`uploaded`、`published`、または `failed` |
+| `transform_error` | 変換失敗の生データ — 問題を列挙した JSON ペイロード、またはサマリー文字列 |
+| `publication_error` | 公開失敗時の読みやすいエラーメッセージ |
+
+## adapty flows config update
+
+フローのビルダーコンフィグとリモートコンフィグを書き込みます。
+
+```bash
+adapty flows config get --app <app-id> <flow-id> --json > flow.json
+adapty flows config update --app <app-id> <flow-id> --file flow.json
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID (UUID) |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリID（UUID） |
+| `--file` | `--config`、`--config-file`、`--remote-configs` の代わりに使用 | `config` と `remote_configs` を含むJSONファイルへのパス、またはstdinから読み取る場合は `-`。`flows config get --json` の出力をそのまま使用可能。その他のキーは無視される |
+| `--config` | `--file` なしの場合：`--config` と `--config-file` のいずれか | JSON文字列としてのビルダーコンフィグ |
+| `--config-file` | `--file` なしの場合：`--config` と `--config-file` のいずれか | ビルダーコンフィグを含むJSONファイルへのパス、またはstdinから読み取る場合は `-` |
+| `--remote-configs` | `--file` なしの場合 | `{locale, data}` エントリのJSON配列。`data` は文字列としてのリモートコンフィグ。`[]` を指定するとすべてのリモートコンフィグが削除される |
+| `--expected-updated-at` | いいえ | 以前の `flows config get` から取得した `updated_at` の値。その読み取り以降にコンフィグが変更された場合、変更を上書きせずにコマンドが失敗する。無条件に上書きする場合は省略 |
+
+書き込みを行うと、コンフィグとリモートコンフィグのリスト全体が置き換えられます。リモートコンフィグを保持するには、`flows config get --json` から取得した `remote_configs` を送信してください。`--file` を指定しない場合、コマンドにはコンフィグと `--remote-configs` の両方が必要です。どちらかが欠けている場合、コード 2 で終了しリクエストは送信されません。`--file` フラグと必須の `--remote-configs` を使用するには CLI バージョン 0.20.0 以降が必要です。
+
+新しいフローの最初のコンフィグを書き込むには、空のリモートコンフィグのリストを渡します：
+
+```bash
+adapty flows config update --app <app-id> <flow-id> --config-file config.json --remote-configs '[]'
+```
+
+コンフィグを書き込んでも下書きとして保存されるだけで、公開はされません。公開済みフローに対して書き込みを行うと、新しいバージョンが作成され、フローのステータスが `dirty` になります。[`flows publish`](#adapty-flows-publish) を実行するまで、ユーザーには公開済みバージョンが表示され続けます。
+
+## adapty flows config validate
+
+ビルダーコンフィグを保存せずに、公開可能かどうかを確認します。
+
+```bash
+adapty flows config validate --app <app-id> <flow-id> --config-file config.json
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+| `--config` | どちらか一方 | JSON 文字列としてのビルダーコンフィグ |
+| `--config-file` | どちらか一方 | ビルダーコンフィグが記載された JSON ファイルへのパス、または標準入力から読み込む場合は `-` |
+
+レスポンスには `valid` と `issues` のリストが含まれます。設定が公開できない状態の場合、コマンドはコード 1 で終了するため、スクリプトでゲート処理を行えます。
+
+## adapty flows config preview
+
+ローカルの設定ファイルをブラウザでレンダリングします。このコマンドはAPIコールを行わず、`--app` フラグも使用しません。
+
+```bash
+adapty flows config preview ./config.json --screen <screen-id> --device iphone-14 --orientation portrait
+```
+
+| 引数 | 説明 |
+|---|---|
+| `config-file` | ローカルのビルダー設定JSONファイルへのパス |
+
+| フラグ | デフォルト | 説明 |
+|---|---|---|
+| `--screen` | フローの最初の画面 | レンダリングする画面ID |
+| `--device` | `iphone-14` | レンダリングに使用するデバイスフレーム |
+| `--orientation` | `portrait` | `portrait` または `landscape` |
+
+ターミナルでこのコマンドを実行すると、ブラウザでプレビューが開きます。パイプや `--json` オプションを使うと、代わりに URL が出力されます。URL にはコンフィグ全体が含まれるため非常に長くなります。表示するのではなく、スクリーンショットツールにパイプして使用してください。コンフィグが約 32 KB を超えると、レンダリングが遅くなります。
+
+## adapty flows media upload
+
+フローコンフィグで使用する画像をアップロードします。
+
+```bash
+adapty flows media upload --app <app-id> ./hero.png
+```
+
+| 引数 | 説明 |
+|---|---|
+| `file` | 画像ファイルのパス |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリID（UUID） |
+
+対応フォーマットはPNG、JPEG、WebP、SVGです。20 MiBを超えるファイルはサーバーが`media_file_too_large`エラーを返し、"File size must not exceed 20 MiB."というメッセージが表示されます。レスポンスには画像の`id`、`name`、コンフィグから参照するためのCDN `url`が含まれます。また、送信したファイルのサイズ（バイト単位）を示す`size`と、`warnings`リストも含まれます。動画をアップロードするには、[`flows media upload-video`](#adapty-flows-media-upload-video)を使用してください。
+
+1 MB を超える画像をアップロードすると、レスポンスに警告が含まれます。警告のタイトルは `Large image — <size>`、メッセージは "Large images slow the first load. Upload a smaller file." です。画像データの後に `Size: 1.5 MB` のようなサイズが表示され、その後に警告が出力されます。コマンドは成功で終了します。`--json` を使用すると、`size` や `warnings` を含む完全なレスポンスが出力されます。
+
+警告行 `Warning: <title>. <message>` は stderr に出力されます。`--json` を指定した場合、このような行は出力されないため、stdout を読み取るスクリプトは JSON レスポンスの `warnings` フィールドからのみ警告を取得できます。
+
+## adapty flows media upload-video
+
+フローコンフィグで使用する動画をアップロードします。
+
+```bash
+adapty flows media upload-video --app <app-id> ./intro.mp4
+```
+
+| 引数 | 説明 |
+|---|---|
+| `file` | 動画ファイルのパス |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリID（UUID） |
+
+対応フォーマット：MP4およびWebM。動画は最大30秒、最大50MB、幅と高さはそれぞれ640ピクセル以上である必要があります。GIFはサポートされておらず、このコマンドはアニメーション画像を動画に変換しません。
+
+レスポンスには、動画のURL（HLSプレイリスト）、プレビュー画像のURL、動画の`width`と`height`が含まれています。コンフィグでは、動画要素がこれらを`videoUrl`、`previewUrl`、`width`、`height`として受け取ります。
+
+## カスタムフォント \{#custom-fonts\}
+
+`adapty fonts` コマンドは、アプリの[カスタムフォント](using-custom-fonts-in-flow-builder)をアップロードおよび管理します。アプリのすべてのフローは、Flow & Paywall Builder でアップロードしたものと同じフォントを使用します。フォントファミリーには1つ以上のフェイスがあります。フェイスとは、`.ttf` または `.otf` ファイルの1つのウェイトとスタイルのことです。`fonts` コマンドは CLI バージョン 0.33.0 以降が必要です。バージョンを確認するには、`adapty --version` を実行してください。
+
+:::warning
+Adapty はフォントファイルをユーザーのデバイスに送信しません。アプリでカスタムフォントを表示するには、Adapty でフォントフェイスに設定した iOS および Android のフォント名と同じフォントファイルを[アプリのバンドルに追加](using-custom-fonts-in-flow-builder#add-the-font-files-to-your-apps-bundle)してください。
+:::
+
+カスタムフォントをフローのコンフィグで使用するには、フォントファミリーとウェイトを指定してフォントを設定します。テキスト要素では、フォントは `props.font` に記述します：`"font": {"family": {"type": "user", "id": "<font-family-id>"}, "weight": "bold"}`。`theme.typography` 内のテキストスタイルでは、`family` と `weight` はスタイルの `settings` のキーとして直接記述し、`font` オブジェクトで囲む必要はありません。ファミリーはファミリー名で指定することもできます。イタリックはリッチテキストのスパンで設定します。フローを公開すると、Adapty は指定されたウェイトとスタイルに対応するフォントフェイスを使用します。指定したフェイスがファミリーに存在しない場合、Adapty はまず同じスタイル内で最も近いウェイトのフェイスを使用し、次にスタイルを問わず最も近いものを使用します。2 つのフェイスが同じ距離にある場合は、ウェイトの軽い方が優先されます。
+
+フォントファミリーを変更するコマンドは、影響を受けるフローを `flows_to_publish` に一覧表示します。変更をユーザーに反映するには、それぞれのフローを [`flows publish`](#adapty-flows-publish) で公開してください。`flows_to_publish` が `null` になるケースが2つあり、その場合はコマンドが警告を表示します。`--json` を使用すると、`flows_to_publish_error` で理由と次のステップを確認できます。
+
+- **アップロードがあるファイルで停止した場合**（最後のファイルまたは唯一のファイルを含む）: Adapty がそのファイルを保存している可能性があるため、変更されたファミリーが不明です。[`fonts list`](#adapty-fonts-list) を実行して確認し、その後それぞれに対して [`fonts usage`](#adapty-fonts-usage) を実行してください。
+- **フローの読み取りのみ失敗した場合**: 各ファイルの結果は確認できます。コマンドが変更した各ファミリーに対して [`fonts usage`](#adapty-fonts-usage) を実行してください。
+
+## adapty fonts list
+
+アプリのカスタムフォントファミリーとそのフェイスの一覧を表示します。
+
+```bash
+adapty fonts list --app <app-id>
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリID（UUID） |
+
+各フェイスのレスポンスには、ウェイト、イタリック、iOS と Android のフォント名、ファミリーのデフォルトフェイス、およびファイル形式が含まれています。`metadata_status` は、フェイスのウェイトとイタリックが確定しているかどうかを示します。`detected` と `confirmed` は確定済みを意味し、`needs_review` と `legacy_unconfirmed` は未確定を意味します。設定するには、[`fonts faces update`](#adapty-fonts-faces-update) を使用してください。
+
+## adapty fonts get
+
+1つのフォントファミリーとそのフェイスを取得します。
+
+```bash
+adapty fonts get --app <app-id> <font-family-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `font-family-id` | フォントファミリーID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリID（UUID） |
+
+## adapty fonts upload
+
+フォントファイルをアップロードします。Adaptyは各ファイルに保存されているファミリー名とアプリのフォントファミリー名を大文字小文字を無視して比較します。一致するファミリーが見つかった場合、ファイルはそのファミリーに追加されます。一致するものがない場合、Adaptyは新しいファミリーを作成します。
+
+`Brand` や `brand` のように 2 つ以上のファミリーが一致する場合、CLI は `font_family_name_ambiguous` とともに `refused` を報告します。これは `--choice` の有無に関わらず発生します。`--json` を指定した場合、`families` 配列には一致するファミリーごとに `family_id` と `family_name` が含まれます。[`fonts add`](#adapty-fonts-add) にファミリー ID を指定してファイルを追加するか、[`fonts rename`](#adapty-fonts-rename) を使って一致するファミリーが 1 つになるよう名前を変更してから、再度ファイルをアップロードしてください。
+
+```bash
+adapty fonts upload --app <app-id> ./Brand-Regular.otf ./Brand-Bold.otf ./Brand-Italic.otf
+```
+
+| 引数 | 説明 |
+|---|---|
+| `file` | `.ttf` または `.otf` ファイルへのパス。複数のファイルをアップロードする場合は、それぞれを列挙してください |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリID（UUID） |
+| `--choice` | いいえ | `replace` を指定すると衝突するフェイスを置き換え、`keep` を指定すると既存のフェイスをそのままにします。いずれの場合も新しいフェイスのアップロードは行われます |
+| `--replace-face-id` | いいえ | `--choice replace` かつファイルが1つのみの場合：拒否リストに記載されたフェイスIDを指定して、そのフェイスを正確に置き換えます。フェイスIDはカンマ区切りのリストで指定するか、フラグを繰り返し使用します。これらのフェイスが衝突箇所と一致しなくなった場合、Adapty は置き換えを拒否します |
+
+フォントファイルが静的フォントの場合は1つのフェイスが作成されます。可変フォントファイルの場合は、ファイル内の名前付きスタイルごとに1つのフェイスが作成されます。WOFF や WOFF2 などのその他の形式はサポートされていません。コマンドは最初のファイルを送信する前にすべてのファイルを読み込みます。ファイルを読み込めない場合は、終了コード 2 で処理を停止し、何も送信しません。
+
+コマンドはリクエストごとに1ファイルを送信します。最後のファイルの送信後、各ファイルの結果を出力します。`--json` を使用すると、結果は `files` に格納されます。
+
+| 結果 | 意味 |
+|---|---|
+| `created` | ファイルが新しいフォントファミリーを作成した |
+| `added` | ファイルのフェイスが既存のファミリーに追加された |
+| `partly_added` | ファイルのフェイスの一部がファミリーに追加された。`kept_faces` にはファミリーがすでに持っていたフェイスが一覧表示される |
+| `replaced` | `--choice replace` の指定後、ファイルが競合するフェイスのファイルを置き換えた。`replaced_faces` にそれらが一覧表示される |
+| `kept` | `--choice keep` の指定により、保存済みのフェイスと競合したためファイルがスキップされた |
+| `refused` | Adapty がファイルを拒否した。`error_code` と `message` に理由が記載されている |
+| `failed` | ネットワークエラー、認証エラー、または CLI が解釈できないレスポンスにより、このファイルでアップロードが停止した。ネットワークエラーや解釈不能なレスポンスが発生した場合、Adapty がファイルを保存している可能性がある。再送する前に [`fonts list`](#adapty-fonts-list) を実行して確認すること |
+| `not_sent` | 以前のファイルでアップロードが停止したため、このファイルは送信されなかった |
+
+静的フォントファイルは、次の2つの場合にフェイスと衝突します。ファイルが追加するファミリーに同じウェイトとイタリックを持つフェイスが存在する場合、またはアプリのいずれかのフェイスが同じ iOS フォント名を持つ場合です。可変フォントファイルの結果については、この段落の後のリストを参照してください。異なる2つのファミリーがそれぞれ Regular フェイスを持つことができます。Adapty は、レポート内の `conflicts` と `choices` を使用して、衝突するファイルを拒否することがあります。`next_step` が置き換えを提示している場合は、そのファイルに対して `--choice replace` と `--replace-face-id` を付けて表示されたコマンドを実行してください。このコマンドは1回のアップロードリクエストを行い、リストに記載されたフェイスを正確に置き換えます。可変フォントは新しいフェイスを追加することもできます。ファイル全体を除外するには、再試行をスキップしてください。表示された `--choice keep` コマンドは、衝突内容が変わった場合に新しいフェイスを保存できます。
+
+- リストされているフォントフェイスがまだ存在していて、衝突のセットが変わった場合、Adapty は HTTP 409 と現在の `conflicts` を返して拒否することがあります。新しい置換コマンドを実行する前に、そのリストを確認してください。
+- リストされているフォントフェイスがなくなっている場合、Adapty は `font_face_not_found`（HTTP 404）を返して拒否します。何も衝突しない場合、Adapty は HTTP 400 を返して拒否することがあります。どちらのレスポンスも、フォントフェイスを置換しません。フォントフェイスを置換せずにファイルをアップロードするには、`--choice` や `--replace-face-id` を使わずに同じコマンドを実行し、新しい結果を確認してください。
+
+:::warning
+`--choice replace` のみを使用すると、CLI はまず選択なしでファイルを送信します。衝突が発生すると、今回の実行で見つかったフェイスを置き換えるために再度ファイルを送信しますが、これは前回の拒否時のフェイスと異なる場合があります。最初のリクエストで衝突が見つからない場合、ファイルを新しいフェイスとしてアップロードできます。どのフェイスが置き換えられたかを確認するには `replaced_faces` を参照してください。Adapty は古いファイルを保持しません。リストされたフェイスの一部のみを置き換えるには、各フェイスに対して [`fonts faces replace`](#adapty-fonts-faces-replace) を使用してください。
+:::
+
+バリアブルフォントファイルは、次のいずれかの結果を返します：
+
+- **そのスタイルがすべて新規**の場合: 静的ファイルと同様に `created` または `added` となります。
+- **一部のスタイルがすでにファミリーに存在する**場合: `partly_added` となります。新しいスタイルがファミリーに追加され、`kept_faces` にはすでに存在していたスタイルの一覧が表示されます。
+- **すべてのスタイルがすでにファミリーに存在する**場合: 選択肢なしで `refused` となります。フェイスのファイルを変更するには、[`fonts faces replace`](#adapty-fonts-faces-replace) を使用してください。
+- **新しいスタイルの iOS フォント名が、そのアプリの別のフェイスと重複する**場合: 他のコリジョンと同様に、選択肢付きで `refused` となります。
+
+iOSまたはAndroidのフォント名がアップロード後に保存されていないフェイスは、`warnings`として表示されます。名前を設定するには、[`fonts faces update`](#adapty-fonts-faces-update)を使用してください。
+
+| 終了コード | 原因 | 対処法 |
+|---|---|---|
+| `0` | すべてのファイルが保存またはスキップされた | — |
+| `2` | CLI がファイルを読み取れなかった。または `--replace-face-id` に無効な UUID が指定されていた、`--choice replace` が指定されていなかった、あるいは複数のファイルと同時に使用された。ファイルは送信されなかった | パスまたはフラグを修正してから、コマンド全体を再実行してください |
+| `3` | Adapty が CLI セッションを拒否したか、アカウントがアプリへのアクセス権を持っていない。そのファイル以降のファイルは送信されなかった | セッションが拒否された場合は再ログインしてください。アクセス権がない場合は、アプリ ID を確認するか、アプリへのアクセス権を持つアカウントでログインしてください。その後、保存されなかったファイルをアップロードしてください |
+| `4` | Adapty が少なくとも 1 つのファイルを拒否し、他のファイルは送信された。または CLI が応答を読み取れず、そのファイルでアップロードが停止した。またはすべてのファイルに結果（保存またはスキップ）があるが、変更されたフォントファミリーを使用しているフローに関する応答が不正形式だった：`flows_to_publish` が `null` | 拒否された各ファイルの結果を確認してください。`failed` ファイルについては、再送信前に [`fonts list`](#adapty-fonts-list) を実行してください。フローの読み取りのみが失敗した場合は、コマンドが変更した各ファミリーに対して [`fonts usage`](#adapty-fonts-usage) を実行してください |
+| `5` | ネットワークエラー。そのファイル以降のファイルは送信されなかった | [`fonts list`](#adapty-fonts-list) を実行して `failed` ファイルが保存されたかどうかを確認し、保存されなかったファイルをアップロードしてください |
+
+## adapty fonts add
+
+選択したフォントファミリーにフォントファイルのフェイスを追加します。ファイルが持つファミリー名にかかわらず追加できます。
+
+```bash
+adapty fonts add --app <app-id> <font-family-id> ./Brand-Bold.otf
+```
+
+| 引数 | 説明 |
+|---|---|
+| `font-family-id` | フォントファミリーID（UUID） |
+| `file` | `.ttf` または `.otf` ファイルへのパス。複数ファイルを追加する場合は、それぞれを列挙してください |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+| `--choice` | いいえ | `replace` を使用すると競合するフェイスを置き換え、`keep` を使用すると既存のフェイスをそのまま残します。このコマンドは新しいフェイスを追加することもできます |
+| `--replace-face-id` | いいえ | `--choice replace` を指定し、ファイルが1つのみの場合：[`fonts upload`](#adapty-fonts-upload) での拒否リストに記載されているフェイスをピンポイントで置き換えます |
+
+コリジョンのルール、結果、終了コードは [`fonts upload`](#adapty-fonts-upload) と同じです。`--choice keep` を指定した場合、変数ファイルはすでにそのファミリーが持っているウェイトとイタリックのペアのみが重複しているときでも、新しいスタイルを追加します。
+
+## adapty fonts rename
+
+フォントファミリーの名前を変更します。ファミリーのファイルやフェイスは変更されません。
+
+```bash
+adapty fonts rename --app <app-id> <font-family-id> "Brand Sans"
+```
+
+| 引数 | 説明 |
+|---|---|
+| `font-family-id` | フォントファミリーID（UUID） |
+| `name` | 新しいファミリー名 |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリID（UUID） |
+
+同じアプリの別のファミリーに同一の名前は使用できません。大文字・小文字のみが異なる名前は許可されています。
+
+## adapty fonts usage \{#adapty-fonts-usage\}
+
+フォントファミリーを使用しているフローとペイウォールを一覧表示します。
+
+```bash
+adapty fonts usage --app <app-id> <font-family-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `font-family-id` | フォントファミリー ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+
+レスポンスには、ドラフトを含むフロー一覧、およびそのファミリーを使用しているペイウォールが含まれます。各フェイスについては、そのフェイスを使用しているペイウォールが一覧表示されますが、Adaptyがフェイスを区別できない場合は `null` が返されます。フローは、その設定がIDでファミリーを参照している場合にのみ一覧表示されます。ファミリーを名前のみで参照しているフローは一覧に含まれません。
+
+## adapty fonts faces update
+
+フォントフェイスのウェイト・イタリック設定、あるいは iOS または Android のフォント名を変更します。
+
+```bash
+adapty fonts faces update --app <app-id> <font-face-id> --ios-name BrandSans-Bold --android-name brand_sans_bold
+```
+
+| 引数 | 説明 |
+|---|---|
+| `font-face-id` | フォントフェイス ID（UUID）。[`fonts list`](#adapty-fonts-list) で確認できます |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリID（UUID） |
+| `--weight` | いいえ | フォントウェイト。例：通常は `400`、太字は `700`。`--italic` と組み合わせて使用します |
+| `--italic` | いいえ | イタリックの場合は `true`、直立体の場合は `false`。`--weight` と組み合わせて使用します |
+| `--ios-name` | いいえ | iOSフォント名：フォントファイルに格納されているPostScript名。同じアプリ内の他のフェイスと重複不可 |
+| `--android-name` | いいえ | Androidフォント名：`res/font/` 内のファイル名（拡張子なし）。小文字で始まり、小文字・数字・アンダースコアのみ使用可 |
+
+ウェイトとイタリックを設定すると、フォントフェイスの `metadata_status` が `confirmed` になります。Android フォント名は同じファイルの全フェイスで変更されます。変更された名前を使用しているペイウォールは新しい名前が反映されます。
+
+## adapty fonts faces default \{#adapty-fonts-faces-default\}
+
+フォントファミリー内でそのフェイスをデフォルトフェイスとして設定します。現在のデフォルトフェイスはデフォルトでなくなります。
+
+```bash
+adapty fonts faces default --app <app-id> <font-face-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `font-face-id` | フォントフェイス ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリ ID（UUID） |
+
+## adapty fonts faces move
+
+フォントファミリーの中でフェイスを別のファミリーに移動します。フェイスのファイル自体は変更されません。
+
+```bash
+adapty fonts faces move --app <app-id> <font-face-id> --to <font-family-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `font-face-id` | フォントフェイス ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリ ID（UUID） |
+| `--to` | Yes | 移動先のファミリー ID（UUID） |
+
+ファミリーのデフォルトフェイスは移動できません。ウェイトとイタリックが設定されているフェイスは、同じウェイトとイタリックを持つフェイスがすでに存在するファミリーへは移動できません。
+
+## adapty fonts faces replace
+
+フェイスの新しいファイルをアップロードします。
+
+```bash
+adapty fonts faces replace --app <app-id> <font-face-id> ./Brand-Bold.otf
+```
+
+| 引数 | 説明 |
+|---|---|
+| `font-face-id` | フォントフェイス ID（UUID） |
+| `file` | 新しい `.ttf` または `.otf` ファイルのパス |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+| `--weight` | いいえ | フォントフェイスのウェイト。`--italic` と併用します |
+| `--italic` | いいえ | `true` または `false`。`--weight` と併用します |
+| `--yes` | いいえ | 確認なしでファイルを置き換えます。`--json` 使用時、パイプ経由の場合、またはターミナルなしの場合に必須です |
+
+フェイスはそのID、デフォルトのマーク、AndroidのフォントファイルIDをそのまま保持します。iOSのフォント名は新しいファイルから取得されます。Adaptyは古いファイルを保持しないため、元に戻すことはできません。そのため、このコマンドは確認を求めます。`--json` を使用する場合、パイプ経由の場合、またはターミナルなしで実行する場合は `--yes` が必要です。これを指定しないと、コマンドは終了コード 6 (`confirm_required`) で停止し、何も変更されません。ウェイトとイタリックが不明なフェイスに可変フォントファイルを使用するには、`--weight` と `--italic` を渡してください。
+
+フェイスにすでに解決済みのウェイトとイタリック設定がある場合、新しいファイルはその両方に一致する必要があります。また、ファミリー内の別のフェイスが同じウェイトとイタリック設定を持っている場合、またはアプリ内の別のフェイスが新しいファイルのiOSフォント名を使用している場合も、Adaptyはそのファイルを拒否します。いずれの場合も、フェイスは古いファイルを保持します。iOSフォント名がすでに使用中の場合は、別のPostScript名を持つファイルをアップロードするか、その名前を使用しているフェイスのファイルを置き換えてください。
+
+## adapty flows versions list
+
+フローのバージョン一覧を新しい順に表示します。これらはフロー & ペイウォールビルダーの[バージョン履歴](flow-version-history)に対応するバージョンです。
+
+```bash
+adapty flows versions list --app <app-id> <flow-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリ ID（UUID） |
+| `--search` | No | タイトルに指定したテキストを含むバージョンのみ表示します。大文字・小文字を区別せず、部分一致も有効です（例：`friday` と入力すると **Black Friday** がヒットします）。 |
+
+各行には、バージョンのタイトル、状態、日付、IDが表示されます。タイトルはバージョン名、または名前がない場合は **Version N** となります。状態は次のいずれかです：
+
+| 状態 | 意味 |
+|---|---|
+| `draft` | 編集中のバージョン。フローには1つのドラフトがあるか、ドラフトなしの状態です。ドラフトの公開中は行の末尾に `Publishing…` と表示され、公開に失敗した場合は `Publish failed` と表示されます |
+| `live` | ユーザーに表示されているバージョン |
+| `previous` | 以前のバージョン。過去に公開されていたか、公開前に新しいバージョンに置き換えられたものです |
+
+`live` または `previous` バージョンの日付は、そのバージョンの公開が開始された日付です。ドラフト、および一度も公開されていない `previous` バージョンの場合は、バージョンが作成された日付です。
+
+一度も公開されていないフローの場合、コマンドは `History will appear after the first publish.` と表示し、その下にドラフト行を表示します。ダッシュボードの[バージョン履歴](flow-version-history)には、そのようなフローの行は表示されません。`--search` に一致するバージョンがない場合、コマンドは `No versions match the search.` と表示します。
+
+このコマンドは常にすべてのバージョンを一覧表示し、ページネーションフラグには対応していません。
+
+`--json` を使用すると、コマンドは Adapty の `{data, meta}` をそのまま出力し、`data` に行が含まれます。各行には `flow_version_id`、`version`、`name`、`title`、`state`、`is_current`、`publication_status`、`published_at`、`created_at`、`updated_at`、`last_edited_by` が含まれます。`updated_at` はそのバージョンのコンテンツが最後に変更されたミリ秒タイムスタンプです。ドラフトの `updated_at` を [`flows versions restore`](#adapty-flows-versions-restore) に `--expected-updated-at` として渡してください。`last_edited_by` はそのバージョンを最後に変更したユーザー名を示し、Adapty がユーザーを特定できない場合は `null` になります。
+
+## adapty flows versions get
+
+フローの1つのバージョンを取得します。バージョンの取得によって状態は変わりません。ドラフトとライブバージョンはそのままです。
+
+このコマンドは、バージョンのタイトル、ID、番号、状態、日付、最後に変更したユーザー、および **Test on device** リンクを出力します。バージョンの完全なコンテンツ（すべてのレイアウトを含むビルダー設定、リモートコンフィグ、ペイウォール）は、`--json` の出力と `--output` のファイルに含まれます。
+
+```bash
+adapty flows versions get --app <app-id> <flow-id> <version-id> --output version.json
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID（UUID） |
+| `version-id` | バージョン ID（UUID）、[`flows versions list`](#adapty-flows-versions-list) から取得 |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+| `--output` | いいえ | バージョンの全コンテンツを JSON としてこのファイルに書き出す |
+| `--yes`, `-y` | いいえ | 確認なしで既存の `--output` ファイルを上書きする。ファイルが存在する場合、`--json` 使用時またはパイプ経由の場合に必須 |
+
+CLIが`--output`ファイルに書き込めない場合（例：フォルダが存在しない場合）、コマンドは`Could not write <path> (<errno>).`と表示してコード1で終了します。
+
+## adapty flows versions preview
+
+バージョンの **Test on device** リンクを出力します。テストデバイスでリンクを開くと、[Adapty モバイルアプリ](paywall-device-compatibility-preview#preview-on-devices)でそのバージョンを確認できます。ドラフト、ライブバージョン、以前のバージョンなど、どのバージョンでも使用できます。
+
+```bash
+adapty flows versions preview --app <app-id> <flow-id> <version-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID（UUID） |
+| `version-id` | バージョン ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリ ID（UUID） |
+
+## adapty flows versions rename
+
+バージョンの名前を変更します。ドラフト、ライブバージョン、および以前のバージョンの名前を変更できます。
+
+```bash
+adapty flows versions rename --app <app-id> <flow-id> <version-id> --name "Black Friday"
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID（UUID） |
+| `version-id` | バージョン ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリ ID（UUID） |
+| `--name` | Yes | 新しいバージョン名。`--name ""` を渡すと名前が削除され、バージョンが再び **Version N** と表示されます。スペースのみの名前も同様に削除されます |
+
+このコマンドはバージョン ID と新しいタイトルを出力します。Adapty は名前の両端のスペースを削除します。2 つのバージョンが同じ名前を持つことができます。名前の変更はバージョンのコンテンツや `updated_at` を変更しないため、後でドラフトを保存する操作と競合しません。
+
+## adapty flows versions restore \{#adapty-flows-versions-restore\}
+
+同じフローのドラフトとしてバージョンを復元します。これは[バージョン履歴](flow-version-history#restore-an-earlier-version)の **Duplicate as draft** に相当します。復元されたバージョンは[公開](#adapty-flows-publish)するまでユーザーには反映されません。
+
+:::tip
+復元を行うと現在のドラフトが上書きされます。ドラフトを残したい場合は、先に [`flows duplicate`](#adapty-flows-duplicate) で新しいフローとして複製してください。
+:::
+
+```bash
+adapty flows versions restore --app <app-id> <flow-id> <version-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フローID（UUID） |
+| `version-id` | `live` または `previous` バージョンのバージョンID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリID（UUID） |
+| `--expected-updated-at` | `--yes` を使用し、フローにドラフトがある場合 | [`flows versions list --json`](#adapty-flows-versions-list) から取得したドラフトの `updated_at`。その読み取り後にドラフトが変更されていた場合、変更を上書きせずにコマンドが失敗します |
+| `--yes`, `-y` | いいえ | 確認なしでドラフトを置き換えます。フローにドラフトがある場合、`--json` 使用時またはパイプ実行時に必須です |
+
+このコマンドはまず、フローのバージョンを読み込みます：
+
+- **フローにドラフトがない場合**: コマンドは何も確認せず、次のバージョン番号・名前なし・そのバージョンの内容をすべて持つ新しいドラフトを作成します。ライブバージョンと復元元のバージョンはそのまま維持されます。
+- **フローにドラフトがある場合**: `Replace the draft '<draft>' (last change <time> by <user>) with '<version>'? To keep the draft, duplicate it to a new flow first.` と表示され、次に `Apply? [y/N]` と確認を求めます。`y` と答えると、ドラフトはその ID・番号・名前を保持したまま、指定したバージョンの内容に置き換えられます。バージョンは追加されません。それ以外の回答ではコード 1 で終了し、何も送信されません。
+
+`--json`を使用する場合、パイプ経由の場合、またはターミナルがない場合、コマンドは確認を求めることができません。フローにドラフトがある場合、`--yes`を渡さない限り、何も送信せずにコード6で終了します。メッセージは質問を表示し、`To replace it, re-run with --yes --expected-updated-at <ms> (the draft's updated_at).`というテキストに、`<ms>`の部分にドラフトの`updated_at`を入れた形で追加されます。`--yes`を使用する場合は、`--expected-updated-at`も渡してください。これがないと、コマンドはコード6で終了し、何も送信しません。`--expected-updated-at`なしでターミナルを使用する場合、コマンドは質問の中で表示するドラフトの`updated_at`を使用します。
+
+リストアが完了すると、コマンドは `Restored '<version>' as the draft '<draft>' (<draft-id>). Nothing is published.` と表示します。
+
+以下のケースでは、Adapty はリストアを拒否し、何も変更しません。コマンドは Adapty のメッセージを表示し、一部のケースでは対処方法も案内したうえで、終了コード 4 で終了します。
+
+| メッセージ | 対処方法 |
+|---|---|
+| `This flow version is already the current draft.` | 別のバージョンを選択してください。 |
+| `Flow version does not exist.` | バージョン ID がこのフローのバージョン一覧に存在しません。[`flows versions list`](#adapty-flows-versions-list) から ID を取得してください。 |
+| `Flow version is already being published.` | 公開が完了するまで待ってから、再度リストアしてください。 |
+| `This flow version uses deleted products: …` | 削除済みプロダクトを使用していないバージョンを選択してください。 |
+| `This flow configuration was already updated by …` | チームメンバーがドラフトを読み取った後に変更しています。バージョン一覧を再取得してから再試行してください。 |
+| `Flow is deleted.` | フローはアーカイブされています。先にダッシュボードの[アーカイブからリストア](archive-flows#restore-a-flow)してください。 |
+
+## adapty flows duplicate \{#adapty-flows-duplicate\}
+
+フローまたはそのバージョンの1つを新しいフローにコピーします。これはフロー＆ペイウォールビルダーのトップバーにあるフローアクションボタンの **Duplicate flow** 、および[バージョン履歴](flow-version-history#restore-an-earlier-version)の **Duplicate as new flow** に対応しています（[フローのコピー](copy-flows)を参照）。
+
+```bash
+adapty flows duplicate --app <app-id> <flow-id> --version <version-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フローID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+| `--version` | いいえ | コピーするバージョン ID（UUID）。[`flows versions list`](#adapty-flows-versions-list) から確認できます。ドラフトを含む任意のバージョンを指定できます。省略した場合は、ドラフトをコピーします。ドラフトが存在しない場合はライブバージョンをコピーします |
+
+このコマンドを実行すると、`New flow '<name>' (<flow-id>), not published.` と表示されます。新しいフローはコピー元のフロー名に `_copy` を付けた名前になります。未公開の状態で、そのバージョンの内容を持つドラフトが1つ作成されます。コピー元のフロー、そのドラフト、履歴はそのまま維持されます。公開中のフローも複製できます。
+
+削除済みのプロダクトを使用しているバージョンのコピーや、アーカイブ済みフローのコピーはAdaptyに拒否されます。エラーメッセージは [`flows versions restore`](#adapty-flows-versions-restore) と同じです。
+
+## adapty flows metrics list
+
+複数のフローのライフタイム指標を表示します（フローごとに1行）。これはダッシュボードのフローテーブルのデータです。
+
+```bash
+adapty flows metrics list --app <app-id> --ids <flow-id>,<flow-id>
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリID（UUID） |
+| `--ids` | はい | フローID（UUID）。カンマ区切りで指定するか、フラグを繰り返し使用します |
+| `--csv` | いいえ | CSVで出力します：フローIDと27個すべての指標を含む行をフローごとに1行出力します。`--json` と同時には使用できません |
+
+各行には、フローID、ビュー数、購入数、トライアル数、収益が表示されます。`--json` および `--csv` オプションでは、`unique_profiles_views`、`net_revenue`、`conversion_rate_purchases` など、[フロー指標](flow-metrics#metrics-definitions)ページに記載されている27の指標がすべて出力されます。データのない指標は `null` ではなく `0` として表示されます。一度も公開されたことのないフローについては、テーブルの下に `<flow-id>: No data: the flow was never published.` と表示されます。`--json` の場合はそのフローの行に `note: "never_published"` が追加されます。`--csv` の場合は、CSVをクリーンな状態に保つため、注記はstderrに出力されます。
+
+## adapty flows metrics values \{#adapty-flows-metrics-values\}
+
+フローのフィルターキーと値の一覧です。[`flows metrics get --filter`](#filter-the-metrics) に渡す値を確認できます。
+
+```bash
+adapty flows metrics values --app <app-id> <flow-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリ ID（UUID） |
+
+各行にはラベルと、括弧内に渡す値が表示されます。値はダッシュボードのフィルターと同じ階層構造になっています：
+
+```text
+Country (country)
+  Americas (Americas)
+    United States (US)
+  Europe (Europe)
+    Germany (DE)
+Store (store)
+  App Store (app_store)
+  Google Play (play_store)
+```
+
+各グループの先頭の値がフィルターキーで、最も内側の値がそのキーに渡す値です。上の例では、`--filter country=US` でアメリカ合衆国を絞り込み、`--filter store=play_store` で Google Play を絞り込みます。
+
+## adapty flows metrics get
+
+指定した期間のフローの指標を、[フロー指標](flow-metrics)ページのツリー形式で表示します。
+
+```bash
+adapty flows metrics get --app <app-id> <flow-id> --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date --based-on placement
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フローID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリID（UUID） |
+| `--based-on` | はい | ツリーの第1レベルの分割基準：`placement`または`audience`。[フローの指標](flow-metrics#view-options-for-metrics-data)ページのプレースメントベースおよびオーディエンスベースのビューに対応します |
+| `--date-type` | はい | 期間に適用する日付の種類：`purchase_date`または`profile_install_date`（[インストール日でフィルター](flow-metrics#filter-metrics-by-install-date)する場合） |
+| `--date-from` | いいえ | 期間の開始日（当日を含む）（`YYYY-MM-DD`）。`--date-to`と合わせて指定してください |
+| `--date-to` | いいえ | 期間の終了日（当日を含む）（`YYYY-MM-DD`）。`--date-from`と合わせて指定してください |
+| `--granularity` | いいえ | 期間を分割する単位：`day`、`week`、`month`、`quarter`、または`year` |
+| `--filter` | いいえ | フィルターキーの値が一致するデータのみを表示します。複数回指定可能。[指標のフィルタリング](#filter-the-metrics)を参照してください |
+| `--timezone` | いいえ | 期間ポイントのIANAタイムゾーン（例：`Europe/Berlin`）。指定しない場合、AdaptyはアプリのタイムゾーンをUseします |
+| `--depth` | いいえ | `Total`の下に表示するツリーのレベル数。デフォルト：`1` |
+| `--csv` | いいえ | CSV形式で出力します：ツリー全体の各ノードを1行で表示。`--json`と同時には使用できません |
+
+一度も公開されたことのないフローの場合、コマンドは数値の上に `No data: the flow was never published.` というメモを表示し、`--json` では `note: "never_published"` が追加されます。`--csv` の場合、メモは stderr に出力されるため、CSV はクリーンな状態を保ちます。
+
+特定のフローの収益を確認するには、`adapty analytics chart --app <app-id> --chart revenue --date-from <YYYY-MM-DD> --date-to <YYYY-MM-DD> --filter flow_id=<flow-id>` を実行してください。詳細は[アナリティクスコマンド](developer-cli-analytics)を参照してください。
+
+`--based-on`、`--date-type` が指定されていない場合、または期間の片方のみが指定されている場合、CLIはリクエストを送信せずにコード2で終了します。Adaptyは `--based-on`、`--date-type`、`--granularity` の値を検証します。値が不正な場合はコード4で終了し、エラーメッセージに受け付け可能な値の一覧が表示されます。
+
+### 出力を読む \{#read-the-output\}
+
+コマンドは `Total` 行を表示した後、その下にツリーの第一レベルを表示します。各行にはビュー数、購入数、トライアル数、収益が表示されます。`--granularity` を指定すると、期間のデータポイントが対応するノードの直下に表示されます。
+
+```text
+Total           views 19  purchases 7  trials 4  revenue 241.93
+  Onboarding    views 10  purchases 7  trials 0  revenue 241.93
+    2026-09-01  views  0  purchases 0  trials 0  revenue   0.00
+    2026-10-01  views 10  purchases 0  trials 0  revenue 241.93
+  Settings      views  0  purchases 0  trials 0  revenue   0.00
+```
+
+ツリーの階層はダッシュボードの階層（プレースメント、オーディエンス、A/B テスト、フローバリアント、スクリーン、プロダクト）に対応しています。`--based-on audience` を指定した場合、プレースメントのレベルは省略されます。より多くの階層を表示するには `--depth` を渡してください。例：`--depth 3`。
+
+27 指標すべてを含むツリー全体を取得するには、以下のいずれかのフラグを使用します：
+
+- `--json` はサーバーのレスポンスをそのまま出力します。
+- `--csv` は各ノードを 1 行で出力し、ピリオドのポイントも含まれます。カラムは `path`（`Total` からそのノードまでのタイトルを ` > ` で区切ったもの）、`level`、`title`、そして各指標です。
+
+### 指標のフィルタリング \{#filter-the-metrics\}
+
+`--filter` はそれぞれ `key=value` の形式で記述します。使用できるキーと値は [`flows metrics values`](#adapty-flows-metrics-values) を参照してください。複数の値のいずれかに一致させるには、値をカンマで区切るか、同じキーでフラグを繰り返します。異なるキーのフィルターは組み合わせて使用でき、データはすべての条件に一致する必要があります。
+
+```bash
+adapty flows metrics get --app <app-id> <flow-id> --date-from 2026-09-01 --date-to 2026-10-21 \
+  --date-type purchase_date --based-on placement --filter country=US,DE --filter store=app_store
+```
+
+CLIは各値をそのまま送信します。値の中にカンマを含めるには、`\,` と記述してください。空の値も値として扱われます。`attribution_channel=` はチャンネルなしのデータを保持し、`flows metrics values` では **No Data** として表示されます。
+
+## adapty flows funnel values
+
+フローファンネルのフィルターキーと値の一覧を表示します。[`flows funnel get --filter`](#adapty-flows-funnel-get) で使用できる値です。
+
+```bash
+adapty flows funnel values --app <app-id> <flow-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+
+出力形式は [`flows metrics values`](#adapty-flows-metrics-values) と同じです。
+
+## adapty flows funnel get
+
+フローのどの画面でユーザーが離脱するかを表示します。フローの[ファネル](flow-funnel)タブと同様に、1つのフローバージョンのファネルをステップごと・画面ごとに確認できます。
+
+```bash
+adapty flows funnel get --app <app-id> <flow-id> --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリID（UUID） |
+| `--date-from` | Yes | 期間の開始日（含む）（`YYYY-MM-DD`）、`--timezone` またはアプリのタイムゾーン基準 |
+| `--date-to` | Yes | 期間の終了日（含む）（`YYYY-MM-DD`）、`--timezone` またはアプリのタイムゾーン基準 |
+| `--date-type` | Yes | 期間を適用する日付の種類：`purchase_date` または `profile_install_date` |
+| `--flow-version-id` | No | 読み込むフローバージョンID（UUID）。指定しない場合、CLIは公開済みバージョンを読み込む |
+| `--filter` | No | フィルターキーの値が一致するユーザーのみを保持する。`key=value` 形式で指定。繰り返し指定可能。キーと値は [`flows funnel values`](#adapty-flows-funnel-values) から取得し、[Filter the metrics](#filter-the-metrics) と同様に機能する |
+| `--timezone` | No | 日付のIANAタイムゾーン（例：`Europe/Berlin`）。指定しない場合、Adaptyはアプリのタイムゾーンを使用する |
+| `--csv` | No | ダッシュボードがダウンロードするCSVファイルを、合計行を先頭に出力する。`--json` との併用不可 |
+
+コマンドはフローのバージョンと期間、サマリー行、そしてテーブルを出力します。サマリーには、フローに入ったユーザー数、完了したユーザー数、ドロップ率、収益が表示されます。テーブルには各ステップが1行で表示され、列は `Step`、`Type`、`Reached`、`Completed`、`Drop rate`、`Revenue` です。複数の画面を持つステップは、各画面につき1行が追加されます。オンボーディング画面の収益など、適用されない値は `—` と表示されます。
+
+フローに入ったユーザーが該当期間に存在しない場合、テーブルにはそのバージョンの画面がゼロで表示されます。回答の各フィールドには `--json` を使用してください。
+
+## 次のステップ \{#whats-next\}
+
+- [コマンドリファレンス](developer-cli-reference) — すべての CLI トピック、グローバルフラグ、ページネーションフラグ。
+- [フローのバージョン履歴](flow-version-history) — Flow & Paywall Builder でのバージョン管理。

@@ -1,10 +1,14 @@
 ---
-title: "Migrer le SDK React Native Adapty vers v4.0"
-description: "Migrez vers le SDK React Native Adapty v4.0 en remplaçant les API paywall par des API flow, compatibles avec le Flow Builder et le Paywall Builder."
-metadataTitle: "Migration vers le SDK React Native Adapty v4.0 | Documentation Adapty"
+title: "Migrer le SDK Adapty React Native vers la v4.0"
+description: "Migrez vers le SDK Adapty React Native v4.0 en remplaçant les API paywall par des API flow, qui affichent les flows en plus des anciens paywalls du builder."
+metadataTitle: "Migration vers le SDK Adapty React Native v4.0 | Documentation Adapty"
 ---
 
-Le SDK React Native Adapty 4.0 introduit les flows et renomme les API paywall en conséquence. Les nouvelles API fonctionnent aussi bien avec le nouveau Flow Builder qu'avec le Paywall Builder existant — aucune modification de configuration n'est nécessaire côté Adapty Dashboard.
+Le SDK Adapty React Native 4.0 introduit les flows et renomme les API paywall en conséquence. Les nouvelles API fonctionnent avec les flows et restent compatibles avec les paywalls de l'ancien builder — aucune modification de configuration n'est nécessaire côté Adapty Dashboard.
+
+:::note
+Ce guide couvre la migration 3.x → 4.0. Le SDK 4.1 modifie quelques API supplémentaires — l'Attribution Adapty devient opt-in, les méthodes d'attribution externe sont renommées, et le format du fichier de secours change à nouveau. Une fois cette étape terminée, consultez [Migrer vers la v4.1](migration-to-react-native-sdk-41).
+:::
 
 ## Référence rapide \{#quick-reference\}
 
@@ -28,6 +32,10 @@ Le SDK React Native Adapty 4.0 introduit les flows et renomme les API paywall en
 
 Le SDK React Native Adapty 4.0 fait passer la version minimale de déploiement iOS de iOS 13.0 à **iOS 15.0**. Définissez votre cible de déploiement iOS à 15.0 ou supérieure avant de procéder à la mise à jour.
 
+## Version minimale de compile SDK Android \{#minimum-android-compile-sdk\}
+
+Adapty React Native SDK 4.0 nécessite `compileSdkVersion` 35 ou supérieur sur Android. La bibliothèque Adapty UI utilise Jetpack Compose 1.8, qui l'exige. Si `android/build.gradle` définit une version inférieure, passez-la à 35.
+
 ## Installation \{#installation\}
 
 ### Mettre à jour le package
@@ -42,14 +50,19 @@ yarn add react-native-adapty@4.0.2
 
 ### iOS : les SDK natifs passent désormais par Swift Package Manager
 
-[Le dépôt de specs CocoaPods passe en lecture seule en décembre 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/), aussi à partir de la v4, les SDK natifs `Adapty`, `AdaptyUI` et `AdaptyPlugin` **ne sont plus inclus en tant que sous-dépendances CocoaPods** — le podspec les récupère via **Swift Package Manager** (grâce au helper `spm_dependency`). Deux points à respecter :
+[Le dépôt de specs CocoaPods devient en lecture seule en décembre 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/), donc à partir de la v4, les SDK natifs `Adapty`, `AdaptyUI` et `AdaptyPlugin` **ne sont plus récupérés en tant que sous-dépendances CocoaPods** — le podspec les récupère via **Swift Package Manager** (grâce au helper `spm_dependency`). Trois points à prendre en compte :
 
-- **React Native 0.75 ou version ultérieure** — nécessaire pour le helper de podspec `spm_dependency`. Sur une version plus ancienne, `pod install` échoue avec une erreur explicite ; mettez d'abord à jour React Native, ou restez sur `react-native-adapty` 3.x.
-- **Frameworks dynamiques** — les dépendances SPM nécessitent un linkage dynamique. La façon de l'activer diffère entre Expo et bare React Native.
+- **Xcode 26 ou version ultérieure** — le manifeste de package du SDK iOS natif déclare Swift tools 6.2, que les versions antérieures d'Xcode ne peuvent pas lire.
+- **React Native 0.75 ou version ultérieure** — nécessaire pour le helper podspec `spm_dependency`. Sur une version plus ancienne, `pod install` échoue avec une erreur explicite ; mettez d'abord à jour React Native, ou restez sur `react-native-adapty` 3.x.
+- **Frameworks dynamiques** — les dépendances SPM nécessitent une liaison dynamique. La façon de l'activer diffère selon que vous utilisez Expo ou React Native en mode bare.
+
+:::tip
+À partir du SDK 4.2.3, si votre projet ne peut pas passer aux frameworks dynamiques — par exemple parce qu'il repose sur une liaison statique ou Flipper — vous pouvez installer les SDK iOS natifs en tant que pods CocoaPods. Consultez l'option **CocoaPods without SPM** pour [React Native pur](sdk-installation-react-native-pure#set-up-your-ios-project) ou [Expo](sdk-installation-react-native-expo#enable-dynamic-frameworks).
+:::
 
 #### Expo
 
-Ajoutez le plugin de configuration [`expo-build-properties`](https://docs.expo.dev/versions/latest/sdk/build-properties/) et définissez les frameworks iOS en dynamique dans `app.json` (ou `app.config.js`) :
+Ajoutez le plugin de configuration [`expo-build-properties`](https://docs.expo.dev/versions/latest/sdk/build-properties/) et configurez les frameworks iOS en mode dynamique dans `app.json` (ou `app.config.js`) :
 
 ```json showLineNumbers title="app.json"
 {
@@ -68,7 +81,7 @@ Ajoutez le plugin de configuration [`expo-build-properties`](https://docs.expo.d
 }
 ```
 
-Installez ensuite le plugin et regénérez le projet natif :
+Installez ensuite le plugin et régénérez le projet natif :
 
 ```bash showLineNumbers
 npx expo install expo-build-properties
@@ -118,6 +131,19 @@ Le type retourné passe de `AdaptyPaywall` à `AdaptyFlow`, et le paramètre `lo
 + const flow = await adapty.getFlowForDefaultAudience('YOUR_PLACEMENT_ID');
 ```
 
+### La correspondance de locale est exacte \{#locale-matching-is-exact\}
+
+:::warning
+Dans la v3, le serveur Adapty sélectionnait la localisation et se rabattait sur la langue : une requête `pt-br` obtenait la localisation `pt` quand le paywall n'avait pas de `pt-br`. Dans la v4, le SDK sélectionne la localisation sur l'appareil et n'utilise que la correspondance exacte. Un code qui ne correspond à aucune localisation affiche le flow dans sa localisation par défaut, sans erreur ni avertissement.
+:::
+
+Avant de faire la mise à niveau, vérifiez les codes de locale que votre application transmet :
+
+- Pour chaque code régional que vous transmettez, ajoutez une localisation avec ce code — par exemple, `pt-BR` en plus de `pt` — ou mappez le code sur l'un de ceux disponibles dans le flow.
+- Transmettez les codes exactement tels qu'ils figurent dans le flow publié : `pt-BR`, et non `pt-br` issu du champ **Select languages**. Pour les paywalls de l'ancien Paywall Builder, transmettez des codes en minuscules, comme `pt-br`. Ne transmettez pas tel quel un identifiant de locale système : sur un appareil configuré en anglais (États-Unis), `getLocales()[0].languageTag` depuis `react-native-localize` renvoie `en-US`, ce qui ne correspond pas à un flow qui ne contient que `en`.
+
+Voir [Localisations et codes de langue](react-native-localizations-and-locale-codes#flows-and-paywalls).
+
 ### getPaywallProducts(paywall) → getPaywallProducts(flow)
 
 `getPaywallProducts` conserve son nom mais prend désormais un `AdaptyFlow` :
@@ -138,12 +164,12 @@ Le format des fichiers de secours [a changé avec le SDK v4](fallback-flows). T�
 | Champ v3 `AdaptyPaywall` | Champ v4 `AdaptyFlow` | Action |
 |---|---|---|
 | `remoteConfig?` (unique) | `remoteConfigs?: AdaptyRemoteConfig[]` (tableau) | Un flow contient un Remote Config par langue configurée. Lisez celui qui correspond à l'utilisateur : `flow.remoteConfigs?.find((c) => c.lang === 'en')`. |
-| `products` | `flow.paywalls[i].productIdentifiers` | Les identifiants de produits se trouvent désormais sur chaque variante du flow, pas sur le flow lui-même. |
+| `products` | `flow.paywalls[i].productIdentifiers` | Les identifiants de produits se trouvent désormais sur chaque variante du flow, et non sur le flow lui-même. |
 | `webPurchaseUrl?` | `flow.paywalls[i].webPurchaseUrl` | Déplacé du flow vers chaque variante de paywall. |
-| `version?: number` | `flowVersionId?: string` | Renommé, et le type a changé de `number` à `string`. |
-| `hasViewConfiguration` | supprimé | Supprimez tout contrôle `hasViewConfiguration` de votre code. |
+| `version?: number` | `flowVersionId?: string` | Renommé, et le type est passé de `number` à `string`. |
+| `hasViewConfiguration` | supprimé en 4.0, rétabli en 4.1 | Retirez tout contrôle `hasViewConfiguration` de votre code lorsque vous êtes sur la 4.0. L'indicateur revient sur `AdaptyFlow` en 4.1 — voir [Migrer vers la v4.1](migration-to-react-native-sdk-41#hasviewconfiguration-returns-to-adaptyflow). |
 | `requestLocale` | supprimé | La locale ne fait plus partie du modèle. |
-| _(nouveau)_ | `paywalls: AdaptyFlowPaywall[]` | Chaque entrée correspond à une variante de paywall dans le flow. |
+| _(nouveau)_ | `paywalls: AdaptyFlowPaywall[]` | Chaque entrée est une variante de paywall dans le flow. |
 | _(nouveau)_ | `responseCreatedAt: number` | Horodatage de la réponse serveur, en millisecondes. |
 
 Product identifiers moved from the flow to each variation:
@@ -167,14 +193,14 @@ Product identifiers moved from the flow to each variation:
 
 ### logShowPaywall → logShowFlow
 
-`logShowPaywall` est renommé en `logShowFlow` et prend désormais un `AdaptyFlow`. L'événement est toujours enregistré pour la même variation, donc les métriques de funnel et de test A/B existantes continuent de fonctionner sans modification du tableau de bord.
+`logShowPaywall` est renommé en `logShowFlow` et prend désormais un `AdaptyFlow`. L'événement est toujours enregistré pour la même variation, de sorte que les métriques de funnel et de test A/B existantes continuent de fonctionner sans modification du tableau de bord.
 
 ```diff showLineNumbers
 - await adapty.logShowPaywall(paywall);
 + await adapty.logShowFlow(flow);
 ```
 
-Comme dans la v3, vous n'avez pas besoin d'appeler cette méthode lors de l'affichage de flows ou de paywalls rendus par le [Flow Builder](adapty-flow-builder) ou le [Paywall Builder](adapty-paywall-builder) — Adapty suit automatiquement ces vues.
+Comme dans la v3, vous n'avez pas besoin d'appeler cette méthode lors de l'affichage de flows ou de paywalls rendus par Adapty — Adapty enregistre automatiquement ces vues.
 
 ## Afficher des flows \{#displaying-flows\}
 
@@ -286,13 +312,14 @@ Si vous exécutez le SDK en mode mock (Expo Go ou prévisualisation web), renomm
 
 Ces changements ne causent pas d'erreurs de compilation ; testez-les à l'exécution :
 
-- **`onAndroidSystemBack`** : Le comportement par défaut a changé : la vue reste ouverte au lieu de se fermer. Pour rétablir l'ancien comportement, retournez `true` depuis le handler.
-- **`onPurchaseCompleted`** : Le comportement par défaut a changé : la vue reste toujours ouverte au lieu de se fermer (sauf en cas d'annulation par l'utilisateur). Pour rétablir l'ancien comportement, retournez `purchaseResult.type !== 'user_cancelled'` depuis le handler.
-- **`onRestoreCompleted`** : Le comportement par défaut a changé : la vue reste ouverte au lieu de se fermer après une restauration réussie. Pour rétablir l'ancien comportement, retournez `true` depuis le handler.
-- **`onUrlPress`** : Par défaut, l'URL s'ouvre désormais via la couche native, en respectant le paramètre de navigateur intégré ou externe défini dans le tableau de bord. Remplacez le handler pour gérer vous-même l'ouverture des URL.
+- **Localisation des flows** : Un code de paramètre régional ne se replie plus sur sa langue de base — `pt-br` n'utilise pas la localisation `pt`. Un code sans correspondance exacte affiche le flow dans sa localisation par défaut. Voir [La correspondance des paramètres régionaux est exacte](#locale-matching-is-exact).
+- **`onAndroidSystemBack`** : Le comportement par défaut est passé de la fermeture de la vue au maintien de celle-ci ouverte. Pour rétablir l'ancien comportement, retournez `true` depuis le gestionnaire.
+- **`onPurchaseCompleted`** : Le comportement par défaut est passé de la fermeture de la vue (sauf si l'utilisateur annulait l'achat) au maintien systématique de celle-ci ouverte. Pour rétablir l'ancien comportement, retournez `purchaseResult.type !== 'user_cancelled'` depuis le gestionnaire.
+- **`onRestoreCompleted`** : Le comportement par défaut est passé de la fermeture de la vue après une restauration réussie au maintien de celle-ci ouverte. Pour rétablir l'ancien comportement, retournez `true` depuis le gestionnaire.
+- **`onUrlPress`** : Par défaut, l'URL s'ouvre désormais via la couche native, en respectant le paramètre de navigateur intégré ou externe défini dans le tableau de bord. Remplacez le gestionnaire pour gérer vous-même l'ouverture des URLs.
 
 ## Dépréciation de l'API onboarding \{#onboarding-api-deprecation\}
 
-L'ancienne API onboarding est dépréciée dans la v4.0 au profit du [Flow Builder](adapty-flow-builder). Elle fonctionne toujours, mais sera supprimée dans une version future — prévoyez donc la migration de vos onboardings vers le Flow Builder.
+L'ancienne API onboarding est dépréciée à partir de la v4.0 au profit du [Flow & Paywall Builder](adapty-flow-builder). Elle fonctionne toujours, mais sera supprimée dans une prochaine version — planifiez donc la migration de vos onboardings vers le Flow & Paywall Builder.
 
 Symboles dépréciés : `getOnboarding`, `getOnboardingForDefaultAudience`, `createOnboardingView` et `AdaptyOnboardingView`.

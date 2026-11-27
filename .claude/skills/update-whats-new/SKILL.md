@@ -16,6 +16,8 @@ The page advertises **user-visible updates** — new features, new SDK releases,
 - User says: "update what's new", "draft what's new for [month]", "add a what's new entry", "monthly what's new", or equivalent.
 - Filling in a missing month, even if not the most recent one.
 
+This is the only way `whats-new.mdx` changes: once a month, on the user's explicit request. Never run it, or edit the page, as part of a feature change, even when a ripple list or plan names `whats-new`.
+
 ## When NOT to use
 
 - The user wants to edit an existing entry → use the `editor` skill instead.

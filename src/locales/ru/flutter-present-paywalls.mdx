@@ -1,28 +1,29 @@
 ---
-title: "Отображение флоу и пейволов — Flutter"
-description: "Отображайте флоу и пейволы в Flutter-приложениях с помощью функций монетизации Adapty."
-metadataTitle: "Отображение флоу и пейволов во Flutter | Документация Adapty"
+title: "Отображение флоу и пейволов - Flutter"
+description: "Показывайте флоу и пейволы в Flutter-приложениях с помощью функций монетизации Adapty."
+metadataTitle: "Отображение флоу и пейволов в Flutter | Документация Adapty"
 ---
 
-import SampleApp from '@site/src/locales/ru/reusable/SampleApp.md'; 
-
 <SDKv4>
-Если вы создали флоу или пейвол с помощью Flow Builder или Paywall Builder, вам не нужно беспокоиться о том, как отрисовать его в коде мобильного приложения для отображения пользователю. Такой флоу или пейвол содержит и то, что должно быть показано, и то, как это должно выглядеть.
+
+Если вы создали флоу или пейвол в старом Paywall Builder, вам не нужно беспокоиться о его рендеринге в коде мобильного приложения для отображения пользователю. Такой флоу или пейвол содержит как то, что нужно показать, так и то, как это должно выглядеть.
 
 :::warning
 
-Этот гайд предназначен для флоу и пейволов, созданных в Paywall Builder. Информацию о представлении **пейволов на основе Remote Config** см. в разделе [Отрисовка пейвола, созданного через Remote Config](present-remote-config-paywalls-flutter).
+Это руководство предназначено для флоу и пейволов, отображаемых средствами Adapty. Для отображения кастомных пейволов см. [Отображение кастомных пейволов](present-remote-config-paywalls-flutter).
 
 :::
 
 Adapty Flutter SDK предоставляет два способа отображения флоу и пейволов:
 
-- **Отдельный экран**
+- **Standalone screen**
 
-- **Встроенный виджет**
-## Отображение как отдельного экрана \{#present-as-standalone-screen\}
+- **Embedded widget**
 
-Чтобы отобразить флоу или пейвол как отдельный экран, вызовите метод `view.present()` на объекте `view`, созданном методом [`createFlowView`](flutter-get-pb-paywalls#fetch-the-view-configuration). Каждый `view` можно показать только один раз: после закрытия он освобождается из памяти. Если нужно показать флоу или пейвол снова, вызовите `createFlowView` ещё раз, чтобы создать новый экземпляр `view`.
+## Отображение как отдельный экран \{#present-as-standalone-screen\}
+
+Чтобы отобразить флоу или пейвол как отдельный экран, вызовите метод `view.present()` на объекте `view`, созданном методом [`createFlowView`](flutter-get-pb-paywalls#fetch-the-view-configuration). По умолчанию при закрытии `view` освобождается из памяти, и повторно показать его не получится. Если нужно снова отобразить флоу или пейвол, вызовите `createFlowView` ещё раз, чтобы создать новый экземпляр `view`, либо [закройте его без освобождения памяти](#dismiss-the-flow-or-paywall) — эта возможность доступна начиная с SDK 4.1.
+
 ```dart showLineNumbers title="Flutter"
 try {
   await view.present();
@@ -33,6 +34,7 @@ try {
 }
 ```
 <SampleApp />
+
 ### Закрытие флоу или пейвола \{#dismiss-the-flow-or-paywall\}
 
 Чтобы программно закрыть флоу или пейвол, используйте метод `dismiss()`:
@@ -48,11 +50,51 @@ try {
 ```
 
 :::note
-После закрытия вью освобождается из памяти — повторно отобразить его невозможно. Создайте новый с помощью `createFlowView`.
+При закрытии вью освобождается из памяти — повторно отобразить закрытую вью невозможно. Вместо этого создайте новую с помощью `createFlowView`.
 :::
+
+Начиная с SDK 4.1, передайте `destroy: false`, чтобы сохранить вью в памяти:
+
+```dart showLineNumbers title="Flutter"
+await view.dismiss(destroy: false);
+```
+
+Покажите это представление снова — и пользователь вернётся к тому экрану, на котором остановился, с уже накопленным состоянием флоу. Представление, сохранённое таким образом, остаётся в памяти до тех пор, пока вы его не освободите.
+
+Начиная с SDK 4.3.0, когда сохранённое представление больше не нужно, освободите его с помощью `destroy()`:
+
+```dart showLineNumbers title="Flutter"
+await view.dismiss(destroy: false);
+// ...
+await view.destroy();
+```
+
+`destroy()` также освобождает вью, которое вы создали, но так и не показали, и page-sheet-вью, которое пользователь смахнул вниз на iOS. Не вызывайте его после обычного `dismiss()`: такое вью уже освобождено, и вызов завершится ошибкой `wrongParam`. На более ранних версиях SDK снова покажите удержанное вью и закройте его с `destroy: true`, чтобы освободить.
+
+Стандартное действие закрытия вызывает `view.dismiss()`, что освобождает вью, даже если вы ранее сохранили её с помощью `destroy: false`. Чтобы сохранить вью при закрытии пользователем, переопределите `flowViewDidPerformAction` и самостоятельно закройте вью. Этот метод вызывается для каждого флоу и пейвола в вашем приложении, поэтому сравнивайте `view.id`, чтобы сохранять только ту вью, которую планируете показать снова. Оставьте обработку `OpenUrlAction` для корректного открытия URL:
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+  switch (action) {
+    case const CloseAction():
+      // keptView is the view your app stored to present again
+      view.dismiss(destroy: view.id != keptView?.id);
+      break;
+    case OpenUrlAction(:final url, :final openIn):
+      AdaptyUI().openUrl(url, openIn: openIn);
+      break;
+    default:
+      break;
+  }
+}
+```
+
+Сохраните полученный `view`: он понадобится, чтобы снова показать флоу или пейвол, а также чтобы освободить его через `destroy()`. Любой другой вызов `view.dismiss()` тоже освобождает вью, в том числе вызов в [`flowViewDidReceiveError`](flutter-handling-events#view-errors). После ошибки вью создайте новый объект через `createFlowView`.
+
 ### Показать диалог \{#show-dialog\}
 
 Используйте этот метод вместо стандартных диалоговых окон, когда на Android отображается флоу или пейвол. На Android обычные алерты появляются позади вью, из-за чего пользователи их не видят. Этот метод гарантирует корректное отображение диалога поверх флоу или пейвола на всех платформах.
+
 ```dart showLineNumbers title="Flutter"
 try {
   final action = await view.showDialog(
@@ -72,7 +114,7 @@ try {
 }
 ```
 
-### Настройка стиля представления для iOS \{#configure-ios-presentation-style\}
+### Настройка стиля презентации на iOS \{#configure-ios-presentation-style\}
 
 Настройте способ отображения флоу или пейвола на iOS, передав параметр `iosPresentationStyle` в метод `present()`. Параметр принимает значения `AdaptyUIIOSPresentationStyle.fullScreen` (по умолчанию) или `AdaptyUIIOSPresentationStyle.pageSheet`.
 
@@ -85,9 +127,13 @@ try {
   // handle the error
 }
 ```
+
+Пользователь может закрыть листовой экран свайпом вниз. При этом вью остаётся в памяти без вызова `dismiss()`: его можно показать снова или, начиная с SDK 4.3.0, освободить с помощью [`destroy()`](#dismiss-the-flow-or-paywall).
+
 ## Встраивание в иерархию виджетов \{#embed-in-widget-hierarchy\}
 
 Чтобы встроить флоу или пейвол в существующее дерево виджетов, используйте виджет `AdaptyUIFlowPlatformView` напрямую в иерархии виджетов Flutter.
+
 ```dart showLineNumbers title="Flutter"
 AdaptyUIFlowPlatformView(
   flow: flow, // The flow object you fetched
@@ -121,6 +167,24 @@ AdaptyUIFlowPlatformView(
 )
 ```
 
+Чтобы закрыть встроенный флоу, удалите виджет `AdaptyUIFlowPlatformView` из дерева виджетов. `view.dismiss()` не работает для встроенного флоу, а стандартная обработка закрытия оставляет флоу на экране. Удаляйте виджет, когда `onDidPerformAction` получает `CloseAction`, а на Android — `AndroidSystemBackAction`:
+
+```dart showLineNumbers title="Flutter"
+onDidPerformAction: (view, action) {
+  switch (action) {
+    case CloseAction():
+    case AndroidSystemBackAction():
+      setState(() => _showFlow = false); // removes the widget from the tree
+    default:
+      break;
+  }
+},
+```
+
+На iOS коллбэк `onDidReceiveError` у `AdaptyUIFlowPlatformView` вызывается, если виджет не может показать флоу. Это происходит, когда флоу не удаётся загрузить, или когда устройство работает на iOS 15, которая не поддерживает флоу. Удалите виджет и покажите собственный контент. Чтобы повторить попытку при временной ошибке, например `AdaptyErrorCode.networkFailed`, пересоздайте виджет с новым `Key`.
+
+На Android виджет не сообщает о флоу, который не удалось загрузить: не срабатывает ни `onDidReceiveError`, ни `onDidAppear`.
+
 :::note 
 Чтобы платформенное представление Android работало корректно, убедитесь, что ваш `MainActivity` расширяет `FlutterFragmentActivity`:
 
@@ -140,9 +204,10 @@ class MainActivity : FlutterFragmentActivity() {
 Если вы настроили пейвол с помощью Paywall Builder, вам не нужно беспокоиться о его отрисовке в коде мобильного приложения для показа пользователю. Такой пейвол содержит как то, что должно отображаться, так и то, как именно это должно отображаться.
 
 :::warning
-Этот гайд предназначен только для **пейволов на основе нового Paywall Builder**, которые требуют SDK v3.2.0 или выше. Процесс отображения пейволов различается в зависимости от версии Paywall Builder и Remote Config пейволов.
 
-- Для отображения **Remote Config пейволов** см. [Отображение пейвола, созданного с помощью Remote Config](present-remote-config-paywalls-flutter).
+Этот гайд распространяется только на пейволы, созданные в старом Paywall Builder для **Adapty SDK 3.x**. Для них требуется SDK v3.2.0 или выше. Отображение пейволов, созданных для SDK 2.x и ниже, или кастомных пейволов работает иначе.
+
+- Для отображения кастомных пейволов см. [Отображение кастомных пейволов](present-remote-config-paywalls-flutter).
 
 :::
 
@@ -151,6 +216,7 @@ Adapty Flutter SDK предоставляет два способа отобра
 - **Отдельный экран**
 
 - **Встроенный виджет**
+
 ## Отображение как отдельного экрана \{#present-as-standalone-screen\}
 
 Чтобы отобразить пейвол как отдельный экран, вызовите метод `view.present()` на объекте `view`, созданном методом [`createPaywallView`](flutter-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder). Каждый `view` можно использовать только один раз. Если нужно показать пейвол повторно, снова вызовите `createPaywallView`, чтобы создать новый экземпляр `view`.
@@ -159,6 +225,7 @@ Adapty Flutter SDK предоставляет два способа отобра
 
 Повторное использование одного и того же `view` без его пересоздания может привести к ошибке `AdaptyUIError.viewAlreadyPresented`.
 :::
+
 ```dart showLineNumbers title="Flutter"
 try {
   await view.present();
@@ -169,6 +236,7 @@ try {
 }
 ```
 <SampleApp />
+
 ### Закрытие пейвола \{#dismiss-the-paywall\}
 
 Чтобы программно закрыть пейвол, используйте метод `dismiss()`:
@@ -182,9 +250,11 @@ try {
   // handle the error
 }
 ```
+
 ### Показ диалога \{#show-dialog\}
 
 Используйте этот метод вместо стандартных диалогов на Android, когда отображается пейвол. На Android обычные алёрты появляются за пейволом и становятся невидимыми для пользователей. Этот метод обеспечивает корректное отображение диалога поверх пейвола на всех платформах.
+
 ```dart showLineNumbers title="Flutter"
 try {
   final action = await view.showDialog(
@@ -217,9 +287,11 @@ try {
   // handle the error
 }
 ```
+
 ## Встраивание в иерархию виджетов \{#embed-in-widget-hierarchy\}
 
 Чтобы встроить пейвол в существующее дерево виджетов, используйте виджет `AdaptyUIPaywallPlatformView` напрямую в иерархии виджетов Flutter.
+
 ```dart showLineNumbers title="Flutter"
 AdaptyUIPaywallPlatformView(
   paywall: paywall, // The paywall object you fetched

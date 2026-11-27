@@ -1,13 +1,13 @@
 ---
 title: "Authentification dans l'Adapty Developer CLI"
 description: "Comment s'authentifier avec l'Adapty Developer CLI."
-metadataTitle: "Authentification dans le Developer CLI | Documentation Adapty"
-keywords: ['cli', 'developer', 'authentification', 'mcp']
+metadataTitle: "Authentification CLI développeur | Documentation Adapty"
+keywords: ['cli', 'developer', 'authentication', 'mcp']
 ---
 
-Le CLI nécessite une authentification pour appeler l'API Adapty.
+Le CLI requiert une authentification pour appeler l'API Adapty.
 
-Une seule connexion couvre l'ensemble du CLI. Les [commandes de l'Ads Manager](developer-cli-ads-manager) font appel à un service différent, mais elles utilisent le même token stocké — il n'y a pas de deuxième étape de connexion.
+Une seule connexion couvre l'ensemble du CLI. Les [commandes Ads Manager](developer-cli-ads-manager) accèdent à un service différent, mais elles utilisent le même token stocké — aucune deuxième étape de connexion n'est nécessaire. Pour un compte sur les serveurs EU, la connexion précise la région ; voir [Se connecter à un compte EU](#log-in-to-an-eu-account).
 
 ## Se connecter \{#log-in\}
 
@@ -39,6 +39,27 @@ Si le code expire avant que vous n'ayez autorisé, ou si vous cliquez sur **Deny
 adapty auth login
 ```
 
+### Se connecter à un compte EU \{#log-in-to-an-eu-account\}
+
+La connexion à un compte sur les [serveurs EU](eu-cluster) nécessite CLI 0.30.0 ou une version ultérieure.
+
+Pour se connecter à un compte EU :
+
+1. Dans votre terminal, exécutez :
+   ```bash
+   ADAPTY_REGION=eu adapty auth login
+   ```
+2. Ouvrez le lien dans un navigateur connecté via [https://app.adapty.io/eu-login](https://app.adapty.io/eu-login). Si vous n'êtes pas connecté, ou si vous êtes connecté à un compte US, connectez-vous d'abord.
+3. Confirmez le code et cliquez sur **Authorize**, comme dans [Se connecter](#log-in).
+
+La CLI enregistre la région avec la connexion, de sorte que les commandes ultérieures accèdent aux serveurs EU sans `ADAPTY_REGION`. Dans la sortie de `adapty auth status`, une ligne `Region: eu` le confirme.
+
+Dans un script qui définit `ADAPTY_TOKEN`, définissez également `ADAPTY_REGION` sur `us` ou `eu`. Sans cela, la commande utilise la région de la connexion enregistrée sur cet ordinateur, qui peut appartenir à un autre compte.
+
+Si la CLI signale que le fichier de session est corrompu, exécutez à nouveau `adapty auth login` avec `ADAPTY_REGION` défini sur la région de votre compte. La nouvelle connexion remplace le fichier.
+
+Les commandes [Ads Manager](developer-cli-ads-manager) et [attribution](developer-cli-attribution) ne sont pas disponibles pour les comptes EU. Elles s'arrêtent avec une erreur avant d'envoyer toute requête, par exemple : `Apple Search Ads commands are not available for EU accounts.`
+
 ## Gérer l'authentification \{#manage-authentication\}
 
 ### Vérifier le statut d'authentification \{#check-authentication-status\}
@@ -49,13 +70,15 @@ Pour consulter votre état d'authentification actuel, exécutez :
 adapty auth status
 ```
 
-Lorsque vous êtes authentifié, la sortie affiche votre e-mail, un préfixe de token masqué et le chemin vers le fichier de configuration local :
+Lorsque vous êtes authentifié, la sortie affiche votre nom, un préfixe de token masqué, et le chemin vers le fichier de configuration local :
 
 ```
-Email: you@example.com
+User: Jane Doe
 Token: abcd1234****
 Config: ~/.config/adapty/config.json
 ```
+
+À partir de la CLI 0.9.1, une connexion enregistre votre nom mais pas votre adresse e-mail. Une ligne `Email:` n'apparaît que pour une session sauvegardée par une version antérieure. Dans les scripts qui lisent `adapty auth status --json`, utilisez le champ `name` pour identifier l'utilisateur.
 
 Lorsque vous n'êtes pas authentifié :
 
@@ -81,21 +104,27 @@ Pour effacer vos identifiants stockés localement, exécutez :
 adapty auth logout
 ```
 
-Cette commande supprime `~/.config/adapty/config.json`. Le token reste valide côté serveur jusqu'à son expiration — si vous souhaitez l'invalider immédiatement, utilisez plutôt `adapty auth revoke`.
+Cette commande supprime `~/.config/adapty/config.json` ainsi que la migration sauvegardée par `adapty migrations create` ou `adapty migrations use`. Le token reste valide côté serveur jusqu'à son expiration — si vous avez besoin de l'invalider immédiatement, utilisez plutôt `adapty auth revoke`.
 
 ### Révoquer votre token \{#revoke-your-token\}
 
-Pour invalider le token côté serveur et le supprimer localement, exécutez :
+Pour invalider le token sur le serveur et le supprimer localement, exécutez :
 
 ```bash
 adapty auth revoke
 ```
 
-Utilisez cette commande pour invalider complètement un token — par exemple, si vos identifiants ont pu être compromis. Après révocation, lancez `adapty auth login` pour vous authentifier à nouveau.
+Si le token est associé à une migration sauvegardée, le CLI la supprime également, mais seulement après que le serveur confirme la révocation. Utilisez cette commande pour invalider complètement un token — par exemple, si vos identifiants ont pu être compromis. Après la révocation, exécutez `adapty auth login` pour vous authentifier à nouveau.
+
+## Durée de vie du token \{#token-lifetime\}
+
+Un token obtenu via `adapty auth login` est valide 90 jours après la connexion. L'utiliser ne prolonge pas cette durée, et la CLI ne dispose pas de refresh token. Une fois le token expiré, les commandes CLI renvoient une erreur 401 et vous devez vous reconnecter via le navigateur.
+
+Un job planifié qui s'exécute sans intervention humaine pour approuver la connexion ne peut pas renouveler le token. Pour ce type de job, utilisez l'[API Export Analytics](export-analytics-api), qui s'authentifie avec la clé API secrète de votre application.
 
 ## Erreurs de token \{#token-errors\}
 
-Si un token est révoqué ou devient invalide, les commandes CLI retournent une erreur 401. Pour vous authentifier à nouveau, exécutez :
+Si un token est révoqué, expiré ou devient invalide, les commandes CLI renvoient une erreur 401. Pour vous réauthentifier, exécutez :
 
 ```bash
 adapty auth login

@@ -1,0 +1,95 @@
+---
+title: "Migrar el SDK de Unity de Adapty a v4.3"
+description: "Migra al SDK de Unity de Adapty v4.3: pasa a Unity 6, limpia la carpeta del plugin de Android, elimina GetLogLevel, decide cómo aparecen los mensajes de Google Play y lee los parámetros numéricos de eventos de flow como long."
+metadataTitle: "Migración al SDK de Unity de Adapty v4.3 | Documentación de Adapty"
+---
+
+El SDK de Unity de Adapty 4.3 requiere Unity 6, elimina `Adapty.GetLogLevel`, muestra los mensajes in-app de Google Play por defecto y cambia el tipo C# de algunos datos de eventos de flow en Android. Revisa cada cambio en esta guía para mantener el comportamiento de tu app.
+
+Si todavía usas la versión 3.x, empieza por [Migrar a v4.1](migration-to-unity-sdk-v4) y luego sigue esta guía.
+
+## Referencia rápida \{#quick-reference\}
+
+| v4.1 | v4.3 |
+|---|---|
+| Unity 2022.3 o posterior | Unity 6.0 (6000.0) o posterior |
+| `Adapty.GetLogLevel(...)` | eliminado — lleva el control del nivel que estableciste con `builder.LogLevel` o `Adapty.SetLogLevel` |
+| Los mensajes de Google Play no se solicitan | Los mensajes de Google Play se muestran por defecto en Android, incluso sobre los flows |
+| Los parámetros de eventos de flow con número entero llegan como `double` en Android | Llegan como `long` en ambas plataformas |
+
+## Instalación \{#installation\}
+
+Adapty Unity SDK 4.3 requiere **Unity 6.0 (6000.0)** o posterior. Si tu proyecto usa Unity 2022.3, actualiza el proyecto primero o quédate en Adapty SDK 4.1.x.
+
+:::warning
+Adapty SDK 4.1.x no funciona con GameActivity, el punto de entrada de Android predeterminado para nuevos proyectos de Unity 6: los manejadores de finalización y los eventos nunca llegan a C#. Si actualizas Unity antes que el SDK, mantén **Application Entry Point** configurado en **Activity** hasta que estés en Adapty SDK 4.3. SDK 4.3 funciona con ambos puntos de entrada.
+:::
+
+Para instalar SDK 4.3 a través del Unity Package Manager, usa esta URL de Git:
+
+```
+https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unity-sdk#4.3.0-beta.1
+```
+
+Si instalas mediante el paquete de Unity, descarga `adapty-unity-plugin-4.3.0-beta.1.unitypackage` desde la [versión 4.3.0-beta.1](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.3.0-beta.1). Elimina la carpeta `Assets/AdaptySDK/Plugins/Android/Local` antes de importarlo. El SDK 4.3 ya no incluye el wrapper interno de Java para Android que contiene esa carpeta, y al importar un `.unitypackage` nunca se eliminan archivos, por lo que el wrapper antiguo permanecería en tu proyecto de lo contrario.
+
+Los demás requisitos no cambian respecto a 4.1: **iOS 15.0** y **Xcode 26**. Consulta [Instalar el SDK de Adapty](sdk-installation-unity) para ver la configuración completa.
+
+## `GetLogLevel` ha sido eliminado \{#getloglevel-is-removed\}
+
+`Adapty.GetLogLevel` ya no está disponible. El nivel de log es el que estableciste con `builder.LogLevel` al activar el SDK, o posteriormente con `Adapty.SetLogLevel`. Si tu código lee el nivel de vuelta, guarda el valor que estableciste en su lugar:
+
+```diff showLineNumbers
+- Adapty.GetLogLevel((level, error) => {
+-     // use level
+- });
++ var logLevel = AdaptyLogLevel.Verbose;
++ builder.LogLevel = logLevel;
++ // use logLevel
+```
+
+## Los mensajes de Google Play se muestran por defecto \{#google-play-messages-are-shown-by-default\}
+
+A partir de la versión 4.3, el SDK solicita mensajes in-app de Google Play, como avisos de pago rechazado, cada vez que se inicia una `Activity` de tu app tras la activación. Esto incluye los momentos en que la app vuelve a primer plano y cuando se abre o cierra un flow u onboarding, por lo que un mensaje puede aparecer sobre un paywall.
+
+Si esto no supone ningún problema para tu app, no necesitas hacer ningún cambio. Para controlar cuándo aparecen los mensajes, activa el SDK con gestión manual en Android y llama a `Adapty.ShowStoreMessages` en el momento que mejor se adapte a tu app:
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY");
+#if UNITY_ANDROID
+builder.SetStoreMessagesHandling(AdaptyStoreMessagesHandling.Manual);
+#endif
+
+Adapty.Activate(builder.Build(), (error) => {
+    // handle the error
+});
+```
+
+Configura el manejo manual solo en Android para no afectar iOS: en iOS 16 y versiones posteriores, el manejo manual también retiene los mensajes del App Store hasta que tu app llame a `Adapty.ShowStoreMessages`. Para ver la API completa, consulta [Control de mensajes del store](unity-store-messages).
+
+:::warning
+En el modo manual, las stores no muestran mensajes por sí solas. Si tu app nunca llama a `Adapty.ShowStoreMessages`, los usuarios nunca verán un aviso de pago rechazado.
+:::
+
+## Los parámetros numéricos de eventos de flow son `long` en Android \{#numeric-flow-event-parameters-are-long-on-android\}
+
+En Android, los parámetros de número entero de `FlowViewDidReceiveAnalyticEvent` llegaban como `double`. A partir de la versión 4.3, llegan como `long`, igual que en iOS. Esto incluye los valores de fecha y hora de los eventos de [entrada de flow](unity-flow-input).
+
+Un cast a `double` ahora lanza una excepción en Android. Convierte los parámetros numéricos en lugar de hacer un cast:
+
+```diff showLineNumbers
+- var timestamp = (double)parameters["value"];
++ var timestamp = Convert.ToInt64(parameters["value"]);
+```
+
+## Novedades en 4.3 \{#new-in-43\}
+
+Estas novedades son opcionales. Tu código existente seguirá funcionando sin ellas:
+
+- **[Controlar mensajes del store](unity-store-messages)**: Elige cuándo aparecen los mensajes de App Store y Google Play.
+- **[Precargar placements](unity-optimize-paywall-fetching#preload-placements)**: `Adapty.PreloadFlows` y `Adapty.PreloadFlowsForDefaultAudience` calientan la caché del flow.
+- **[Mantener una vista de flow](unity-present-paywalls#keep-the-view-to-present-it-again)**: `view.Dismiss(false, ...)` mantiene una vista para presentarla de nuevo, y `view.Destroy(...)` la libera.
+- **[Planes de compromiso de 12 meses](set-up-12-month-commitment)**: La propiedad `AdaptySubscription.PricingTerms` describe el plan en iOS, y los niveles de acceso y suscripciones reportan `BillingPlan` y `CommitmentInfo`.
+- **Nuevo código de error**: `AdaptyErrorCode.BillingPlanUnavailable` (1060, solo iOS). `MakePurchase` lo devuelve cuando el producto no ofrece el plan de facturación solicitado en el dispositivo o en la tienda. Si tu código evalúa todos los valores de `AdaptyErrorCode`, asegúrate de gestionar el nuevo.
+- **[Modo observador](report-transactions-observer-mode-unity)**: `Adapty.ReportTransaction` acepta un `appleJWSTransaction` opcional en iOS.
+- **Nombre de variante**: `AdaptyFlow.VariationName` devuelve el nombre de la variante que estableciste en el Adapty Dashboard.

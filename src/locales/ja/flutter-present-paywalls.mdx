@@ -1,28 +1,29 @@
 ---
 title: "フローとペイウォールの表示 - Flutter"
-description: "Adapty のマネタイズ機能を使って Flutter アプリでフローとペイウォールを表示する方法を説明します。"
-metadataTitle: "Flutter でフローとペイウォールを表示する | Adapty ドキュメント"
+description: "Adaptyのマネタイズ機能を使用してFlutterアプリでフローとペイウォールを表示します。"
+metadataTitle: "FlutterでフローとペイウォールをAdaptyで表示する | Adapty ドキュメント"
 ---
 
-import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md'; 
-
 <SDKv4>
-Flow Builder またはペイウォールビルダーを使ってフローやペイウォールをデザインした場合、モバイルアプリのコードでレンダリングしてユーザーに表示する処理を自分で実装する必要はありません。フローやペイウォールには、表示する内容と表示方法の両方が含まれています。
+
+フローや旧ペイウォールビルダーで作成したペイウォールがある場合、ユーザーに表示するためにモバイルアプリのコードでレンダリングを手動で実装する必要はありません。そのようなフローやペイウォールには、表示する内容と表示方法の両方が含まれています。
 
 :::warning
 
-このガイドはフローおよびペイウォールビルダーのペイウォールを対象としています。**リモートコンフィグのペイウォール**を表示する場合は、[リモートコンフィグで設計したペイウォールのレンダリング](present-remote-config-paywalls-flutter)を参照してください。
+このガイドは、Adaptyによってレンダリングされるフローとペイウォールを対象としています。カスタムペイウォールの表示については、[カスタムペイウォールの表示](present-remote-config-paywalls-flutter)をご参照ください。
 
 :::
 
-Adapty Flutter SDK では、フローとペイウォールを表示する方法が2つあります。
+Adapty Flutter SDK では、フローとペイウォールを表示する方法が2つあります：
 
 - **スタンドアロン画面**
 
 - **埋め込みウィジェット**
+
 ## スタンドアロン画面として表示する \{#present-as-standalone-screen\}
 
-フローまたはペイウォールをスタンドアロン画面として表示するには、[`createFlowView`](flutter-get-pb-paywalls#fetch-the-view-configuration) メソッドで作成した `view` に対して `view.present()` メソッドを使用します。各 `view` は一度しか表示できません。非表示にすると、その `view` はメモリから解放されます。再度フローまたはペイウォールを表示する必要がある場合は、`createFlowView` を再度呼び出して新しい `view` インスタンスを作成してください。
+フローまたはペイウォールをスタンドアロン画面として表示するには、[`createFlowView`](flutter-get-pb-paywalls#fetch-the-view-configuration) メソッドで作成した `view` に対して `view.present()` メソッドを使用します。デフォルトでは、`view` を閉じるとメモリから解放されるため、再度表示することはできません。フローまたはペイウォールを再表示する必要がある場合は、`createFlowView` をもう一度呼び出して新しい `view` インスタンスを作成するか、SDK 4.1 以降では[解放せずに閉じる](#dismiss-the-flow-or-paywall)方法を使用してください。
+
 ```dart showLineNumbers title="Flutter"
 try {
   await view.present();
@@ -33,9 +34,10 @@ try {
 }
 ```
 <SampleApp />
+
 ### フローまたはペイウォールを閉じる \{#dismiss-the-flow-or-paywall\}
 
-フローまたはペイウォールをプログラムで閉じる必要がある場合は、`dismiss()` メソッドを使用します。
+フローやペイウォールをプログラムで閉じるには、`dismiss()` メソッドを使用します。
 
 ```dart showLineNumbers title="Flutter"
 try {
@@ -48,11 +50,51 @@ try {
 ```
 
 :::note
-ビューを閉じると、そのビューはメモリから解放されます。一度閉じたビューは再表示できません。代わりに `createFlowView` で新しいビューを作成してください。
+ビューを閉じるとメモリから解放されます。閉じたビューは再表示できないため、代わりに `createFlowView` で新しいビューを作成してください。
 :::
+
+SDK 4.1 以降では、`destroy: false` を渡すことでビューをメモリに保持できます。
+
+```dart showLineNumbers title="Flutter"
+await view.dismiss(destroy: false);
+```
+
+そのビューを再度表示すると、ユーザーはフローが積み上げた状態のまま離れた画面に戻ります。この方法で保持されたビューは、解放するまでメモリに残ります。
+
+SDK 4.3.0 以降、保持したビューが不要になったら、`destroy()` で解放してください：
+
+```dart showLineNumbers title="Flutter"
+await view.dismiss(destroy: false);
+// ...
+await view.destroy();
+```
+
+`destroy()` は、作成したが表示しなかったビューや、iOS でユーザーがスワイプダウンしたページシートビューも解放します。通常の `dismiss()` の後に呼び出さないでください。そのビューはすでに解放されており、`wrongParam` エラーで失敗します。以前の SDK バージョンでは、保持しているビューを再度表示してから `destroy: true` を指定して `dismiss()` することで解放します。
+
+デフォルトのクローズアクションは `view.dismiss()` を呼び出します。これは、`destroy: false` で以前にビューを保持していた場合でもビューを解放します。ユーザーがビューを閉じたときにビューを保持するには、`flowViewDidPerformAction` をオーバーライドして、自分でビューを閉じてください。このメソッドはアプリ内のすべてのフローとペイウォールに対して実行されるため、再度表示する予定のビューのみを保持するために `view.id` を比較してください。URL オープンを維持するために `OpenUrlAction` のケースは残しておいてください：
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+  switch (action) {
+    case const CloseAction():
+      // keptView is the view your app stored to present again
+      view.dismiss(destroy: view.id != keptView?.id);
+      break;
+    case OpenUrlAction(:final url, :final openIn):
+      AdaptyUI().openUrl(url, openIn: openIn);
+      break;
+    default:
+      break;
+  }
+}
+```
+
+保持した`view`は、フローやペイウォールを再表示する際や、`destroy()`で解放する際に必要です。その他の`view.dismiss()`の呼び出しも、[`flowViewDidReceiveError`](flutter-handling-events#view-errors)内の呼び出しを含め、ビューを解放します。ビューエラーが発生した後は、`createFlowView`で新しいビューを作成してください。
+
 ### ダイアログを表示する \{#show-dialog\}
 
 Android でフローまたはペイウォールビューが表示されているときは、ネイティブのアラートダイアログの代わりにこのメソッドを使用してください。Android では、通常のアラートがビューの後ろに表示されるため、ユーザーから見えなくなります。このメソッドを使用すると、すべてのプラットフォームでフローまたはペイウォールの上に正しくダイアログが表示されます。
+
 ```dart showLineNumbers title="Flutter"
 try {
   final action = await view.showDialog(
@@ -72,9 +114,9 @@ try {
 }
 ```
 
-### iOSプレゼンテーションスタイルの設定 \{#configure-ios-presentation-style\}
+### iOSのプレゼンテーションスタイルを設定する \{#configure-ios-presentation-style\}
 
-`present()` メソッドに `iosPresentationStyle` パラメータを渡すことで、iOS でのフローまたはペイウォールの表示スタイルを設定できます。このパラメータには `AdaptyUIIOSPresentationStyle.fullScreen`（デフォルト）または `AdaptyUIIOSPresentationStyle.pageSheet` を指定できます。
+`present()` メソッドに `iosPresentationStyle` パラメーターを渡すことで、iOS上でのフローまたはペイウォールの表示スタイルを設定できます。このパラメーターには `AdaptyUIIOSPresentationStyle.fullScreen`（デフォルト）または `AdaptyUIIOSPresentationStyle.pageSheet` を指定できます。
 
 ```dart showLineNumbers
 try {
@@ -85,9 +127,13 @@ try {
   // handle the error
 }
 ```
+
+ユーザーがページシートを下にスワイプして閉じることができます。`dismiss()` を呼び出さない場合、ビューはメモリに残ります。再度表示するか、SDK 4.3.0 以降では [`destroy()`](#dismiss-the-flow-or-paywall) を使って解放してください。
+
 ## ウィジェット階層への埋め込み \{#embed-in-widget-hierarchy\}
 
 フローやペイウォールを既存のウィジェットツリー内に埋め込むには、`AdaptyUIFlowPlatformView` ウィジェットを Flutter のウィジェット階層に直接配置します。
+
 ```dart showLineNumbers title="Flutter"
 AdaptyUIFlowPlatformView(
   flow: flow, // The flow object you fetched
@@ -121,8 +167,26 @@ AdaptyUIFlowPlatformView(
 )
 ```
 
+埋め込みフローを閉じるには、`AdaptyUIFlowPlatformView` ウィジェットをウィジェットツリーから削除します。埋め込みフローでは `view.dismiss()` は機能せず、デフォルトの閉じる処理ではフローが画面に残ったままになります。`onDidPerformAction` が `CloseAction` を受け取ったとき、および Android では `AndroidSystemBackAction` を受け取ったときに、ウィジェットを削除してください。
+
+```dart showLineNumbers title="Flutter"
+onDidPerformAction: (view, action) {
+  switch (action) {
+    case CloseAction():
+    case AndroidSystemBackAction():
+      setState(() => _showFlow = false); // removes the widget from the tree
+    default:
+      break;
+  }
+},
+```
+
+iOSでは、`AdaptyUIFlowPlatformView`の`onDidReceiveError`コールバックは、ウィジェットがフローを表示できない場合にエラーを受け取ります。これは、フローの読み込みに失敗した場合や、フローをサポートしていないiOS 15デバイスで実行された場合に発生します。ウィジェットを削除して、独自のコンテンツを表示してください。`AdaptyErrorCode.networkFailed`などの一時的なエラーを再試行するには、新しい`Key`でウィジェットを再構築してください。
+
+Androidでは、ウィジェットはフローの読み込み失敗を報告しません。`onDidReceiveError`も`onDidAppear`も実行されません。
+
 :::note 
-Android のプラットフォームビューを機能させるには、`MainActivity` が `FlutterFragmentActivity` を継承していることを確認してください：
+Android プラットフォームビューを動作させるには、`MainActivity` が `FlutterFragmentActivity` を継承していることを確認してください:
 
 ```kotlin showLineNumbers title="Kotlin"
 class MainActivity : FlutterFragmentActivity() {
@@ -137,20 +201,22 @@ class MainActivity : FlutterFragmentActivity() {
 
 <SDKv3>
 
-ペイウォールビルダーでペイウォールをカスタマイズした場合、モバイルアプリのコード側でレンダリングの処理を実装しなくても、ユーザーに表示できます。このようなペイウォールには、表示する内容と表示方法の両方が含まれています。
+ペイウォールビルダーを使用してペイウォールをカスタマイズした場合、モバイルアプリのコード内でレンダリングしてユーザーに表示する必要はありません。このようなペイウォールには、表示する内容と表示方法の両方が含まれています。
 
 :::warning
-このガイドは、SDK v3.2.0 以降が必要な**新しいペイウォールビルダーのペイウォール**専用です。ペイウォールの表示方法は、異なるバージョンのペイウォールビルダーで設計されたペイウォールやリモートコンフィグペイウォールによって異なります。
 
-- **リモートコンフィグペイウォール**の表示については、[リモートコンフィグで設計されたペイウォールのレンダリング](present-remote-config-paywalls-flutter)を参照してください。
+このガイドは、**Adapty SDK 3.x** 向けの旧ペイウォールビルダーで作成されたペイウォールのみを対象としています。SDK v3.2.0 以降が必要です。SDK 2.x 以前向けに作成されたペイウォールやカスタムペイウォールの表示方法は異なります。
+
+- カスタムペイウォールの表示については、[カスタムペイウォールの表示](present-remote-config-paywalls-flutter)をご覧ください。
 
 :::
 
-Adapty Flutter SDK では、ペイウォールの表示方法が2つあります：
+Adapty Flutter SDK では、ペイウォールを表示する方法が 2 つあります：
 
 - **スタンドアロン画面**
 
 - **埋め込みウィジェット**
+
 ## スタンドアロン画面として表示する \{#present-as-standalone-screen\}
 
 ペイウォールをスタンドアロン画面として表示するには、[`createPaywallView`](flutter-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) メソッドで作成した `view` に対して `view.present()` メソッドを呼び出します。各 `view` は一度しか使用できません。再度ペイウォールを表示する必要がある場合は、`createPaywallView` をもう一度呼び出して新しい `view` インスタンスを作成してください。
@@ -159,6 +225,7 @@ Adapty Flutter SDK では、ペイウォールの表示方法が2つあります
 
 同じ `view` を再作成せずに再利用すると、`AdaptyUIError.viewAlreadyPresented` エラーが発生する場合があります。
 :::
+
 ```dart showLineNumbers title="Flutter"
 try {
   await view.present();
@@ -169,6 +236,7 @@ try {
 }
 ```
 <SampleApp />
+
 ### ペイウォールを閉じる \{#dismiss-the-paywall\}
 
 ペイウォールをプログラムで閉じる必要がある場合は、`dismiss()` メソッドを使用してください：
@@ -182,9 +250,11 @@ try {
   // handle the error
 }
 ```
+
 ### ダイアログを表示する \{#show-dialog\}
 
 Android でペイウォールビューが表示されている場合は、ネイティブのアラートダイアログの代わりにこのメソッドを使用してください。Android では、通常のアラートがペイウォールビューの背後に表示されるため、ユーザーには見えません。このメソッドを使用することで、すべてのプラットフォームでペイウォールの前面にダイアログが正しく表示されます。
+
 ```dart showLineNumbers title="Flutter"
 try {
   final action = await view.showDialog(
@@ -204,9 +274,9 @@ try {
 }
 ```
 
-### iOS のプレゼンテーションスタイルを設定する \{#configure-ios-presentation-style\}
+### iOSプレゼンテーションスタイルを設定する \{#configure-ios-presentation-style\}
 
-`present()` メソッドに `iosPresentationStyle` パラメーターを渡すことで、iOS でのペイウォールの表示スタイルを設定できます。このパラメーターには `AdaptyUIIOSPresentationStyle.fullScreen`（デフォルト）または `AdaptyUIIOSPresentationStyle.pageSheet` を指定できます。
+`present()` メソッドに `iosPresentationStyle` パラメータを渡すことで、iOS でのペイウォールの表示方法を設定できます。このパラメータには `AdaptyUIIOSPresentationStyle.fullScreen`（デフォルト）または `AdaptyUIIOSPresentationStyle.pageSheet` を指定できます。
 
 ```dart showLineNumbers
 try {
@@ -217,9 +287,11 @@ try {
   // handle the error
 }
 ```
+
 ## ウィジェット階層への埋め込み \{#embed-in-widget-hierarchy\}
 
 ペイウォールを既存のウィジェットツリーに埋め込むには、`AdaptyUIPaywallPlatformView` ウィジェットを Flutter のウィジェット階層に直接配置します。
+
 ```dart showLineNumbers title="Flutter"
 AdaptyUIPaywallPlatformView(
   paywall: paywall, // The paywall object you fetched

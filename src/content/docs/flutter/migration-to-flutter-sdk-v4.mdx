@@ -1,10 +1,14 @@
 ---
 title: "Migrate Adapty Flutter SDK to v4.0"
-description: "Migrate to Adapty Flutter SDK v4.0 by replacing paywall APIs with flow APIs, compatible with both Flow Builder and Paywall Builder."
+description: "Migrate to Adapty Flutter SDK v4.0 by replacing paywall APIs with flow APIs, which render flows in addition to old builder paywalls."
 metadataTitle: "Migrating to Adapty Flutter SDK v4.0 | Adapty Docs"
 ---
 
-Adapty Flutter SDK 4.0 introduces flows and renames the paywall APIs accordingly. The new APIs work with both the new Flow Builder and the existing Paywall Builder — no setup changes are required on the Adapty Dashboard side.
+Adapty Flutter SDK 4.0 introduces flows and renames the paywall APIs accordingly. The new APIs work with flows, and they still work with paywalls from the old builder — no setup changes are required on the Adapty Dashboard side.
+
+:::note
+This guide covers the 3.x → 4.0 migration. SDK 4.1 changes a few more APIs on top of it — Adapty Attribution becomes opt-in, the external attribution methods are renamed, and the fallback file format changes again. After you finish here, see [Migrate to v4.1](migration-to-flutter-sdk-41).
+:::
 
 ## Quick reference
 
@@ -75,7 +79,7 @@ Flutter 3.44 and later enables Swift Package Manager by default, so no action is
 
 ### getPaywall → getFlow
 
-The returned type changes from `AdaptyPaywall` to `AdaptyFlow`, and you no longer pass a `locale` — when you render a flow, the localization is resolved automatically; for custom paywalls, all configured locales are returned in `flow.remoteConfigs`:
+The returned type changes from `AdaptyPaywall` to `AdaptyFlow`, and the `locale` parameter moves from the fetch call to `createFlowView` (Flutter SDK 4.0.3 and later; earlier 4.0.x releases have no way to choose the localization) — see [Locale matching is exact](#locale-matching-is-exact); for custom paywalls, all configured locales are returned in `flow.remoteConfigs`:
 
 ```diff showLineNumbers
 - final paywall = await Adapty().getPaywall(placementId: 'YOUR_PLACEMENT_ID', locale: 'en');
@@ -156,13 +160,17 @@ The fallback file format [changed in SDK v4](fallback-flows). Download the new f
 + await Adapty().logShowFlow(flow: flow);
 ```
 
-As in v3, you do not need to call this method when displaying flows or paywalls rendered by the [Flow Builder](adapty-flow-builder) or the [Paywall Builder](adapty-paywall-builder) — Adapty tracks those views automatically.
+As in v3, you do not need to call this method when displaying flows or paywalls rendered by Adapty — Adapty tracks those views automatically.
 
 ## Displaying flows
 
 ### createPaywallView → createFlowView
 
 Rename the method and pass the `AdaptyFlow` via the `flow` parameter. The other parameters (`loadTimeout`, `preloadProducts`, `customTags`, `customTimers`, `customAssets`, `productPurchaseParams`) are unchanged, and so are the view methods `present`, `dismiss`, and `showDialog`:
+
+:::note
+`customTimers` still exists, but it only affects legacy Paywall Builder paywalls. A flow's [countdown timer](flow-timer) runs on the behavior set in the Flow & Paywall Builder, so a flow ignores whatever you pass here.
+:::
 
 ```diff showLineNumbers
 - final view = await AdaptyUI().createPaywallView(paywall: paywall);
@@ -228,7 +236,7 @@ Two smaller changes:
 v4 also adds capabilities you can opt into:
 
 - `AdaptyUI().setObserverModeResolver(...)` with an `AdaptyUIObserverModeResolver` — drive purchases and restores initiated from flows while the SDK runs in [Observer mode](implement-observer-mode-flutter). Previously this was available only in the native iOS and Android SDKs. See [Present flows in Observer mode](flutter-present-flows-in-observer-mode).
-- `AdaptyUI().setSystemRequestsHandler(...)` with an `AdaptyUISystemRequestsHandler` — reserved for system requests from a flow (OS permission prompts and App Store review requests). Flows don't trigger these requests yet, so you don't need to register a handler.
+- `AdaptyUI().setSystemRequestsHandler(...)` with an `AdaptyUISystemRequestsHandler` — answers system requests from a flow (OS permission prompts and App Store review requests). Register one if your flows use the **Request permission** action: see [Handle permission requests in flows](flutter-handle-permissions).
 
 ## Removed APIs
 
@@ -259,6 +267,7 @@ These symbols were deprecated in 3.x and are removed in v4:
 
 These changes do not cause compile errors, so test them at runtime:
 
+- **Flow localization**: A regional locale code no longer falls back to its language — `pt-br` doesn't get the `pt` localization. A code with no exact match renders the flow in its default localization. See [Locale matching is exact](#locale-matching-is-exact).
 - **Successful purchase**: In v3, the default `paywallViewDidFinishPurchase` dismissed the view. In v4, `flowViewDidFinishPurchase` is required and has no default — dismiss the view yourself if that's the behavior you want.
 - **Android system back button**: It no longer dismisses a flow by default. The action is delivered to `flowViewDidPerformAction` as `AndroidSystemBackAction` — handle it there if you want the back button to close the flow.
 - **URL opening**: The default `flowViewDidPerformAction` now handles `OpenUrlAction` by opening the URL natively (honoring the in-app or external browser setting from the dashboard), in addition to dismissing the view on `CloseAction`. Override the callback to handle URLs yourself.
@@ -267,6 +276,6 @@ These changes do not cause compile errors, so test them at runtime:
 
 ## Onboarding API deprecation
 
-The legacy onboarding API is deprecated in v4.0 in favor of the [Flow Builder](adapty-flow-builder). It still works, and your IDE flags the deprecated symbols through their `@Deprecated` annotations — there are no runtime warnings. These symbols will be removed in a future release, so plan migration of your onboardings to the Flow Builder.
+The legacy onboarding API is deprecated in v4.0 in favor of the [Flow & Paywall Builder](adapty-flow-builder). It still works, and your IDE flags the deprecated symbols through their `@Deprecated` annotations — there are no runtime warnings. These symbols will be removed in a future release, so plan migration of your onboardings to the Flow & Paywall Builder.
 
 Deprecated symbols: `getOnboarding`, `getOnboardingForDefaultAudience`, `createOnboardingView`, `presentOnboardingView`, `dismissOnboardingView`, `setOnboardingsEventsObserver`, `AdaptyOnboarding`, `AdaptyUIOnboardingView`, `AdaptyUIOnboardingPlatformView`, `AdaptyUIOnboardingsEventsObserver`, and the onboarding state, input, and analytics models.

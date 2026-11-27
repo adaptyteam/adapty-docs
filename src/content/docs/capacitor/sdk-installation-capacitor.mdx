@@ -8,15 +8,13 @@ rank: 60
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import Details from '@site/src/components/Details';
-import SampleApp from '@site/src/components/reusable/SampleApp.md';
 import GetKey from '@site/src/components/reusable/GetKey.md';
-import AndroidBackupRules from '@site/src/components/reusable/AndroidBackupRules.md';
 import InstallationPrereqs from '@site/src/components/reusable/InstallationPrereqs.mdx';
 
 Adapty SDK includes two key modules for seamless integration into your Capacitor app:
 
 - **Core Adapty**: This module is required for Adapty to function properly in your app.
-- **AdaptyUI**: This module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls. AdaptyUI is automatically activated along with the core module.
+- **AdaptyUI**: This module renders flows, in addition to old builder paywalls. AdaptyUI is automatically activated along with the core module.
 
 :::tip
 Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample apps](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples), which demonstrate the full setup, including displaying paywalls, making purchases, and other basic functionality.
@@ -28,28 +26,34 @@ The [Adapty Capacitor SDK](https://github.com/adaptyteam/AdaptySDK-Capacitor/) h
 
 | Adapty SDK Version | Capacitor Version | iOS Version |
 |--------------------|-------------------|-------------|
+| 4.1+               | 8                 | 15.0+       |
 | 3.16.0+            | 8                 | 15.0+       |
 | 3.15               | 7                 | 14.0+       |
 
 Capacitor versions 6 and below are not supported.
 
-Building for iOS with Adapty SDK v4 (beta) requires **Xcode 26** or later — the native iOS SDK it uses is built with Swift tools 6.2. The iOS 15.0+, Capacitor 8, and Android minSdk 24 requirements are the same as for SDK 3.16+.
-
-:::info
-Adapty Capacitor SDK 4.0.2 and later works with Google Play Billing Library v8.
-
-Compatibility with a Billing Library version doesn't mean Adapty supports every feature Google introduced in it. Before you adopt a new Google Play billing capability, see [Product in Play Store](android-products).
-:::
+Building for iOS requires **Xcode 26** or later — the native iOS SDK is built with Swift tools 6.2. On Android, the minimum SDK is 24.
 
 <InstallationPrereqs />
 
-## Install Adapty SDK
+## Dependencies
 
-:::important
-The steps below install Adapty SDK 3.x. SDK v4 (beta) — required for the [Flow Builder](adapty-flow-builder) and used by the [quickstart](capacitor-quickstart-paywalls) — is installed differently: follow [Adapty SDK 4.0 (beta)](#adapty-sdk-40-beta) below, or see the [migration guide](migration-to-capacitor-sdk-v4).
+Adapty SDK works with these Google Play Billing Library versions on Android:
+
+| Adapty SDK version | Billing Library version |
+|---|---|
+| 3.17.0 and later | v8 |
+| 3.15.0–3.16.3 | v7 by default, v8 if another dependency raises it |
+
+:::note
+Compatibility with a Billing Library version doesn't mean Adapty supports every feature Google introduced in it. Before you adopt a new Google Play billing capability, see [Product in Play Store](android-products).
 :::
 
+## Install Adapty SDK
+
 [![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Capacitor.svg?style=flat&logo=capacitor)](https://github.com/adaptyteam/AdaptySDK-Capacitor/releases)
+
+<LatestSdkVersion />
 
 Install Adapty SDK:
 
@@ -58,19 +62,16 @@ npm install @adapty/capacitor
 npx cap sync
 ```
 
-### Adapty SDK 4.0 (beta)
+### Set up your iOS project
 
-Capacitor SDK 4.0 — which adds [Flow Builder](adapty-flow-builder) support — is a pre-release. Install the exact version (npm doesn't resolve pre-releases through caret/tilde ranges), then sync:
+On iOS, the SDK installs the native Adapty SDKs (`Adapty`, `AdaptyUI`, `AdaptyPlugin`) through the package manager of your app's iOS project:
 
-```sh
-npm install @adapty/capacitor@4.0.1-beta.1
-```
+- **Swift Package Manager (recommended)**: Capacitor 8 creates new iOS projects with SPM by default, and the SDK needs no extra setup.
+- **CocoaPods (SDK 4.2.0 and later)**: Your `Podfile` installs the native SDKs as pods from [Adapty's spec repo](https://github.com/adaptyteam/AdaptySDK-CocoaPods-Specs), not from the public CocoaPods spec repo, which [goes read-only in December 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/). SDK 4.0 and 4.1 don't support CocoaPods.
 
-```sh
-npx cap sync
-```
+<Tabs groupId="ios-package-manager" queryString>
 
-On iOS, v4 pulls the native Adapty SDKs through **Swift Package Manager only** — the CocoaPods podspec was removed ([CocoaPods' spec repo goes read-only in December 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/)). Your app's iOS project must use Capacitor's SPM integration:
+<TabItem value="spm" label="Swift Package Manager (recommended)" default>
 
 - For new apps, add the iOS platform with the SPM package manager:
 
@@ -78,9 +79,56 @@ On iOS, v4 pulls the native Adapty SDKs through **Swift Package Manager only** �
   npx cap add ios --packagemanager SPM
   ```
 
-- For existing apps, migrate the iOS project from CocoaPods to SPM by following [Capacitor's guide to using SPM in an existing project](https://capacitorjs.com/docs/ios/spm#using-spm-in-an-existing-capacitor-project).
+- For existing apps on CocoaPods, migrate the iOS project to SPM by following [Capacitor's guide to using SPM in an existing project](https://capacitorjs.com/docs/ios/spm#using-spm-in-an-existing-capacitor-project), or keep CocoaPods and follow the **CocoaPods** tab.
 
-For the full list of API changes in v4, see [Migrate Adapty Capacitor SDK to v4](migration-to-capacitor-sdk-v4).
+</TabItem>
+
+<TabItem value="cocoapods" label="CocoaPods">
+
+This option requires SDK 4.2.0 or later. For a new app, add the iOS platform with the CocoaPods package manager:
+
+```sh
+npx cap add ios --packagemanager CocoaPods
+```
+
+In `ios/App/Podfile`, require the Adapty Podfile helpers **below** the `require_relative` line for Capacitor's `pods_helpers`. Then, in the `App` target, call `adapty_pods!` **after** `capacitor_pods`:
+
+```ruby showLineNumbers title="ios/App/Podfile" {2-6,10}
+require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+require Pod::Executable.execute_command('node', ['-p',
+  'require.resolve(
+    "@adapty/capacitor/ios/adapty_podfile.rb",
+    {paths: [process.argv[1]]},
+  )', __dir__]).strip
+
+target 'App' do
+  capacitor_pods
+  adapty_pods!
+  # Add your Pods here
+end
+```
+
+`npx cap sync` regenerates the `Podfile` from its first `require_relative` line through the `pods_helpers` line, and the whole `def capacitor_pods` method. A `require` or `adapty_pods!` call placed inside either part is lost on the next sync.
+
+`adapty_pods!` declares the `Adapty`, `AdaptyUI`, and `AdaptyPlugin` pods and pins them to Adapty's spec repo, so you don't add a `source` line for that repo. Remove any explicit `pod 'Adapty'`, `pod 'AdaptyUI'`, or `pod 'AdaptyPlugin'` lines from your `Podfile`.
+
+Then sync the iOS project:
+
+```sh
+npx cap sync ios
+```
+
+When you update `@adapty/capacitor` later, `pod install` doesn't refresh Adapty's spec repo. To install the native SDK version the new release requires, run:
+
+```sh
+cd ios/App && pod install --repo-update
+```
+
+</TabItem>
+
+</Tabs>
+
+Upgrading from v3? See [Migrate Adapty Capacitor SDK to v4.1](migration-to-capacitor-sdk-v4) for the full list of API changes.
 
 ## Activate Adapty module of Adapty SDK
 
@@ -121,12 +169,12 @@ To avoid activation errors in the development environment, use the [tips](#devel
 
 Now set up paywalls in your app:
 
-- If you use [Adapty Paywall Builder](adapty-paywall-builder), follow the [Paywall Builder quickstart](capacitor-quickstart-paywalls).
+- If you use the [Flow & Paywall Builder](adapty-flow-builder), follow the [quickstart](capacitor-quickstart-paywalls).
 - If you build your own paywall UI, see the [quickstart for custom paywalls](capacitor-quickstart-manual).
 
 ## Activate AdaptyUI module of Adapty SDK
 
-If you plan to use [Paywall Builder](adapty-paywall-builder), you need the AdaptyUI module. It is done automatically when you activate the core module; you don't need to do anything else.
+If you plan to use the [Flow & Paywall Builder](adapty-flow-builder), you need the AdaptyUI module. It is done automatically when you activate the core module; you don't need to do anything else.
 
 ## Optional setup
 
@@ -142,6 +190,7 @@ Adapty logs errors and other important information to help you understand what i
 | `warn`     | Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged |
 | `info`     | Errors, warnings, and various information messages will be logged |
 | `verbose`  | Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged |
+| `debug`    | Everything above, plus low-level internal details of the native SDK. Android has no separate level for it and logs at `verbose`. Available starting from SDK version 4.3.0 |
 
 You can set the log level in your app before or during Adapty configuration:
 
@@ -257,6 +306,42 @@ await adapty.activate({
 });
 ```
 
+### Store messages handling
+
+:::info
+This parameter is available starting from SDK version 4.3.0.
+:::
+
+By default, StoreKit shows App Store messages — price increase consent requests, billing issue notices, and win-back offers — on its own while your app is open, and the SDK requests Google Play messages, such as declined payment notices, every time an `Activity` of your app starts after `activate`. To choose when your app shows them, set `storeMessagesHandling` to `'manual'`. The default value is `'auto'`.
+
+```typescript showLineNumbers
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    storeMessagesHandling: 'manual',
+  }
+});
+```
+
+In manual mode, the stores don't show messages on their own, so your app must call `showStoreMessages`. See how in [Control store messages](capacitor-store-messages).
+
+### Enable Adapty Attribution
+
+:::info
+This parameter is available starting from SDK version 4.1.
+:::
+
+If you use [Adapty Attribution](user-acquisition), set `adaptyAttributionEnabled` to `true` when activating the SDK. The default value is `false`: without this parameter, the SDK doesn't register installs or deliver installation details to your app. In SDK versions below 4.1, Adapty Attribution is enabled automatically.
+
+```typescript showLineNumbers
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    adaptyAttributionEnabled: true,
+  }
+});
+```
+
 ## Development environment tips
 
 #### Troubleshoot SDK activation errors on Capacitor's live-reload
@@ -289,13 +374,13 @@ With this option enabled, the SDK skips the whole activation call once it has be
 #### Minimum iOS version error
 
 :::note
-This applies to CocoaPods-based projects on **SDK 3.x**. SDK 4.0 installs on iOS through Swift Package Manager only (there is no `Podfile`) and requires iOS 15.0 — set your deployment target to 15.0 in Xcode.
+This applies to CocoaPods-based projects: on **SDK 3.x**, and on SDK 4.2.0 and later with the [CocoaPods](#set-up-your-ios-project) option. On Swift Package Manager there is no `Podfile` — set your deployment target to 15.0 in Xcode instead.
 :::
 
-If you get a minimum iOS version error on SDK 3.x, update your Podfile:
+If you get a minimum iOS version error, update your Podfile:
 
 ```diff
--platform :ios, min_ios_version_supported
+-platform :ios, '14.0'
 +platform :ios, '15.0'
 ```
 
@@ -324,12 +409,12 @@ In your `AndroidManifest.xml`, ensure the Activity that starts the purchase flow
 #### Swift 6 build errors caused by Podfile SWIFT_VERSION override
 
 :::note
-This applies to CocoaPods-based projects on **SDK 3.x**. SDK 4.0 installs the native SDKs through Swift Package Manager, so there is no `Podfile` to adjust.
+This applies when the native iOS SDKs install as CocoaPods pods: in **SDK 3.x**, and in SDK 4.2.0 and later with the [CocoaPods](#set-up-your-ios-project) option. When they install as Swift packages, a `SWIFT_VERSION` override in `post_install` doesn't reach them.
 :::
 
 When building your Capacitor app for iOS, you may see Swift 6 compilation errors on Adapty pod targets. Typical symptoms include `@Sendable` mismatches in `AdaptyUIBuilderLogic`, missing `Sendable` conformance on Adapty types, or actor isolation errors.
 
-The Adapty pods declare `s.swift_version = '6.0'` and require Swift 6 to build. Your own app code can stay on Swift 5 — only the Adapty pod targets (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`, `AdaptyLogger`, `AdaptyPlugin`) need to build with Swift 6.
+The Adapty pods declare `s.swift_version = '6.0'` and require Swift 6 to build. Your own app code can stay on Swift 5 — only the Adapty pod targets (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`, `AdaptyLogger`, `AdaptyPlugin`, and in SDK 4.2.0 and later `AdaptyCodable`) need to build with Swift 6.
 
 The most common cause is a `post_install` hook in `ios/App/Podfile` that rewrites `SWIFT_VERSION` for every pod target:
 
@@ -348,7 +433,7 @@ end
 ```ruby showLineNumbers title="ios/App/Podfile"
 post_install do |installer|
   installer.pods_project.targets.each do |target|
-    next if %w[Adapty AdaptyUI AdaptyUIBuilder AdaptyLogger AdaptyPlugin].include?(target.name)
+    next if %w[Adapty AdaptyUI AdaptyUIBuilder AdaptyLogger AdaptyPlugin AdaptyCodable].include?(target.name)
     target.build_configurations.each do |config|
       config.build_settings['SWIFT_VERSION'] = '5.9'
     end

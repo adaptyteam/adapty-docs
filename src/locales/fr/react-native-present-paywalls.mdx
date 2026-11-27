@@ -1,35 +1,33 @@
 ---
-title: "Afficher les flows et paywalls - React Native"
-description: "Présentez des flows et des paywalls aux utilisateurs de votre application React Native avec Adapty."
-metadataTitle: "Afficher les flows et paywalls en React Native | Documentation Adapty"
+title: "Afficher les flows & paywalls - React Native"
+description: "Présentez les flows et paywalls à vos utilisateurs dans votre application React Native avec Adapty."
+metadataTitle: "Afficher les flows & paywalls en React Native | Documentation Adapty"
 
 ---
 
-import SampleApp from '@site/src/locales/fr/reusable/SampleApp.md';
-
 <SDKv4>
 
-<MethodPromo method="getFlow" label="Display flows and paywalls" />
+<MethodPromo method="getFlow" label="Afficher les flows et paywalls" />
 
-Si vous avez créé un flow ou un paywall dans le Flow Builder, vous n'avez pas besoin de vous soucier de son rendu dans le code de votre application mobile pour l'afficher à l'utilisateur. Un tel flow contient à la fois ce qui doit être affiché et comment cela doit être affiché.
+Si vous avez créé un flow ou un paywall dans l'ancien Paywall Builder, vous n'avez pas à vous soucier de son rendu dans le code de votre application mobile pour l'afficher à l'utilisateur. Un tel flow contient à la fois ce qui doit être affiché et comment cela doit être affiché.
 
 Avant de commencer, assurez-vous que :
 
-1. Vous avez [créé un flow ou un paywall](create-paywall).
+1. Vous avez créé un [flow](paywall-builder-templates) ou un [paywall](create-paywall).
 2. Vous l'avez ajouté à un [placement](placements).
 3. Vous avez [récupéré le flow et préparé la vue](react-native-get-pb-paywalls).
 
 :::warning
 
-Ce guide concerne **les flows et les paywalls Paywall Builder** uniquement, qui nécessitent le SDK v4.0 ou une version ultérieure. Le processus de présentation des flows diffère pour les paywalls Remote Config.
+Ce guide s'applique uniquement aux **flows et paywalls rendus par Adapty**, qui nécessitent le SDK v4.0 ou une version ultérieure. La procédure pour présenter des flows diffère pour les paywalls personnalisés.
 
-- Pour présenter des **paywalls Remote Config**, consultez [Afficher un paywall conçu avec Remote Config](present-remote-config-paywalls).
+- Pour présenter des paywalls personnalisés, consultez [Présenter des paywalls personnalisés](present-remote-config-paywalls-react-native).
 
 :::
 
-Le SDK Adapty React Native propose deux façons de présenter les flows et les paywalls :
+Le SDK Adapty React Native propose deux façons de présenter des flows et des paywalls :
 
-- **Composant React** : un composant intégré vous permet de l'incorporer dans l'architecture et le système de navigation de votre application.
+- **Composant React** : le composant intégré vous permet de l'incorporer dans l'architecture et le système de navigation de votre application.
 
 - **Présentation modale**
 
@@ -88,12 +86,14 @@ function MyFlow({ flow }) {
 }
 ```
 
+Le gestionnaire `onError` de `AdaptyFlowView` reçoit une erreur lorsque le composant ne peut pas afficher le flow. Cela se produit lorsque le flow échoue au chargement, ou lorsque l'appareil tourne sous iOS 15, qui n'est pas pris en charge par les flows. Arrêtez le rendu du composant et affichez votre propre contenu.
+
 ## Présentation modale \{#modal-presentation\}
 
-Pour afficher un flow en tant qu'écran autonome, utilisez la méthode `view.present()` sur la `view` créée par la méthode [`createFlowView`](react-native-get-pb-paywalls#fetch-the-view-configuration). Chaque `view` ne peut être utilisée qu'une seule fois. Si vous avez besoin d'afficher le flow à nouveau, appelez `createFlowView` une fois de plus pour créer une nouvelle instance de `view`.
+Pour afficher un flow en tant qu'écran autonome, utilisez la méthode `view.present()` sur le `view` créé par la méthode [`createFlowView`](react-native-get-pb-paywalls#fetch-the-view-configuration). Si vous avez besoin d'afficher le flow à nouveau, appelez `createFlowView` une nouvelle fois pour créer une nouvelle instance de `view`, ou [conservez la vue fermée](#keep-a-closed-flow-for-later) pour la présenter à nouveau.
 
 :::warning
-Réutiliser la même `view` sans la recréer est interdit. Cela entraînera une erreur `AdaptyUIError.viewAlreadyPresented`.
+Après `view.dismiss()` avec les options par défaut, la vue est libérée et appeler `present()` dessus échoue. Appeler `present()` alors qu'un flow est déjà affiché à l'écran échoue également. Dans les deux cas, vous obtenez une `AdaptyError` avec le code `3001` (`wrongParam`), et son message indique la cause : `AdaptyUIError.viewNotFound` ou `AdaptyUIError.viewAlreadyPresented`.
 :::
 
 ```typescript showLineNumbers title="React Native (TSX)"
@@ -126,16 +126,59 @@ try {
 }
 ```
 
+### Conserver un flow fermé pour plus tard \{#keep-a-closed-flow-for-later\}
+
+:::info
+L'option `destroy` et la méthode `destroy()` sont disponibles à partir de la version 4.3.0 du SDK.
+:::
+
+Par défaut, `view.dismiss()` ferme le flow et détruit sa vue native, ce qui empêche de présenter à nouveau le `view`. Pour pouvoir afficher le même flow plus tard, passez `destroy: false`. Le prochain appel à `present()` ouvre le flow à l'écran où l'utilisateur l'a fermé, dans l'état où il l'a laissé, et vos gestionnaires d'événements restent configurés :
+
+```typescript showLineNumbers
+// Close the flow and keep its native view in memory
+await view.dismiss({ destroy: false });
+
+// Later: open the flow again on the same screen
+await view.present();
+```
+
+La vue native reste en mémoire jusqu'à ce que vous la libériez. Lorsque vous n'avez plus besoin du flow, appelez `destroy()` :
+
+```typescript showLineNumbers
+await view.dismiss({ destroy: false });
+// ...
+await view.destroy();
+```
+
+N'appelez `destroy()` que pour une vue fermée avec `destroy: false`. Un `dismiss()` classique libère la vue automatiquement.
+
+Un gestionnaire d'événements qui retourne `true` ferme le flow avec un `dismiss()` standard, ce qui détruit la vue native même si vous l'aviez conservée auparavant. Les gestionnaires par défaut `onCloseButtonPress` et `onError` retournent `true`. Pour conserver le flow lorsque l'utilisateur le ferme, fermez-le vous-même et retournez `false` :
+
+```typescript showLineNumbers
+view.setEventHandlers({
+  onCloseButtonPress() {
+    view.dismiss({ destroy: false }).catch(error => {
+      // handle the error
+    });
+    return false;
+  },
+});
+```
+
 ## Utiliser un minuteur défini par le développeur \{#use-developer-defined-timer\}
 
-Pour utiliser des minuteurs définis par le développeur dans votre application mobile, utilisez le `timerId`, dans cet exemple `CUSTOM_TIMER_NY`, le **Timer ID** du minuteur défini par le développeur que vous avez configuré dans l'Adapty Dashboard. Cela garantit que votre application met à jour dynamiquement le minuteur avec la valeur correcte — comme `13d 09h 03m 34s` (calculée comme l'heure de fin du minuteur, par exemple le Jour de l'An, moins l'heure actuelle).
+Utilisez cette section pour un minuteur avec le comportement **Developer defined** dans le Flow & Paywall Builder. Dans le builder, chaque minuteur de ce type possède un **Timer ID** (voir [Laisser votre application définir la date de fin](flow-timer#let-your-app-set-the-end-date)), et votre application définit la date de fin correspondante. Utilisez exactement le même Timer ID dans votre code que dans le builder, caractère par caractère, en respectant la casse et les espaces. Si les identifiants diffèrent, le minuteur ne reçoit aucune date de fin de la part de votre application.
+
+Pour définir les dates de fin, passez le paramètre `customTimers` : un objet qui associe chaque ID de minuterie à une `Date`, la date de fin de la minuterie.
 
 <Tabs>
 <TabItem value="component" label="React component">
 ```typescript showLineNumbers title="React Native (TSX)"
-const flowParams = {
-  customTimers: { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
-};
+const flowParams = useMemo(() => ({
+  customTimers: {
+    CUSTOM_TIMER_NY: new Date(new Date().getFullYear() + 1, 0, 1), // next New Year's Day
+  },
+}), []);
 
 <AdaptyFlowView
   flow={flow}
@@ -146,13 +189,24 @@ const flowParams = {
 </TabItem>
 <TabItem value="modal" label="Modal presentation">
 ```typescript showLineNumbers title="React Native (TSX)"
-const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
 
-const view = await createFlowView(flow, { customTimers });
+const customTimers = {
+  CUSTOM_TIMER_NY: new Date(new Date().getFullYear() + 1, 0, 1), // next New Year's Day
+};
+
+try {
+  const view = await createFlowView(flow, { customTimers });
+  await view.present();
+} catch (error) {
+  // handle the error
+}
 ```
 </TabItem>
 </Tabs>
-Dans cet exemple, `CUSTOM_TIMER_NY` est le **Timer ID** du minuteur défini par le développeur dans l'Adapty Dashboard. Le `timerResolver` permet à votre application de mettre à jour dynamiquement le minuteur avec la valeur correcte — par exemple `13j 09h 03m 34s` (calculée comme la date de fin du minuteur, comme le Jour de l'An, moins l'heure actuelle).
+
+Dans cet exemple, `CUSTOM_TIMER_NY` est l'identifiant du minuteur d'un minuteur **défini par le développeur** dans le builder. Le minuteur affiche le temps restant jusqu'au prochain jour de l'an, par exemple `13d 09h 03m 34s`.
+
+Le SDK lit `customTimers` une seule fois, au moment où il crée la vue. Ainsi, une date calculée dynamiquement — par exemple « dans 6 heures » — est comptée à partir de cet instant précis. Si la date est déjà passée, le minuteur affiche immédiatement zéro et son déclencheur **On timer end** s'exécute. Si `customTimers` ne contient pas de clé pour un identifiant de minuteur, celui-ci effectue un compte à rebours d'une heure à partir de l'ouverture de l'écran.
 
 ## Afficher une boîte de dialogue \{#show-dialog\}
 
@@ -176,6 +230,10 @@ try {
   // handle error
 }
 ```
+
+## Envoyer des messages à un flow \{#send-messages-to-a-flow\}
+
+La méthode `sendAppMessage` d'une vue de flow envoie un message au flow, sous forme d'objet JSON. Cette méthode est réservée pour de futures fonctionnalités du Flow & Paywall Builder. Les flows ignorent ces messages, vous n'avez donc pas besoin d'appeler cette méthode.
 
 ## Remplacer un abonnement par un autre \{#replace-one-subscription-with-another\}
 
@@ -215,15 +273,15 @@ Avant de commencer, assurez-vous que :
 
 :::warning
 
-Ce guide concerne uniquement les **paywalls du nouveau Paywall Builder**, qui nécessitent le SDK v3.0 ou une version ultérieure. La procédure de présentation des paywalls diffère selon la version du Paywall Builder utilisée pour les concevoir et selon les paywalls avec Remote Config.
+Ce guide concerne uniquement les paywalls créés dans l'ancien Paywall Builder pour **Adapty SDK 3.x**. Ils nécessitent le SDK v3.0 ou une version ultérieure. La présentation d'un paywall créé pour le SDK 2.x ou antérieur, ou d'un paywall personnalisé, fonctionne différemment.
 
-- Pour présenter des **paywalls avec Remote Config**, consultez [Afficher un paywall conçu avec Remote Config](present-remote-config-paywalls).
+- Pour présenter des paywalls personnalisés, consultez [Présenter des paywalls personnalisés](present-remote-config-paywalls-react-native).
 
 :::
 
-Le SDK Adapty React Native propose deux façons de présenter les paywalls :
+Le SDK React Native d'Adapty propose deux façons de présenter des paywalls :
 
-- **Composant React** : un composant intégré que vous pouvez incorporer à l'architecture et au système de navigation de votre application.
+- **Composant React** : un composant intégré qui vous permet de l'incorporer dans l'architecture et le système de navigation de votre application.
 
 - **Présentation modale**
 
@@ -325,7 +383,7 @@ try {
 
 ## Utiliser un minuteur défini par le développeur \{#use-developer-defined-timer\}
 
-Pour utiliser des minuteurs définis par le développeur dans votre application mobile, utilisez le `timerId`, dans cet exemple `CUSTOM_TIMER_NY`, le **Timer ID** du minuteur défini par le développeur que vous avez configuré dans l'Adapty Dashboard. Cela permet à votre application de mettre à jour dynamiquement le minuteur avec la valeur correcte — par exemple `13d 09h 03m 34s` (calculée comme la date de fin du minuteur, par exemple le Jour de l'An, moins l'heure actuelle).
+Pour utiliser des minuteurs définis par le développeur dans votre application mobile, utilisez le `timerId`, dans cet exemple `CUSTOM_TIMER_NY`, le **Timer ID** du minuteur défini par le développeur que vous avez configuré dans l'Adapty Dashboard. Cela garantit que votre application met à jour dynamiquement le minuteur avec la valeur correcte — comme `13d 09h 03m 34s` (calculée comme l'heure de fin du minuteur, par exemple le Jour de l'An, moins l'heure actuelle).
 
 <Tabs>
 <TabItem value="component" label="React component">
@@ -349,7 +407,7 @@ const view = await createPaywallView(paywall, { customTimers });
 ```
 </TabItem>
 </Tabs>
-Dans cet exemple, `CUSTOM_TIMER_NY` est le **Timer ID** du timer défini par le développeur que vous avez configuré dans l'Adapty Dashboard. Le `timerResolver` permet à votre application de mettre à jour dynamiquement le timer avec la valeur correcte — par exemple `13d 09h 03m 34s` (calculée comme la date de fin du timer, comme le Jour de l'An, moins l'heure actuelle).
+Dans cet exemple, `CUSTOM_TIMER_NY` est le **Timer ID** du minuteur défini par le développeur dans l'Adapty Dashboard. Le `timerResolver` permet à votre application de mettre à jour dynamiquement le minuteur avec la valeur correcte — par exemple `13j 09h 03m 34s` (calculée comme la date de fin du minuteur, comme le Jour de l'An, moins l'heure actuelle).
 
 ## Afficher une boîte de dialogue \{#show-dialog\}
 

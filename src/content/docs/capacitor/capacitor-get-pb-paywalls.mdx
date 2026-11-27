@@ -7,32 +7,35 @@ keywords: ['getFlow', 'getPaywall', 'createFlowView', 'createPaywallView', 'getF
 ---
 
 import Details from '@site/src/components/Details';
-import SampleApp from '@site/src/components/reusable/SampleApp.md';
 
 <SDKv4>
 
 <MethodPromo method="getFlow" />
 
-After [you designed your flow or Paywall Builder paywall](adapty-paywall-builder), you can display it in your mobile app. The first step is to get the flow or paywall associated with the placement and its view configuration as described below.
+After [you designed your flow](adapty-flow-builder), you can display it in your mobile app. The first step is to get the flow or paywall associated with the placement and its view configuration as described below.
 
-Please be aware that this topic refers to flows and Paywall Builder-customized paywalls. If you are implementing your paywalls manually, please refer to the [Fetch paywalls and products for remote config paywalls in your mobile app](fetch-paywalls-and-products-capacitor) topic.
+Please be aware that this topic refers to flows and paywalls designed in Adapty's builders. If you implement custom paywalls, please refer to the [Fetch paywalls and products for custom paywalls in your mobile app](fetch-paywalls-and-products-capacitor) topic.
 
 <SampleApp />
 
-<details>
-   <summary>Before you start displaying flows and paywalls in your mobile app (click to expand)</summary>
+## Before you start
 
-1. [Create your products](create-product) in the Adapty Dashboard.
-2. [Create a flow/paywall and incorporate the products into it](create-paywall) in the Adapty Dashboard.
-3. [Create placements and incorporate your flow/paywall into it](create-placement) in the Adapty Dashboard.
-4. Install [Adapty SDK](sdk-installation-capacitor) in your mobile app.
-</details>
+You need:
+
+- **Products in the Adapty Dashboard**: [Create your products](create-product).
+- **A flow with products**: Build it in the [Flow & Paywall Builder](adapty-flow-builder) and [assign products to it](paywall-product-block).
+- **A placement**: [Create a placement](create-placement) and assign your flow to it.
+- **Adapty SDK installed**: See the [Capacitor SDK installation guide](sdk-installation-capacitor).
 
 ## Fetch flow/paywall
 
-If you've designed a flow or paywall using the Flow Builder or Paywall Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a flow or paywall contains both what should be shown within it and how it should be shown. Nevertheless, you need to get its ID via the placement, its view configuration, and then present it in your mobile app.
+If you've designed a flow or paywall in the builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a flow or paywall contains both what should be shown within it and how it should be shown. Nevertheless, you need to get its ID via the placement, its view configuration, and then present it in your mobile app.
 
 Fetch the flow or paywall and create its [view](capacitor-get-pb-paywalls#fetch-the-view-configuration) as early as possible — ideally well before you present it. The `createFlowView` method loads the view configuration and starts downloading and caching its images in the background. The earlier you call it, the more time these downloads have to complete. By the time you present the flow or paywall, its configuration and images can already be cached and ready to display.
+
+:::tip
+To warm several placements at once, call [`preloadFlows`](capacitor-optimize-paywall-fetching#preload-placements) (Capacitor SDK 4.3.0+). It caches the placement JSON only, so `createFlowView` still loads the layout and images.
+:::
 
 To get a flow or paywall, use the `getFlow` method:
 
@@ -51,8 +54,8 @@ Parameters:
 | Parameter         | Presence | Description |
 |-------------------|--------|-----------|
 | **placementId**   | required | The identifier of the desired [Placement](placements). This is the value you specified when creating a placement in the Adapty Dashboard. |
-| **fetchPolicy**   | default: `'reload_revalidating_cache_data'` | <p>Passed inside the optional `params` object. By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `'return_cache_data_else_load'` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p><p></p><p>Adapty SDK stores paywalls locally in two layers: regularly updated cache described above and [fallback paywalls](fallback-paywalls). We also use CDN to fetch paywalls faster and a stand-alone fallback server in case the CDN is unreachable. This system is designed to make sure you always get the latest version of your paywalls while ensuring reliability even in cases where internet connection is scarce.</p> |
-| **loadTimeoutMs** | default: 5 sec | <p>Passed inside the optional `params` object. This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.</p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeoutMs`, since the operation may consist of different requests under the hood.</p> |
+| **fetchPolicy**   | default: `'reload_revalidating_cache_data'` | <p>Passed inside the optional `params` object. `fetchPolicy` sets which layer the SDK reads first, not whether it can use the cache. By default the SDK goes to the server first and returns cached data if that request fails. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider `'return_cache_data_else_load'`, which reverses that order — it reads the cache first and goes to the server only when nothing is cached. Users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>A third policy, `'return_cache_data_if_not_expired_else_load'`, sits between the two: it reads the cache first while the cached copy is younger than the `maxAgeSeconds` you pass alongside it, and goes to the server once it is older.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p><p></p><p>Adapty SDK stores paywalls locally in two layers: regularly updated cache described above and [fallback paywalls](fallback-paywalls). We also use CDN to fetch paywalls faster and a stand-alone fallback server in case the CDN is unreachable. This system is designed to make sure you always get the latest version of your paywalls while ensuring reliability even in cases where internet connection is scarce.</p> |
+| **loadTimeoutMs** | default: 5 sec | <p>Passed inside the optional `params` object. This value limits the timeout for this method. If the Adapty server doesn't respond in time or returns an error, the SDK returns the cached flow. If nothing is cached and the server timed out or returned a server error, the SDK requests the flow from the fallback server (a CDN copy that serves only the placement's **All Users** audience). As a last resort, the SDK returns the flow from your [fallback file](capacitor-use-fallback-paywalls).</p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeoutMs`, since the operation may consist of different requests under the hood.</p> |
 
 **Don't hardcode product IDs.** The only ID you should hardcode is the placement ID. Flows and paywalls are configured remotely, so the number of products and available offers can change at any time. Your app must handle these changes dynamically—if a paywall returns two products today and three tomorrow, display all of them without code changes.
 
@@ -60,20 +63,31 @@ Response parameters:
 
 | Parameter | Description                                                                                                                                                                            |
 | :-------- |:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Flow   | An `AdaptyFlow` object with the flow's identifiers (`id`, `variationId`), name, placement, its paywall variations (`paywalls`), and any remote configs (`remoteConfigs`). |
+| Flow   | An `AdaptyFlow` object with the flow's identifiers (`id`, `variationId`), variation name (`variationName`, optional, SDK 4.2+), name, placement, its paywall variations (`paywalls`), any remote configs (`remoteConfigs`), and a `hasViewConfiguration` flag. |
 
 ## Fetch the view configuration
 
 :::important
-Make sure to enable the **Show on device** toggle in the builder. If this option isn't turned on, the view configuration won't be available to retrieve.
+Make sure to [publish the flow](builder-save-publish). A flow with unpublished edits has the **Dirty** status, and its placement keeps serving the last published version.
 :::
 
-If the placement was designed in the **Flow Builder** or the **Paywall Builder**, Adapty renders the UI for you. Create the view with `createFlowView`, then [present the flow or paywall](capacitor-present-paywalls). If the placement is a custom paywall with no Builder UI, [handle it as a remote config paywall](present-remote-config-paywalls-capacitor) instead.
+If the placement was designed in the **Flow & Paywall Builder** or the **old Paywall Builder**, Adapty renders the UI for you. Create the view with `createFlowView`, then [present the flow or paywall](capacitor-present-paywalls). If the placement is a custom paywall with no Builder UI, [render it yourself](present-remote-config-paywalls-capacitor) instead.
+
+The `hasViewConfiguration` flag on the flow tells the two apart before you create the view:
+
+```typescript showLineNumbers
+if (flow.hasViewConfiguration) {
+  const view = await createFlowView(flow);
+  await view.present();
+} else {
+  // Render your own screen from flow.remoteConfigs and flow.paywalls
+}
+```
 
 In Capacitor SDK, call `createFlowView` directly — you don't need to fetch the view configuration first.
 
 :::warning
-The result of the `createFlowView` method can only be used once. If you need to use it again, call the `createFlowView` method anew. Calling it twice without recreating may result in an error.
+By default, a dismissed `view` is destroyed, and reusing it results in an error. To display the flow again, call `createFlowView` one more time to create a new `view` instance, or [keep the closed flow](capacitor-present-paywalls#keep-a-closed-flow-for-later) when you dismiss it.
 :::
 
 ```typescript showLineNumbers
@@ -135,7 +149,7 @@ try {
 | Parameter | Presence | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 |---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **placementId** | required | The identifier of the [Placement](placements). This is the value you specified when creating a placement in your Adapty Dashboard.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| **fetchPolicy** | default: `'reload_revalidating_cache_data'` | <p>Passed inside the optional `params` object. By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `'return_cache_data_else_load'` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p> |
+| **fetchPolicy** | default: `'reload_revalidating_cache_data'` | <p>Passed inside the optional `params` object. `fetchPolicy` sets which layer the SDK reads first, not whether it can use the cache. By default the SDK goes to the server first and returns cached data if that request fails. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider `'return_cache_data_else_load'`, which reverses that order — it reads the cache first and goes to the server only when nothing is cached. Users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>A third policy, `'return_cache_data_if_not_expired_else_load'`, sits between the two: it reads the cache first while the cached copy is younger than the `maxAgeSeconds` you pass alongside it, and goes to the server once it is older.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p> |
 
 ## Customize assets
 
@@ -150,6 +164,7 @@ For example, you can:
 - Show a different image or video to some users.
 - Show a local preview image while a remote main image is loading.
 - Show a preview image before running a video.
+- Show media bundled with the app, so the first screen renders without a download. See [Show first-screen media from the app bundle](capacitor-optimize-paywall-fetching#show-first-screen-media-from-the-app-bundle).
 
 Here’s an example of how you can provide custom assets via a simple dictionary:
 
@@ -178,9 +193,9 @@ If an asset is not found, the flow/paywall will fall back to its default appeara
 
 <SDKv3>
 
-After [you designed the visual part for your paywall](adapty-paywall-builder) with the new Paywall Builder in the Adapty Dashboard, you can display it in your mobile app. The first step in this process is to get the paywall associated with the placement and its view configuration as described below.
+After [you designed the visual part for your paywall](adapty-paywall-builder) with the old Paywall Builder in the Adapty Dashboard, you can display it in your mobile app. The first step in this process is to get the paywall associated with the placement and its view configuration as described below.
 
-Please be aware that this topic refers to Paywall Builder-customized paywalls. For guidance on fetching remote config paywalls, please refer to the [Fetch paywalls and products for remote config paywalls in your mobile app](fetch-paywalls-and-products-capacitor) topic.
+Please be aware that this topic refers to Paywall Builder-customized paywalls. For guidance on fetching custom paywalls, please refer to the [Fetch paywalls and products for custom paywalls in your mobile app](fetch-paywalls-and-products-capacitor) topic.
 
 <details>
    <summary>Before you start displaying paywalls in your mobile app (click to expand)</summary>
@@ -216,7 +231,7 @@ Parameters:
 | Parameter | Presence | Description |
 |---------|--------|-----------|
 | **placementId** | required | The identifier of the desired [Placement](placements). This is the value you specified when creating a placement in the Adapty Dashboard. |
-| **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the [paywall localization](add-paywall-locale-in-adapty-paywall-builder). This parameter is expected to be a language code composed of one or two subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p>See [Localizations and locale codes](localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p> |
+| **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the paywall localization. This parameter is expected to be a language code composed of one or two subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p>See [Localizations and locale codes](localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p> |
 | **params** | optional | Additional parameters for fetching the paywall. |
 
 **Don't hardcode product IDs.** The only ID you should hardcode is the placement ID. Paywalls are configured remotely, so the number of products and available offers can change at any time. Your app must handle these changes dynamically—if a paywall returns two products today and three tomorrow, display all of them without code changes.
@@ -233,7 +248,7 @@ Response parameters:
 Make sure to enable the **Show on device** toggle in the paywall builder. If this option isn't turned on, the view configuration won't be available to retrieve.
 :::
 
-After fetching the paywall, check if it includes a `ViewConfiguration`, which indicates that it was created using Paywall Builder. This will guide you on how to display the paywall. If the `ViewConfiguration` is present, treat it as a Paywall Builder paywall; if not, [handle it as a remote config paywall](present-remote-config-paywalls-capacitor).
+After fetching the paywall, check if it includes a `ViewConfiguration`, which indicates that it was created using Paywall Builder. This will guide you on how to display the paywall. If the `ViewConfiguration` is present, treat it as a Paywall Builder paywall; if not, [handle it as a custom paywall](present-remote-config-paywalls-capacitor).
 
 In Capacitor SDK, directly call the `createPaywallView` method without manually fetching the view configuration first.
 
@@ -264,7 +279,7 @@ Parameters:
 | **prefetchProducts** | optional | Enable to optimize the display timing of products on the screen. When `true` AdaptyUI will automatically fetch the necessary products. Default: `false`. |
 
 :::note
-If you are using multiple languages, learn how to add a [Paywall Builder localization](add-paywall-locale-in-adapty-paywall-builder) and how to use locale codes correctly [here](capacitor-localizations-and-locale-codes).
+If you support multiple languages, add a localization to your paywall. For the codes to use, see [Localizations and locale codes](capacitor-localizations-and-locale-codes).
 :::
 
 Once you have the view, [present the paywall](capacitor-present-paywalls).

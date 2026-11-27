@@ -1,33 +1,31 @@
 ---
-title: "Afficher les flows et les paywalls - Capacitor"
-description: "Présentez des flows et des paywalls aux utilisateurs dans votre app Capacitor avec Adapty."
+title: "Afficher les flows et paywalls - Capacitor"
+description: "Présentez des flows et des paywalls à vos utilisateurs dans votre application Capacitor avec Adapty."
 metadataTitle: "Afficher les flows et paywalls dans Capacitor | Documentation Adapty"
 ---
 
-import SampleApp from '@site/src/locales/fr/reusable/SampleApp.md';
-
 <SDKv4>
 
-Si vous avez créé un flow ou un paywall dans le Flow Builder, vous n'avez pas à vous soucier de son rendu dans le code de votre app mobile pour l'afficher à l'utilisateur. Un tel flow contient à la fois ce qui doit être affiché et la façon dont cela doit l'être.
+Si vous avez créé un flow, ou un paywall dans l'ancien Paywall Builder, vous n'avez pas à vous soucier de son rendu dans le code de votre application mobile pour l'afficher à l'utilisateur. Un tel flow contient à la fois ce qui doit y être affiché et comment il doit l'être.
 
 Avant de commencer, assurez-vous que :
 
-1. Vous avez [créé un flow ou un paywall](create-paywall).
+1. Vous avez créé un [flow](paywall-builder-templates) ou un [paywall](create-paywall).
 2. Vous l'avez ajouté à un [placement](placements).
 3. Vous avez [récupéré le flow et préparé la vue](capacitor-get-pb-paywalls).
 
 :::warning
 
-Ce guide concerne uniquement les **flows et les paywalls créés avec le Paywall Builder**, qui nécessitent le SDK v4.0 ou une version ultérieure. La procédure pour présenter des flows diffère pour les paywalls à Remote Config.
+Ce guide s'applique uniquement aux **flows et paywalls rendus par Adapty**, qui nécessitent le SDK v4.0 ou une version ultérieure. La procédure de présentation des flows diffère pour les paywalls personnalisés.
 
-- Pour présenter des **paywalls à Remote Config**, consultez [Afficher un paywall conçu avec Remote Config](present-remote-config-paywalls-capacitor).
+- Pour présenter des paywalls personnalisés, consultez [Présenter des paywalls personnalisés](present-remote-config-paywalls-capacitor).
 
 :::
 
-Pour afficher un flow ou un paywall en tant qu'écran autonome, utilisez la méthode `view.present()` sur la `view` créée par la méthode [`createFlowView`](capacitor-get-pb-paywalls#fetch-the-view-configuration). Chaque `view` ne peut être utilisée qu'une seule fois. Si vous devez afficher le flow à nouveau, appelez `createFlowView` une nouvelle fois pour créer une nouvelle instance de `view`.
+Pour afficher un flow ou un paywall en plein écran, utilisez la méthode `view.present()` sur la `view` créée par la méthode [`createFlowView`](capacitor-get-pb-paywalls#fetch-the-view-configuration). Par défaut, une `view` fermée est détruite. Pour afficher de nouveau le flow, appelez `createFlowView` une nouvelle fois pour créer une nouvelle instance de `view`, ou [conservez le flow fermé](#keep-a-closed-flow-for-later) au moment de le fermer.
 
 :::warning
-Réutiliser la même `view` sans la recréer est interdit. Cela provoquera une erreur.
+La réutilisation d'une `view` détruite entraîne une erreur.
 :::
 
 ```typescript showLineNumbers
@@ -45,12 +43,12 @@ try {
 ```
 
 :::important
-Appeler `setEventHandlers` plusieurs fois écrasera les gestionnaires que vous fournissez, remplaçant à la fois les gestionnaires par défaut et ceux précédemment définis pour ces événements spécifiques.
+Appeler `setEventHandlers` plusieurs fois remplacera les handlers que vous fournissez, en substituant à la fois les handlers par défaut et ceux définis précédemment pour ces événements spécifiques.
 :::
 
 ## Configurer le style de présentation iOS \{#configure-ios-presentation-style\}
 
-Configurez la façon dont le flow est présenté sur iOS en passant le paramètre `iosPresentationStyle` à la méthode `present()`. Le paramètre accepte les valeurs `'full_screen'` (par défaut) ou `'page_sheet'`. Sur Android, les flows sont toujours affichés en plein écran.
+Configurez la façon dont le flow est présenté sur iOS en passant le paramètre `iosPresentationStyle` à la méthode `present()`. Le paramètre accepte les valeurs `'full_screen'` (par défaut) ou `'page_sheet'`. Sur Android, les flows sont toujours affichés en plein écran dans l'Activity de votre application.
 
 ```typescript showLineNumbers
 try {
@@ -60,21 +58,85 @@ try {
 }
 ```
 
-## Utiliser un timer défini par le développeur \{#use-developer-defined-timer\}
+## Conserver un flow fermé pour plus tard \{#keep-a-closed-flow-for-later\}
 
-Pour utiliser des timers définis par le développeur dans votre app mobile, utilisez le `timerId`, dans cet exemple `CUSTOM_TIMER_NY`, le **Timer ID** du timer défini par le développeur que vous avez configuré dans le tableau de bord Adapty. Cela garantit que votre app met à jour dynamiquement le timer avec la valeur correcte — par exemple `13j 09h 03m 34s` (calculée comme l'heure de fin du timer, telle que le Jour de l'An, moins l'heure actuelle).
+:::info
+L'option `destroy` et la méthode `destroy()` sont disponibles à partir de la version 4.3.0 du SDK.
+:::
+
+Conservez un flow lorsque l'utilisateur est susceptible de le rouvrir rapidement — par exemple, un paywall accessible via un bouton dans votre écran de paramètres — afin qu'il s'ouvre sans nouveau chargement et reprenne là où l'utilisateur s'est arrêté.
+
+Par défaut, `view.dismiss()` ferme le flow et détruit sa vue native, ce qui empêche de le présenter à nouveau. Pour présenter le même flow plus tard, passez `destroy: false`. Le prochain appel à `present()` ouvre le flow à l'écran où l'utilisateur l'a fermé, avec l'état dans lequel il l'a laissé, et vos gestionnaires d'événements restent actifs :
 
 ```typescript showLineNumbers
-const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
+// Close the flow and keep its native view in memory
+await view.dismiss({ destroy: false });
 
-const view = await createFlowView(flow, { customTimers });
+// Later: open the flow again on the same screen
+await view.present();
 ```
 
-Dans cet exemple, `CUSTOM_TIMER_NY` est le **Timer ID** du timer défini par le développeur que vous avez configuré dans le tableau de bord Adapty. Le timer garantit que votre app met à jour dynamiquement le timer avec la valeur correcte — par exemple `13j 09h 03m 34s` (calculée comme l'heure de fin du timer, telle que le Jour de l'An, moins l'heure actuelle).
+La vue native reste en mémoire jusqu'à ce que vous la libériez. Lorsque vous n'avez plus besoin du flow, appelez `destroy()` :
+
+```typescript showLineNumbers
+await view.dismiss({ destroy: false });
+// ...
+await view.destroy();
+```
+
+`destroy()` ferme d'abord la vue si elle est encore à l'écran, puis supprime ses gestionnaires d'événements. Appelez-le uniquement pour une vue que vous avez fermée avec `destroy: false` : un `dismiss()` classique libère la vue par lui-même, et un appel à `destroy()` après celui-ci échoue.
+
+Libérez une vue conservée lorsque le composant qui la détient est supprimé — dans `ngOnDestroy` d'Angular, dans le nettoyage d'un `useEffect` React, ou dans `onUnmounted` de Vue. Sinon, la vue native reste en mémoire pour toute la durée de la session. Gérez l'erreur : la vue a peut-être déjà été libérée, par exemple si un gestionnaire d'événement a renvoyé `true`.
+
+```typescript showLineNumbers
+// For example, in a React useEffect cleanup
+return () => {
+  view.destroy().catch(() => {
+    // the view was already released
+  });
+};
+```
+
+Un gestionnaire d'événements qui retourne `true` ferme le flow avec un `dismiss()` standard, ce qui détruit la vue native même si vous l'aviez conservée auparavant. Les gestionnaires `onCloseButtonPress` et `onError` par défaut retournent `true`. Il en va de même pour tout gestionnaire que vous faites retourner `true`, comme `onAndroidSystemBack`. Pour conserver le flow lorsque l'utilisateur le ferme, fermez-le vous-même et retournez `false` :
+
+```typescript showLineNumbers
+await view.setEventHandlers({
+  onCloseButtonPress() {
+    view.dismiss({ destroy: false }).catch(error => {
+      // handle the error
+    });
+    return false;
+  },
+});
+```
+
+## Utiliser un minuteur défini par le développeur \{#use-developer-defined-timer\}
+
+Utilisez cette section pour un minuteur avec le comportement **Developer defined** dans le Flow & Paywall Builder. Dans le builder, chaque minuteur de ce type possède un **Timer ID** (voir [Laisser votre application définir la date de fin](flow-timer#let-your-app-set-the-end-date)), et votre application définit la date de fin pour celui-ci. Utilisez le même Timer ID dans votre code que dans le builder, caractère par caractère, y compris la casse et les espaces. Si les IDs diffèrent, le minuteur ne reçoit aucune date de fin de votre application.
+
+Pour définir les dates de fin, passez le paramètre `customTimers` à `createFlowView` : un objet qui associe chaque ID de timer à une `Date`, la date de fin du timer.
+
+```typescript showLineNumbers
+
+const customTimers = {
+  CUSTOM_TIMER_NY: new Date(new Date().getFullYear() + 1, 0, 1), // next New Year's Day
+};
+
+try {
+  const view = await createFlowView(flow, { customTimers });
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+Dans cet exemple, `CUSTOM_TIMER_NY` est l'ID du timer d'un timer **défini par le développeur** dans le builder. Le timer affiche le temps restant jusqu'au prochain Jour de l'An, par exemple `13d 09h 03m 34s`.
+
+Le SDK lit `customTimers` une seule fois, lors de la création de la vue, donc une date calculée dynamiquement (par exemple, 6 heures à partir de maintenant) est comptée depuis cet instant. Si la date est dans le passé, le timer affiche immédiatement zéro et son déclencheur **On timer end** s'exécute. Si `customTimers` ne contient pas de clé pour un ID de timer, le timer effectue un compte à rebours d'une heure à partir de l'ouverture de l'écran.
 
 ## Afficher une boîte de dialogue \{#show-dialog\}
 
-Utilisez cette méthode à la place des boîtes de dialogue d'alerte natives lorsqu'une vue de flow est présentée sur Android. Sur Android, les alertes classiques apparaissent derrière la vue du flow, ce qui les rend invisibles pour les utilisateurs. Cette méthode garantit un affichage correct de la boîte de dialogue au-dessus du flow sur toutes les plateformes.
+Utilisez cette méthode à la place des boîtes de dialogue d'alerte natives lorsqu'une vue de flow est affichée sur Android. Sur Android, les alertes classiques apparaissent derrière la vue de flow, ce qui les rend invisibles pour les utilisateurs. Cette méthode garantit un affichage correct de la boîte de dialogue au-dessus du flow sur toutes les plateformes.
 
 ```typescript showLineNumbers
 try {
@@ -97,7 +159,7 @@ try {
 
 ## Remplacer un abonnement par un autre \{#replace-one-subscription-with-another\}
 
-Lorsqu'un utilisateur tente d'acheter un nouvel abonnement alors qu'un autre abonnement est actif sur Android, vous pouvez contrôler la façon dont le nouvel achat doit être traité en passant des paramètres de mise à jour d'abonnement lors de la création de la vue du flow. Pour remplacer l'abonnement actuel par le nouveau, utilisez `productPurchaseParams` dans `createFlowView` avec les paramètres `oldSubVendorProductId` et `prorationMode`.
+Lorsqu'un utilisateur tente d'acheter un nouvel abonnement alors qu'un autre est déjà actif sur Android, vous pouvez contrôler la manière dont ce nouvel achat doit être traité en passant des paramètres de mise à jour d'abonnement lors de la création de la vue du flow. Pour remplacer l'abonnement en cours par le nouveau, utilisez `productPurchaseParams` dans `createFlowView` avec les paramètres `oldSubVendorProductId` et `prorationMode`.
 
 ```typescript showLineNumbers
 
@@ -123,17 +185,17 @@ const view = await createFlowView(flow, { productPurchaseParams });
 
 <SDKv3>
 
-Si vous avez personnalisé un paywall à l'aide du Paywall Builder, vous n'avez pas à vous soucier de son rendu dans le code de votre app mobile pour l'afficher à l'utilisateur. Un tel paywall contient à la fois ce qui doit être affiché et la façon dont cela doit l'être.
+Si vous avez personnalisé un paywall avec le Paywall Builder, vous n'avez pas à vous soucier de son rendu dans le code de votre application mobile pour l'afficher à l'utilisateur. Un tel paywall contient à la fois ce qui doit être affiché et comment l'afficher.
 
 :::warning
-Ce guide concerne uniquement les **paywalls créés avec le Paywall Builder**. La procédure pour présenter des paywalls diffère pour les paywalls à Remote Config. Pour présenter des **paywalls à Remote Config**, consultez [Afficher un paywall conçu avec Remote Config](present-remote-config-paywalls).
+Ce guide concerne uniquement les paywalls créés dans l'ancien Paywall Builder. Pour présenter des paywalls personnalisés, consultez [Présenter des paywalls personnalisés](present-remote-config-paywalls-capacitor).
 :::
 
-Pour afficher un paywall, utilisez la méthode `view.present()` sur la `view` créée par la méthode [`createPaywallView`](capacitor-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder). Chaque `view` ne peut être utilisée qu'une seule fois. Si vous devez afficher le paywall à nouveau, appelez `createPaywallView` une nouvelle fois pour créer une nouvelle instance de `view`.
+Pour afficher un paywall, utilisez la méthode `view.present()` sur le `view` créé par la méthode [`createPaywallView`](capacitor-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder). Chaque `view` ne peut être utilisé qu'une seule fois. Si vous devez afficher le paywall à nouveau, appelez `createPaywallView` une nouvelle fois pour créer une nouvelle instance de `view`.
 
 :::warning
 
-Réutiliser la même `view` sans la recréer peut provoquer une erreur.
+Réutiliser le même `view` sans le recréer peut entraîner une erreur.
 :::
 
 ```typescript showLineNumbers
@@ -154,9 +216,9 @@ try {
 }
 ```
 
-## Utiliser un timer défini par le développeur \{#use-developer-defined-timer\}
+## Utiliser un minuteur défini par le développeur \{#use-developer-defined-timer\}
 
-Pour utiliser des timers définis par le développeur dans votre app mobile, utilisez le `timerId`, dans cet exemple `CUSTOM_TIMER_NY`, le **Timer ID** du timer défini par le développeur que vous avez configuré dans le tableau de bord Adapty. Cela garantit que votre app met à jour dynamiquement le timer avec la valeur correcte — par exemple `13j 09h 03m 34s` (calculée comme l'heure de fin du timer, telle que le Jour de l'An, moins l'heure actuelle).
+Pour utiliser des minuteurs définis par le développeur dans votre application mobile, utilisez le `timerId`, dans cet exemple `CUSTOM_TIMER_NY`, le **Timer ID** du minuteur défini par le développeur que vous avez configuré dans l'Adapty dashboard. Cela permet à votre application de mettre à jour dynamiquement le minuteur avec la valeur correcte — par exemple `13d 09h 03m 34s` (calculée comme l'heure de fin du minuteur, telle que le Jour de l'An, moins l'heure actuelle).
 
 ```typescript showLineNumbers
 const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
@@ -164,11 +226,11 @@ const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
 const view = await createPaywallView(paywall, { customTimers });
 ```
 
-Dans cet exemple, `CUSTOM_TIMER_NY` est le **Timer ID** du timer défini par le développeur que vous avez configuré dans le tableau de bord Adapty. Le timer garantit que votre app met à jour dynamiquement le timer avec la valeur correcte — par exemple `13j 09h 03m 34s` (calculée comme l'heure de fin du timer, telle que le Jour de l'An, moins l'heure actuelle).
+Dans cet exemple, `CUSTOM_TIMER_NY` est le **Timer ID** du minuteur défini par le développeur dans Adapty Dashboard. Le minuteur garantit que votre application met à jour dynamiquement le compte à rebours avec la valeur correcte — par exemple `13d 09h 03m 34s` (calculée comme la différence entre l'heure de fin du minuteur, comme le Nouvel An, et l'heure actuelle).
 
 ## Afficher une boîte de dialogue \{#show-dialog\}
 
-Utilisez cette méthode à la place des boîtes de dialogue d'alerte natives lorsqu'une vue de paywall est présentée sur Android. Sur Android, les alertes classiques apparaissent derrière la vue du paywall, ce qui les rend invisibles pour les utilisateurs. Cette méthode garantit un affichage correct de la boîte de dialogue au-dessus du paywall sur toutes les plateformes.
+Utilisez cette méthode à la place des boîtes de dialogue d'alerte natives lorsqu'une vue de paywall est affichée sur Android. Sur Android, les alertes classiques apparaissent derrière la vue de paywall, ce qui les rend invisibles pour les utilisateurs. Cette méthode garantit un affichage correct de la boîte de dialogue au-dessus du paywall sur toutes les plateformes.
 
 ```typescript showLineNumbers title="Capacitor"
 try {
@@ -191,7 +253,7 @@ try {
 
 ## Configurer le style de présentation iOS \{#configure-ios-presentation-style\}
 
-Configurez la façon dont le paywall est présenté sur iOS en passant le paramètre `iosPresentationStyle` à la méthode `present()`. Le paramètre accepte les valeurs `'full_screen'` (par défaut) ou `'page_sheet'`.
+Configurez la façon dont le paywall est présenté sur iOS en passant le paramètre `iosPresentationStyle` à la méthode `present()`. Ce paramètre accepte les valeurs `'full_screen'` (par défaut) ou `'page_sheet'`.
 
 ```typescript showLineNumbers
 await view.present({ iosPresentationStyle: 'page_sheet' });

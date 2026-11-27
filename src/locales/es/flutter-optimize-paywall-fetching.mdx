@@ -1,27 +1,140 @@
 ---
-title: "Optimizar la obtención de paywalls en Flutter SDK"
-description: "Obtén paywalls de Adapty de forma fiable: timing, caché y patrones de respaldo para Flutter."
-metadataTitle: "Optimizar la obtención de paywalls | Flutter SDK | Documentación de Adapty"
+title: "Optimizar la obtención de flows y paywalls en el SDK de Flutter"
+description: "Obtén flows y paywalls de Adapty de forma fiable: temporización, caché y patrones de respaldo para Flutter."
+metadataTitle: "Optimizar la obtención de flows y paywalls | SDK de Flutter | Documentación de Adapty"
 ---
 
-Una obtención de paywall fiable en Flutter hace tres cosas: renderiza rápido, devuelve el paywall orientado a la audiencia y recurre al respaldo con elegancia cuando la red es lenta. Las reglas que se describen a continuación cubren el timing, la caché y los patrones de respaldo para conseguirlo.
+Una obtención fiable de un flow o paywall en Flutter hace tres cosas: se renderiza rápido, devuelve la variación dirigida a la audiencia correspondiente y tiene un respaldo elegante cuando la red es lenta. Las reglas que se describen a continuación cubren los patrones de temporización, caché y respaldo necesarios para lograrlo.
+
 :::tip
-Las reglas asumen que `Adapty().activate()` y `Adapty().identify()` ya han sido resueltos. Consulta [Orden de llamadas en el SDK de Flutter](flutter-sdk-call-order).
+Las reglas asumen que `Adapty().activate()` y `Adapty().identify()` ya se han resuelto. Consulta [Orden de llamadas en el SDK de Flutter](flutter-sdk-call-order).
 :::
 
-Los consejos a continuación usan los nombres de métodos de la v3. En el SDK v4, `getPaywall` pasa a llamarse `getFlow` y el tipo de política de obtención a `AdaptyFlowFetchPolicy` — todas las reglas aplican sin cambios.
 ## Reglas y errores comunes \{#rules-and-pitfalls\}
+
 | Haz esto | No hagas esto | Por qué |
 |---|---|---|
-| Obtén el placement que vas a mostrar.                                                                                  | Precargues todos los placements de forma concurrente al inicio.        | La precarga masiva bloquea el hilo principal y produce una pantalla en negro durante el pico.                                  |
-| Llama a `getPaywall` después de que la atribución haya tenido tiempo de resolverse — por ejemplo, 1–2 segundos después de `activate` o tras dispararse `didUpdateProfileStream`. | Llames a `getPaywall` en `main()` antes de `runApp`.         | La atribución aún no ha llegado. El paywall se resuelve contra la audiencia por defecto y omite en silencio los segmentos y la personalización de ASA. |
-| Establece un `loadTimeout` y configura un [paywall de respaldo](fallback-paywalls) para cada placement.                             | Esperes indefinidamente en `getPaywall`.                     | Sin un timeout, los usuarios con mala conectividad ven una pantalla en blanco hasta que se resuelve la red — o cierran la app.     |
-Consulta [Obtener paywalls y productos](fetch-paywalls-and-products-flutter) para la referencia de los parámetros `fetchPolicy` y `loadTimeout`, y [Placements](placements) para elegir el placement adecuado.
-## Ajuste para mala conectividad \{#tune-for-poor-connectivity\}
+| Obtén el placement que vas a mostrar o precarga el caché con [`preloadFlows`](#preload-placements) (SDK 4.3.0+). | Lanza tus propias llamadas concurrentes a `getFlow` al arrancar. | Un burst de prefetch manual bloquea el hilo principal y provoca una pantalla en negro. `preloadFlows` está diseñado para esto y envía el lote al SDK nativo en una sola llamada. |
+| Llama a `getFlow` después de que la atribución haya tenido tiempo de resolverse — por ejemplo, 1-2 segundos después de `activate` o tras dispararse `didUpdateProfileStream`. | Llames a `getFlow` en `main()` antes de `runApp`. | La atribución aún no ha llegado. El flow se resuelve contra la audiencia por defecto y omite silenciosamente los segmentos y la personalización de ASA. |
+| Mantén el `loadTimeout` predeterminado de 5 segundos o establece otro valor, y configura un [paywall de respaldo](fallback-paywalls) para cada placement. | Pases a `getFlow` un `loadTimeout` tan grande que nunca se dispare. | Si el timeout nunca se activa, los usuarios con mala conexión ven una pantalla en blanco hasta que la red responde, o cierran la app. |
 
-Para mercados con conectividad consistentemente deficiente (zonas rurales, transporte, regiones afectadas por enrutamiento):
+Consulta [Obtener paywalls y productos personalizados](fetch-paywalls-and-products-flutter) para la referencia de los parámetros `fetchPolicy` y `loadTimeout`, y [Placements](placements) para elegir el placement adecuado.
 
-- Establece `fetchPolicy: AdaptyPaywallFetchPolicy.returnCacheDataElseLoad` en cada carga excepto la primera.
+## Precargar placements \{#preload-placements\}
+
+:::info
+`preloadFlows` y `preloadFlowsForDefaultAudience` están disponibles a partir de la versión 4.3.0 del SDK.
+:::
+
+`preloadFlows` guarda en caché el JSON del flow con antelación. Luego lo utilizas de la forma habitual: `getFlow` para obtener el flow y `createFlowView` para su vista.
+
+`fetchPolicy` decide qué capa lee primero un `getFlow` posterior, no si puede acceder a la caché:
+
+- `AdaptyFlowFetchPolicy.returnCacheDataElseLoad` lee primero la copia precargada y solo accede a la red cuando no hay nada en caché. `AdaptyFlowFetchPolicy.returnCacheDataIfNotExpiredElseLoad(maxAge)` hace lo mismo mientras la copia sea más reciente que `maxAge`.
+- El valor predeterminado, `AdaptyFlowFetchPolicy.reloadRevalidatingCacheData`, accede primero a la red y recurre a la copia precargada cuando la solicitud falla o se agota el tiempo de espera.
+
+La precarga es beneficiosa en cualquier caso, pero de distinta forma: una política cache-first elimina la solicitud, mientras que la predeterminada la mantiene y obtiene una copia en caché como respaldo. En un [dispositivo de prueba](test-devices), `getFlow` omite la caché con cualquier política y solo usa la copia precargada si falla la solicitud de red.
+
+Úsalo cuando sepas qué placements necesitará la sesión pero no quieras mostrarlos todavía — por ejemplo, justo después de que `activate` e `identify` completen, para el flow detrás de un botón que el usuario aún no ha pulsado.
+
+```dart showLineNumbers
+try {
+  await Adapty().preloadFlows(
+    placementIds: ['onboarding', 'main_paywall'],
+    loadTimeout: const Duration(seconds: 5),
+  );
+} on AdaptyError catch (adaptyError) {
+  // at least one placement failed to preload
+}
+
+// Later, when the user reaches the paywall:
+final flow = await Adapty().getFlow(
+  placementId: 'main_paywall',
+  fetchPolicy: AdaptyFlowFetchPolicy.returnCacheDataElseLoad,
+);
+```
+
+**Parámetros:**
+
+- `placementIds` (obligatorio): los placements a precargar.
+- `loadTimeout` (opcional): cuánto tiempo espera la precarga para los flows con audiencia específica. Por defecto son 5 segundos; los valores por debajo de 1 segundo se elevan a 1 segundo. Cuando se alcanza el tiempo límite, el SDK puede cargar los flows de la audiencia predeterminada en su lugar.
+
+**Comportamiento que conviene conocer:**
+
+- La llamada falla solo cuando se han intentado todos los placements, con un único `AdaptyError` que cubre todos los placements fallidos. El fallo en un placement no detiene los demás, y los placements que se cargaron correctamente permanecen en caché.
+- La precarga siempre va a la red: no tiene `fetchPolicy` propia.
+- La precarga solo calienta la caché. No devuelve contenido — para mostrarlo, debes llamar a `getFlow`.
+
+### Qué cubre una precarga \{#what-a-preload-covers\}
+
+Un flow llega a la pantalla por capas. Una precarga cubre la primera, exactamente igual que `getFlow`:
+
+| Capa | Obtenida por | Precargada con un preload |
+|---|---|---|
+| JSON del flow — la variante elegida, sus IDs de producto y el Remote Config | `getFlow` | Sí |
+| Diseño de la UI — la estructura, el estilo y el texto de la pantalla | `createFlowView` | No |
+| Imágenes, incluido el fotograma estático que reemplaza a un elemento de vídeo | `createFlowView`, en segundo plano | No |
+| Productos | `createFlowView` o `getPaywallProducts` | No |
+| Archivos de vídeo | El reproductor del sistema en iOS y ExoPlayer en Android, mientras se renderiza la pantalla | No. En Android, el SDK nativo almacena en caché hasta 50 MB de vídeo reproducido |
+
+`createFlowView` busca el diseño en tres lugares, en este orden:
+
+1. La caché en disco del SDK nativo, que se mantiene entre reinicios de la app.
+2. Tu [paywall de respaldo](flutter-use-fallback-paywalls) para SDK 4.4 o posterior, si lo descargaste después de publicar el flow por última vez.
+3. Adapty, a través de la red. Esto implica un viaje de ida y vuelta, incluso después de una precarga. La primera vez que la app muestra cada versión publicada del flow, el SDK nativo realiza esta solicitud. Después guarda el diseño en la caché en disco.
+
+Cuando el `loadTimeout` de `createFlowView` se activa, el SDK nativo no usa el respaldo: solicita el layout de nuevo desde la API de Adapty. El `loadTimeout` no limita esa segunda solicitud.
+
+### Omitir la segmentación de audiencia \{#skip-audience-segmentation\}
+
+Para calentar la caché sin esperar la segmentación de audiencia, usa la variante de audiencia predeterminada. No tiene ningún tiempo de espera:
+
+```dart showLineNumbers
+await Adapty().preloadFlowsForDefaultAudience(placementIds: ['main_paywall']);
+```
+
+Un `getFlowForDefaultAudience` posterior lee la copia de la misma forma en que `getFlow` lee una copia de `preloadFlows`.
+
+## Mostrar el contenido multimedia de la primera pantalla desde el bundle de la app \{#show-first-screen-media-from-the-app-bundle\}
+
+Un flow descarga sus imágenes y vídeos desde Adapty. Para mostrar el contenido multimedia de la primera pantalla al instante, sírvelo desde el bundle de la app. Es una buena forma de reutilizar recursos que ya incluyes en la app, como los visuales de un onboarding nativo existente.
+
+1. En el Flow & Paywall Builder, asigna un [ID de medio personalizado](custom-media#custom-media-id) a la imagen o el vídeo. El archivo que subas ahí se usará como respaldo.
+2. Añade el archivo a los assets de Flutter y regístralo en `assets` dentro de `pubspec.yaml`.
+3. Al crear la vista del flow, pasa el archivo incluido para ese ID en `customAssets`:
+
+```dart showLineNumbers
+// "welcome_video" is the custom media ID set in the Flow & Paywall Builder
+final bundledAssets = {
+  'welcome_video': AdaptyCustomAsset.localVideoAsset(
+    assetId: 'assets/videos/welcome.mp4',
+  ),
+};
+
+try {
+  final view = await AdaptyUI().createFlowView(
+    flow: flow,
+    customAssets: bundledAssets,
+  );
+} on AdaptyError catch (e) {
+  // handle the error
+}
+```
+
+Los archivos incluidos en el bundle aumentan el tamaño de descarga de tu app, así que incluye solo los contenidos multimedia que los usuarios ven primero.
+
+Una imagen incluida en el bundle aparece de inmediato, pero el SDK nativo sigue descargando la imagen subida en segundo plano.
+
+Los archivos multimedia que no incluyas en el bundle aparecerán igualmente de inmediato: el layout del flow incluye una copia en baja resolución de cada imagen, incluyendo el fotograma estático de los vídeos, y la muestra hasta que se cargue el archivo completo.
+
+Para la referencia completa de `customAssets`, consulta [Personalizar assets](flutter-get-pb-paywalls#customize-assets).
+
+## Optimización para conectividad deficiente \{#tune-for-poor-connectivity\}
+
+Para mercados con conectividad habitualmente deficiente (zonas rurales, transporte público, regiones con problemas de enrutamiento):
+
+- Establece `fetchPolicy: AdaptyFlowFetchPolicy.returnCacheDataElseLoad` en cada fetch excepto el primero.
 - Configura un [paywall de respaldo](fallback-paywalls) para cada placement en el Adapty Dashboard.
-- Establece `loadTimeout` en 3–5 segundos y acepta el respaldo cuando se agote el tiempo.
-- No condicionales la visualización del paywall a `getProfile()`. Llama a `getPaywall` de forma independiente para que un perfil lento no bloquee la interfaz.
+- Equilibra `loadTimeout` entre velocidad y targeting. Con un tiempo de espera más corto, los usuarios ven el respaldo antes. Con uno más largo, el flow con targeting tiene más tiempo para cargarse.
+- [Mantén el flow ligero](flow-size), para que su layout se descargue antes.
+- No condicionar la visualización del flow a `getProfile()`. Llama a `getFlow` de forma independiente para que un perfil lento no bloquee la UI.

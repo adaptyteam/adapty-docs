@@ -46,7 +46,7 @@ ground truth; one has none, and pretending otherwise is how this zone goes wrong
   makes the array optional (`src/types/index.ts`), which is why the RN and Capacitor snippets use
   `?.includes(...)`.
 - **Every number in the timing advice is an unrecorded judgment call.** "1–2 seconds after `activate`",
-  "`loadTimeout` 3–5 s", "a 3–5 second timer", "30 s of listening", "usually arrives within a few
+  "`loadTimeout` 3–5 s" (dropped from the articles on 2026-11-24), "a 3–5 second timer", "30 s of listening", "usually arrives within a few
   seconds" — none traces to code, a spec, or a ticket. The only adjacent checkable fact is that
   `loadTimeout` defaults to 5 s, stated in `fetch-paywalls-and-products`, so "3–5 s" is a deliberate
   tightening of a documented default. The founding commits carry one-line messages with no ticket or PR
@@ -142,35 +142,37 @@ recommendations become articles and which stay where the mechanism is documented
 | best-practices | ios-best-practices | android-best-practices | react-native-best-practices | flutter-best-practices | unity-best-practices | kmp-best-practices | capacitor-best-practices |
 | optimize-paywall-fetching | ios-optimize-paywall-fetching | android-optimize-paywall-fetching | react-native-optimize-paywall-fetching | flutter-optimize-paywall-fetching | unity-optimize-paywall-fetching | kmp-optimize-paywall-fetching | capacitor-optimize-paywall-fetching |
 | sdk-call-order | ios-sdk-call-order | android-sdk-call-order | react-native-sdk-call-order | flutter-sdk-call-order | unity-sdk-call-order | kmp-sdk-call-order | capacitor-sdk-call-order |
-| show-aa-targeted-paywall | ios-show-aa-targeted-paywall |  | react-native-show-aa-targeted-paywall | flutter-show-aa-targeted-paywall |  |  | capacitor-show-aa-targeted-paywall |
+| show-aa-targeted-paywall | ios-show-aa-targeted-paywall |  | react-native-show-aa-targeted-paywall | flutter-show-aa-targeted-paywall | unity-show-aa-targeted-paywall | kmp-show-aa-targeted-paywall | capacitor-show-aa-targeted-paywall |
 
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
 | android-best-practices | entry | dev | 0 | android |
-| android-optimize-paywall-fetching | — | dev | 2 | android |
-| android-sdk-call-order | — | dev | 2 | android |
+| android-optimize-paywall-fetching | — | dev | 7 | android |
+| android-sdk-call-order | — | dev | 3 | android |
 | capacitor-best-practices | entry | dev | 0 | capacitor |
-| capacitor-optimize-paywall-fetching | — | dev | 2 | capacitor |
+| capacitor-optimize-paywall-fetching | — | dev | 6 | capacitor |
 | capacitor-sdk-call-order | — | dev | 2 | capacitor |
 | capacitor-show-aa-targeted-paywall | — | dev | 4 | capacitor |
 | flutter-best-practices | entry | dev | 0 | flutter |
-| flutter-optimize-paywall-fetching | — | dev | 2 | flutter |
+| flutter-optimize-paywall-fetching | — | dev | 6 | flutter |
 | flutter-sdk-call-order | — | dev | 2 | flutter |
 | flutter-show-aa-targeted-paywall | — | dev | 4 | flutter |
 | ios-best-practices | entry | dev | 0 | ios |
-| ios-optimize-paywall-fetching | — | dev | 4 | ios |
-| ios-sdk-call-order | — | dev | 3 | ios |
+| ios-optimize-paywall-fetching | — | dev | 7 | ios |
+| ios-sdk-call-order | — | dev | 4 | ios |
 | ios-show-aa-targeted-paywall | — | dev | 4 | ios |
 | kmp-best-practices | entry | dev | 0 | kmp |
-| kmp-optimize-paywall-fetching | — | dev | 2 | kmp |
+| kmp-optimize-paywall-fetching | — | dev | 3 | kmp |
 | kmp-sdk-call-order | — | dev | 2 | kmp |
+| kmp-show-aa-targeted-paywall | — | dev | 3 | kmp |
 | react-native-best-practices | entry | dev | 0 | react-native |
-| react-native-optimize-paywall-fetching | — | dev | 2 | react-native |
+| react-native-optimize-paywall-fetching | — | dev | 6 | react-native |
 | react-native-sdk-call-order | — | dev | 2 | react-native |
 | react-native-show-aa-targeted-paywall | — | dev | 4 | react-native |
 | unity-best-practices | entry | dev | 0 | unity |
-| unity-optimize-paywall-fetching | — | dev | 2 | unity |
+| unity-optimize-paywall-fetching | — | dev | 6 | unity |
 | unity-sdk-call-order | — | dev | 2 | unity |
+| unity-show-aa-targeted-paywall | — | dev | 3 | unity |
 <!-- /mill:auto -->
 ## Reader jobs
 
@@ -197,10 +199,59 @@ deliberately not repeated here.
 | "web purchase not visible in the app", "web2app install not linked", "Stripe/Paddle checkout missing on device" | `sdk-call-order`, the Web2app section — not an integration or webhook bug. The device's first `activate()` makes a fresh anonymous profile with no link to the web one, so the purchase stays invisible until `identify` then `restorePurchases`. |
 | "wrong audience paywall returned", "audience segments silently bypassed", "ASA personalization not applied" | `optimize-paywall-fetching` when the cause is timing: `getPaywall` called at launch (`App.init()`, `Application.onCreate()`, `main()`, `Awake()`) resolves before attribution lands, against the default audience, with no error. Rule out two other causes first — an explicit default-audience fetch (`sdk-flows-manual`) and fetching before `identify` resolves (`sdk-call-order`). |
 | "black screen on app launch", "app freezes for a second at startup" | `optimize-paywall-fetching`. The documented cause is bulk-prefetching every placement concurrently, which blocks the main thread (JS thread on React Native) during the burst. Fetch only the placement you're about to show. |
-| "paywall fetch is slow", "reduce time to first paywall", "blank screen while the paywall loads", "users on rural / transit connections" | `optimize-paywall-fetching`. Cache-first fetch policy after the first fetch, a 3–5 s `loadTimeout` (`loadTimeoutMs` on React Native and Capacitor), a dashboard fallback paywall per placement, and never gating display on `getProfile`. The default-audience fetch is the other speed lever, and it costs targeting: see the corresponding row in `sdk-flows-manual`. |
-| "Apple Search Ads paywall shows the wrong offer on first open", "`appliedAttributionSources`", "wait for attribution before showing the paywall" | `show-aa-targeted-paywall`. Scope first: this only ever affects the **first** launch — Apple Ads attribution is stored on the profile permanently, so later launches return the segmented paywall with no wait. Requires SDK 3.17.1+ (Flutter 3.17.0+), and only iOS, React Native, Flutter and Capacitor have this article. |
+| "paywall fetch is slow", "reduce time to first paywall", "blank screen while the paywall loads", "users on rural / transit connections" | `optimize-paywall-fetching`. Cache-first fetch policy after the first fetch, a `loadTimeout` balanced between speed and targeting (`loadTimeoutMs` on React Native and Capacitor; the 3–5 s figure was dropped on 2026-11-24, because nothing sourced it), a dashboard fallback paywall per placement, and never gating display on `getProfile`. The default-audience fetch is the other speed lever, and it costs targeting: see the corresponding row in `sdk-flows-manual`. |
+| "Apple Search Ads paywall shows the wrong offer on first open", "`appliedAttributionSources`", "wait for attribution before showing the paywall" | `show-aa-targeted-paywall`. Scope first: this only ever affects the **first** launch — Apple Ads attribution is stored on the profile permanently, so later launches return the segmented paywall with no wait. Requires SDK 3.17.1+ (Flutter 3.17.0+), and every platform except Android has this article. |
 | "should we delay the paywall, or swap it once attribution lands?" | `show-aa-targeted-paywall` — the recommended pattern deliberately diverges by platform, so don't mirror one platform's article into another's. iOS and Flutter wait for attribution against a timeout and fall back to `getPaywallForDefaultAudience`; React Native and Capacitor show a paywall immediately and refetch when `apple_search_ads` appears. |
 | "give us a production-readiness checklist", "recommended integration patterns", "common integration mistakes" | The `best-practices` family, but expect the ticket to need more: those pages are card lists with no prose of their own. The actual content is the three families above, and a checklist-shaped request usually also reaches into `sdk-quickstart` and the platform's error-handling article. |
 
 ## Gaps and misses
 
+
+**First-screen media, added to `ios-optimize-paywall-fetching` on 2026-09-28 (branch `preload-assets`, iOS
+only; the other six members of the family follow after review).** New section "Show first-screen media from
+the app bundle": set a custom media ID in the builder, bundle the file, pass it through `assetsResolver`; one
+sentence on app-size cost. Scope was cut on review from an app-specific pattern (fetch the configuration
+early, nil-check, fall back to native onboarding) to custom assets only — the article already covers timing
+and preload, so don't add the nil-check pattern back. The approach came from the solutions team and
+mobile devs.
+Verified against `ios-sdk` `origin/master` (`706d185b`, 2026-07-30):
+- Remote images in the view configuration can carry a base64 low-res copy: `preview_value` decoded into
+  `previewRaster` in `Sources.UIBuilder/UISchema/Assets/Schema.ImageData.swift:48`, rendered as
+  `.remote(url:preview:)` in `UIBuilder/Logic/Assets/AdaptyUIAsset+Resolved.swift:64`. A video's still frame
+  is an `ImageData` too, so it gets the same preview. The field is *optional* in the decoder, but a published config always carries it: the backend builds it at
+  upload (WebP, at most 300 px on the longer side, quality 50), and an image without one gets a transparent 1×1
+  placeholder (backend and builder code, 2026-11-23). The 4–10 KB per preview (from the mobile team) is still
+  unmeasured: an offline encode of sample images at those settings gave about 1–12 KB of base64.
+- `[String: AdaptyUICustomAsset]` conforms to `AdaptyUIAssetsResolver` (`AdaptyUIAssetsResolver.swift:68`);
+  `AdaptyUICustomVideoAsset.file(url:preview:resolution:)` and `AdaptyUICustomImageAsset.file/.remote/.uiImage`
+  at `:14-24`.
+- **Rolled out to all seven on 2026-09-28**, same heading, inserted before "Tune for poor connectivity".
+  Android parses the same field (`PREVIEW_VALUE = "preview_value"`,
+  `adapty-ui/.../mapping/viewconfig/ViewConfigurationAssetMapping.kt:26,94`, `android-sdk` 4.1.1); the five
+  wrappers render through the native UI, so the preview claim follows from iOS + Android. Asset APIs checked:
+  Android `AdaptyCustomVideoAsset.file(fileLocation, preview, resolution)` (`AdaptyCustomAssets.kt:131`, preview
+  has no default) and `getFlowView(…, customAssets)`; jscore `AdaptyCustomVideoAsset` `fileLocation` /
+  `relativeAssetPath` (`src/ui-builder/types.ts:485`, v4.1.2); Flutter `AdaptyCustomAsset.localVideoAsset`
+  (4.1.1); Unity `AdaptyCustomAsset.LocalVideoFile` + `SetCustomAssets` (4.1.2); KMP
+  `AdaptyCustomAsset.localVideoResource` (4.1.0). Wrapper articles say "the flow's layout" instead of "the view
+  configuration", since their readers never call `getFlowConfiguration`.
+
+**Corrections made 2026-11-24 across the seven `optimize-paywall-fetching` articles** (checked in `ios-sdk` and
+`android-sdk` 4.4.1, and in each wrapper's latest v4 tag):
+- `getFlow` always has a timeout: 5 s by default on every platform. Only a huge value disables it: iOS `.infinity`
+  saturates to a timer that never fires, Android `TimeInterval.INFINITE` drops the timer, React Native and Capacitor
+  turn `Infinity` into 5 s, and Unity turns `Timeout.InfiniteTimeSpan` into the 1 s minimum. The articles' "don't wait
+  indefinitely" row read as if no timeout were the default.
+- The layout download (`getFlowConfiguration`; `createFlowView` in the wrappers) has no fallback when its timeout
+  fires: the SDK requests the layout again from the API, and `loadTimeout` doesn't bound that request (iOS
+  `Sources/Placements/UIBuilder/Adapty+UIBuilder.swift:153-179`; Android `FlowInteractor.kt:81-98`).
+- The SDK reads a layout from its disk cache, then from the bundled fallback file, then the network. The fallback
+  file the dashboard generates for SDK 4.4+ carries the layouts of its variations (backend code, 2026-11-23). A
+  layout belongs to one published version, so every publish costs each device one more download.
+- Bundled custom assets don't stop the download: the image prefetch never sees `assetsResolver` / `customAssets`
+  (iOS `Adapty+UIBuilder.swift:15-21, 51`; Android `AdaptyInternal.kt:456`). A bundle saves the wait, not the bytes.
+- Android caches played video (a 50 MB LRU cache in the `adapty-ui-video` module), and Flutter ships that module, so
+  "Video files: not cached by the SDK" was wrong for Android and Flutter. What a video element renders on Android in
+  React Native, Capacitor, Unity and KMP apps, which don't declare the module, is open: not traced.
+- Still unanchored: the "a prefetch burst blocks the main thread and produces a black screen" row on every page. On
+  iOS `getFlow` runs on `AdaptyActor`, and on Android on `Dispatchers.IO`; no main-thread path was found.

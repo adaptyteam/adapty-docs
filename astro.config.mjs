@@ -12,7 +12,7 @@ import rehypeSlug from 'rehype-slug';
 import { highlightLinesTransformer } from './src/plugins/shiki-highlight-transformer.mjs';
 import { remarkAside } from './src/plugins/remark-aside.mjs';
 import { remarkTransformRequire } from './src/plugins/remark-transform-require.mjs';
-import { remarkTransformDetails } from './src/plugins/remark-transform-details.mjs';
+import { remarkNormalizeDetails } from './src/plugins/remark-normalize-details.mjs';
 import { remarkHeadingId } from './src/plugins/remark-heading-id.mjs';
 import { remarkTransformLinks } from './src/plugins/remark-transform-links.mjs';
 import { remarkStripImports } from './src/plugins/remark-strip-imports.mjs';
@@ -23,7 +23,7 @@ import { remarkFloatClear } from './src/plugins/remark-float-clear.mjs';
 // Slugs of pages carrying `noindex: true` in their frontmatter. The sitemap
 // filter below only receives a URL, so noindex slugs are listed here by hand —
 // add any new one to both the frontmatter and this list.
-const NOINDEX_SLUGS = ['flows-with-your-own-payments', 'ua-meta-ads'];
+const NOINDEX_SLUGS = ['ua-meta-ads'];
 
 // https://astro.build/config
 export default defineConfig({
@@ -62,7 +62,7 @@ export default defineConfig({
   },
 
   markdown: {
-    remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkFloatClear, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
+    remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkFloatClear, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkNormalizeDetails, remarkTransformLinks],
     rehypePlugins: [rehypeSlug],
     shikiConfig: {
       theme: 'github-light',
@@ -110,7 +110,7 @@ export default defineConfig({
       },
     }),
     mdx({
-      remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkFloatClear, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
+      remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkFloatClear, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkNormalizeDetails, remarkTransformLinks],
       rehypePlugins: [rehypeSlug],
       shikiConfig: {
         theme: 'github-light',

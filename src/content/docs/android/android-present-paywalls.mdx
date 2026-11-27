@@ -8,20 +8,19 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
-import SampleApp from '@site/src/components/reusable/SampleApp.md';
 
 <SDKv4>
 
 <MethodPromo method="getFlow" label="Display flows and paywalls" />
 
-If you've created a flow or paywall, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a flow or paywall contains both what should be shown within it and how it should be shown.
+If you've created a flow, or a paywall in the old Paywall Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a flow or paywall contains both what should be shown within it and how it should be shown.
 
 :::warning
 
-This guide covers flows and **new Paywall Builder paywalls** rendered by Adapty. The process differs for remote config paywalls and [Observer mode](observer-vs-full-mode).
+This guide covers flows and paywalls rendered by Adapty. The process differs for custom paywalls and [Observer mode](observer-vs-full-mode).
 
-- For presenting **Remote config paywalls**, see [Render paywall designed by remote config](present-remote-config-paywalls).
-- For presenting **Observer mode paywalls**, see [Android - Present Paywall Builder paywalls in Observer mode](android-present-paywall-builder-paywalls-in-observer-mode)
+- To present custom paywalls, see [Present custom paywalls](present-remote-config-paywalls-android).
+- For presenting **Observer mode paywalls**, see [Android - Present flows in Observer mode](android-present-paywall-builder-paywalls-in-observer-mode)
 
 :::
 
@@ -135,8 +134,8 @@ Request parameters:
 | **eventListener**             | optional | Provide an `AdaptyFlowEventListener` to observe flow events. Extending `AdaptyFlowDefaultEventListener` is recommended for ease of use. Refer to [Handle flow & paywall events](android-handling-events)  topic for more details.                                                                                                                                                                                                                                       |
 | **insets**                    | optional | <p>Insets are the spaces around the flow that prevent tapable elements from getting hidden behind system bars.</p><p>Default: `Unspecified` which means Adapty will automatically adjust the insets, which works great for edge-to-edge flows. </p><p>If your flow isn’t edge-to-edge, you might want to set custom insets. For how to do that, read in the [Change flow insets](android-present-paywalls#change-flow-insets) section below.</p> |
 | **customAssets**              | optional | Pass an `AdaptyCustomAssets` object to replace images and videos in your flow or paywall at runtime. Refer to [Customize assets](android-get-pb-paywalls#customize-assets) for more details.                                                                                                                                                      |
-| **tagResolver**               | optional | Use `AdaptyUiTagResolver` to resolve custom tags within the flow text. This resolver takes a tag parameter and resolves it to a corresponding string. Refer to Custom tags in Paywall Builder topic for more details.                                                                                                                                                                                                      |
-| **timerResolver**             | optional | Pass the resolver here if you are going to use custom timer functionality.                                                                                                                                                                                                                                                                                                                                                                                      |
+| **tagResolver**               | optional | An `AdaptyUiTagResolver` that returns your app's values for the flow's [custom tags](flow-custom-tags). For details, read [Pass data to flows](android-flow-custom-tags).                                                                                                                                                                                                      |
+| **timerResolver**             | optional | An `AdaptyUiTimerResolver` that returns the end date of each **Developer defined** timer in the flow, by Timer ID. Default: `AdaptyUiTimerResolver.Default`, which counts down one hour from the screen open. For details, read [Use developer-defined timer](#use-developer-defined-timer). |
 | **customElementsResolver**    | <p>optional</p><p>SDK 4.4+</p> | An `AdaptyCustomElementsResolver` that returns your app's native views for the flow's [custom elements](flow-custom-elements). Replaces the app-wide resolver in this flow view. For details, read [Display custom elements](android-flow-custom-elements). |
 
 <SampleApp />
@@ -206,23 +205,25 @@ ViewCompat.setOnApplyWindowInsetsListener(flowView, (view, insets) -> {
 
 ## Use developer-defined timer
 
-To use developer-defined timers in your mobile app, create a `timerResolver` object—a dictionary or map that pairs custom timers with the string values that will replace them when the flow is rendered. Here's an example:
+Use this section for a timer with the **Developer defined** behavior in the Flow & Paywall Builder. In the builder, each such timer has a **Timer ID** (see [Let your app set the end date](flow-timer#let-your-app-set-the-end-date)), and your app sets the end date for it. Use the same Timer ID in your code as in the builder, character for character, including letter case and spaces. If the IDs differ, the timer gets no end date from your app.
+
+To set the end dates, create an `AdaptyUiTimerResolver`. It returns a `Date`, the end date, for each Timer ID. Here's an example:
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
 import java.util.Calendar
-import java.util.Date
-import java.util.TimeZone
 
 ...
 
 val customTimers = mapOf(
-    "CUSTOM_TIMER_NY" to Calendar.getInstance(TimeZone.getDefault()).apply { set(2025, 0, 1) }.time, // New Year 2025
+    "CUSTOM_TIMER_NY" to Calendar.getInstance().apply {
+        set(get(Calendar.YEAR) + 1, Calendar.JANUARY, 1, 0, 0, 0)
+    }.time, // next New Year's Day
 )
 val timerResolver = AdaptyUiTimerResolver { timerId ->
-    customTimers.getOrElse(timerId, { Date(System.currentTimeMillis() + 3600 * 1000L) /* in 1 hour */ } )
+    customTimers[timerId] ?: AdaptyUiTimerResolver.Default.timerEndAtDate(timerId) // in 1 hour
 }
 ```
 
@@ -232,22 +233,18 @@ val timerResolver = AdaptyUiTimerResolver { timerId ->
 ```java showLineNumbers
 import java.util.Calendar;
 import java.util.Date;
-import java.util.TimeZone;
 
 ...
 
+Calendar newYear = Calendar.getInstance();
+newYear.set(newYear.get(Calendar.YEAR) + 1, Calendar.JANUARY, 1, 0, 0, 0); // next New Year's Day
+
 Map<String, Date> customTimers = new HashMap<>();
-customTimers.put(
-        "CUSTOM_TIMER_NY",
-        new Calendar.Builder().setTimeZone(TimeZone.getDefault()).setDate(2025, 0, 1).build().getTime()
-);
-AdaptyUiTimerResolver timerResolver = new AdaptyUiTimerResolver() {
-    @NonNull
-    @Override
-    public Date timerEndAtDate(@NonNull String timerId) {
-        Date date = customTimers.get(timerId);
-        return date != null ? date : new Date(System.currentTimeMillis() + 3600 * 1000L); /* in 1 hour */
-    }
+customTimers.put("CUSTOM_TIMER_NY", newYear.getTime());
+
+AdaptyUiTimerResolver timerResolver = timerId -> {
+    Date date = customTimers.get(timerId);
+    return date != null ? date : AdaptyUiTimerResolver.Default.timerEndAtDate(timerId); // in 1 hour
 };
 ```
 
@@ -255,17 +252,25 @@ AdaptyUiTimerResolver timerResolver = new AdaptyUiTimerResolver() {
 
 </Tabs>
 
-In this example, `CUSTOM_TIMER_NY` is the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. The `timerResolver` ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer’s end time, such as New Year’s Day, minus the current time).
+Pass `timerResolver` to `AdaptyUI.getFlowView`, `AdaptyFlowView.showFlow`, or `AdaptyFlowScreen`, as in the examples at the start of this page.
+
+In this example, `CUSTOM_TIMER_NY` is the Timer ID of a **Developer defined** timer in the builder. The timer shows the time left until the next New Year's Day, for example `13d 09h 03m 34s`.
+
+The SDK calls the resolver each time a screen with the timer opens. If the resolver returns a date in the past, the timer shows zero at once and its **On timer end** trigger runs. `AdaptyUiTimerResolver.Default`, which the SDK uses when you pass no resolver, counts down one hour from the screen open.
 
 ## Use custom tags
 
-To use custom tags in your mobile app, create a `tagResolver` object—a dictionary or map that pairs custom tags with the string values that will replace them when the flow is rendered. Here's an example:
+:::link
+Main article: [Pass data to flows](android-flow-custom-tags)
+:::
+
+Create an `AdaptyUiTagResolver` that returns your app's value for each [custom tag](flow-custom-tags) in the flow:
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
 
 ```kotlin showLineNumbers
-val customTags = mapOf("USERNAME" to "John")
+val customTags = mapOf("username" to "DragonSlayer42")
 val tagResolver = AdaptyUiTagResolver { tag -> customTags[tag] }
 ```
 
@@ -274,16 +279,16 @@ val tagResolver = AdaptyUiTagResolver { tag -> customTags[tag] }
 
 ```java showLineNumbers
 Map<String, String> customTags = new HashMap<>();
-customTags.put("USERNAME", "John");
+customTags.put("username", "DragonSlayer42");
 AdaptyUiTagResolver tagResolver = customTags::get;
 ```
 
 </TabItem>
 </Tabs>
 
-In this example, `USERNAME` is a custom tag you entered in the Adapty dashboard as `<USERNAME/>`. The `tagResolver` ensures that your app dynamically replaces this custom tag with the specified value—like `John`.
+In this example, `username` is the name of a custom tag in your flow. Users see "DragonSlayer42" in place of the tag.
 
-We recommend creating and populating the `tagResolver` right before presenting your flow. Once it's ready, pass it to the AdaptyUI method you use for presenting the flow.
+Pass the resolver in the `tagResolver` parameter of `AdaptyUI.getFlowView`, `AdaptyFlowView.showFlow`, or `AdaptyFlowScreen`.
 
 ## Change flow loading indicator color
 
@@ -305,9 +310,9 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 
 :::warning
 
-This guide is for **new Paywall Builder paywalls** only which require SDK v3.0. The process for presenting paywalls differs for paywalls designed with different versions of Paywall Builde, remote config paywalls, and [Observer mode](observer-vs-full-mode).
+This guide covers only paywalls built in the old Paywall Builder for **Adapty SDK 3.x**. They require SDK v3.0. Presenting a paywall built for SDK 2.x or earlier, a custom paywall, or a paywall in [Observer mode](observer-vs-full-mode) works differently.
 
-- For presenting **Remote config paywalls**, see [Render paywall designed by remote config](present-remote-config-paywalls).
+- To present custom paywalls, see [Present custom paywalls](present-remote-config-paywalls-android).
 - For presenting **Observer mode paywalls**, see [Android - Present Paywall Builder paywalls in Observer mode](android-present-paywall-builder-paywalls-in-observer-mode)
 
 :::

@@ -41,12 +41,31 @@ const toPascalCase = (str) => {
     return str.replace(/(^\w|-\w)/g, clear => clear.replace('-', '').toUpperCase());
 };
 
+// Drops MDX import statements. They sit outside code fences; an `import` line inside a fence
+// is sample code (Swift, Kotlin, Java) and stays.
+function stripMdxImports(content) {
+    let fence = null; // the opening fence of the code block being read, such as ``` or ````
+    return content
+        .split('\n')
+        .filter((line) => {
+            if (!fence) {
+                const open = line.match(/^\s*(`{3,}|~{3,})/);
+                if (open) fence = open[1];
+                return open !== null || !/^import\s/.test(line);
+            }
+            const close = line.match(/^\s*(`{3,}|~{3,})\s*$/);
+            if (close && close[1][0] === fence[0] && close[1].length >= fence.length) fence = null;
+            return true;
+        })
+        .join('\n');
+}
+
 // Reusable snippets may be .mdx with frontmatter, import lines, and <Callout>
 // JSX wrappers — normalize to plain markdown before inlining into .md exports.
 function cleanReusableContent(content) {
     let cleaned = content.replace(/<!---.*?--->\s*\n?/gs, '');
     cleaned = cleaned.replace(/^\s*---\n[\s\S]*?\n---\s*\n?/, '');
-    cleaned = cleaned.replace(/^import\s+.*?;?\s*$/gm, '');
+    cleaned = stripMdxImports(cleaned);
     cleaned = cleaned.replace(
         /<Callout\s+type="([\w-]+)"[^>]*>\s*([\s\S]*?)\s*<\/Callout>/g,
         (_, type, body) => `:::${type}\n${body}\n:::`
@@ -99,7 +118,7 @@ function stripContent(content, reusableComponents) {
     processed = stripComments(processed);
 
     // 1. Remove imports
-    processed = processed.replace(/^import\s+.*?;?\s*$/gm, '');
+    processed = stripMdxImports(processed);
 
     // 2. Remove Zoom and ZoomImage tags
     processed = processed.replace(/<ZoomImage\s+[^>]*\/>/g, '');
@@ -109,6 +128,10 @@ function stripContent(content, reusableComponents) {
     // div-wrapped and bare iframes that predate it, which src/locales still
     // carries until each file is retranslated from its English source.
     processed = processed.replace(/<YouTube\b[^>]*\/>/g, '');
+    // A narrated walkthrough is a video player; like a YouTube embed, it carries nothing for a text reader.
+    processed = processed.replace(/<NarratedVideo\b[^>]*\/>/g, '');
+    // Demo loops are dropped like screenshots: the surrounding prose already states what they show.
+    processed = processed.replace(/<DocVideo\b[^>]*\/>/g, '');
     processed = processed.replace(/<div[^>]*>\s*<iframe\b[^>]*youtube\.com\/embed[\s\S]*?<\/div>/g, '');
     processed = processed.replace(/<iframe\b[^>]*youtube\.com\/embed[\s\S]*?(?:<\/iframe>|\/>)/g, '');
     processed = processed.replace(/<Zoom>(.*?)<\/Zoom>/gs, '$1');
@@ -116,6 +139,23 @@ function stripContent(content, reusableComponents) {
     // Replace Inline icon component with its alt text: <Inline id="..." alt="Edit" ... /> → Edit
     processed = processed.replace(/<Inline\s+[^>]*alt="([^"]*)"[^>]*\/>/g, '$1');
     processed = processed.replace(/<Inline\s+[^>]*\/>/g, '');
+
+    // Flatten <AgentChat> transcripts into labelled paragraphs: the caption
+    // first, then each <ChatTurn> as "**User:**", "**Agent:**" and so on.
+    processed = processed.replace(/<AgentChat\b([^>]*)>/g, (_, attrs) => {
+        const caption = attrs.match(/caption="([^"]*)"/)?.[1];
+        return caption ? `*${caption}*\n` : '';
+    });
+    processed = processed.replace(/<\/AgentChat>/g, '');
+    processed = processed.replace(/<ChatTurn\b([^>]*)>/g, (_, attrs) => {
+        const role = attrs.match(/role="([^"]*)"/)?.[1];
+        const summary = attrs.match(/summary="([^"]*)"/)?.[1];
+        if (role === 'user') return '\n**User:** ';
+        if (role === 'tool') return `\n**Agent ran:** ${summary ?? ''}\n`;
+        if (role === 'confirm') return `\n**Agent asks:** ${summary ?? ''}\n`;
+        return '\n**Agent:**\n';
+    });
+    processed = processed.replace(/<\/ChatTurn>/g, '');
 
     // Replace <SkillPromo ... /> with a plain-text promo + a markdown link to the skill repo
     processed = processed.replace(

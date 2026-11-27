@@ -1,0 +1,100 @@
+---
+title: "在 React Native SDK 中控制商店消息"
+description: "选择何时在 React Native 应用中显示 App Store 和 Google Play 关于价格上涨、账单问题和付款失败的消息，避免它们打断流程或用户引导。"
+metadataTitle: "控制商店消息 | React Native SDK | Adapty 文档"
+---
+
+App Store 和 Google Play 有时需要向用户显示有关其订阅的消息：
+
+- **App Store**：请求用户同意提价、账单问题通知或赢回优惠。默认情况下，StoreKit 会在应用打开时自行显示这些消息。
+- **Google Play**：通知用户订阅付款被拒绝，需要更新支付方式。默认情况下，Adapty SDK 会在应用的每个 `Activity` 启动时请求这些消息。
+
+无论如何，消息都可以显示在流程、用户引导或结账页面之上。如需自行控制显示时机，请将 Adapty SDK 切换为手动消息处理模式，并在不会打断用户操作时调用 `showStoreMessages`。
+
+:::warning
+在手动模式下，应用商店不会自动显示消息。如果你的应用从未调用 `showStoreMessages`，用户将永远看不到价格上涨同意请求、账单问题通知或付款失败通知。
+:::
+
+## 开始之前 \{#before-you-start\}
+
+你需要：
+
+- **Adapty React Native SDK 4.3.0 或更高版本**：旧版本不支持 store messages API。
+- **iOS 16 或更高版本**（用于 App Store 消息）：StoreKit 不会将消息传递给运行旧版本的应用。在 iOS 15 上，`getPendingStoreMessageTypes` 和 `showStoreMessages` 会抛出错误，因此如果你的应用支持 iOS 15，请仅在 iOS 16 及更高版本上调用它们。
+
+## 启用手动处理 \{#enable-manual-handling\}
+
+若要仅在应用调用 `showStoreMessages` 时显示商店消息，请在[激活 SDK](sdk-installation-react-native-pure#activate-adapty-module-of-adapty-sdk) 时将 `storeMessagesHandling` 设置为 `'manual'`：
+
+```typescript showLineNumbers title="App.tsx"
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+  storeMessagesHandling: 'manual', // 'auto' is the default
+});
+```
+
+在 iOS 上，SDK 会将每条 App Store 消息添加到当前应用会话的待处理列表中。在 Android 上，SDK 会停止自行请求 Google Play 消息。使用默认的 `'auto'` 值时，SDK 不会捕获 App Store 消息，因此在 iOS 上，`getPendingStoreMessageTypes` 和 `showStoreMessages` 将没有任何内容可返回或显示。
+
+## 获取待处理的消息类型 \{#get-pending-message-types\}
+
+在 iOS 上，若要查看是否有待处理的 App Store 消息，请调用 `getPendingStoreMessageTypes`。该方法会返回待处理消息的类型，但不会显示或移除这些消息：
+
+```typescript showLineNumbers
+const pendingTypes = await adapty.getPendingStoreMessageTypes();
+
+if (pendingTypes === null) {
+  // Android: Google Play decides whether a message applies when you show it
+} else if (pendingTypes.includes('billing_issue')) {
+  // For example, skip the upsell and show the billing message first
+}
+```
+
+在 Android 上，该方法返回 `null`：Google Play 不会主动上报待处理消息，只有在应用主动请求时才会决定是否有适用的消息。空数组表示 iOS 上没有待处理消息。
+
+每条 App Store 消息都属于以下类型之一：
+
+| 类型 | 消息 |
+|:-----|:--------|
+| `generic` | 通用的 App Store 消息。 |
+| `price_increase_consent` | 订阅价格上涨的同意请求。 |
+| `billing_issue` | 订阅账单问题通知。适用于 iOS 16.4 及更高版本。 |
+| `win_back_offer` | 符合条件的[赢回优惠](app-store-offers#win-back-offers)。适用于 iOS 18 及更高版本。 |
+
+SDK 无法识别的消息类型，其值为 `storekit_<number>`。
+
+## 显示消息 \{#show-messages\}
+
+当您的应用到达一个不会因商店消息打断用户的时机时——例如，用户关闭流程或完成用户引导之后——调用 `showStoreMessages`：
+
+```typescript showLineNumbers
+try {
+  await adapty.showStoreMessages();
+} catch (error) {
+  // handle the error
+}
+```
+
+- **iOS**：SDK 会逐条显示待处理消息。StoreKit 显示某条消息后，SDK 会将其从待处理列表中移除。若 StoreKit 显示失败，SDK 会将错误写入 Adapty 日志，保留该消息留待下次调用，并继续处理其余消息。
+- **Android**：SDK 会针对当前 `Activity` 向 Google Play 请求消息。Google Play 会自行判断消息是否适用于该用户，因此请求并不一定会触发消息显示。若用户通过消息修复了支付方式，SDK 会将用户的购买记录与 Adapty 同步，您的[用户画像监听器](react-native-listen-subscription-changes)将收到更新后的访问等级。
+
+在默认的 `'auto'` 模式下，你也可以在 Android 上调用 `showStoreMessages`——例如，在已经运行的 `Activity` 上重新请求消息。
+
+### 仅显示特定消息类型 \{#show-only-some-message-types\}
+
+如需只显示部分待处理的 App Store 消息，请在 `ios.filter` 中传入对应类型。其余消息将保持待处理状态：
+
+```typescript showLineNumbers
+await adapty.showStoreMessages({
+  ios: { filter: ['billing_issue', 'price_increase_consent'] },
+});
+```
+
+不传 `filter` 时，SDK 会显示所有待处理消息，包括未识别的类型。Android 会忽略 `filter`，并请求所有 Google Play 消息。
+
+### 错误 \{#errors\}
+
+`showStoreMessages` 会抛出一个 [`AdaptyError`](react-native-handle-errors)，错误码如下：
+
+| 错误码 | 名称 | 原因 |
+|:-----|:-----|:------|
+| 3201 | `operationInProgress` | 另一个 `showStoreMessages` 调用仍在显示消息。请等待其完成后再试。 |
+| 3202 | `resolverFailure` | 仅限 iOS：SDK 未找到处于前台激活状态的窗口场景来显示消息。请在应用处于前台时再次调用该方法。 |

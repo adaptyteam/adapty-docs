@@ -1,0 +1,160 @@
+---
+title: "Обработка запросов разрешений во флоу — Kotlin Multiplatform"
+description: "Запрашивайте у пользователей разрешение на push-уведомления из флоу в приложении на Kotlin Multiplatform с помощью AdaptyUISystemRequestsHandler и возвращайте ответ во флоу."
+metadataTitle: "Обработка разрешений во флоу — Kotlin Multiplatform | Документация Adapty"
+---
+
+[Флоу](adapty-flow-builder) может запрашивать у пользователей разрешение на отправку push-уведомлений с помощью действия **Request permission**, например на экране онбординга, где объясняется, для чего нужны уведомления. SDK Adapty не показывает системный диалог разрешений самостоятельно. Он передаёт запрос обработчику `AdaptyUISystemRequestsHandler` в вашем приложении. Приложение показывает диалог и возвращает ответ пользователя, после чего флоу продолжается.
+
+## Прежде чем начать \{#before-you-start\}
+
+Вам понадобится:
+
+- **Adapty Kotlin Multiplatform SDK 4.1.0 или выше**: Версия 4.1.0 — первый стабильный релиз с `AdaptyUISystemRequestsHandler`.
+- **Флоу с действием Request permission**: В Flow & Paywall Builder добавьте действие **Request permission** к триггеру **On Tap** или **On Screen Appear** элемента. В разделе **After response** укажите действия, которые должны выполняться после ответа пользователя, например **Navigate Next**. Описание настроек действия см. в разделе [Request permission](onboarding-actions#request-permission).
+- **Разрешение `POST_NOTIFICATIONS` в манифесте Android и `targetSdk` 33 или выше**: Android 13 и выше показывают диалог разрешения на уведомления только приложениям, которые объявляют это разрешение и нацелены на Android 13 или выше:
+
+  ```xml title="AndroidManifest.xml"
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  ```
+
+## Как флоу запрашивает разрешение \{#how-the-flow-requests-a-permission\}
+
+1. Флоу достигает действия **Request permission**: пользователь нажимает на элемент, или появляется экран.
+2. SDK Adapty вызывает `handlePermission` на вашем обработчике с `AdaptyUIPermission.PUSH`.
+3. Ваше приложение запрашивает разрешение у ОС и возвращает `AdaptyUIPermissionResult.granted()` или `AdaptyUIPermissionResult.denied()`.
+4. Флоу выполняет действия **After response**. Они одинаковы для обоих ответов.
+
+Флоу ожидает на экране, пока ваше приложение не вернёт ответ. Если приложение так и не ответит, флоу останется на экране. Если ОС не показывает диалог — например, потому что пользователь уже отвечал на него — обработчик возвращает результат немедленно, и флоу сразу выполняет действия **After response**. Если эти действия закрывают экран, пользователь увидит экран запроса разрешения лишь на мгновение.
+
+С **On Screen Appear** флоу не отправляет запрос повторно, когда пользователь возвращается на экран действием **Navigate back**. С **On Tap** каждый тап отправляет новый запрос, кроме тапов во время ожидания ответа на предыдущий запрос.
+
+## Реализуйте обработчик \{#implement-the-handler\}
+
+Чтобы отвечать на запросы разрешений, реализуйте `AdaptyUISystemRequestsHandler` в общем коде. Возвращайте результат для каждого запроса: возвращайте `denied` для разрешений, которые ваше приложение не запрашивает, и перехватывайте исключения платформенного кода. Adapty SDK не перехватывает исключения из `handlePermission`: необработанное исключение приведёт к краху приложения, и флоу не получит ответа.
+
+```kotlin showLineNumbers title="commonMain"
+
+class MySystemRequestsHandler : AdaptyUISystemRequestsHandler {
+    override suspend fun handlePermission(
+        view: AdaptyUIFlowView,
+        permission: AdaptyUIPermission,
+        customArgs: Map<String, String>?,
+    ): AdaptyUIPermissionResult {
+        if (permission != AdaptyUIPermission.PUSH) {
+            return AdaptyUIPermissionResult.denied()
+        }
+        return try {
+            if (requestPushPermission()) {
+                AdaptyUIPermissionResult.granted()
+            } else {
+                AdaptyUIPermissionResult.denied()
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            AdaptyUIPermissionResult.denied(e.message)
+        }
+    }
+}
+```
+
+`requestPushPermission` — это ваш платформенный код. См. [Запрос разрешения на каждой платформе](#request-the-permission-on-each-platform).
+
+`handlePermission` получает:
+
+- **`view`**: Вью флоу, отправивший запрос.
+- **`permission`**: Разрешение, которое запрашивает флоу. Действие **Request permission** передаёт `AdaptyUIPermission.PUSH`.
+- **`customArgs`**: Пользовательские аргументы запроса. Действие **Request permission** не передаёт ни одного, поэтому значение равно `null`.
+
+Строка `detail`, которую можно передать в `granted` и `denied`, является необязательной.
+
+Предоставленное разрешение позволяет приложению показывать уведомления. Чтобы получать push-уведомления, зарегистрируйте устройство у своего провайдера, например APNs или Firebase Cloud Messaging, как это делает ваше приложение вне флоу.
+
+`AdaptyUISystemRequestsHandler` также содержит `handleAppReviewRequest`. По умолчанию он показывает нативный запрос на отзыв, поэтому переопределять его не нужно.
+
+## Запрос разрешений на каждой платформе \{#request-the-permission-on-each-platform\}
+
+Общий код не может отобразить системный диалог, поэтому `requestPushPermission` — это функция `expect` с реализацией `actual` для каждой платформы. Если в вашем приложении уже используется библиотека разрешений для Kotlin Multiplatform, вызовите её из `handlePermission`.
+
+```kotlin title="commonMain"
+expect suspend fun requestPushPermission(): Boolean
+```
+
+На iOS запросите авторизацию через `UNUserNotificationCenter`:
+
+```kotlin showLineNumbers title="iosMain"
+
+actual suspend fun requestPushPermission(): Boolean =
+    suspendCancellableCoroutine { continuation ->
+        UNUserNotificationCenter.currentNotificationCenter().requestAuthorizationWithOptions(
+            UNAuthorizationOptionAlert or UNAuthorizationOptionBadge or UNAuthorizationOptionSound,
+        ) { granted, _ ->
+            continuation.resume(granted)
+        }
+    }
+```
+
+На Android разрешение на выполнение существует начиная с Android 13. На более ранних версиях возвращает, включены ли уведомления для приложения. Запрашивайте из activity, которая отображается на экране — во время показа флоу это activity флоу. В этом примере за ней следит `ResumedActivity`. Зарегистрируйте её в `Application.onCreate` через `registerActivityLifecycleCallbacks(ResumedActivity)`:
+
+```kotlin showLineNumbers title="androidMain"
+
+object ResumedActivity : Application.ActivityLifecycleCallbacks {
+    var current: ComponentActivity? = null
+        private set
+
+    override fun onActivityResumed(activity: Activity) {
+        current = activity as? ComponentActivity
+    }
+
+    override fun onActivityPaused(activity: Activity) {
+        if (current === activity) current = null
+    }
+
+    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
+    override fun onActivityStarted(activity: Activity) {}
+    override fun onActivityStopped(activity: Activity) {}
+    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+    override fun onActivityDestroyed(activity: Activity) {}
+}
+
+actual suspend fun requestPushPermission(): Boolean {
+    val activity = ResumedActivity.current ?: return false
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        return NotificationManagerCompat.from(activity).areNotificationsEnabled()
+    }
+    val permission = Manifest.permission.POST_NOTIFICATIONS
+    if (ContextCompat.checkSelfPermission(activity, permission) == PackageManager.PERMISSION_GRANTED) {
+        return true
+    }
+    return suspendCancellableCoroutine { continuation ->
+        lateinit var launcher: ActivityResultLauncher<String>
+        launcher = activity.activityResultRegistry.register(
+            "push_permission",
+            ActivityResultContracts.RequestPermission(),
+        ) { granted ->
+            launcher.unregister()
+            continuation.resume(granted)
+        }
+        launcher.launch(permission)
+        continuation.invokeOnCancellation { launcher.unregister() }
+    }
+}
+```
+
+## Зарегистрируйте обработчик \{#register-the-handler\}
+
+:::warning
+**Без обработчика флоу останавливается на запросе разрешений.** Если приложение не регистрирует обработчик, Adapty SDK не отправляет флоу никакого ответа — ни на iOS, ни на Android. Флоу остаётся на экране, который отправил запрос, и не выполняет действия из блока **After response**.
+:::
+
+Чтобы запросы разрешений направлялись в ваш обработчик, вызовите `AdaptyUI.setSystemRequestsHandler` один раз при запуске приложения — до того, как оно покажет первый флоу. Например, вызывайте его там же, где вызываете `AdaptyUI.setFlowsEventsObserver`.
+
+```kotlin showLineNumbers title="Kotlin"
+
+AdaptyUI.setSystemRequestsHandler(MySystemRequestsHandler())
+```
+
+## Проверьте запрос разрешений \{#test-the-permission-request\}
+
+iOS показывает диалог запроса уведомлений только один раз после установки приложения. Android перестаёт его показывать после того, как пользователь разрешил уведомления или дважды отклонил запрос. Чтобы снова увидеть диалог во время тестирования флоу, удалите приложение с устройства и установите заново. Затем откройте флоу и дойдите до действия **Request permission**. Если экран остаётся без изменений и диалог не появляется, флоу не получил ответа: убедитесь, что приложение регистрирует обработчик до того, как отображает флоу. Если флоу переходит дальше без диалога, убедитесь, что Android-приложение объявляет `POST_NOTIFICATIONS` и нацелено на Android 13 или более позднюю версию.

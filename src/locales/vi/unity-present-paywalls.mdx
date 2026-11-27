@@ -6,29 +6,27 @@ customSlug: /unity-present-paywalls
 displayed_sidebar: sdkunity
 ---
 
-import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md'; 
-
 <SDKv4>
 
 <MethodPromo method="GetFlow" label="Display flows and paywalls" />
 
-Nếu bạn đã tạo một flow hoặc paywall, bạn không cần lo lắng về việc render nó trong code ứng dụng di động để hiển thị cho người dùng. Flow hoặc paywall đó đã chứa cả nội dung cần hiển thị lẫn cách thức hiển thị.
+Nếu bạn đã tạo một flow, hoặc một paywall trong Paywall Builder cũ, bạn không cần lo lắng về việc render nó trong code ứng dụng di động để hiển thị cho người dùng. Flow hoặc paywall đó đã chứa cả nội dung cần hiển thị lẫn cách thức hiển thị.
 
 :::warning
 
-Hướng dẫn này dành cho các flow và **paywall được xây dựng bằng Paywall Builder mới** do Adapty render. Quy trình sẽ khác đối với paywall dùng Remote Config và [Observer mode](observer-vs-full-mode).
+Hướng dẫn này đề cập đến các flow và paywall được render bởi Adapty. Quy trình sẽ khác đối với paywall tùy chỉnh và [Observer mode](observer-vs-full-mode).
 
-- Để hiển thị **paywall Remote Config**, xem [Hiển thị paywall được thiết kế bằng Remote Config](present-remote-config-paywalls-unity).
+- Để hiển thị paywall tùy chỉnh, xem [Hiển thị paywall tùy chỉnh](present-remote-config-paywalls-unity).
 - Để hiển thị flow trong **Observer mode**, xem [Hiển thị flow trong Observer mode](unity-present-flows-in-observer-mode).
 
 :::
 
 Để lấy đối tượng `view` được sử dụng bên dưới, xem [Lấy flow & paywall](unity-get-pb-paywalls).
 
-Để hiển thị một flow hoặc paywall, hãy sử dụng phương thức `view.Present()` trên `view` được tạo bởi phương thức [`CreateFlowView`](unity-get-pb-paywalls#fetch-the-view-configuration). Mỗi `view` chỉ có thể được sử dụng một lần: một view đã bị đóng sẽ bị hủy. Nếu bạn cần hiển thị lại flow, hãy gọi `CreateFlowView` thêm một lần nữa để tạo một `view` mới.
+Để hiển thị một flow hoặc paywall, hãy sử dụng phương thức `view.Present()` trên `view` được tạo bởi phương thức [`CreateFlowView`](unity-get-pb-paywalls#fetch-the-view-configuration). Mặc định, một view đã bị đóng sẽ bị hủy. Để hiển thị lại flow, hãy gọi `CreateFlowView` thêm một lần nữa để tạo một instance `view` mới, hoặc [giữ lại view](#keep-the-view-to-present-it-again) khi bạn đóng nó.
 
 :::warning
-Việc tái sử dụng cùng một `view` mà không tạo lại có thể dẫn đến lỗi.
+Việc tái sử dụng một `view` đã bị hủy sẽ dẫn đến lỗi.
 :::
 
 ```csharp showLineNumbers title="Unity"
@@ -38,6 +36,64 @@ view.Present((error) => {
 ```
 
 <SampleApp />
+
+## Giữ lại view để hiển thị lại \{#keep-the-view-to-present-it-again\}
+
+:::info
+Tính năng giữ lại view khả dụng từ SDK phiên bản 4.3.0 trở lên.
+:::
+
+`view.Dismiss()` giải phóng view khỏi bộ nhớ. Để giữ lại view thay vì xóa, hãy truyền `false` làm tham số `destroy`:
+
+```csharp showLineNumbers title="Unity"
+view.Dismiss(false, (error) => {
+    // handle the error
+});
+```
+
+Hiển thị lại view đó và người dùng sẽ quay lại màn hình họ đã rời, với trạng thái mà flow đã tích lũy. View giữ nguyên `Id` của nó, vì vậy các sự kiện của nó vẫn được gửi đến listener của bạn với cùng `view.Id`.
+
+Một view được giữ trong bộ nhớ cho đến khi bạn giải phóng nó. Khi không còn cần dùng nữa, hãy gọi `view.Destroy()`:
+
+```csharp showLineNumbers title="Unity"
+view.Destroy((error) => {
+    // handle the error
+});
+```
+
+`Destroy()` sẽ ẩn view trước nếu nó vẫn đang hiển thị trên màn hình. Nó cũng giải phóng view mà bạn đã tạo nhưng chưa bao giờ hiển thị, cũng như view dạng page-sheet mà người dùng đã vuốt xuống trên iOS. Đừng gọi nó sau khi đã dùng `Dismiss()` thông thường: view đó đã được giải phóng rồi và lệnh gọi sẽ thất bại.
+
+Để giữ lại view khi người dùng nhấn nút **Close**, hãy dismiss nó với `destroy: false` trong [`Close` action handler](unity-handle-paywall-actions#close-flows-and-paywalls) của bạn. Phương thức `FlowViewDidPerformAction` chạy cho mọi flow và paywall trong ứng dụng, vì vậy hãy so sánh `view.Id` để chỉ giữ lại view mà bạn định hiển thị lại. Lưu view vào một field khi tạo, để bạn có thể so sánh và hiển thị lại sau:
+
+```csharp showLineNumbers title="Unity"
+private AdaptyUIFlowView keptView;
+
+void CreateKeptView(AdaptyFlow flow) {
+    AdaptyUI.CreateFlowView(flow, new AdaptyUICreateFlowViewParameters(), (view, error) => {
+        if (error != null) {
+            // handle the error
+            return;
+        }
+        keptView = view;
+    });
+}
+
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Close:
+            view.Dismiss(view.Id != keptView?.Id, null);
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+Giữ lại `view` đã lưu: bạn cần nó để hiển thị lại flow hoặc paywall, và để giải phóng nó bằng `Destroy()`. Sau khi gọi `keptView.Destroy()`, hãy đặt `keptView` về `null` để phép so sánh ở trên không khớp với một view đã được giải phóng. Bất kỳ lời gọi `view.Dismiss()` nào khác cũng giải phóng view đó, bao gồm cả lời gọi trong [`FlowViewDidReceiveError`](unity-handling-events#rendering-and-runtime-errors). Sau khi xảy ra lỗi với view, hãy tạo một view mới bằng `CreateFlowView`.
 
 ## Hiển thị hộp thoại \{#show-dialog\}
 
@@ -63,9 +119,9 @@ AdaptyUI.ShowDialog(view, dialog, (action, error) => {
 });
 ```
 
-## Cấu hình kiểu hiển thị trên iOS \{#configure-ios-presentation-style\}
+## Cấu hình kiểu trình bày trên iOS \{#configure-ios-presentation-style\}
 
-Cấu hình cách flow hoặc paywall hiển thị trên iOS bằng cách truyền tham số `iosPresentationStyle` vào phương thức `Present()`. Tham số này chấp nhận các giá trị `AdaptyUIIOSPresentationStyle.FullScreen` (mặc định) hoặc `AdaptyUIIOSPresentationStyle.PageSheet`.
+Cấu hình cách flow hoặc paywall được hiển thị trên iOS bằng cách truyền tham số `iosPresentationStyle` vào phương thức `Present()`. Tham số này chấp nhận các giá trị `AdaptyUIIOSPresentationStyle.FullScreen` (mặc định) hoặc `AdaptyUIIOSPresentationStyle.PageSheet`.
 
 ```csharp showLineNumbers title="Unity"
 view.Present(AdaptyUIIOSPresentationStyle.PageSheet, (error) => {
@@ -73,21 +129,23 @@ view.Present(AdaptyUIIOSPresentationStyle.PageSheet, (error) => {
 });
 ```
 
+Người dùng có thể vuốt xuống để đóng page sheet. View sau đó vẫn còn trong bộ nhớ mà không cần gọi `Dismiss()`: present lại nó, hoặc từ SDK 4.3.0 trở lên, giải phóng nó bằng [`Destroy()`](#keep-the-view-to-present-it-again).
+
 </SDKv4>
 
 <SDKv3>
 
-Nếu bạn đã tùy chỉnh một paywall bằng Paywall Builder, bạn không cần lo lắng về việc render nó trong code ứng dụng để hiển thị cho người dùng. Paywall như vậy chứa cả nội dung cần hiển thị lẫn cách hiển thị nó.
+Nếu bạn đã tùy chỉnh paywall bằng Paywall Builder, bạn không cần lo lắng về việc render nó trong code ứng dụng để hiển thị cho người dùng. Loại paywall này bao gồm cả nội dung hiển thị lẫn cách hiển thị.
 
 :::warning
 
-Hướng dẫn này đề cập đến **Paywall Builder mới**, yêu cầu Adapty SDK 3.3.0 trở lên.
+Hướng dẫn này đề cập đến **Paywall Builder cũ**, yêu cầu Adapty SDK 3.3.0 trở lên.
 
-Để hiển thị paywall với Remote Config, xem [Render paywall được thiết kế với Remote Config](present-remote-config-paywalls).
+Để hiển thị paywall tùy chỉnh, xem [Hiển thị paywall tùy chỉnh](present-remote-config-paywalls-unity).
 
 :::
 
-Để hiển thị paywall, sử dụng phương thức `view.Present()` trên `view` được tạo bởi phương thức [`CreatePaywallView`](unity-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder). Mỗi `view` chỉ có thể được sử dụng một lần. Nếu bạn cần hiển thị lại paywall, hãy gọi `CreatePaywallView` thêm một lần nữa để tạo một instance `view` mới.
+Để hiển thị paywall, dùng phương thức `view.Present()` trên `view` được tạo bởi phương thức [`CreatePaywallView`](unity-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder). Mỗi `view` chỉ có thể dùng một lần. Nếu bạn cần hiển thị lại paywall, hãy gọi `CreatePaywallView` thêm một lần nữa để tạo instance `view` mới.
 
 :::warning
 

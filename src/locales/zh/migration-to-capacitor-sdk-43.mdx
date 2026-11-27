@@ -1,0 +1,96 @@
+---
+title: "迁移 Adapty Capacitor SDK 至 v4.3"
+description: "迁移至 Adapty Capacitor SDK v4.3：决定 Google Play 消息的显示方式，从 getOnboardingForDefaultAudience 中移除 loadTimeoutMs，并处理当前 SDK 版本未知的错误码。"
+metadataTitle: "迁移至 Adapty Capacitor SDK v4.3 | Adapty 文档"
+---
+
+Adapty Capacitor SDK 4.3 默认显示 Google Play 应用内消息，从 `getOnboardingForDefaultAudience` 中移除了一个未使用的参数，扩宽了错误码的类型，并要求从事件中获取推广产品。请查阅本指南中的每项变更，以保持应用行为不变，并确保 TypeScript 构建顺利通过。
+
+如果你仍在使用 3.x，请先参阅[迁移至 v4.1.1](migration-to-capacitor-sdk-v4)，再按本指南操作。
+
+## 快速参考 \{#quick-reference\}
+
+| v4.2 | v4.3 |
+|---|---|
+| `params: undefined` 或 `fetchPolicy: undefined` 会报错 | 应用默认值 |
+| 不请求 Google Play 消息 | Android 上默认显示 Google Play 消息 |
+| `getOnboardingForDefaultAudience` 接受 `params.loadTimeoutMs` 但忽略它 | `params.loadTimeoutMs` 已从其类型中移除 |
+| `error.adaptyCode` 的类型为已知错误码 | 其类型同时允许当前 SDK 版本未知的错误码 |
+| 在 iOS 上，`makePromotedPurchase` 接受你自行构建的产品 | 需要使用来自 `'onPromotedPurchaseReceived'` 事件的产品 |
+| `accessLevel.android.offerId` | 已弃用 — 请读取顶层的 `offerId` |
+
+## 传入 `undefined` 的选项将回退至默认值 \{#options-passed-as-undefined-fall-back-to-the-defaults\}
+
+在 4.2 版本中，向 `getFlow`、`getOnboarding` 或其默认目标受众变体传入 `params: undefined` 会抛出 `TypeError`，且 `fetchPolicy: undefined` 会在原生侧报错。从 4.3 版本起，传入 `undefined` 的选项将保留其默认值：`fetchPolicy` 回退至 `'reload_revalidating_cache_data'`，`loadTimeoutMs` 回退至 5000 毫秒。如果你之前通过省略这些键来规避该错误，现在可以直接将配置中的可选值原样传入。
+
+## 默认显示 Google Play 消息 \{#google-play-messages-are-shown-by-default\}
+
+从 4.3 版本开始，SDK 会在每次 `Activity` 于 `activate` 后启动时（包括应用从后台返回时）请求 Google Play 应用内消息，例如支付拒绝通知。这些消息可能会覆盖在付费墙上方显示。
+
+如果这对您的应用没有影响，则无需任何更改。在 `'auto'` 模式下，消息不会在冷启动时显示：请参阅 [在 Android 上于启动时显示消息](capacitor-store-messages#show-messages-at-launch-on-android)。如需保持 4.2 的行为，请在 Android 上使用手动处理方式，并且不要调用 `showStoreMessages`。如果您希望自行控制消息的显示时机，请在 Android 上以手动处理方式初始化 SDK，并在适合您应用的时机调用 `showStoreMessages`：
+
+```typescript showLineNumbers
+
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    storeMessagesHandling: Capacitor.getPlatform() === 'android' ? 'manual' : 'auto',
+  },
+});
+```
+
+仅在 Android 上设置手动处理，以保持 iOS 不变：在 iOS 16 及更高版本上，手动处理同样会暂存 App Store 消息，直到您的应用调用 `showStoreMessages`。完整 API 请参阅[控制商店消息](capacitor-store-messages)。
+
+:::warning
+在手动模式下，应用商店不会自动显示消息。如果你的应用从未调用 `showStoreMessages`，用户将永远看不到付款失败的通知。
+:::
+
+## `loadTimeoutMs` 已从 `getOnboardingForDefaultAudience` 中移除 \{#loadtimeoutms-is-removed-from-getOnboardingForDefaultAudience\}
+
+`getOnboardingForDefaultAudience` 从未使用过 `params.loadTimeoutMs`：默认受众请求没有超时机制。从 4.3 版本起，该参数也已从类型定义中移除，因此在对象字面量中传入该参数会导致 TypeScript 构建失败。无论如何请将其删除：SDK 会忽略它。
+
+```diff showLineNumbers
+  const onboarding = await adapty.getOnboardingForDefaultAudience({
+    placementId: 'YOUR_PLACEMENT_ID',
+    params: {
+      fetchPolicy: 'reload_revalidating_cache_data',
+-     loadTimeoutMs: 5000,
+    },
+  });
+```
+
+`getOnboarding` 保留 `loadTimeoutMs`。
+
+## 错误码类型支持未知错误码 \{#error-code-types-admit-unknown-codes\}
+
+原生 SDK 返回的错误码可能比你当前使用的 Capacitor SDK 更新。从 4.3 版本起，`ErrorCode` 类型也支持这些未知错误码，因此 `ErrorCode[error.adaptyCode]` 这样的查找操作，或对 `error.adaptyCode` 进行穷举 `switch` 的代码可能无法通过编译。请改用 `error.codeName`、`getErrorCodeName()` 或 `isKnownErrorCode()`。而 `error.adaptyCode === ErrorCodeName.paymentCancelled` 这类比较操作，或带有 `default` 分支的 `switch`，无需做任何修改。
+
+4.3 还为早期版本中报告为未知的错误代码补充了名称，因此 `getErrorPrompt(1050)` 现在返回 `'paymentPendingError'`，而不是 `'Unknown code: 1050'`。有关错误处理辅助函数的详细信息，请参阅[处理错误](capacitor-handle-errors)。
+
+## 按原样传入推广产品 \{#pass-the-promoted-product-as-is\}
+
+在 iOS 上，`makePromotedPurchase` 现在需要使用 `'onPromotedPurchaseReceived'` 事件中产品携带的 App Store 购买意图。自行构建的产品，或通过 `getPaywallProducts` 获取的产品，在 4.2 中可以正常使用，但在 4.3 中会失败。请直接传入事件中的产品：
+
+```typescript showLineNumbers
+await adapty.addListener('onPromotedPurchaseReceived', async ({ product }) => {
+  const result = await adapty.makePromotedPurchase({ product });
+});
+```
+
+请参阅[从 App Store 推广应用内购买](capacitor-making-purchases#in-app-purchases-from-the-app-store)。
+
+## `android.offerId` 已弃用 \{#androidofferid-is-deprecated\}
+
+访问等级和订阅现在新增了顶级字段 `offerId`，用于标识购买订阅时所使用的 Google Play 优惠。访问等级上的 `android.offerId` 仍可使用，但已弃用。请改用顶级字段 `offerId`：它取决于购买时所使用的商店，而非设备的操作系统。
+
+## 4.3 版本新增内容 \{#new-in-43\}
+
+以下新增功能均为可选接入，您现有的代码无需任何改动即可继续正常运行：
+
+- **[控制应用商店消息](capacitor-store-messages)**：选择 App Store 和 Google Play 消息的显示时机。
+- **[预加载版位](capacitor-optimize-paywall-fetching#preload-placements)**：`preloadFlows` 和 `preloadFlowsForDefaultAudience` 可预热流程缓存。
+- **[保留已关闭的流程](capacitor-present-paywalls#keep-a-closed-flow-for-later)**：`view.dismiss({ destroy: false })` 可保留流程以便再次展示，`view.destroy()` 则释放流程。
+- **[12 个月承诺计划](set-up-12-month-commitment)**：`product.subscription?.ios?.pricingTerms` 属性描述 iOS 上的计划详情，访问等级还会上报 `billingPlan` 和 `commitmentInfo`。
+- **[观察者模式](report-transactions-observer-mode-capacitor)**：`reportTransaction` 接受可选参数 `ios.jwsTransaction`。
+- **4.3 新增错误码**：`billingPlanUnavailable`（1060）、`operationInProgress`（3201）和 `resolverFailure`（3202），均仅限 iOS。详见[错误处理](capacitor-handle-errors)。
+- **调试日志级别**：`'debug'` 可记录原生 SDK 的底层内部详情。详见[日志记录](sdk-installation-capacitor#logging)。

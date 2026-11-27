@@ -1,0 +1,132 @@
+---
+title: "リテンションメッセージングのエージェントスキル"
+description: "retention-messagingスキルをインストールすると、AIツールがAdaptyでAppleリテンションメッセージングを設定し、サブスクライバーがキャンセル時に表示されるメッセージを作成・編集して、各メッセージのパフォーマンスを確認できます。"
+metadataTitle: "リテンションメッセージングエージェントスキル | Adapty ドキュメント"
+---
+
+[Apple Retention Messaging](retention-messaging)は、サブスクリプションのキャンセル確認前にAppleの**Cancel Subscription**画面でメッセージやオファーをサブスクライバーに表示し、離脱を防ぎます。retention-messagingスキルは、AIツールからその設定と管理を行います。エージェントがアプリのセットアップ状況を確認し、残りの各ステップを案内します。AdaptyのURLをAppleに設定し、Appleのパフォーマンステストを実行して、本番環境への移行を行います。その後、必要な各言語でデフォルトメッセージとプロモーションメッセージを作成し、有効化・無効化を行い、各メッセージがどれだけのサブスクライバーを維持しているかを確認します。[`adapty retention-messaging` CLIコマンド](developer-cli-retention-messaging)または[Adapty MCPサーバー](adapty-mcp)を通じて動作します。
+
+:::note
+Appleがメッセージを承認すると、対象プロダクトをキャンセルしたサブスクライバーにそのメッセージが表示されます。スキルがAdaptyのURLをAppleに設定したり、メッセージの作成・編集・有効化・無効化を行う前に、その変更内容をわかりやすい言葉で説明します。変更は、あなたが承認した後にのみ実行されます。
+:::
+
+## 質問できること \{#what-you-can-ask\}
+
+同僚に依頼するような感覚で質問してください。スキル名を指定する必要はありません。
+
+```
+Set up retention messaging for my app.
+
+Is retention messaging on, and what is missing?
+
+Create a retention message for my Annual plan in English and German.
+
+Show my 50% off promotional offer to monthly subscribers who cancel.
+
+Offer monthly subscribers who cancel a switch to the Annual plan.
+
+Add a German translation to my retention message.
+
+How are my retention messages doing?
+
+Deactivate the Black Friday message.
+```
+
+<AgentChat title="retention-messaging" caption="サンプルアプリとの会話例。プロダクトやメッセージは実際のものと異なります。">
+<ChatTurn role="user">Create a retention message for my Annual plan in English and German.</ChatTurn>
+<ChatTurn role="tool" summary="セットアップとメッセージを読み込む">
+
+- `adapty retention-messaging setup-status`
+- `adapty retention-messaging products suggest --mode production --type default`
+- `adapty retention-messaging messages list --mode production`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+Production is ready, and the Annual plan has no default message yet. Here is the message I'd create.
+
+</ChatTurn>
+<ChatTurn role="confirm" summary="リテンションメッセージを作成する">
+
+「Annual: stay」をプロダクション環境のデフォルトメッセージとして作成します。
+
+- プロダクト: Annual。言語: 英語、ドイツ語。画像なし。
+- 英語: "Before you go" / "Keep your plan and your saved progress."
+- ドイツ語: "Bevor du gehst" / "Behalte deinen Plan und deinen Fortschritt."
+- Apple が審査します。**承認後、Annual プランをキャンセルしたサブスクライバーに表示されます。**
+
+作成しますか？
+
+1. はい
+2. いいえ
+
+</ChatTurn>
+</AgentChat>
+
+## 始める前に \{#before-you-start\}
+
+- **Appleによるアプリの承認**: AppleはRetention Messaging APIへのアクセスを承認されたアプリにのみ付与しており、審査には最長1か月かかります。リクエストはご自身でAppleに送信する必要があります。アプリがまだアクセス権を持っていない場合、スキルは[Appleのリクエストフォーム](retention-messaging-setup#request-access-from-apple)に入力するためのAdapty URLを提供します。
+- **AdaptyでのApp Storeセットアップ**: アプリにはアプリ内購入キーを含む完全な[App Storeセットアップ](app-store-connection-configuration)が必要です。プロモメッセージの場合は、**App Store promotional offers**セクションにもキーを追加し、プラン切り替えを提供するには[App Store Connect APIキー](app-store-connect-api-key)も必要です。
+- **Adaptyのプロダクト**: メッセージの対象となる[プロダクト](create-product)が少なくとも1つ必要です。
+- **Adaptyアカウントに接続されたAIツール**: スキルは[Adapty MCPサーバー](adapty-mcp)または[Adapty CLI](developer-cli)を通じて動作します。Claude CodeとCodexでは、プラグインがMCPサーバーを追加するため、サインインするだけで使えます。両方がある場合、スキルはCLIを使用します（[制限事項](#limits)を参照）。CLIを選択した場合、スキルはCLIをインストールまたは更新します。claude.ai、ChatGPT、またはAIツールのモバイルアプリでは、スキルはMCPサーバーのみを使用し、接続するよう案内します。どちらもインストールされていないコンピューターでは、スキルはどちらをセットアップするか確認します。CLIがRetention Messagingコマンドを実行できない場合、スキルはMCPサーバーが接続されていればそちらに切り替えます。接続されていない場合は、[ダッシュボードでRetention Messagingをセットアップする](retention-messaging-setup)よう案内します。
+
+## スキルをインストールする \{#install-the-skill\}
+
+リテンションメッセージングスキルは [Adapty プラグイン](manage-adapty-with-ai) の一部です。
+
+<AdaptySkillsInstall />
+
+## スキルによるRetention Messagingの設定方法 \{#how-the-skill-sets-up-retention-messaging\}
+
+Appleにはサンドボックスと本番の2つの環境があります。Adaptyの1つのURLが両方に対応していますが、Appleは環境ごとに個別に保存します。各環境にはそれぞれのメッセージがあります。
+
+スキルはまずアプリの設定状況を確認し、次のステップを提示します：
+
+1. **App Store のキーまたはサーバー通知が不足している**: スキルがダッシュボードの App Store セットアップ画面に誘導します。
+2. **Apple がアプリを承認していない**: スキルが Apple のリクエストフォームに入力する Adapty の URL を提示します。
+3. **Apple がまだ Adapty にサンドボックスリクエストを送信していない**: スキルがサンドボックス用に Adapty の URL を Apple に設定することを提案します。
+4. **パフォーマンステストが完了していない**: [Apple のパフォーマンステスト](retention-messaging-setup#pass-the-performance-test)に向けて準備するには、テスト直前に[サンドボックスアカウント](test-purchases-in-sandbox)または TestFlight で最も期間が長いプロダクトを購入し、サブスクリプションをアクティブな状態に保ちます。その後、スキルがテストを開始します。テスト中はサブスクライバーに表示されないため、このステップに承認は不要です。テストは最大 1 時間かかる場合があります。実行中、スキルは再度ステータスを確認し、新しいテストは開始しません。
+5. **テストが完了した**: スキルが本番環境向けに Adapty の URL を Apple に設定し、次に最初のデフォルトメッセージを作成することを提案します。
+
+## スキルがメッセージを書く方法 \{#how-the-skill-writes-messages\}
+
+- **デフォルトメッセージを先に作成**: プロモメッセージには、同じプロダクトにデフォルトメッセージが必要です。スキルはまずデフォルトメッセージを作成し、その後プロモメッセージを作成します。
+- **メッセージ対象外のプロダクトのみ**: スキルは、同じ環境で同じタイプの別のメッセージがすでにカバーしているプロダクトを提示しません。プロモメッセージの場合、デフォルトメッセージがないプロダクトも提示しません。
+- **既存のオファーとプランのみ**: プロモメッセージは各プロダクトをプロモーションオファー、または同じサブスクリプショングループ内の別のプランへの切り替えに紐付けます。スキルは、App Store ConnectとAdaptyにすでに存在するオファーとプランのみを提案します。
+- **指定した言語すべてに対応**: スキルは英語テキストと各翻訳をAppleの制限内で作成します。Appleが言語を承認するまで、その言語を使用するサブスクライバーには英語テキストが表示されます。
+- **編集は指定した内容のみ変更**: それ以外のテキスト、言語、プロダクト、画像はそのままです。言語、箇条書き、プロダクト、画像は、明示的に削除を依頼した場合のみ削除されます。
+
+各メッセージフィールドの意味については、[リテンションメッセージを作成する](retention-messaging-create)を参照してください。
+
+## スキルが各変更前に確認すること \{#what-the-skill-asks-before-each-change\}
+
+確認の対象は、スキルの質問に対するあなたの返答のみです。スキルが変更内容を示す前に行った「進めてください」などの発言は対象になりません。「いいえ」と答えた場合、スキルは何も変更しません。
+
+| 変更 | スキルが伝える内容 |
+|---|---|
+| AppleにAdaptyのURLを設定する | 選択した環境について、Appleは**Cancel Subscription**画面からAdaptyにリクエストを送信します。その環境のリクエストが現在別のサーバーに送信されている場合、スキルはそのサーバーへのリクエストが停止することを警告し、再度確認を求めます。 |
+| メッセージを作成する | Appleがメッセージを審査します。Appleが承認すると、指定したプロダクトをキャンセルしたサブスクライバーにメッセージが表示されます。サンドボックスでは、サンドボックステスターのみに表示されます。 |
+| メッセージを編集する | 名前の変更のみであっても、編集のたびにメッセージがAppleの審査に再送信されます。Appleが承認すると、非アクティブなメッセージが再び表示されるようになります。スキルの読み取りと書き込みの間にダッシュボードで行われた変更は失われる可能性があります。 |
+| メッセージを有効化または無効化する | 有効化後、AppleはメッセージをAppleが承認してから表示します。Appleがすでに承認した言語は再審査を待ちません。無効化後、Appleはメッセージの表示を停止します。すでにメッセージを見たサブスクライバーには影響しません。 |
+
+MCP サーバー経由では、2 回の読み取りがそれぞれ確認を待ちます（会話ごとに1回ずつ）。最初のセットアップステータスの読み取りは、Apple のパフォーマンステストの結果を保存できます。最初のメッセージ読み取りは Apple に各メッセージのレビューを依頼し、承認済みのメッセージをサブスクライバーへの表示を開始できます。CLI 経由では、これらの読み取りは同じ効果を持ち、確認は不要です。
+
+スキルがメッセージを作成した後に Adapty が応答しない場合、スキルはメッセージを再作成しません。代わりに、メッセージリストを名前で検索し、一致するものをすべて表示して、その中に自分のメッセージがあるかどうかを確認します。
+
+## スキルがメッセージのパフォーマンスを読み取る仕組み \{#how-the-skill-reads-message-performance\}
+
+メッセージの状況を聞くと、スキルは本番のメッセージ一覧を読み取り、**Shown**、**Retained users**、**Saved users**、**Retention rate**、**Save rate**、**Saved revenue** の各列を確認します。各数値はメッセージの全期間を対象にしています。サンドボックスのメッセージは含まれません。**Retained users** は、各サブスクライバーの次の請求日以降にのみ表示されます。各数値の意味については、[メッセージパフォーマンスの追跡](retention-messaging-analytics)を参照してください。
+
+## 他のスキルとの組み合わせ \{#with-other-skills\}
+
+- **リテンションメッセージングを使用するかどうかの決定**: [growth-advisor スキル](export-analytics-with-ai)は、App Store のキャンセルがサブスクリプション終了の主な原因である場合に、リテンションメッセージングのステータスと本番環境のメッセージを読み取ります。同意すると、セットアップとメッセージをリテンションメッセージングスキルに引き渡します。
+- **プロダクトへのプロモーションオファーの追加**: 割引を提供するプロモメッセージには、App Store Connect と Adapty の両方に存在するプロモーションオファーが必要です。Adapty のプロダクトに既存のストアオファーを追加するには、オファー ID をエージェントに伝えてください。例：「Annual プロダクトに App Store のオファー `annual_50_off` を追加して。」growth-advisor スキルは同意後に変更を行います。
+
+## 制限 \{#limits\}
+
+- **削除不可**: リテンションメッセージは削除できません。削除を依頼すると、スキルは代わりに無効化を提案します。
+- **画像と箇条書きはCLIが必要**: MCPサーバー経由では、スキルはデフォルトメッセージにヘッダー画像や箇条書きを追加できません。どちらもファイルのアップロードが必要なため、CLIコマンドまたはダッシュボードの手順を案内します。
+- **タイトルの位置は変更不可**: デフォルトメッセージを作成する際は、**Title position** をスキルに伝えてください。作成後は、スキルからもダッシュボードからも変更できません。
+- **無人での変更は不可**: スケジュール実行やスクリプトなど、応答できる人がいない場合、スキルは読み取りのみ行います。変更が必要な場合は、変更内容の説明と実行すべきコマンドを報告します。
+
+スキルを使わずにコマンドを自分で実行する場合は、[CLIからリテンションメッセージングを管理する](developer-cli-retention-messaging)を参照してください。

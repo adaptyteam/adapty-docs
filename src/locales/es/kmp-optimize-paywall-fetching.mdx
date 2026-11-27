@@ -1,32 +1,65 @@
 ---
-title: "Optimizar la obtención de paywalls en Kotlin Multiplatform SDK"
-description: "Obtén paywalls de Adapty de forma fiable: temporización, caché y patrones de respaldo para Kotlin Multiplatform."
-metadataTitle: "Optimizar la obtención de paywalls | Kotlin Multiplatform SDK | Documentación de Adapty"
+title: "Optimizar la obtención de flows y paywalls en el SDK de Kotlin Multiplatform"
+description: "Obtén flows y paywalls de Adapty de forma fiable: tiempo, caché y patrones de respaldo para Kotlin Multiplatform."
+metadataTitle: "Optimizar la obtención de flows y paywalls | SDK de Kotlin Multiplatform | Documentación de Adapty"
 ---
 
-Una obtención de paywall fiable en Kotlin Multiplatform hace tres cosas: renderiza rápido, devuelve el paywall orientado a la audiencia y tiene un respaldo elegante cuando la red es lenta. Las reglas a continuación cubren los patrones de temporización, caché y respaldo para lograrlo.
+Una obtención fiable de un flow o paywall en Kotlin Multiplatform hace tres cosas: renderiza rápido, devuelve la variante dirigida a la audiencia y tiene un respaldo elegante cuando la red es lenta. Las reglas que se explican a continuación cubren los patrones de tiempo, caché y respaldo para lograrlo.
 
 :::tip
-Se asume que `Adapty.activate()` y `Adapty.identify()` ya se han resuelto. Consulta [Orden de llamadas en el SDK de Kotlin Multiplatform](kmp-sdk-call-order).
+Se asume que `Adapty.activate()` y `Adapty.identify()` ya se han completado. Consulta [Orden de llamadas en el SDK de Kotlin Multiplatform](kmp-sdk-call-order).
 :::
-
-El consejo a continuación usa los nombres de métodos de v3. En SDK v4, `getPaywall` pasa a llamarse `getFlow` (consulta la [guía de migración](migration-to-kmp-sdk-v4)) — todas las reglas se aplican sin cambios.
 
 ## Reglas y advertencias \{#rules-and-pitfalls\}
 
 | Haz esto | No hagas esto | Por qué |
 |---|---|---|
-| Obtén el placement que estás a punto de mostrar.                                                                                                                | No hagas prefetch de todos los placements a la vez al iniciar.        | El prefetch masivo bloquea el hilo principal y produce una pantalla en negro durante el pico.                                  |
-| Llama a `getPaywall` después de que la atribución haya tenido oportunidad de resolverse — por ejemplo, 1–2 segundos después de `activate` o cuando se dispare `setOnProfileUpdatedListener`. | No llames a `getPaywall` al arrancar la app.                       | La atribución aún no ha llegado. El paywall se resuelve con la audiencia por defecto y omite silenciosamente los segmentos y la personalización de ASA. |
-| Establece un `loadTimeout` y configura un [paywall de respaldo](fallback-paywalls) para cada placement.                                                           | No esperes `getPaywall` indefinidamente.                     | Sin un timeout, los usuarios con mala conectividad ven una pantalla en blanco hasta que la red responde — o simplemente cierran la app.     |
+| Obtén el placement que vas a mostrar.                                                                                                                | Precarga todos los placements simultáneamente al iniciar.        | La precarga masiva bloquea el hilo principal y produce una pantalla negra durante el burst.                                  |
+| Llama a `getFlow` después de que la atribución haya tenido oportunidad de resolverse — por ejemplo, 1-2 segundos después de `activate` o tras que se dispare `setOnProfileUpdatedListener`. | Llama a `getFlow` al iniciar la app.                       | La atribución aún no ha llegado. El flow se resuelve contra la audiencia predeterminada y omite silenciosamente los segmentos y la personalización de ASA. |
+| Mantén el `loadTimeout` predeterminado de 5 segundos o establece otro valor, y configura un [paywall de respaldo](fallback-paywalls) para cada placement. | Pasa a `getFlow` un `loadTimeout` tan grande que nunca se dispare. | Si el timeout nunca se dispara, los usuarios con mala conectividad ven una pantalla en blanco hasta que la red responde — o cierran la app. |
 
-Consulta [Obtener paywalls y productos](fetch-paywalls-and-products-kmp) para la referencia de los parámetros `fetchPolicy` y `loadTimeout`, y [Placements](placements) para elegir el placement adecuado.
+Consulta [Obtener paywalls personalizados y productos](fetch-paywalls-and-products-kmp) para la referencia de los parámetros `fetchPolicy` y `loadTimeout`, y [Placements](placements) para elegir el placement adecuado.
 
-## Ajustar para conectividad deficiente \{#tune-for-poor-connectivity\}
+## Mostrar el contenido multimedia de la primera pantalla desde el bundle de la app \{#show-first-screen-media-from-the-app-bundle\}
 
-Para mercados con conectividad consistentemente deficiente (zonas rurales, transporte público, regiones afectadas por enrutamiento):
+Un flow descarga sus imágenes y vídeos desde Adapty. Para mostrar el contenido multimedia de la primera pantalla de forma inmediata, sírvelo desde el bundle de la app. Es una buena forma de reutilizar recursos que ya incluyes en la app, como los visuales de un onboarding nativo existente.
 
-- Establece `fetchPolicy = AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` en cada obtención excepto la primera.
+1. En el Flow & Paywall Builder, establece un [ID de medio personalizado](custom-media#custom-media-id) en la imagen o el vídeo. El archivo que subas ahí será el de respaldo.
+2. Añade el archivo a los recursos de tu app, en `commonMain/composeResources/files/`.
+3. Al crear la vista del flow, pasa el archivo incluido en el bundle para ese ID en `customAssets`:
+
+```kotlin showLineNumbers
+// "welcome_video" is the custom media ID set in the Flow & Paywall Builder
+val bundledAssets: Map<String, AdaptyCustomAsset> = mapOf(
+    "welcome_video" to AdaptyCustomAsset.localVideoResource(
+        path = Res.getUri("files/videos/welcome.mp4")
+    ),
+)
+
+AdaptyUI.createFlowView(
+    flow = flow,
+    customAssets = bundledAssets,
+).onSuccess { view ->
+    view.present()
+}.onError { error ->
+    // handle the error
+}
+```
+
+Los archivos incluidos aumentan el tamaño de descarga de tu app, así que incluye solo los recursos multimedia que el usuario ve primero.
+
+Una imagen incluida en el bundle aparece de inmediato sin espera, pero el SDK igualmente descarga la imagen subida en segundo plano.
+
+Los archivos multimedia que no incluyas en el bundle también aparecen de inmediato: el layout del flow incluye una copia en baja resolución de cada imagen, incluido el fotograma estático de un vídeo, y la muestra hasta que se cargue el archivo completo.
+
+Para la referencia completa de `customAssets`, consulta [Personalizar assets](kmp-get-pb-paywalls#customize-assets).
+
+## Ajuste para conectividad deficiente \{#tune-for-poor-connectivity\}
+
+Para mercados con conectividad habitualmente deficiente (zonas rurales, transporte público, regiones con problemas de enrutamiento):
+
+- Establece `fetchPolicy = AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` en cada solicitud excepto la primera.
 - Configura un [paywall de respaldo](fallback-paywalls) para cada placement en el Adapty Dashboard.
-- Establece `loadTimeout` entre 3 y 5 segundos y acepta el respaldo cuando se agote el tiempo.
-- No condicionales la visualización del paywall a `Adapty.getProfile()`. Llama a `getPaywall` de forma independiente para que un perfil lento no bloquee la interfaz.
+- Ajusta `loadTimeout` según tus prioridades entre velocidad y segmentación. Con un timeout más corto, los usuarios ven el respaldo antes. Con uno más largo, el flow segmentado tiene más tiempo para cargarse.
+- [Mantén el flow ligero](flow-size) para que su diseño se descargue antes.
+- No condicionar la visualización del flow a `Adapty.getProfile()`. Llama a `getFlow` de forma independiente para que un perfil lento no bloquee la interfaz.

@@ -1,0 +1,461 @@
+---
+title: "通过 CLI 管理续订挽留消息"
+description: "使用 Adapty CLI 在终端设置 Apple 续订挽留消息：连接实时 URL、运行性能测试、创建、修改、激活和停用挽留消息，以及查看相关数据指标。"
+metadataTitle: "开发者 CLI 中的续订挽留消息 | Adapty 文档"
+---
+
+Adapty CLI 可让你在终端中通过 `adapty retention-messaging` 命令管理 [Apple 留存消息](retention-messaging)——即订阅者在 **Cancel Subscription** 界面看到的提示信息。你可以查看应用的配置状态、将 Apple 连接至 Adapty 实时 URL（用于响应 Apple 的消息请求）、执行 Apple 的性能测试、创建和修改留存消息、启用或停用消息，以及查看各条消息的数据。
+
+使用它让 AI 智能体为你配置留存消息功能，跨多个应用批量编写消息脚本，或无需打开看板即可查看消息数据指标。这些命令执行的操作与看板中 **Retention Messaging** 页面完全一致，看板中也会同步显示相同的消息内容。
+
+## 开始之前 \{#before-you-start\}
+
+`retention-messaging` 话题的安装和登录方式与 CLI 其他部分相同。如果尚未完成配置，请按照[快速入门指南](developer-cli-quickstart)中的第 1 步和第 2 步操作。要查看您的 CLI 是否包含该话题，请运行：
+
+```bash
+adapty retention-messaging --help
+```
+
+每条命令都需要在 `--app` 中传入应用的 UUID。要查找该 UUID，请运行：
+
+```bash
+adapty apps list
+```
+
+每个步骤对您的应用有以下要求：
+
+- **读取设置状态**：无任何前提条件，适用于所有应用。
+- **读取实时 URL**：需要在 Adapty 中完成完整的 [App Store 设置](app-store-connection-configuration)。您需要将此 URL 提交给 Apple 以申请访问权限。
+- **配置实时 URL 并运行性能测试**：除上述条件外，还需要 In-App Purchase 密钥，以及[访问 Retention Messaging API 的权限](retention-messaging-setup#request-access-from-apple)（需向 Apple 申请）。Apple 的审核可能长达一个月，请尽早提交申请。
+- **向订阅用户展示消息**：需要 Apple 的访问权限、已在 Adapty 中设置实时 URL、至少一个[产品](create-product)，以及 Apple 对每条消息的审批。
+
+保留消息存在于两种 Apple 环境中：`sandbox` 和 `production`。`--mode` 标志用于选择环境。每种环境都有各自的消息，如看板中的 **Sandbox mode** 切换开关所示。
+
+从头到尾配置保留消息：
+
+1. [读取设置状态](#read-the-setup-status)。
+2. [读取实时 URL](#connect-the-realtime-url)，并以此向 Apple 申请访问权限。
+3. 为 `sandbox` [配置实时 URL](#connect-the-realtime-url)。
+4. [运行性能测试](#run-the-performance-test)，并持续读取设置状态，直到测试通过。
+5. 为 `production` [配置实时 URL](#connect-the-realtime-url)。
+6. [创建默认消息](#create-a-message)，然后创建促销消息。
+7. [列出消息](#list-and-read-messages)，以配合 Apple 的审核。
+
+## 读取设置状态 \{#read-the-setup-status\}
+
+```bash
+adapty retention-messaging setup-status --app <app-id>
+```
+
+该状态显示与看板相同的设置步骤：
+
+| 字段 | 取值 |
+|---|---|
+| `credentials` | `present` 或 `missing`：应用是否已配置 Retention Messaging 所需的 App Store 密钥。 |
+| `registration_status` | `registered` 或 `not_registered`：Apple 是否已授予该应用 Retention Messaging API 的访问权限。 |
+| `sandbox.realtime_url_status`、`production.realtime_url_status` | `not_configured`、`configured_to_other_url` 或 `configured_to_adapty`：在各环境中 Apple 将请求发送至何处。 |
+| `sandbox.performance_test_status` | `not_started`、`running`、`passed` 或 `failed`。 |
+
+:::note
+部分读取操作也会像看板一样更新 Adapty：
+- 在性能测试运行期间，`setup-status` 会向 Apple 请求测试结果并保存。`realtime-url configure` 在请求确认之前会进行同样的读取，因此即使你随后拒绝，它也会保存结果。
+- `messages list`、`messages get`，以及 `messages update` 在写入前进行的读取操作，都会向 Apple 查询每条消息的审核状态并保存最新状态。如果 Apple 已批准某条消息，该读取操作会立即将其移至 `live` 状态。Adapty 也会自动检查 Apple 的审核结果，因此即使不触发读取，已通过审核的消息也会自动上线。
+:::
+
+## 连接实时 URL \{#connect-the-realtime-url\}
+
+当订阅者打开 **Cancel Subscription** 界面时，Apple 会向实时 URL 发送请求。Adapty 会将您的消息作为响应返回。要获取 Adapty URL，请运行：
+
+```bash
+adapty retention-messaging realtime-url get --app <app-id>
+```
+
+同一个 URL 同时服务于 `sandbox` 和 `production` 环境。您需要在[申请访问权限](retention-messaging-setup#request-access-from-apple)时将此 URL 提供给 Apple。
+
+要为某个环境在 Apple 中设置 Adapty URL，请运行：
+
+```bash
+adapty retention-messaging realtime-url configure --app <app-id> --mode sandbox
+```
+
+请先配置 `sandbox`。在[性能测试](#run-the-performance-test)通过之前，Adapty 不会接受 `production`。配置 `sandbox` 时，Adapty 还会为性能测试创建一条隐藏的测试消息，该消息不会出现在消息列表中。
+
+如果 Apple 将该环境的请求发送到其他服务器（`configured_to_other_url`），Adapty 的 URL 将替换 Apple 中该服务器的 URL。此后，该服务器将不再收到来自 **Cancel Subscription** 页面的任何请求。CLI 会显示一条警告，指明相关环境。如需确认替换操作：
+
+- **在终端中，不带 `--json`**：阅读警告信息，并在 `Apply? [y/N]` 提示处输入 `y`。即使传入 `--yes`，该提示仍会出现。
+- **在脚本、代理或带 `--json` 的情况下**：传入 `--replace-other-url --yes`。若不带 `--replace-other-url`，即使传入 `--yes`，CLI 也不会发送任何内容，并以退出码 6 退出。
+
+## 运行性能测试 \{#run-the-performance-test\}
+
+Apple 会在允许 Adapty 使用 `production` 实时 URL 之前，测试 Adapty 的响应速度。在开始测试之前，请先为 `sandbox` [配置实时 URL](#connect-the-realtime-url)。然后使用沙盒账户或通过 TestFlight 购买时长最长的产品，保持订阅有效，并在购买后立即启动测试：
+
+```bash
+adapty retention-messaging performance-test start --app <app-id>
+```
+
+测试始终在`sandbox`环境中运行，最多需要一小时。要查看结果，请再次[查看配置状态](#read-the-setup-status)：`sandbox.performance_test_status` 将从 `running` 变为 `passed` 或 `failed`。在状态为 `running` 时，请勿重新启动测试：Adapty 会拒绝该请求。如需了解测试失败的原因，请参阅[通过性能测试](retention-messaging-setup#pass-the-performance-test)。
+
+测试通过后，连接生产环境：
+
+```bash
+adapty retention-messaging realtime-url configure --app <app-id> --mode production
+```
+
+## 列出并读取消息 \{#list-and-read-messages\}
+
+```bash
+adapty retention-messaging messages list --app <app-id> --mode production --state live
+```
+
+`--mode` 为必填项。列表会显示每条消息的名称、类型、状态、产品数量、开始日期，以及该消息整个生命周期内的以下数据图表：
+
+| 字段 | 看板列 | 值 |
+|---|---|---|
+| `shown` | **Shown** | 计数 |
+| `retained` | **Retained users** | 计数 |
+| `saved_users` | **Saved users** | 计数 |
+| `retention_rate` | **Retention rate** | 百分比，保留一位小数。在没有视图产生结果时显示 `0.0`。 |
+| `save_rate` | **Save rate** | 百分比，保留一位小数。在没有视图超过 24 小时时显示 `0.0`。 |
+| `saved_revenue` | **Saved revenue** | 扣除 Apple 佣金前的美元金额，保留两位小数 |
+
+关于 Adapty 如何计算每项数据图表，请参阅[跟踪消息效果](retention-messaging-analytics)。
+
+消息处于以下状态之一：`in_review`、`live`、`rejected` 或 `inactive`。每种状态的含义，请参阅[消息状态](retention-messaging-create#message-states)。
+
+要读取某条消息（包含其文本、图片、要点、产品和语言区域），请运行：
+
+```bash
+adapty retention-messaging messages get <message-id> --app <app-id>
+```
+
+消息没有环境字段。其文本和要点以 `en-US` 为源语言。其他每种语言区域均显示各自的审核状态。
+
+## 创建消息 \{#create-a-message\}
+
+促销消息需要为同一环境中的同一产品设置一条默认消息。请先创建默认消息，无需等待 Apple 的审核。
+
+要查找产品 ID、促销活动以及文件中的套餐切换，请使用 [suggest 命令](#find-products-and-offers)。要创建消息，请将其内容放入 JSON 文件：
+
+```json title="message.json"
+{
+  "name": "Annual default",
+  "type": "default",
+  "title": "Before you go",
+  "body": "Your plan keeps every feature you use today.",
+  "alt_text": "App icon on a purple background",
+  "header_position": "above_body",
+  "products": [
+    { "store_id": "com.example.annual" }
+  ],
+  "bullet_points": [
+    { "image_path": "icons/sync.png", "text": "Sync on all your devices" },
+    { "image_path": "icons/offline.png", "text": "Work offline" }
+  ],
+  "localizations": [
+    {
+      "locale": "de-DE",
+      "title": "Bevor du gehst",
+      "body": "Dein Abo behält alle Funktionen, die du heute nutzt.",
+      "bullet_points": [
+        { "text": "Auf allen Geräten synchronisieren" },
+        { "text": "Offline arbeiten" }
+      ]
+    }
+  ]
+}
+```
+
+Then run:
+
+```bash
+adapty retention-messaging messages create --app <app-id> --mode sandbox \
+  --file message.json --image header.png
+```
+
+The file takes these keys:
+
+- **`name`, `type`, `title`, `body`**：必填。`title` 和 `body` 为 `en-US` 源语言内容，分别最多 66 和 144 个字符。
+- **`type`**：消息类型，可选 `default` 或 `promo`。类型设置后不可更改。
+- **`alt_text`**：图片的屏幕阅读器描述文字，最多 150 个字符。
+- **`header_position`**：带图片的默认消息中标题的位置。`above_image` 表示标题显示在图片上方，`above_body` 表示标题显示在图片下方、正文上方。设置后不可更改。
+- **`products`**：通过 `store_id` 中的 App Store 产品 ID 指定哪些产品的订阅者可以看到该消息。默认消息没有 `association`。促销消息至少需要一个产品，且每个产品需要在 `association` 中设置激励方式：`{"type": "promo_offer", "store_id": "<offer-id>"}` 或 `{"type": "plan_switch", "store_id": "<product-id>"}`。同一条促销消息的所有产品使用相同的激励类型：全部为 `promo_offer` 或全部为 `plan_switch`。
+- **`bullet_points`**：最多五条，仅适用于默认消息。每条包含 `text`（1–66 个字符）、可选的 `alt_text`，以及 `image_path`：PNG 图标的路径，相对于 JSON 文件所在目录。CLI 不支持 `image_index`。
+- **`localizations`**：除 `en-US` 以外每个语言区域对应一条记录，包含 `locale`、`title`、`body`，以及与消息中每个要点一一对应（顺序相同）的 `bullet_points` 文本。
+
+`--image` 用于添加默认消息的图片。促销消息没有图片，也没有列表项。
+
+在请求确认之前，CLI 会对每个图片文件进行校验。CLI 随后请求确认，详见[在脚本和代理中确认](#confirmation-in-scripts-and-agents)。Adapty 将新消息的文本和图片发送至 Apple 审核，此时消息状态为 `in_review`。
+
+如果创建操作因网络错误或服务器错误失败，请勿重新执行。请参阅[创建或变更操作未收到响应时的处理方式](#if-a-create-or-a-change-gets-no-answer)。
+
+### 图片要求 \{#image-requirements\}
+
+| 文件 | 要求 |
+|---|---|
+| 图片（`--image`） | PNG 格式，宽 3840 px，高 160–2160 px，无透明通道，大小不超过 10 MB |
+| 项目符号图标（`image_path`） | PNG 格式，1024 × 1024 px，无透明通道，大小不超过 10 MB |
+
+CLI 在发送前会对每个文件进行校验。带 Alpha 通道的 PNG，若每个像素均完全不透明，则视为合格。损坏的 PNG 会触发 `must be a PNG` 错误并导致校验失败。若某个文件校验不通过，CLI 将不发送任何内容并以退出码 2 退出。错误信息会指明出错的文件及对应规则，例如 `… must be 3840 px wide and 160–2160 px tall`。
+
+## 修改消息 \{#change-a-message\}
+
+:::warning
+对未激活消息的任何修改（包括仅修改名称）都会重新激活该消息。待 Apple 审核通过后，订阅用户即可看到该消息。
+:::
+
+`messages update` 仅修改你指定的内容。未指定的语言版本、要点、图标、产品和图片均保持不变：
+
+```bash
+adapty retention-messaging messages update <message-id> --app <app-id> --title "Wait, there's more"
+```
+
+更改名称、标题、正文、替代文本和图片，使用以下标志：`--name`、`--title`、`--body`、`--alt-text`、`--image` 和 `--remove-image`。通过 `--file` 指定变更文件来更改语言区域设置、项目符号和产品。变更文件同样支持 `name`、`title`、`body`、`alt_text` 和 `remove_image` 字段。CLI 会拒绝变更文件中不支持的键。以下变更文件适用于[创建消息](#create-a-message)中的消息：
+
+```json title="changes.json"
+{
+  "localizations": [
+    { "locale": "de-DE", "title": "Warte kurz", "bullet_texts": { "<bullet-id>": "Auf jedem Gerät synchronisieren" } }
+  ],
+  "bullet_points": [
+    { "bullet_id": "<bullet-id>", "text": "Sync on every device" },
+    {
+      "image_path": "icons/backup.png",
+      "text": "Daily backups",
+      "texts": { "de-DE": "Tägliche Backups" }
+    }
+  ],
+  "remove_bullet_points": ["<other-bullet-id>"]
+}
+```
+
+- **语言环境（Locales）**：在 `locale` 中按代码命名每个语言环境，包含 `title`、`body` 以及该语言环境中各公告点的文本（通过 `bullet_id` 指定）。若消息尚不包含某个语言环境，则需添加该语言环境，并提供 `title`、`body` 以及每个公告点的文本。
+- **公告点（Bullet points）**：如需修改某个公告点，请通过 `messages get` 返回的 `bullet_id` 来指定，并提供 `text`、`alt_text` 或用于新图标的 `image_path`。新建公告点无需提供 `bullet_id`，但需要提供 `image_path`、`en-US` 的 `text`，以及该消息所有语言环境在 `texts` 中对应的文本。
+- **产品（Products）**：通过 App Store 产品 ID 在 `store_id` 中指定。若消息尚不包含某个产品，则将其添加。在促销消息中，每个产品都需要一个激励措施：如需修改，请传入新的 `association`；如需停止为某个产品提供激励，请通过 `remove_products` 移除该产品。添加到促销消息的产品必须包含 `association`。
+- **移除操作（Removals）**：使用相应的移除字段：`remove_localizations`（语言环境代码）、`remove_bullet_points`（公告点 ID）、`remove_products`（App Store 产品 ID），以及 `remove_image: true` 或 `--remove-image`。被移除的公告点将从所有语言环境中消失。在促销消息使用某个产品期间，不能从其默认消息中移除该产品。
+
+您无法更改促销消息的类型、`header_position` 或激励类型（`promo_offer` 或 `plan_switch`）。如需使用其他类型，请创建新消息。
+
+CLI 在发送任何内容之前会验证您的更改。如果输入存在自相矛盾、没有任何实质性修改，或者引用了消息中不存在的内容或尝试移除不存在的内容，CLI 将不发送任何内容，以代码 2 退出，并在错误信息中指出具体问题。请在对应语言区域的 `bullet_texts` 中提供现有要点的文本，而非在 `texts` 中提供。
+
+CLI 会请求确认，读取消息内容，将你的更改合并进去，然后将完整消息发送给 Adapty。每次更新都会将完整消息提交给 Apple 审核，消息状态变为 `in_review`。如果在 `messages update` 运行期间有人在看板中修改了消息，该更新会覆盖那些更改。
+
+## 激活或停用消息 \{#activate-or-deactivate-a-message\}
+
+```bash
+adapty retention-messaging messages set-status <message-id> --app <app-id> --action deactivate
+```
+
+- **`activate`**：将 `inactive` 状态的消息移至 `in_review`。Apple 仅对尚未审核通过的语言版本重新审核。Apple 审核通过后，订阅用户可再次看到该消息。
+- **`deactivate`**：将 `live` 状态的消息移至 `inactive`。订阅用户将不再看到该消息。已产生的展示次数仍会保留在数据图表中。
+
+Adapty 会拒绝对非 `inactive` 状态的消息执行 `activate`，也会拒绝对非 `live` 状态的消息执行 `deactivate`。处于 `in_review` 状态的消息在 Apple 审核通过后会自动上线，若需停止，请在此之后将其停用。CLI 没有删除消息的命令。
+
+每个产品在每个环境中可以有一条默认消息和一条促销消息。在以下情况下，Adapty 会拒绝激活：
+
+- 该消息处于 inactive 状态期间，同类型的另一条消息已被添加到该产品。
+- 该消息是促销消息，且其某个产品在当前环境中没有默认消息。
+
+当某个促销消息正在使用某个产品时，Adapty 会拒绝停用该产品的默认消息。请先停用该促销消息，或先将该产品从中移除。
+
+## 查找产品和优惠 \{#find-products-and-offers\}
+
+要查找可添加到消息中的产品，请运行：
+
+```bash
+adapty retention-messaging products suggest --app <app-id> --mode production --type default
+```
+
+当你修改某条消息时，请在 `--message-id` 中传入该消息的 ID，这样该消息的产品就不会显示为 `used`。带有 `disabled_reason` 的产品无法添加：
+
+- **`used`**：同一环境中，另一条相同类型的消息已使用该产品。
+- **`no_default_message`**：该产品在此环境中没有默认消息，因此无法获得促销消息。
+
+一条促销消息将一个激励措施与每个产品关联。要查找某个产品的激励措施，请从 `products suggest` 中传入产品的 `id`。要列出该产品的促销活动，请运行：
+
+```bash
+adapty retention-messaging promo-offers suggest <product-id> --app <app-id>
+```
+
+要列出订阅者可以切换到的方案，请运行：
+
+```bash
+adapty retention-messaging plan-switches suggest <product-id> --app <app-id>
+```
+
+`plan-switches suggest` 需要在应用设置中配置 [App Store Connect API 密钥](app-store-connect-api-key)。请将优惠或套餐的 `store_id` 填入产品的 `association` 中。
+
+## 在脚本和代理中进行确认 \{#confirmation-in-scripts-and-agents\}
+
+以下命令会更改订阅者在 **Cancel Subscription** 界面上看到的内容。每条命令在发送更改前，无论是在 `sandbox` 还是 `production` 环境中，都会打印其效果并请求确认：
+
+- `realtime-url configure`
+- `messages create`
+- `messages update`
+- `messages set-status`
+
+确认方式取决于命令的运行方式：
+
+| 命令运行方式 | 结果 |
+|---|---|
+| 在终端中运行，不带 `--yes` 也不带 `--json` | CLI 打印操作效果并询问 `Apply? [y/N]`。如果回答 `y` 或 `yes`，CLI 发送请求。其他任何回答都会使 CLI 以退出码 1 退出，不发送任何内容。 |
+| 带 `--yes`，在终端中或非终端环境中 | CLI 直接发送请求，不会询问确认，即使在 `production` 环境中也是如此。 |
+| 不带 `--yes`，带 `--json`，在管道中运行，或无终端环境 | CLI 不发送任何内容，以退出码 6 退出。错误信息会描述操作效果。 |
+
+在 Apple 中替换不同的实时 URL 有其特殊规则。请参阅[连接实时 URL](#connect-the-realtime-url)。
+
+脚本或代理可以先查看命令的执行效果：先不带 `--yes` 运行，查看输出中的效果，然后在有人确认该效果后，再加上 `--yes` 重新运行。
+
+`setup-status`、`realtime-url get`、`performance-test start`、`messages list`、`messages get` 以及 `suggest` 命令无需确认即可直接运行。
+
+## 错误 \{#errors\}
+
+| 退出代码 | 原因 | 处理方法 |
+|---|---|---|
+| 1 | 在提示符处输入了 `y` 以外的内容，未发送任何内容。 | 如需继续，请重新运行该命令。 |
+| 2 | CLI 在发送变更前拒绝了输入：标志、图片文件、输入中存在冲突、某个语言区域缺少每个要点的文本，或删除了留存消息中不存在的内容。 | 根据错误提示修复相应问题。 |
+| 3 | 未登录，或 Adapty 拒绝访问该应用。 | 使用 `adapty auth login` 登录，并通过 `adapty apps list` 查找应用 ID。 |
+| 4 | Adapty 拒绝了请求。错误信息中包含原因，`--json` 可返回 HTTP 状态码和 `error_code`。创建或变更操作时出现服务器错误（5xx）也会返回代码 4，且结果未知。 | 参见 [Adapty 返回的消息](#messages-from-adapty)。如果创建或变更操作出现服务器错误，参见 [创建或变更操作未收到响应时的处理方法](#if-a-create-or-a-change-gets-no-answer)。 |
+| 5 | CLI 无法连接到 Adapty。 | 请确认网络连接正常。创建或变更操作后，参见 [创建或变更操作未收到响应时的处理方法](#if-a-create-or-a-change-gets-no-answer)。 |
+| 6 | 需要确认的命令在未传入 `--yes` 且无人应答的情况下运行，或实时 URL 替换操作未传入 `--replace-other-url`，未发送任何内容。 | 阅读错误中的影响说明，然后重新运行命令并添加 `--yes`，如涉及替换操作还需添加 `--replace-other-url`。 |
+| 130 | 在提示符处按下了 Ctrl+C，未发送任何内容。 | — |
+
+### 来自 Adapty 的消息 \{#messages-from-adapty\}
+
+使用 `--json` 时，错误会返回 `error_code`：
+
+| `error_code` | 原因 | 处理方法 |
+|---|---|---|
+| `app_store_credentials_missing` | 该应用在 Adapty 中未配置 App Store 密钥。 | 完成 [App Store 设置](app-store-connection-configuration)。 |
+| `app_store_connect_credentials_missing` | `plan-switches suggest` 需要 App Store Connect API 密钥。 | 添加 [App Store Connect API 密钥](app-store-connect-api-key)。 |
+| `realtime_url_unavailable` | 该应用在 Adapty 中未配置 App Store 服务器通知。 | 完成 [App Store 设置](app-store-connection-configuration)。 |
+| `apple_rm_api_access_denied` | Apple 尚未授予该应用访问 Retention Messaging API 的权限。 | [向 Apple 申请访问权限](retention-messaging-setup#request-access-from-apple)。 |
+| `performance_test_required` | 在性能测试通过之前就配置了 `production`。 | 请先[运行性能测试](#run-the-performance-test)。 |
+| `performance_test_already_running` | 性能测试正在运行中。 | 请等待，然后重新读取设置状态。 |
+| `active_sandbox_transaction_missing` | 没有活跃的沙盒订阅。 | 在沙盒中购买时长最长的产品，然后重新开始测试。 |
+| `performance_test_request_rejected` | Apple 拒绝启动测试。 | 重新进行一次沙盒购买，然后重新开始测试。 |
+| `retention_product_claimed` | 另一条相同类型的消息已占用该产品。 | 选择其他产品，或停用另一条消息。 |
+| `retention_default_message_missing` | 一条促销消息绑定了某个产品，但该产品没有默认消息。 | 请先为该产品创建或激活一条默认消息。 |
+| `retention_dependent_promo_messages` | 一条促销消息使用了某个产品，而此次变更会将该产品从默认消息中移除。 | 请先停用该促销消息，或将该产品从中移除。 |
+| `retention_promo_association_invalid` | 一条促销消息没有产品、产品缺少 `association`，或同时包含两种激励类型。 | 确保每个产品都具有相同类型的 `association`。 |
+| `retention_message_type_immutable` | 此次变更会使促销消息的激励类型发生改变。 | 请新建一条消息。 |
+| `retention_message_invalid_status_transition` | 对非 `inactive` 状态的消息执行了 `activate`，或对非 `live` 状态的消息执行了 `deactivate`。 | 使用 `messages get` 读取消息的当前状态。 |
+| `retention_message_not_found` | 该应用中不存在此 ID 对应的消息。 | 请从 `messages list` 中获取正确的 ID。 |
+
+### 如果创建或修改操作没有收到响应 \{#if-a-create-or-a-change-gets-no-answer\}
+
+如果 CLI 在创建或更新操作时因网络错误或服务器错误（退出码 4 或 5）未收到响应，则无法判断 Adapty 是否已保存该更改。CLI 不会重新发送请求，你也不要自行重新运行该命令。
+
+- **创建操作之后**：对同一环境运行 `messages list`，附加 `--search "<name>" --page-size 100` 参数。错误信息会在独立行中打印出精确名称（`--json` 格式下对应 `message_name` 字段）。逐页读取，直至 `meta.pagination.pages`，并用 `messages get` 逐一打开每个候选项。重复创建可能会生成一条重复消息并提交给 Apple 审核。只有在没有任何候选项属于你的消息时，才重新创建该消息。
+- **更新操作之后**：运行 `messages get`，读取消息的状态和内容。
+
+## 命令参考 \{#command-reference\}
+
+每个命令都需要 `--app` 参数，即通过 `adapty apps list` 获取的应用 UUID。
+
+### `retention-messaging setup-status`
+
+返回设置状态。不接受其他参数。
+
+### `retention-messaging realtime-url get`
+
+返回 Adapty 实时 URL。不需要其他标志。
+
+### `retention-messaging realtime-url configure`
+
+| Flag | 是否必填 | 描述 |
+|---|---|---|
+| `--mode` | 是 | `sandbox` 或 `production`。 |
+| `--replace-other-url` | 否 | 允许替换 Apple 中的其他 URL。 |
+| `--yes`, `-y` | 否 | 无需确认直接配置。与 `--json` 一起使用或在管道中使用时必填。 |
+
+### `retention-messaging performance-test start`
+
+在`sandbox`中启动 Apple 的性能测试。不接受其他标志。
+
+### `retention-messaging messages list`
+
+| Flag | 是否必填 | 描述 |
+|---|---|---|
+| `--mode` | 是 | `sandbox` 或 `production`。 |
+| `--search` | 否 | 名称的一部分（不区分大小写）或精确的消息 ID。 |
+| `--type` | 否 | `default` 或 `promo`。 |
+| `--state` | 否 | `in_review`、`live`、`rejected` 或 `inactive`。 |
+| `--ordering` | 否 | `name`、`type`、`state`、`products_count` 或 `started_at`。在字段前加 `-` 可反向排序。默认值：`-started_at`。 |
+| `--page` | 否 | 页码。默认值：1。 |
+| `--page-size` | 否 | 每页显示的消息数，最多 100 条。默认值：20。 |
+
+### `retention-messaging messages get`
+
+以消息 ID 作为参数，返回完整的消息内容。
+
+### `retention-messaging messages create`
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--mode` | 是 | `sandbox` 或 `production`。 |
+| `--file` | 是 | 消息的 JSON 文件，或使用 `-` 从标准输入读取。参见[创建消息](#create-a-message)。 |
+| `--image` | 否 | 默认消息的 PNG 图片。 |
+| `--yes`, `-y` | 否 | 不询问直接创建。与 `--json` 一起使用或在管道中时为必填项。 |
+
+### `retention-messaging messages update`
+
+以消息 ID 作为参数。
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--name`, `--title`, `--body`, `--alt-text` | 否 | 字段的新值。 |
+| `--image` | 否 | 新的 PNG 图片。 |
+| `--remove-image` | 否 | 删除图片。 |
+| `--file` | 否 | 变更文件，或使用 `-` 从标准输入读取。请参阅[修改消息](#change-a-message)。 |
+| `--yes`, `-y` | 否 | 不询问直接变更。与 `--json` 一起使用或在管道中使用时必填。 |
+
+### `retention-messaging messages set-status`
+
+以消息 ID 作为参数。
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--action` | 是 | `activate` 或 `deactivate`。 |
+| `--yes`, `-y` | 否 | 直接更改状态，无需确认。使用 `--json` 或在管道中运行时必填。 |
+
+### `retention-messaging products suggest`
+
+| 参数 | 是否必填 | 描述 |
+|---|---|---|
+| `--mode` | 是 | `sandbox` 或 `production`。 |
+| `--type` | 是 | `default` 或 `promo`：消息类型。 |
+| `--search` | 否 | 产品标题的部分内容，不区分大小写。 |
+| `--message-id` | 否 | 您要修改的消息的 ID。 |
+| `--limit` | 否 | 返回的产品数量，最多 100 个。默认值：10。 |
+
+### `retention-messaging promo-offers suggest`
+
+将 `products suggest` 返回的产品 ID 作为参数。
+
+| 标志 | 是否必填 | 说明 |
+|---|---|---|
+| `--search` | 否 | 优惠标题的部分文字，不区分大小写。 |
+| `--limit` | 否 | 返回的优惠数量，最多 100 条。默认值：10。 |
+
+### `retention-messaging plan-switches suggest`
+
+将 `products suggest` 中的产品 ID 作为参数。
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--search` | 否 | 计划名称的部分内容，不区分大小写。 |
+| `--limit` | 否 | 返回的计划数量，最多 100 条。默认值：10。 |
+
+## 通过 AI 助手操作 \{#work-from-an-ai-assistant\}
+
+[Adapty MCP 服务器](adapty-mcp)提供与 `retention_messaging_*` 工具相同的操作，例如用 `retention_messaging_messages_list` 对应 `messages list`。这些工具使用 `message_type` 参数代替 `--type`。
+
+- **审批**：在`sandbox`和`production`环境中，助手在配置实时 URL、创建或修改消息、更改状态之前都会先征得用户同意。在替换另一台服务器的实时 URL 之前，会单独提问。此外，在每次对话中，它会在首次读取设置状态前询问一次，在首次读取消息前询问一次，因为[这些读取操作可能会更新 Adapty](#read-the-setup-status)。
+- **图片和项目符号**：MCP 工具无法添加图片、项目符号图标或新的列表项。`retention_messaging_messages_create` 创建的消息不包含图片或项目符号。如需添加，请通过 CLI 运行 `messages update`，或在看板中操作。
+
+## 接下来做什么 \{#whats-next\}
+
+- [Retention Messaging 的 Agent 技能](retention-messaging-skill) — 让你的 agent 帮你配置 Retention Messaging 并撰写消息，每次变更前都需要你确认。
+- [设置 Retention Messaging](retention-messaging-setup) — 在看板中完成相同配置步骤。
+- [创建 retention 消息](retention-messaging-create) — 看板中的消息字段、语言设置与状态说明。
+- [追踪消息效果](retention-messaging-analytics) — 各项数据图表的含义说明。

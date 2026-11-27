@@ -1,0 +1,100 @@
+---
+title: "在流程中处理权限请求 - Flutter"
+description: "通过 AdaptyUISystemRequestsHandler 在 Flutter 应用的流程中向用户请求推送通知权限，并将用户的回答返回给流程。"
+metadataTitle: "处理流程权限 - Flutter | Adapty 文档"
+---
+
+[流程](adapty-flow-builder)可以通过 **Request permission** 操作请求用户授权发送推送通知，例如在用户引导页面上解释通知用途。Adapty SDK 本身不会直接弹出系统权限对话框，而是将请求转交给应用中的 `AdaptyUISystemRequestsHandler`。由你的应用弹出对话框并返回用户的选择，流程随后继续。
+
+## 开始之前 \{#before-you-start\}
+
+你需要：
+
+- **Adapty Flutter SDK 4.0.0 或更高版本**：早期版本不包含 `AdaptyUISystemRequestsHandler`。请参阅[安装与配置 SDK](sdk-installation-flutter)。
+- **包含"请求权限"操作的流程**：在流程与付费墙编辑工具中，将 **Request permission** 操作添加到元素的 **On Tap** 或 **On Screen Appear** 触发器。在其 **After response** 部分，添加用户响应后要执行的操作，例如 **Navigate Next**。有关操作设置，请参阅[请求权限](onboarding-actions#request-permission)。
+- **显示通知对话框的库**：示例使用 [permission_handler](https://pub.dev/packages/permission_handler)。任何其他软件包或您自己的平台代码均可同样使用。
+- **Android 清单中的 `POST_NOTIFICATIONS` 权限，以及 `targetSdk` 33 或更高版本**：Android 13 及更高版本仅向声明了该权限且目标 Android 版本为 13 或更高的应用显示通知权限对话框：
+
+  ```xml showLineNumbers title="android/app/src/main/AndroidManifest.xml"
+  <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+      <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+      <!-- ... -->
+  </manifest>
+  ```
+
+- **对于使用 CocoaPods 的 iOS**：按照 [permission_handler 配置说明](https://pub.dev/packages/permission_handler)，在 `Podfile` 的 `GCC_PREPROCESSOR_DEFINITIONS` 中添加 `PERMISSION_NOTIFICATIONS=1`。若未添加，`Permission.notification.request()` 将返回 denied，iOS 也不会弹出权限请求对话框。使用 Swift Package Manager 时，permission_handler 默认已包含通知权限。
+
+## 流程如何请求权限 \{#how-the-flow-requests-a-permission\}
+
+1. 流程触发 **Request permission** 动作：用户点击该元素，或屏幕出现。
+2. Adapty SDK 以 `AdaptyUIPermission.push` 为参数，调用你的处理器上的 `handlePermission`。
+3. 你的应用向操作系统请求权限，并返回 `AdaptyUIPermissionResult.granted()` 或 `AdaptyUIPermissionResult.denied()`。
+4. 流程执行 **After response** 动作。无论哪种回答，执行的动作相同。
+
+流程会在该界面等待，直到您的应用返回结果。如果应用始终未返回结果，流程将停留在当前界面。如果操作系统不显示弹窗（例如用户已经回答过该权限请求），`Permission.notification.request()` 会立即返回之前的答案，流程随即执行 **After response** 操作。如果这些操作会跳转离开当前界面，用户只会短暂看到请求权限的界面。
+
+使用 **On Screen Appear** 时，当用户通过 **Navigate back** 操作返回该页面时，流程不会再次发送请求。使用 **On Tap** 时，每次点击都会发送新请求，但在等待您响应期间的点击除外。
+
+## 实现处理程序 \{#implement-the-handler\}
+
+要响应权限请求，请创建一个继承 `AdaptyUISystemRequestsHandler` 的类，并实现 `handlePermission`。对于应用不需要请求的权限，返回 denied。
+
+```dart showLineNumbers title="Flutter"
+
+class FlowSystemRequestsHandler extends AdaptyUISystemRequestsHandler {
+  @override
+  Future<AdaptyUIPermissionResult> handlePermission(
+    AdaptyUIFlowView view,
+    AdaptyUIPermission permission,
+    Map<String, String>? customArgs,
+  ) async {
+    // Answer "denied" to every permission your app doesn't request
+    if (permission != AdaptyUIPermission.push) {
+      return const AdaptyUIPermissionResult.denied();
+    }
+
+    try {
+      final status = await Permission.notification.request();
+      return status.isGranted
+          ? const AdaptyUIPermissionResult.granted()
+          : const AdaptyUIPermissionResult.denied();
+    } catch (_) {
+      return const AdaptyUIPermissionResult.denied();
+    }
+  }
+
+  // The base method does nothing: this keeps the native review prompt.
+  @override
+  Future<void> handleAppReviewRequest(AdaptyUIFlowView view) {
+    return AdaptyUI().requestAppReview();
+  }
+}
+```
+
+`handlePermission` 接收以下参数：
+
+- **`view`**：发出请求的流程视图。
+- **`permission`**：流程请求的权限。**Request permission** 操作会发送 `AdaptyUIPermission.push`。
+- **`customArgs`**：请求的自定义参数。**Request permission** 操作不发送任何参数，因此值为 `null`。
+
+如果 `handlePermission` 抛出异常或始终未完成，流程将得不到响应并停留在当前页面。示例代码捕获错误正是出于这个原因。
+
+获取权限后，您的应用即可显示通知。若要接收推送通知，请像在流程外一样向推送服务商注册设备。
+
+注册处理器后，Adapty SDK 会将应用评分请求传递给 `handleAppReviewRequest`，该方法的基础实现不执行任何操作。以下示例保留了原生评分提示。
+
+## 注册处理程序 \{#register-the-handler\}
+
+:::warning
+**如果未注册处理程序，流程将停在权限请求处。** 如果您的应用未注册任何处理程序，Adapty SDK 将不会向流程返回任何响应（iOS 和 Android 均如此）。流程将停留在发出请求的页面，不会执行 **After response** 后续动作。
+:::
+
+如需将所有流程发出的权限请求统一发送到您的处理程序，请在展示流程之前调用一次 `AdaptyUI().setSystemRequestsHandler`。例如，可以在设置流程事件观察者之后立即调用：
+
+```dart showLineNumbers title="Flutter"
+AdaptyUI().setSystemRequestsHandler(FlowSystemRequestsHandler());
+```
+
+## 测试权限请求 \{#test-the-permission-request\}
+
+iOS 每次应用安装后只会显示一次通知权限弹窗。Android 在用户同意通知或拒绝两次后便不再显示。若需在测试流程时再次看到弹窗，请先从设备上删除应用，重新安装后再打开流程并触发 **Request permission** 操作。如果页面停留不动、弹窗没有出现，说明流程没有收到回调——请确保应用在展示流程之前已注册好处理函数。如果流程直接跳过、没有弹窗，请确认 Android 应用已声明 `POST_NOTIFICATIONS` 权限且目标版本为 Android 13 或更高，并且 iOS 的 `Podfile` 中已启用 `PERMISSION_NOTIFICATIONS`。

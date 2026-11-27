@@ -1,0 +1,145 @@
+---
+title: "Contrôler les messages du store dans Unity SDK"
+description: "Choisissez quand votre application Unity affiche les messages de l'App Store et Google Play concernant les hausses de prix, les problèmes de facturation et les paiements refusés, pour qu'ils n'interrompent pas un flow ou un onboarding."
+metadataTitle: "Contrôler les messages du store | Unity SDK | Documentation Adapty"
+---
+
+L'App Store et Google Play doivent parfois afficher à vos utilisateurs un message concernant leur abonnement :
+
+- **App Store** : Une demande de consentement à une augmentation de prix, une notification de problème de facturation ou une offre de reconquête. Par défaut, StoreKit affiche ces messages de lui-même lorsque votre application est ouverte.
+- **Google Play** : Une notification indiquant qu'un paiement d'abonnement a été refusé et que le moyen de paiement doit être mis à jour. À partir du SDK 4.3.0, le SDK Adapty demande ces messages par défaut à chaque démarrage d'une `Activity` de votre application après l'activation, y compris lorsque l'application revient au premier plan et lorsqu'un flow ou un onboarding s'ouvre ou se ferme.
+
+Dans tous les cas, un message peut apparaître par-dessus un flow, un onboarding ou un checkout. Pour choisir vous-même le bon moment, passez le SDK Adapty en gestion manuelle des messages, puis appelez `Adapty.ShowStoreMessages` lorsqu'un message ne risque pas d'interrompre l'utilisateur.
+
+:::warning
+En mode manuel, les stores n'affichent pas les messages d'eux-mêmes. Si votre application n'appelle jamais `Adapty.ShowStoreMessages`, les utilisateurs ne verront jamais de demande de consentement pour une hausse de prix, ni d'avis de problème de facturation, ni de notification de paiement refusé.
+:::
+
+## Avant de commencer \{#before-you-start\}
+
+Vous avez besoin de :
+
+- **Adapty Unity SDK 4.3.0 ou version ultérieure** : les versions antérieures ne disposent pas de l'API des messages du store.
+- **iOS 16 ou version ultérieure** pour les messages App Store : StoreKit ne distribue pas les messages aux applications sur les versions antérieures. Sur iOS 15, `Adapty.GetPendingStoreMessageTypes` et `Adapty.ShowStoreMessages` échouent avec l'erreur `DecodingFailed`. Si votre application prend en charge iOS 15, appelez-les uniquement sur iOS 16 et versions ultérieures :
+
+```csharp showLineNumbers title="C#"
+#if UNITY_IOS && !UNITY_EDITOR
+var iosMajorVersion = int.Parse(UnityEngine.iOS.Device.systemVersion.Split('.')[0]);
+if (iosMajorVersion >= 16) {
+    Adapty.ShowStoreMessages((error) => {
+        // handle the error
+    });
+}
+#endif
+```
+
+## Activer la gestion manuelle \{#enable-manual-handling\}
+
+Pour afficher les messages du store uniquement lorsque votre application appelle `Adapty.ShowStoreMessages`, appelez `SetStoreMessagesHandling` avec `AdaptyStoreMessagesHandling.Manual` lors de l'[activation du SDK](sdk-installation-unity#activate-adapty-module-of-adapty-sdk) :
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetStoreMessagesHandling(AdaptyStoreMessagesHandling.Manual); // Auto is the default
+
+Adapty.Activate(builder.Build(), (error) => {
+    // handle the error
+});
+```
+
+Sur iOS, le SDK ajoute chaque message App Store à une liste d'attente pour la session en cours. Sur Android, le SDK cesse de demander des messages Google Play de son propre chef. Avec la valeur par défaut `Auto`, le SDK ne capture pas les messages App Store ; ainsi, sur iOS, `Adapty.GetPendingStoreMessageTypes` et `Adapty.ShowStoreMessages` n'ont rien à retourner ni à afficher.
+
+## Obtenir les types de messages en attente \{#get-pending-message-types\}
+
+Sur iOS, pour savoir si des messages App Store sont en attente, appelez `Adapty.GetPendingStoreMessageTypes`. Cette méthode retourne les types des messages en attente sans les afficher ni les supprimer :
+
+```csharp showLineNumbers title="C#"
+Adapty.GetPendingStoreMessageTypes((pendingTypes, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    if (pendingTypes == null) {
+        // Android: Google Play decides whether a message applies when you show it
+    } else if (pendingTypes.Contains(AdaptyStoreMessageType.BillingIssue)) {
+        // For example, skip the upsell and show the billing message first
+    }
+});
+```
+
+Sur Android, la méthode renvoie `null` sans erreur : Google Play ne signale pas les messages en attente et décide si un message s'applique uniquement lorsque votre application le demande. Une liste vide signifie qu'il n'y a aucun message en attente sur iOS. Tant que `Adapty.Activate` n'est pas terminé, la liste est toujours vide.
+
+Chaque message App Store est de l'un des types suivants :
+
+| Type | Message |
+|:-----|:--------|
+| `AdaptyStoreMessageType.Generic` | Un message général de l'App Store. |
+| `AdaptyStoreMessageType.PriceIncreaseConsent` | Une demande de consentement à une augmentation du prix d'un abonnement. |
+| `AdaptyStoreMessageType.BillingIssue` | Un avis concernant un problème de facturation d'abonnement. Disponible sur iOS 16.4 et versions ultérieures. |
+| `AdaptyStoreMessageType.WinBackOffer` | Une [offre de reconquête](app-store-offers#win-back-offers) éligible. Disponible sur iOS 18 et versions ultérieures. |
+
+Les nouveaux types de messages StoreKit arrivent avec un `RawValue` de `storekit_<number>`. Pour vérifier un type, comparez-le avec `==` à l'une des valeurs ci-dessus, et traitez toute autre valeur comme un type non reconnu par le SDK.
+
+## Afficher les messages \{#show-messages\}
+
+Lorsque votre application atteint un point où un message du store n'interrompra pas l'utilisateur — par exemple, après que l'utilisateur a fermé un flow ou terminé un onboarding — appelez `Adapty.ShowStoreMessages` :
+
+```csharp showLineNumbers title="C#"
+Adapty.ShowStoreMessages((error) => {
+    if (error != null) {
+        // handle the error
+    }
+});
+```
+
+- **iOS** : le SDK affiche les messages en attente les uns après les autres. Après que StoreKit a affiché un message, le SDK le supprime de la liste des messages en attente. Si StoreKit n'arrive pas à afficher un message, le SDK le conserve pour le prochain appel et continue avec les autres messages.
+- **Android** : le SDK demande à Google Play les messages pour l'`Activity` en cours. Google Play décide si un message s'applique à l'utilisateur, donc une requête n'affiche pas toujours un message. Si l'utilisateur corrige son mode de paiement depuis le message, le SDK synchronise ses achats avec Adapty, et votre [écouteur de profil](unity-listen-subscription-changes) reçoit le niveau d'accès mis à jour.
+
+### Afficher les messages au lancement sur Android \{#show-messages-at-launch-on-android\}
+
+En mode `Auto` par défaut, une `Activity` démarrée avant l'activation ne déclenche pas de requête, donc les messages Google Play n'apparaissent pas au lancement. Pour les afficher au lancement, appelez `Adapty.ShowStoreMessages` une fois après la fin de `Adapty.Activate`, sur Android uniquement :
+
+```csharp showLineNumbers title="C#"
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+#if UNITY_ANDROID
+    Adapty.ShowStoreMessages((showError) => {
+        // handle the error
+    });
+#endif
+});
+```
+
+N'effectuez pas cet appel sur iOS : en mode `Auto`, il n'a rien à afficher, et sur iOS 15 il échoue.
+
+### N'afficher que certains types de messages \{#show-only-some-message-types\}
+
+Pour n'afficher que certains messages App Store en attente, passez les types comme premier argument. Les autres messages restent en attente :
+
+```csharp showLineNumbers title="C#"
+var iosFilter = new List<AdaptyStoreMessageType> {
+    AdaptyStoreMessageType.BillingIssue,
+    AdaptyStoreMessageType.PriceIncreaseConsent,
+};
+
+Adapty.ShowStoreMessages(iosFilter, (error) => {
+    // handle the error
+});
+```
+
+Sans filtre, ou avec `null`, le SDK affiche tous les messages en attente, y compris les types qu'il ne reconnaît pas. Une liste vide n'en affiche aucun. Android ignore le filtre et demande tous les messages Google Play.
+
+### Erreurs \{#errors\}
+
+`Adapty.ShowStoreMessages` peut échouer avec une [`AdaptyError`](error-handling-on-flutter-react-native-unity) avec l'un de ces codes. Tous, sauf `WrongParam`, ne surviennent que sur iOS :
+
+| Code | Nom | Cause |
+|:-----|:-----|:------|
+| 2006 | `DecodingFailed` | L'appareil tourne sous iOS 15 ou une version antérieure. N'appelez cette méthode que sur iOS 16 et versions ultérieures. |
+| 3201 | `OperationInProgress` | Un autre appel `Adapty.ShowStoreMessages` affiche déjà des messages, et cet appel en a également à afficher. Attendez la fin du premier appel, puis réessayez. |
+| 3202 | `ResolverFailure` | Le SDK n'a trouvé aucune fenêtre de scène active au premier plan pour afficher les messages. Appelez la méthode à nouveau lorsque votre application est au premier plan. |
+| 3001 | `WrongParam` | La liste de filtres contient `null`. Le SDK rejette l'appel avant qu'il n'atteigne le store. |

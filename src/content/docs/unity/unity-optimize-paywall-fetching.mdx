@@ -1,26 +1,141 @@
 ---
-title: "Optimize paywall fetching in Unity SDK"
-description: "Fetch Adapty paywalls reliably: timing, caching, and fallback patterns for Unity."
-metadataTitle: "Optimize Paywall Fetching | Unity SDK | Adapty Docs"
+title: "Optimize flow & paywall fetching in Unity SDK"
+description: "Fetch Adapty flows and paywalls reliably: timing, caching, and fallback patterns for Unity."
+metadataTitle: "Optimize Flow & Paywall Fetching | Unity SDK | Adapty Docs"
 ---
 
-A reliable paywall fetch on Unity does three things: renders fast, returns the audience-targeted paywall, and falls back gracefully when the network is slow. The rules below cover the timing, caching, and fallback patterns to get there.
+A reliable flow or paywall fetch on Unity does three things: renders fast, returns the audience-targeted variation, and falls back gracefully when the network is slow. The rules below cover the timing, caching, and fallback patterns to get there.
 
 :::tip
 The rules assume `Adapty.Activate()` and `Adapty.Identify()` have already resolved. See [Call order in Unity SDK](unity-sdk-call-order).
 :::
 
-The advice below uses the v3 method names. In SDK v4, `GetPaywall` is renamed to `GetFlow` (see the [migration guide](migration-to-unity-sdk-v4)) — every rule applies unchanged.
-
 ## Rules and pitfalls
 
 | Do this | Don't do this | Why |
 |---|---|---|
-| Fetch the placement you're about to show.                                                                                  | Prefetch all placements concurrently on launch.        | Bulk prefetch blocks the main thread and produces a black screen during the burst.                                  |
-| Fetch `GetPaywall` after attribution has had a chance to resolve — for example, 1–2 seconds after `Activate` or after `OnLoadLatestProfile` fires. | Call `GetPaywall` in `Awake()`.                        | Attribution hasn't landed yet. The paywall resolves against the default audience and silently bypasses segments and ASA personalization. |
-| Set a `loadTimeout` and configure a [fallback paywall](fallback-paywalls) for every placement.                             | Wait on `GetPaywall` indefinitely.                     | Without a timeout, users on poor connectivity see a blank screen until the network resolves — or close the app.     |
+| Fetch the placement you're about to show, or warm the cache with [`PreloadFlows`](#preload-placements) (SDK 4.3.0+). | Fan out your own concurrent `GetFlow` calls on launch. | A hand-rolled prefetch burst blocks the main thread and produces a black screen. `PreloadFlows` is built for this and sends the batch to the native SDK in one call. |
+| Fetch `GetFlow` after attribution has had a chance to resolve — for example, 1–2 seconds after `Activate` or after `OnLoadLatestProfile` fires. | Call `GetFlow` in `Awake()`.                        | Attribution hasn't landed yet. The flow resolves against the default audience and silently bypasses segments and ASA personalization. |
+| Keep the default `loadTimeout` of 5 seconds or set another value, and configure a [fallback paywall](fallback-paywalls) for every placement. | Pass `GetFlow` a `loadTimeout` so large that it never fires. | If the timeout never fires, users on poor connectivity see a blank screen until the network resolves — or close the app. |
 
-See [Fetch paywalls and products](fetch-paywalls-and-products-unity) for the `fetchPolicy` and `loadTimeout` parameter reference, and [Placements](placements) for picking the right placement.
+See [Fetch custom paywalls and products](fetch-paywalls-and-products-unity) for the `fetchPolicy` and `loadTimeout` parameter reference, and [Placements](placements) for picking the right placement.
+
+## Preload placements
+
+:::info
+`Adapty.PreloadFlows` and `Adapty.PreloadFlowsForDefaultAudience` are available starting from SDK version 4.3.0.
+:::
+
+`Adapty.PreloadFlows` caches the flow JSON ahead of time. You then use it as usual: `GetFlow` for the flow, `CreateFlowView` for its view.
+
+`fetchPolicy` decides which layer a later `GetFlow` reads first, not whether it can reach the cache at all:
+
+- `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` reads the preloaded copy first and goes to the network only when nothing is cached. `AdaptyPlacementFetchPolicy.ReturnCacheDataIfNotExpiredElseLoad(maxAge)` does the same while the copy is younger than `maxAge`.
+- The default, `AdaptyPlacementFetchPolicy.Default`, goes to the network first and falls back to the preloaded copy when the request fails or times out.
+
+A preload pays off either way, but differently: a cache-first policy removes the request, while the default keeps it and gains a warm copy to fall back on. On a [test device](test-devices), `GetFlow` skips the cache with every policy and uses the preloaded copy only if the network request fails.
+
+Use it when you know which placements the session will need but don't want to show them yet — for example, right after `Activate` and `Identify` complete, for the flow behind a button the user hasn't tapped.
+
+```csharp showLineNumbers title="C#"
+Adapty.PreloadFlows(
+    new List<string> { "onboarding", "main_paywall" },
+    TimeSpan.FromSeconds(5),
+    (error) => {
+        if (error != null) {
+            // at least one placement failed to preload
+        }
+    }
+);
+
+// Later, when the user reaches the paywall:
+Adapty.GetFlow(
+    "main_paywall",
+    AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad,
+    TimeSpan.FromSeconds(5),
+    (flow, error) => {
+        // create the flow view
+    }
+);
+```
+
+**Parameters:**
+
+- `placementIds` (required): the placements to preload.
+- `loadTimeout` (optional): how long the preload waits for the audience-targeted flows. Defaults to 5 seconds when you pass `null` or use the overload without it. When the timeout is reached, the SDK can load the default-audience flows instead.
+
+**Behavior worth knowing:**
+
+- The call fails only after every placement has been attempted, with one `NetworkFailed` error that names all failed placements. A failure for one placement doesn't stop the others, and the placements that loaded stay in the cache.
+- Preloading always goes to the network: it has no `fetchPolicy` of its own.
+- Preloading only warms the cache. It doesn't return content — you still call `GetFlow` to display it.
+- The cache belongs to the current profile. Flows that you preload before `Identify` or `Logout` aren't found after it, so preload after the profile switch.
+
+### What a preload covers
+
+A flow reaches the screen in layers. A preload covers the first, exactly as `GetFlow` does:
+
+| Layer | Fetched by | Warmed by a preload |
+|---|---|---|
+| Flow JSON — the chosen variation, its product IDs, and the remote config | `GetFlow` | Yes |
+| UI layout — the screen's structure, styling, and text | `CreateFlowView` | No |
+| Images, including the still frame that stands in for a video element | `CreateFlowView`, in the background | No |
+| Products | `CreateFlowView` or `GetPaywallProducts` | No |
+| Video files | The system player, as the screen renders | Not cached by the SDK |
+
+`CreateFlowView` looks for the layout in three places, in this order:
+
+1. The disk cache of the native SDK, which survives app restarts.
+2. Your [fallback file](unity-use-fallback-paywalls) for SDK 4.4 or later, if you downloaded it after you last published the flow.
+3. Adapty, over the network. This costs a round trip, even after a preload. The first time the app shows each published version of the flow, the native SDK makes this request. Then it saves the layout to the disk cache.
+
+When the `LoadTimeout` of `CreateFlowView` fires, the native SDK doesn't fall back: it requests the layout again from the Adapty API. `LoadTimeout` doesn't limit that second request.
+
+### Skip audience segmentation
+
+To warm the cache without waiting for audience segmentation at all, use the default-audience variant. It takes no timeout:
+
+```csharp showLineNumbers title="C#"
+Adapty.PreloadFlowsForDefaultAudience(
+    new List<string> { "main_paywall" },
+    (error) => {
+        // handle the error
+    }
+);
+```
+
+A later `GetFlowForDefaultAudience` reads the copy the same way `GetFlow` reads a `PreloadFlows` copy.
+
+## Show first-screen media from the app bundle
+
+A flow downloads its images and videos from Adapty. To show the first screen's media instantly, serve it from the app bundle instead. This is a good way to reuse media you already ship, such as the visuals of an existing native onboarding.
+
+1. In the Flow & Paywall Builder, set a [custom media ID](custom-media#custom-media-id) on the image or video. The file you upload there stays as the fallback.
+2. Add the file to your Unity project.
+3. When you create the flow view, pass the bundled file for that ID with `SetCustomAssets`:
+
+```csharp showLineNumbers
+// "welcome_video" is the custom media ID set in the Flow & Paywall Builder
+var bundledAssets = new Dictionary<string, AdaptyCustomAsset>
+{
+    { "welcome_video", AdaptyCustomAsset.LocalVideoFile("custom_assets/videos/welcome.mp4") }
+};
+
+var parameters = new AdaptyUICreateFlowViewParameters()
+    .SetCustomAssets(bundledAssets);
+
+AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
+    // handle the result
+});
+```
+
+Bundled files add to your app's download size, so bundle only the media users see first.
+
+A bundled image appears without a wait, but the native SDK still downloads the uploaded image in the background.
+
+Media you don't bundle still appears right away: the flow's layout includes a small low-resolution copy of each image, including a video's still frame, and shows it until the full file loads.
+
+For the full `customAssets` reference, see [Customize assets](unity-get-pb-paywalls#customize-assets).
 
 ## Tune for poor connectivity
 
@@ -28,5 +143,6 @@ For markets with consistently poor connectivity (rural areas, transit, regions a
 
 - Set `fetchPolicy` to `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` on every fetch except the very first.
 - Configure a [fallback paywall](fallback-paywalls) for every placement in the Adapty dashboard.
-- Set `loadTimeout` to 3–5 seconds and accept the fallback when the timeout fires.
-- Don't gate paywall display on `GetProfile`. Call `GetPaywall` independently so a slow profile doesn't block the UI.
+- Balance `loadTimeout` between speed and targeting. With a shorter timeout, users see the fallback sooner. With a longer timeout, the targeted flow has more time to load.
+- [Keep the flow light](flow-size), so its layout downloads sooner.
+- Don't gate flow display on `GetProfile`. Call `GetFlow` independently so a slow profile doesn't block the UI.

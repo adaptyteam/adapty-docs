@@ -5,19 +5,21 @@ metadataTitle: "フロー・ペイウォールイベントの処理 - Capacitor 
 toc_max_heading_level: 4
 keywords: ['onCustomAction', 'onUrlPress', 'onAndroidSystemBack', 'onCloseButtonPress', 'onPurchaseStarted', 'onPurchaseCompleted', 'onPurchaseFailed', 'onPurchaseCancelled', 'onRestoreStarted', 'onRestoreFailed', 'onRestoreCompleted', 'onProductSelected', 'onLoadingProductsFailed', 'onRenderingFailed', 'onError', 'onAppeared', 'onDisappeared', 'onWebPaymentNavigationFinished', 'onRequestPermission', 'onRequestAppReview', 'onObserverPurchaseInitiated', 'onObserverRestoreInitiated', 'FlowEventHandlers']
 ---
-import PaywallAction from '@site/src/locales/ja/reusable/PaywallAction.md';
 
 <SDKv4>
 
 :::important
-このガイドでは、購入・復元・プロダクト選択・フローのレンダリングに関するイベント処理について説明します。ボタン操作（フローを閉じる、リンクを開く、カスタムアクションなど）のハンドリング設定については、[ボタンアクションの処理に関するガイド](capacitor-handle-paywall-actions)をご覧ください。
+このガイドでは、購入・復元・プロダクト選択・フローレンダリングのイベント処理について説明します。ボタン操作（フローを閉じる、リンクを開く、カスタムアクションなど）のハンドリングも設定できます。詳細は[ボタンアクションの処理に関するガイド](capacitor-handle-paywall-actions)をご覧ください。
 :::
-[Flow Builder](adapty-flow-builder) で作成したフローとペイウォールは、購入や復元のために追加コードは不要です。ただし、アプリが対応できるイベントがいくつか生成されます。それらのイベントには、ボタン押下（閉じるボタン、URL、プロダクト選択など）や、フロー上で行われた購入関連アクションの通知が含まれます。これらのイベントへの対応方法については、以下をご覧ください。
 
-アプリ内のフロー画面で発生するプロセスを制御・監視するには、`view.setEventHandlers` メソッドを実装してください。
+[フロー & ペイウォールビルダー](adapty-flow-builder)で作成されたフローとペイウォールは、購入や復元のために追加のコードは必要ありません。ただし、アプリが応答できるいくつかのイベントを生成します。これらのイベントには、ボタンの押下（閉じるボタン、URL、プロダクトの選択など）や、フロー上で行われた購入関連アクションの通知が含まれます。これらのイベントへの応答方法については、以下をご覧ください。
+
+モバイルアプリ内のフロー画面で発生するプロセスを制御・監視するには、`view.setEventHandlers` メソッドを実装してください：
+
 :::important
 イベントごとに設定できるハンドラーは1つだけです。`setEventHandlers` を複数回呼び出すと、指定したハンドラーが上書きされ、対象イベントのデフォルトおよび以前に設定したハンドラーがいずれも置き換えられます。設定しなかったハンドラーはデフォルトの動作を維持します。`setEventHandlers` はアンサブスクライブ関数を返し、`view.dismiss()` はすべてのハンドラーをクリアします。
 :::
+
 ```typescript showLineNumbers
 
 const view = await createFlowView(flow);
@@ -30,6 +32,7 @@ const unsubscribe = await view.setEventHandlers({
     return true; // close the flow; by default, it stays open
   },
   onPurchaseCompleted(purchaseResult, product) {
+    // to let the flow continue after the purchase, return false
     return purchaseResult.type === 'success'; // close the flow on a successful purchase, keep it open for cancelled or pending purchases
   },
   onPurchaseStarted(product) { /***/ },
@@ -53,6 +56,7 @@ const unsubscribe = await view.setEventHandlers({
 <summary>イベントの例（クリックして展開）</summary>
 
 以下の例は、各ハンドラーで利用可能なプロパティを、コメント内にサンプル値とともに示しています。
+
 ```typescript
 // onUrlPress
 url;    // 'https://example.com/terms'
@@ -91,9 +95,11 @@ profile.accessLevels['premium']?.isActive; // true
 error.message; // 'Purchase failed due to insufficient funds'
 ```
 </Details>
+
 必要なイベントハンドラーだけを登録し、不要なものは省略できます。この場合、未使用のイベントリスナーは作成されません。必須のイベントハンドラーはありません。
 
 イベントハンドラーはboolean値を返します。`true`が返された場合、表示プロセスが完了したとみなされ、フロー画面が閉じられ、そのビューのイベントリスナーが削除されます。
+
 一部のイベントハンドラーにはデフォルトの動作があり、必要に応じてオーバーライドできます：
 - `onCloseButtonPress`: 閉じるボタンが押されたときにフローを閉じます。
 - `onUrlPress`: タップされた URL を `adapty.openWebUrl` 経由でネイティブブラウザで開き、ビルダーで設定された **Open in** オプションを適用してフローを開いたままにします。
@@ -101,34 +107,36 @@ error.message; // 'Purchase failed due to insufficient funds'
 - `onPurchaseCompleted`: 購入完了後もフローを開いたままにします。閉じるには `true` を返してください。
 - `onRestoreCompleted`: 復元が成功した後もフローを開いたままにします。閉じるには `true` を返してください。
 - `onError`: レンダリングに失敗した場合にフローを閉じます。
+
 ### イベントハンドラー \{#event-handlers\}
-| イベントハンドラー                          | 説明                                                                                                                                                                                                                                                                                       |
+
+| イベントハンドラー | 説明 |
 |:-----------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **onCustomAction**                 | ユーザーがカスタムアクション（例：[カスタムボタン](paywall-buttons)のクリック）を実行したときに呼び出されます。                                                                                                                                                                                                                    |
-| **onUrlPress**                     | ユーザーがフロー内のURLをクリックしたときに呼び出されます。                                                                                                                                                                                                                                    |
-| **onAndroidSystemBack**            | ユーザーがAndroidシステムの**Back**ボタンをタップしたときに呼び出されます。デフォルトではフローは開いたままになります。`true`を返すと閉じます。                                                                                                                                                                           |
-| **onCloseButtonPress**             | 閉じるボタンが表示されているときにユーザーがタップすると呼び出されます。このハンドラー内でフロー画面を閉じることを推奨します。                                                                                                                                                                        |
-| **onPurchaseCompleted**            | 購入が完了したとき（成功・ユーザーによるキャンセル・承認待ちのいずれの場合も）に呼び出されます。購入が成功した場合は更新された`AdaptyProfile`が提供されます。ユーザーによるキャンセルや保護者承認待ちなどの保留中の支払いは`onPurchaseFailed`ではなくこのイベントをトリガーします。 |
-| **onPurchaseStarted**              | ユーザーが「購入」アクションボタンをタップして購入プロセスを開始したときに呼び出されます。                                                                                                                                                                                                              |
-| **onPurchaseFailed**               | 購入がエラー（例：支払い制限、無効なプロダクト、ネットワーク障害、トランザクション検証の失敗）によって失敗したときに呼び出されます。ユーザーによるキャンセルや保留中の支払いには呼び出されず、それらは`onPurchaseCompleted`をトリガーします。                                             |
-| **onRestoreStarted**               | ユーザーが購入の復元プロセスを開始したときに呼び出されます。                                                                                                                                                                                                                        |
-| **onRestoreCompleted**             | 購入の復元が成功し、更新された`AdaptyProfile`が提供されたときに呼び出されます。ユーザーが必要な`accessLevel`を持っている場合は画面を閉じることを推奨します。確認方法については[サブスクリプションのステータス](capacitor-listen-subscription-changes)を参照してください。                 |
-| **onRestoreFailed**                | 復元プロセスが失敗したときに呼び出され、`AdaptyError`が提供されます。                                                                                                                                                                                                                                |
-| **onProductSelected**              | フロービュー内のプロダクトが選択されたときに呼び出されます。購入前にユーザーが何を選択しているかを把握できます。                                                                                                                                                                         |
-| **onError**                        | ビューのレンダリング中にエラーが発生したときに呼び出され、`AdaptyError`が提供されます。このようなエラーは発生しないはずですので、もし遭遇した場合はお知らせください。                                                                                                                       |
-| **onLoadingProductsFailed**        | プロダクトの読み込みが失敗したときに呼び出され、`AdaptyError`が提供されます。ビュー作成時に`prefetchProducts: true`を設定していない場合、AdaptyUIが必要なオブジェクトをサーバーから自動的に取得します。                                                                                              |
-| **onAppeared**                     | フローがユーザーに表示されたときに呼び出され、表示されたビューが提供されます（[viewの引数](#the-view-argument)を参照）。iOSでは、ユーザーがフロー内の[Webペイウォールボタン](web-paywall#step-2a-add-a-web-purchase-button)をタップしてWebペイウォールがアプリ内ブラウザで開いたときにも呼び出されます。                                                                          |
-| **onDisappeared**                  | ユーザーによってフローが閉じられたときに呼び出されます。iOSでは、フローからアプリ内ブラウザで開いた[Webペイウォール](web-paywall#step-2a-add-a-web-purchase-button)が画面から消えたときにも呼び出されます。                                                                                          |
-| **onWebPaymentNavigationFinished** | [Webペイウォール](web-paywall)を購入目的で開こうとした後、成功・失敗を問わず呼び出されます。                                                                                                                                                                                                         |
-| **onRequestAppReview**             | フローからのアプリレビューリクエスト用に予約されています。フローはまだアプリレビューリクエストをトリガーしないため、実装は不要です。                                                                                                                                                     |
-| **onAnalytics**                    | フローが画面表示などのアナリティクスイベントを報告したときに呼び出されます。詳細は下記の[アナリティクスイベント](#analytics-events)を参照してください。                                                                                                                                           |
-| **onRequestPermission**            | フローからのシステム権限リクエスト（プッシュ通知やカメラアクセスなど）用に予約されています。フローはまだ権限リクエストをトリガーしないため、実装は不要です。                                                                                                                |
-| **onObserverPurchaseInitiated**    | オブザーバーモード専用：ユーザーがフロー内の購入ボタンをタップしたときに呼び出されます。Adaptyは購入を行いません。独自の購入コードで購入を実行し、トランザクションをAdaptyに報告してください。詳細は下記の[オブザーバーモードでの購入処理](#handle-purchases-in-observer-mode)を参照してください。                 |
-| **onObserverRestoreInitiated**     | オブザーバーモード専用：ユーザーがフロー内の復元ボタンをタップしたときに呼び出されます。Adaptyは復元を行いません。自身で復元を実行し、復元されたトランザクションを報告してください。詳細は下記の[オブザーバーモードでの購入処理](#handle-purchases-in-observer-mode)を参照してください。                                               |
+| **onCustomAction** | [カスタムアクション](onboarding-actions#custom-actions)が実行されたとき（例：ユーザーがこのアクションを持つボタンをタップしたとき）に呼び出されます。 |
+| **onUrlPress** | ユーザーがフロー内のURLをクリックしたときに呼び出されます。 |
+| **onAndroidSystemBack** | ユーザーがAndroidシステムの**Back**ボタンをタップしたときに呼び出されます。デフォルトではフローは開いたままです。`true` を返すと閉じます。 |
+| **onCloseButtonPress** | 閉じるボタンが表示されていて、ユーザーがそれをタップしたときに呼び出されます。このハンドラーでフロー画面を閉じることを推奨します。 |
+| **onPurchaseCompleted** | 購入が完了したとき（成功、ユーザーによるキャンセル、承認待ちのいずれの場合も）に呼び出されます。購入が成功した場合は、更新された `AdaptyProfile` を提供します。ユーザーによるキャンセルや保留中の支払い（例：保護者の承認が必要な場合）は、`onPurchaseFailed` ではなくこのイベントをトリガーします。 |
+| **onPurchaseStarted** | ユーザーが「購入」アクションボタンをタップして購入プロセスを開始したときに呼び出されます。 |
+| **onPurchaseFailed** | エラーにより購入が失敗したとき（例：支払い制限、無効なプロダクト、ネットワーク障害、トランザクション検証の失敗）に呼び出されます。ユーザーによるキャンセルや保留中の支払いでは呼び出されず、それらは代わりに `onPurchaseCompleted` をトリガーします。 |
+| **onRestoreStarted** | ユーザーが購入の復元プロセスを開始したときに呼び出されます。 |
+| **onRestoreCompleted** | 購入の復元が成功したときに呼び出され、更新された `AdaptyProfile` を提供します。購入復元後にウェルカムバック画面などの追加画面を表示するには、Flow & Paywall Builderで[アウトカムアクション](respond-to-purchase-outcomes#respond-to-a-purchase-restoration)を設定してください。フローでできないこと（ユーザーがアクセス権を得た後にアプリの特定画面を開くなど）はアプリのコードで対応してください。アクセスレベルの確認方法については、[サブスクリプションステータス](capacitor-listen-subscription-changes)を参照してください。 |
+| **onRestoreFailed** | 復元プロセスが失敗したときに呼び出され、`AdaptyError` を提供します。 |
+| **onProductSelected** | フローのビュー内でいずれかのプロダクトが選択されたときに呼び出されます。購入前にユーザーが何を選択したかを確認できます。 |
+| **onError** | ビューのレンダリング中にエラーが発生したときに呼び出され、`AdaptyError` を提供します。このようなエラーは通常発生しないため、遭遇した場合はご連絡ください。 |
+| **onLoadingProductsFailed** | プロダクトの読み込みが失敗したときに呼び出され、`AdaptyError` を提供します。ビュー作成時に `prefetchProducts: true` を設定していない場合、AdaptyUI は必要なオブジェクトをサーバーから自動的に取得します。 |
+| **onAppeared** | フローがユーザーに表示されたときに呼び出され、表示されたビューを提供します（[viewの引数](#the-view-argument)を参照）。iOSでは、ユーザーがフロー内の[ウェブペイウォールボタン](web-paywall#step-2a-add-a-web-purchase-button)をタップしてアプリ内ブラウザでウェブペイウォールが開いたときにも呼び出されます。 |
+| **onDisappeared** | ユーザーによってフローが閉じられたときに呼び出されます。iOSでは、フローからアプリ内ブラウザで開いた[ウェブペイウォール](web-paywall#step-2a-add-a-web-purchase-button)が画面から消えたときにも呼び出されます。 |
+| **onWebPaymentNavigationFinished** | [ウェブペイウォール](web-paywall)を購入のために開こうとした後（成功・失敗にかかわらず）に呼び出されます。 |
+| **onRequestAppReview** | フローからのアプリレビューリクエスト用に予約されています。フローはまだアプリレビューリクエストをトリガーしないため、実装する必要はありません。 |
+| **onAnalytics** | フローが画面表示などのアナリティクスイベントを報告したときに呼び出されます。以下の[アナリティクスイベント](#analytics-events)を参照してください。 |
+| **onRequestPermission** | フローが**Request permission**アクションを実行したときに呼び出されます。非同期です。パーミッションをリクエストし、`{ status: 'granted' }` または `{ status: 'denied' }` で解決してください。ハンドラーがない場合、SDKは `denied` と応答してダイアログを表示しません。詳細は[フローでのパーミッションリクエストの処理](capacitor-handle-permissions)を参照してください。 |
+| **onObserverPurchaseInitiated** | オブザーバーモード専用：ユーザーがフロー内の購入ボタンをタップしたときに呼び出されます。Adaptyは購入を実行しません。自身の購入コードで購入を処理し、その後トランザクションをAdaptyに報告してください。以下の[オブザーバーモードでの購入処理](#handle-purchases-in-observer-mode)を参照してください。 |
+| **onObserverRestoreInitiated** | オブザーバーモード専用：ユーザーがフロー内の復元ボタンをタップしたときに呼び出されます。Adaptyは復元を実行しません。自身で処理し、復元されたトランザクションを報告してください。以下の[オブザーバーモードでの購入処理](#handle-purchases-in-observer-mode)を参照してください。 |
 
-#### `view` 引数 \{#the-view-argument\}
+#### viewの引数 \{#the-view-argument\}
 
-`view` 引数を使用するには、Capacitor SDK 4.0.2-beta.1 以降が必要です。すべてのフローハンドラーの中で、`onAppeared` だけがビュー自体の説明を受け取ります。これは以下のフィールドを持つ `FlowEventView` オブジェクトです。
+`view`引数はCapacitor SDK 4.1以降が必要です。すべてのフローハンドラーの中で、`onAppeared`のみがビュー自体の説明を受け取ります。これは以下のフィールドを持つ`FlowEventView`オブジェクトです。
 
 | フィールド            | 説明                                                                                                                                                                                                                                                                                                         |
 |:-------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -149,7 +157,9 @@ view.setEventHandlers({
 
 <FlowScreenShowedParams />
 
-これらの処理方法については、[フロー画面のビューをトラッキングする](capacitor-flow-screen-views)を参照してください。
+これらのイベントの活用方法については、[フロー画面ビューのトラッキング](capacitor-flow-screen-views)を参照してください。
+
+フローはユーザーが入力・選択した値もレポートします。詳細は[フローからのデータ処理](capacitor-flow-input)を参照してください。
 
 ### オブザーバーモードでの購入処理 \{#handle-purchases-in-observer-mode\}
 
@@ -158,12 +168,15 @@ view.setEventHandlers({
 </SDKv4>
 
 <SDKv3>
+
 :::important
 このガイドでは、購入、復元、プロダクト選択、ペイウォールのレンダリングに関するイベント処理を説明します。ボタン操作（ペイウォールを閉じる、リンクを開くなど）の処理も実装する必要があります。詳しくは[ボタンアクションの処理に関するガイド](capacitor-handle-paywall-actions)をご覧ください。
 :::
+
 [ペイウォールビルダー](adapty-paywall-builder)で設定したペイウォールは、購入や復元のために追加コードは不要です。ただし、アプリが応答できるイベントが発生します。これらのイベントには、ボタン操作（閉じるボタン、URL、プロダクト選択など）や、ペイウォール上で行われた購入関連アクションの通知が含まれます。これらのイベントへの対応方法については以下をご覧ください。
 
 モバイルアプリ内でペイウォール画面上の処理を制御・監視するには、`view.setEventHandlers` メソッドを実装してください：
+
 ```typescript showLineNumbers
 
 const view = await createPaywallView(paywall);
@@ -225,6 +238,7 @@ const unsubscribe = view.setEventHandlers({
 
 <Details>
 <summary>イベント例（クリックして展開）</summary>
+
 ```typescript
 // onCloseButtonPress
 {
@@ -388,9 +402,11 @@ const unsubscribe = view.setEventHandlers({
 }
 ```
 </Details>
+
 必要なイベントハンドラーだけ登録し、不要なものは省略できます。この場合、未使用のイベントリスナーは作成されません。必須のイベントハンドラーはありません。
 
 イベントハンドラーはブール値を返します。`true` を返すと、表示プロセスが完了したとみなされ、ペイウォール画面が閉じられ、このビューのイベントリスナーが削除されます。
+
 一部のイベントハンドラーにはデフォルトの動作があり、必要に応じてオーバーライドできます：
 - `onCloseButtonPress`: 閉じるボタンが押されたときにペイウォールを閉じます。
 - `onAndroidSystemBack`: **Back** ボタンが押されたときにペイウォールを閉じます。
@@ -398,7 +414,9 @@ const unsubscribe = view.setEventHandlers({
 - `onPurchaseCompleted`: ユーザーがキャンセルしない限りペイウォールを閉じます。
 - `onRenderingFailed`: レンダリングに失敗した場合にペイウォールを閉じます。
 - `onUrlPress`: システムブラウザでURLを開き、ペイウォールは閉じません。
+
 ### イベントハンドラー \{#event-handlers\}
+
 | イベントハンドラー               | 説明                                                                                                                                                                                                                                                                                       |
 |:----------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **onCustomAction**          | ユーザーがカスタムアクション（例：[カスタムボタン](paywall-buttons)のクリック）を実行したときに呼び出されます。                                                                                                                                                                                                                    |
@@ -417,4 +435,5 @@ const unsubscribe = view.setEventHandlers({
 | **onDisappeared**           | ペイウォールビューが画面から消えたときに呼び出されます。iOS では、ペイウォールからインアプリブラウザで開いた[ウェブペイウォール](web-paywall#step-2a-add-a-web-purchase-button)が画面から消えた場合にも呼び出されます。                                                                             |
 | **onRenderingFailed**       | ビューのレンダリング中にエラーが発生したときに呼び出され、`AdaptyError` が提供されます。このようなエラーは通常発生しないため、もし遭遇した場合はお知らせください。                                                                                                                                       |
 | **onLoadingProductsFailed** | プロダクトの読み込みが失敗したときに呼び出され、`AdaptyError` が提供されます。ビュー作成時に `prefetchProducts: true` を設定していない場合、AdaptyUI が自動的にサーバーから必要なオブジェクトを取得します。                                                                              |
+
 </SDKv3>

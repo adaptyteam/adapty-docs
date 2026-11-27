@@ -1,27 +1,140 @@
 ---
-title: "Flutter SDK'da paywall çekme işlemini optimize edin"
-description: "Adapty paywalllarını güvenilir şekilde çekin: Flutter için zamanlama, önbellekleme ve yedek kalıplar."
-metadataTitle: "Paywall Çekme İşlemini Optimize Edin | Flutter SDK | Adapty Dokümanları"
+title: "Flutter SDK'da flow ve paywall çekme işlemini optimize etme"
+description: "Adapty flow'larını ve paywall'ları güvenilir şekilde çekin: Flutter için zamanlama, önbellekleme ve yedek desenler."
+metadataTitle: "Flow ve Paywall Çekme İşlemini Optimize Etme | Flutter SDK | Adapty Dokümanları"
 ---
 
-Flutter'da güvenilir bir paywall çekme işlemi üç şey yapar: hızlı render eder, kitleye özel paywall'ı döndürür ve ağ yavaş olduğunda sorunsuz bir şekilde yedek davranışa geçer. Aşağıdaki kurallar bunu başarmanın zamanlama, önbellekleme ve yedek kalıplarını kapsar.
+Flutter'da güvenilir bir flow veya paywall çekme işlemi üç şeyi başarır: hızlı render eder, kitleye özel varyantı döndürür ve ağ yavaş olduğunda sorunsuz bir şekilde yedekleme yapar. Aşağıdaki kurallar, bunu sağlamak için zamanlama, önbellekleme ve yedek desenleri kapsar.
+
 :::tip
-Aşağıdaki kurallar, `Adapty().activate()` ve `Adapty().identify()` işlevlerinin zaten tamamlandığını varsayar. Daha fazla bilgi için bkz. [Flutter SDK'da çağrı sırası](flutter-sdk-call-order).
+Bu kurallar, `Adapty().activate()` ve `Adapty().identify()` fonksiyonlarının zaten tamamlandığını varsayar. Bkz. [Flutter SDK'da çağrı sırası](flutter-sdk-call-order).
 :::
 
-Aşağıdaki tavsiyeler v3 metot adlarını kullanmaktadır. SDK v4'te `getPaywall`, `getFlow` olarak; fetch policy türü ise `AdaptyFlowFetchPolicy` olarak yeniden adlandırılmıştır — tüm kurallar değişmeden geçerlidir.
 ## Kurallar ve dikkat edilmesi gereken noktalar \{#rules-and-pitfalls\}
+
 | Bunu yapın | Bunu yapmayın | Neden |
 |---|---|---|
-| Göstermek üzere olduğunuz placement'ı getirin. | Başlatma sırasında tüm placement'ları eş zamanlı olarak önceden getirin. | Toplu önceden getirme işlemi ana iş parçacığını engeller ve yoğunluk sırasında siyah ekrana yol açar. |
-| `getPaywall`'ı attribution'ın çözülmesine fırsat verdikten sonra çağırın — örneğin `activate`'den 1–2 saniye sonra veya `didUpdateProfileStream` tetiklendikten sonra. | `getPaywall`'ı `runApp`'ten önce `main()` içinde çağırın. | Attribution henüz gelmemiştir. Paywall varsayılan kitleye göre çözümlenir ve segment ile ASA kişiselleştirmesini sessizce atlar. |
-| Her placement için bir `loadTimeout` belirleyin ve bir [yedek paywall](fallback-paywalls) yapılandırın. | `getPaywall`'ı süresiz olarak bekleyin. | Zaman aşımı olmadan, bağlantısı zayıf kullanıcılar ağ çözümlenene kadar boş ekran görür ya da uygulamayı kapatır. |
-[Paywall ve ürünleri getirme](fetch-paywalls-and-products-flutter) sayfasında `fetchPolicy` ve `loadTimeout` parametre referanslarına, [Placement'lar](placements) sayfasında ise doğru placement'ı seçmeye ilişkin bilgilere ulaşabilirsiniz.
-## Kötü bağlantı için ayarlama \{#tune-for-poor-connectivity\}
+| Göstermek üzere olduğunuz placement'ı getirin ya da [`preloadFlows`](#preload-placements) ile önbelleği ısıtın (SDK 4.3.0+). | Başlangıçta kendi eşzamanlı `getFlow` çağrılarınızı yayın. | El yapımı bir prefetch patlaması ana iş parçacığını engeller ve siyah ekrana yol açar. `preloadFlows` bunun için tasarlanmıştır ve grubu tek bir çağrıyla native SDK'ya gönderir. |
+| `getFlow`'u attribution çözümlendikten sonra çağırın — örneğin `activate`'ten 1–2 saniye sonra veya `didUpdateProfileStream` tetiklendikten sonra. | `getFlow`'u `runApp`'tan önce `main()` içinde çağırın. | Attribution henüz gelmemiştir. Flow varsayılan kitleyle eşleşir ve segment ile ASA kişiselleştirmesini sessizce atlar. |
+| Varsayılan `loadTimeout` değerini (5 saniye) koruyun ya da başka bir değer ayarlayın ve her placement için bir [yedek paywall](fallback-paywalls) yapılandırın. | `getFlow`'a hiçbir zaman tetiklenmeyecek kadar büyük bir `loadTimeout` değeri geçirin. | Zaman aşımı hiç tetiklenmezse, kötü bağlantıya sahip kullanıcılar ağ çözümlenene kadar boş bir ekran görür ya da uygulamayı kapatır. |
 
-Sürekli kötü bağlantı yaşanan pazarlar için (kırsal alanlar, ulaşım güzergahları, yönlendirme sorunlarından etkilenen bölgeler):
+Özel paywalllar ve ürünleri getirme hakkında daha fazla bilgi için `fetchPolicy` ve `loadTimeout` parametre referansına [Özel paywallları ve ürünleri getirme](fetch-paywalls-and-products-flutter) sayfasından, doğru placement seçimi için [Placement'lar](placements) sayfasından ulaşabilirsiniz.
 
-- İlk fetch dışında her fetch işleminde `fetchPolicy: AdaptyPaywallFetchPolicy.returnCacheDataElseLoad` kullanın.
-- Adapty Kontrol Paneli'nde her placement için bir [yedek paywall](fallback-paywalls) yapılandırın.
-- `loadTimeout` değerini 3–5 saniyeye ayarlayın ve zaman aşımı gerçekleştiğinde yedek paywalle geçin.
-- Paywall görüntülemeyi `getProfile()` yanıtına bağlamayın. Yavaş bir profilin arayüzü bloke etmemesi için `getPaywall` işlemini bağımsız olarak çağırın.
+## Placement'ları önceden yükle \{#preload-placements\}
+
+:::info
+`preloadFlows` ve `preloadFlowsForDefaultAudience`, SDK 4.3.0 sürümünden itibaren kullanılabilir.
+:::
+
+`preloadFlows`, flow JSON'ını önceden önbelleğe alır. Ardından her zamanki gibi kullanırsınız: flow için `getFlow`, görünümü için `createFlowView`.
+
+`fetchPolicy`, sonraki bir `getFlow` çağrısının hangi katmanı önce okuyacağını belirler; önbelleğe erişip erişemeyeceğini değil:
+
+- `AdaptyFlowFetchPolicy.returnCacheDataElseLoad` önce önceden yüklenmiş kopyayı okur ve yalnızca önbellekte hiçbir şey yoksa ağa gider. `AdaptyFlowFetchPolicy.returnCacheDataIfNotExpiredElseLoad(maxAge)` kopya `maxAge` değerinden daha yeni olduğu sürece aynı şekilde davranır.
+- Varsayılan olan `AdaptyFlowFetchPolicy.reloadRevalidatingCacheData` önce ağa gider; istek başarısız olursa veya zaman aşımına uğrarsa önceden yüklenmiş kopyaya döner.
+
+Bir ön yükleme her durumda işe yarar, ama farklı biçimlerde: cache-first politikası isteği tamamen ortadan kaldırırken, varsayılan politika isteği koruyup üzerine sıcak bir kopya ekler. Bir [test cihazında](test-devices) `getFlow`, her politikada önbelleği atlar ve yalnızca ağ isteği başarısız olursa ön yüklenmiş kopyayı kullanır.
+
+Oturumun hangi placement'lara ihtiyaç duyacağını bildiğinizde ama henüz göstermek istemediğinizde kullanın — örneğin `activate` ve `identify` tamamlandıktan hemen sonra, kullanıcının henüz dokunmadığı bir düğmenin arkasındaki flow için.
+
+```dart showLineNumbers
+try {
+  await Adapty().preloadFlows(
+    placementIds: ['onboarding', 'main_paywall'],
+    loadTimeout: const Duration(seconds: 5),
+  );
+} on AdaptyError catch (adaptyError) {
+  // en az bir placement yüklenemedi
+}
+
+// Daha sonra, kullanıcı paywalla ulaştığında:
+final flow = await Adapty().getFlow(
+  placementId: 'main_paywall',
+  fetchPolicy: AdaptyFlowFetchPolicy.returnCacheDataElseLoad,
+);
+```
+
+**Parametreler:**
+
+- `placementIds` (zorunlu): önceden yüklenecek placement'lar.
+- `loadTimeout` (isteğe bağlı): kitleye göre hedeflenmiş flow'ların önceden yüklenmesi için bekleme süresi. Varsayılan değer 5 saniyedir; 1 saniyenin altındaki değerler 1 saniyeye yükseltilir. Zaman aşımına ulaşıldığında SDK, varsayılan kitle flow'larını yükleyebilir.
+
+**Bilinmesi gereken davranışlar:**
+
+- Çağrı yalnızca tüm placement'lar denendikten sonra başarısız olur; başarısız olan tüm placement'ları kapsayan tek bir `AdaptyError` döner. Bir placement'ın başarısız olması diğerlerini durdurmaz, yüklenen placement'lar önbellekte kalır.
+- Preloading her zaman ağa gider: kendine ait bir `fetchPolicy` yoktur.
+- Preloading yalnızca önbelleği ısıtır. İçerik döndürmez — görüntülemek için yine `getFlow` çağırmanız gerekir.
+
+### Ön yüklemenin kapsadığı alan \{#what-a-preload-covers\}
+
+Bir flow ekrana katman katman ulaşır. Ön yükleme, tıpkı `getFlow`'un yaptığı gibi yalnızca ilk katmanı kapsar:
+
+| Katman | Tarafından alınan | Ön yükleme ile ısıtıldı mı |
+|---|---|---|
+| Flow JSON — seçilen varyant, ürün kimlikleri ve remote config | `getFlow` | Evet |
+| UI düzeni — ekranın yapısı, stili ve metni | `createFlowView` | Hayır |
+| Görseller (video öğesi için kullanılan sabit kare dahil) | `createFlowView`, arka planda | Hayır |
+| Ürünler | `createFlowView` veya `getPaywallProducts` | Hayır |
+| Video dosyaları | iOS'ta sistem oynatıcısı ve Android'de ExoPlayer, ekran oluşturulurken | Hayır. Android'de yerel SDK, oynatılan videoların 50 MB'a kadarını önbelleğe alır |
+
+`createFlowView`, düzeni şu sırayla üç yerde arar:
+
+1. Uygulama yeniden başlatmalarında da korunan native SDK'nın disk önbelleği.
+2. SDK 4.4 veya sonrası için [yedek dosyanız](flutter-use-fallback-paywalls) — flow'u en son yayımlamanızdan sonra indirdiyseniz.
+3. Ağ üzerinden Adapty. Bu bir gidiş-dönüş gerektirir; preload yapılmış olsa bile. Uygulama flow'un yayımlanmış her sürümünü ilk gösterdiğinde native SDK bu isteği yapar. Ardından düzeni disk önbelleğine kaydeder.
+
+`createFlowView` fonksiyonunun `loadTimeout` süresi dolduğunda, native SDK yedek seçeneğe geçmez: layout'u Adapty API'sinden tekrar talep eder. `loadTimeout` bu ikinci isteği sınırlamaz.
+
+### Kitle segmentasyonunu atla \{#skip-audience-segmentation\}
+
+Önbelleği, kitle segmentasyonunu hiç beklemeden ısıtmak için varsayılan kitle varyantını kullanın. Bu seçenek timeout almaz:
+
+```dart showLineNumbers
+await Adapty().preloadFlowsForDefaultAudience(placementIds: ['main_paywall']);
+```
+
+Daha sonra çağrılan `getFlowForDefaultAudience`, kopyayı `getFlow`'un bir `preloadFlows` kopyasını okuduğu şekilde okur.
+
+## İlk ekran medyasını uygulama paketinden göster \{#show-first-screen-media-from-the-app-bundle\}
+
+Bir flow, resimlerini ve videolarını Adapty'den indirir. İlk ekranın medyasını anında göstermek için bunu uygulama paketinden sunun. Bu, zaten gönderdiğiniz medyayı yeniden kullanmanın iyi bir yoludur; örneğin mevcut bir native onboarding'in görsellerini bu şekilde değerlendirebilirsiniz.
+
+1. Flow & Paywall Builder'da, görsel veya videoya [özel medya kimliği](custom-media#custom-media-id) ayarlayın. Oraya yüklediğiniz dosya yedek olarak kalır.
+2. Dosyayı Flutter asset'lerinize ekleyin ve `pubspec.yaml` dosyasındaki `assets` bölümüne listeleyin.
+3. Flow görünümünü oluştururken, `customAssets` içinde o kimliğe ait paketlenmiş dosyayı geçirin:
+
+```dart showLineNumbers
+// "welcome_video" is the custom media ID set in the Flow & Paywall Builder
+final bundledAssets = {
+  'welcome_video': AdaptyCustomAsset.localVideoAsset(
+    assetId: 'assets/videos/welcome.mp4',
+  ),
+};
+
+try {
+  final view = await AdaptyUI().createFlowView(
+    flow: flow,
+    customAssets: bundledAssets,
+  );
+} on AdaptyError catch (e) {
+  // handle the error
+}
+```
+
+Paketlenmiş dosyalar uygulamanızın indirme boyutunu artırır, bu nedenle yalnızca kullanıcıların ilk gördüğü medyaları paketleyin.
+
+Paketlenmiş bir görsel bekleme olmadan görünür, ancak yerel SDK yüklenen görseli arka planda indirmeye devam eder.
+
+Paketlemediğiniz medya yine de hemen görünür: flow'un düzeni, her görselin küçük düşük çözünürlüklü bir kopyasını (video için de bir sabit kare dahil) içerir ve tam dosya yüklenene kadar bunu gösterir.
+
+`customAssets` referansının tamamı için bkz. [Varlıkları özelleştirme](flutter-get-pb-paywalls#customize-assets).
+
+## Zayıf bağlantı için ayarlama \{#tune-for-poor-connectivity\}
+
+Sürekli zayıf bağlantının yaşandığı pazarlar için (kırsal alanlar, toplu taşıma, yönlendirme sorunlarından etkilenen bölgeler):
+
+- Her fetch işleminde (ilk fetch hariç) `fetchPolicy: AdaptyFlowFetchPolicy.returnCacheDataElseLoad` ayarlayın.
+- Adapty kontrol panelinde her placement için bir [yedek paywall](fallback-paywalls) yapılandırın.
+- `loadTimeout` değerini hız ve hedefleme arasında dengeli tutun. Daha kısa bir timeout, kullanıcıların yedek içeriği daha hızlı görmesini sağlar. Daha uzun bir timeout ise hedeflenmiş flow'un yüklenmesi için daha fazla zaman tanır.
+- [Flow'u hafif tutun](flow-size), böylece layout daha hızlı indirilir.
+- Flow gösterimini `getProfile()` fonksiyonuna bağlamayın. Yavaş bir profil yüklemesinin arayüzü bloke etmemesi için `getFlow` fonksiyonunu bağımsız olarak çağırın.

@@ -1,0 +1,809 @@
+---
+title: "Lệnh Flows"
+description: "Các lệnh Adapty CLI để tạo flow, đọc và ghi cấu hình builder của chúng, xác thực và xem trước, tải lên media và font tùy chỉnh, xuất bản, liệt kê và khôi phục các phiên bản, nhân đôi, đọc chỉ số và phễu màn hình."
+metadataTitle: "Lệnh CLI Flows | Tài liệu Adapty"
+---
+
+[Flows](adapty-flow-builder) là các paywall và onboarding mà bạn xây dựng trong Flow & Paywall Builder. CLI quản lý bản ghi flow, cấu hình builder, việc xuất bản và [lịch sử phiên bản](flow-version-history). Cấu hình builder là một tài liệu JSON lớn mà Flow & Paywall Builder thường tạo ra, và CLI không tự tạo cấu hình này. Để soạn thảo hoặc chỉnh sửa cấu hình từ terminal, hãy sử dụng [flow-generator skill](flow-generator-skill), công cụ này sẽ điều khiển các lệnh cho bạn. Trước khi xuất bản, [flow-audit skill](flow-audit-skill) kiểm tra xem flow có sẵn sàng cho môi trường production chưa. Các [lệnh `fonts`](#custom-fonts) tải lên và quản lý các phông chữ tùy chỉnh mà flow sử dụng, và yêu cầu CLI phiên bản 0.33.0 trở lên. Các lệnh `flows metrics` đọc số liệu từ trang [flow metrics](flow-metrics) và yêu cầu CLI phiên bản 0.15.0 trở lên. Các lệnh `flows funnel` đọc [flow funnel](flow-funnel) và yêu cầu CLI phiên bản 0.19.0 trở lên. Các lệnh được liệt kê ở đây để tham khảo.
+
+## adapty flows list
+
+Liệt kê tất cả các flow của một ứng dụng.
+
+```bash
+adapty flows list --app <app-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+Chấp nhận [cờ phân trang](developer-cli-reference#global-flags).
+
+## adapty flows get
+
+Lấy thông tin chi tiết của một flow cụ thể.
+
+```bash
+adapty flows get --app <app-id> <flow-id>
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | Flow ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+Phản hồi chứa `id`, `name`, `status`, `published_flow_version_id`, và `updated_at`. `published_flow_version_id` là ID của phiên bản đang hoạt động, hoặc `null` khi flow chưa từng được xuất bản. Status là một trong các giá trị sau:
+
+| Trạng thái | Ý nghĩa |
+|---|---|
+| `draft` | Flow chưa được xuất bản lần nào |
+| `published` | Phiên bản hiện tại đang hoạt động |
+| `dirty` | Flow đã được xuất bản trước đó, và phiên bản hiện tại có thay đổi chưa được xuất bản. Người dùng vẫn thấy phiên bản đã xuất bản lần cuối |
+| `publishing` | Đang trong quá trình xuất bản |
+| `publication_failed` | Lần xuất bản gần nhất thất bại. Hãy sửa cấu hình và xuất bản lại |
+| `archived` | Flow đã được lưu trữ |
+
+## adapty flows create
+
+Tạo một flow. Flow mới có tên và chưa có config. Để thêm config, dùng [`flows config update`](#adapty-flows-config-update).
+
+```bash
+adapty flows create --app <app-id> --name "Onboarding"
+```
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | App ID (UUID) |
+| `--name` | Có | Tên flow |
+
+## adapty flows update
+
+Đổi tên một flow.
+
+```bash
+adapty flows update --app <app-id> <flow-id> --name "Onboarding v2"
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | Flow ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--name` | Yes | Tên flow mới |
+
+## adapty flows publish
+
+Xuất bản phiên bản hiện tại của một flow cho người dùng.
+
+```bash
+adapty flows publish --app <app-id> <flow-id>
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `flow-id` | ID của flow (UUID) |
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | ID của ứng dụng (UUID) |
+| `--yes`, `-y` | Không | Xuất bản mà không cần xác nhận. Bắt buộc khi đầu ra được chuyển qua pipe hoặc dùng `--json` |
+
+Vì việc xuất bản ảnh hưởng trực tiếp đến những gì người dùng thấy, lệnh này sẽ in tên flow và yêu cầu xác nhận. Bất kỳ câu trả lời nào khác `y` đều hủy lệnh với mã thoát 1. Khi dùng `--json` hoặc trong pipe, lệnh sẽ từ chối với mã thoát 2 thay vì chờ câu trả lời, vì vậy hãy truyền `--yes` trong các script và phiên agent.
+
+Trong CLI phiên bản 0.33.0 trở lên, khi config sử dụng [phông chữ tùy chỉnh](#custom-fonts), lệnh sẽ đọc các phông chữ hiện tại của ứng dụng. Nếu bản sao trong config đã lỗi thời, lệnh sẽ lưu config với các phông chữ hiện tại, sau đó xuất bản. Quá trình lưu giữ nguyên các remote config và thất bại nếu ai đó đã thay đổi config sau khi lệnh đọc nó. Nếu lưu thành công và quá trình xuất bản bắt đầu, đầu ra dạng văn bản thường đọc sẽ bao gồm `Fonts refreshed`.
+
+Lệnh sẽ dừng trước khi ghi bất kỳ dữ liệu nào nếu không thể đọc được font. Lệnh thoát với mã 2 nếu một tên font family trong config khớp với nhiều family. Để giải quyết, hãy đổi tên một family hoặc dùng ID của family trong config.
+
+Phản hồi config phải chứa một đối tượng `config` và một số nguyên `updated_at`, kể cả khi không cần lưu. Nếu lệnh cần lưu config, phản hồi cũng phải chứa một danh sách `remote_configs`. Nếu không đáp ứng các yêu cầu này, lệnh sẽ dừng trước khi ghi với mã thoát 4 và `malformed_response`.
+
+Việc lưu thất bại hoặc không chắc chắn sẽ dừng lệnh trước khi gửi yêu cầu xuất bản. Nếu CLI không đọc được phản hồi lưu hoặc kết nối bị gián đoạn trong quá trình lưu, thao tác lưu có thể đã thành công. Hãy đọc config đã lưu bằng [`flows config get`](#adapty-flows-config-get) trước khi xuất bản lại. Nếu việc xuất bản thất bại sau khi lưu thành công, config đã lưu vẫn được giữ nguyên.
+
+Việc xuất bản là bất đồng bộ: phản hồi trả về `status: publishing`, và flow chưa được phát hành. Hãy polling [`flows get`](#adapty-flows-get) cho đến khi trạng thái chuyển thành `published` hoặc `publication_failed`. Nếu gặp `publication_failed`, hãy dùng [`flows config get`](#adapty-flows-config-get) để xem nguyên nhân.
+
+Publishing thất bại với lỗi HTTP 400 khi flow không có config, khi config không thể publish, hoặc khi phiên bản hiện tại đã được phát hành. Để xác minh config trước khi publish, hãy dùng [`flows config validate`](#adapty-flows-config-validate). Nếu flow không tồn tại, lệnh thoát với mã 4. Trước phiên bản CLI 0.33.0, lệnh thoát với mã 1.
+
+## adapty flows config get
+
+Đọc cấu hình builder của một flow.
+
+```bash
+adapty flows config get --app <app-id> <flow-id>
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | Flow ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+Phản hồi chứa `config`, `remote_configs`, `status`, và `updated_at`. `updated_at` là timestamp tính bằng mili giây của lần thay đổi config gần nhất. Truyền giá trị này vào [`flows config update`](#adapty-flows-config-update) qua tham số `--expected-updated-at` để tránh ghi đè khi có chỉnh sửa đồng thời. Một flow chưa từng được ghi config sẽ trả về 404.
+
+Sau khi thực hiện publication, phản hồi cũng chứa ba trường mô tả kết quả. Đọc các trường này khi [`flows get`](#adapty-flows-get) báo `publication_failed`:
+
+| Field | Description |
+|---|---|
+| `publication_status` | Trạng thái xuất bản của phiên bản flow này: `transforming`, `transformed`, `uploading`, `uploaded`, `published`, hoặc `failed` |
+| `transform_error` | Lỗi transform thô — có thể là payload JSON liệt kê các vấn đề hoặc một chuỗi tóm tắt |
+| `publication_error` | Thông báo dễ đọc cho một lần xuất bản thất bại |
+
+## adapty flows config update
+
+Ghi lại cấu hình builder của một flow và các remote config của nó.
+
+```bash
+adapty flows config get --app <app-id> <flow-id> --json > flow.json
+adapty flows config update --app <app-id> <flow-id> --file flow.json
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `flow-id` | ID của flow (UUID) |
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | ID ứng dụng (UUID) |
+| `--file` | Thay thế cho `--config`, `--config-file`, và `--remote-configs` | Đường dẫn đến file JSON chứa `config` và `remote_configs`, hoặc `-` để đọc từ stdin. Đầu ra của `flows config get --json` dùng được ngay. Các key khác bị bỏ qua |
+| `--config` | Khi không dùng `--file`: một trong `--config` và `--config-file` | Cấu hình builder dưới dạng chuỗi JSON |
+| `--config-file` | Khi không dùng `--file`: một trong `--config` và `--config-file` | Đường dẫn đến file JSON chứa cấu hình builder, hoặc `-` để đọc từ stdin |
+| `--remote-configs` | Khi không dùng `--file` | Mảng JSON gồm các entry `{locale, data}`, trong đó `data` là remote config dưới dạng chuỗi. `[]` sẽ xóa toàn bộ remote config |
+| `--expected-updated-at` | Không | Giá trị `updated_at` từ lần `flows config get` trước đó. Nếu cấu hình thay đổi sau lần đọc đó, lệnh sẽ thất bại thay vì ghi đè lên thay đổi đó. Bỏ qua tham số này để ghi đè vô điều kiện |
+
+Một lần ghi sẽ thay thế toàn bộ cấu hình và danh sách remote config. Để giữ lại các remote config, hãy gửi `remote_configs` từ lệnh `flows config get --json`. Nếu không dùng `--file`, lệnh cần cả cấu hình lẫn `--remote-configs`: nếu thiếu một trong hai, lệnh sẽ thoát với mã 2 và không gửi bất kỳ request nào. Cờ `--file` và `--remote-configs` bắt buộc cần CLI phiên bản 0.20.0 trở lên.
+
+Để ghi cấu hình đầu tiên cho một flow mới, truyền vào danh sách remote config rỗng:
+
+```bash
+adapty flows config update --app <app-id> <flow-id> --config-file config.json --remote-configs '[]'
+```
+
+Việc ghi config sẽ lưu bản nháp và không xuất bản ngay. Trên một flow đã xuất bản, thao tác ghi sẽ tạo ra một phiên bản mới: trạng thái của flow sẽ chuyển thành `dirty`, và người dùng vẫn thấy phiên bản đã xuất bản cho đến khi bạn chạy [`flows publish`](#adapty-flows-publish).
+
+## adapty flows config validate
+
+Kiểm tra xem một builder config có thể publish được hay không, mà không cần lưu.
+
+```bash
+adapty flows config validate --app <app-id> <flow-id> --config-file config.json
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | Flow ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--config` | One of the two | Builder config dạng chuỗi JSON |
+| `--config-file` | One of the two | Đường dẫn đến file JSON chứa builder config, hoặc `-` để đọc từ stdin |
+
+Phản hồi bao gồm `valid` và danh sách `issues`. Khi cấu hình không thể xuất bản, lệnh thoát với mã 1, giúp các script có thể dựa vào đó để kiểm soát luồng xử lý.
+
+## adapty flows config preview
+
+Hiển thị file config cục bộ trên trình duyệt. Lệnh này không thực hiện lệnh gọi API và không nhận flag `--app`.
+
+```bash
+adapty flows config preview ./config.json --screen <screen-id> --device iphone-14 --orientation portrait
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `config-file` | Đường dẫn đến file JSON config của builder cục bộ |
+
+| Flag | Mặc định | Mô tả |
+|---|---|---|
+| `--screen` | Màn hình đầu tiên của flow | ID màn hình cần hiển thị |
+| `--device` | `iphone-14` | Khung thiết bị để hiển thị |
+| `--orientation` | `portrait` | `portrait` hoặc `landscape` |
+
+Trong terminal, lệnh sẽ mở bản xem trước trong trình duyệt của bạn. Khi dùng pipe hoặc với `--json`, lệnh sẽ in URL ra thay thế. URL chứa toàn bộ cấu hình nên khá dài: hãy pipe vào công cụ chụp ảnh màn hình thay vì in ra trực tiếp. Các cấu hình vượt quá khoảng 32 KB sẽ render chậm.
+
+## Tải lên media cho Adapty flows \{#adapty-flows-media-upload\}
+
+Tải lên một hình ảnh để sử dụng trong cấu hình flow.
+
+```bash
+adapty flows media upload --app <app-id> ./hero.png
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `file` | Đường dẫn đến tệp hình ảnh |
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | App ID (UUID) |
+
+Các định dạng được chấp nhận: PNG, JPEG, WebP và SVG. Máy chủ từ chối file vượt quá 20 MiB với lỗi `media_file_too_large` và thông báo "File size must not exceed 20 MiB." Phản hồi chứa `id`, `name` và `url` CDN của ảnh để tham chiếu từ config. Phản hồi cũng chứa `size` — dung lượng file bạn đã gửi tính bằng byte — và danh sách `warnings`. Để tải lên video, hãy dùng [`flows media upload-video`](#adapty-flows-media-upload-video).
+
+Hình ảnh có dung lượng trên 1 MB sẽ được tải lên kèm theo cảnh báo trong phản hồi. Cảnh báo có tiêu đề `Large image — <size>` và nội dung "Large images slow the first load. Upload a smaller file." Sau dữ liệu hình ảnh, lệnh in ra kích thước ảnh, ví dụ `Size: 1.5 MB`, rồi in bất kỳ cảnh báo nào. Lệnh thoát thành công. Với `--json`, lệnh in toàn bộ phản hồi, bao gồm cả `size` và `warnings`.
+
+Dòng cảnh báo `Warning: <title>. <message>` được ghi vào stderr. Khi dùng `--json`, lệnh không in dòng này, nên script đọc stdout chỉ nhận được cảnh báo từ trường `warnings` trong phản hồi JSON.
+
+## adapty flows media upload-video
+
+Tải lên video để sử dụng trong cấu hình flow.
+
+```bash
+adapty flows media upload-video --app <app-id> ./intro.mp4
+```
+
+| Argument | Description |
+|---|---|
+| `file` | Đường dẫn đến tệp video |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+Định dạng được chấp nhận: MP4 và WebM. Video tối đa 30 giây và tối đa 50 MB, chiều rộng và chiều cao mỗi chiều phải ít nhất 640 pixel. GIF không được hỗ trợ, và lệnh này không chuyển đổi ảnh động sang video.
+
+Phản hồi chứa URL video (một HLS playlist), URL ảnh xem trước, cũng như `width` và `height` của video. Trong config, một phần tử video nhận các giá trị này qua `videoUrl`, `previewUrl`, `width`, và `height`.
+
+## Phông chữ tùy chỉnh \{#custom-fonts\}
+
+Các lệnh `adapty fonts` dùng để tải lên và quản lý [phông chữ tùy chỉnh](using-custom-fonts-in-flow-builder) của ứng dụng. Tất cả các flow trong ứng dụng đều dùng chung một bộ phông chữ, giống với các phông bạn tải lên trong Flow & Paywall Builder. Một font family có thể có một hoặc nhiều face. Mỗi face là một độ đậm và kiểu chữ cụ thể của file `.ttf` hoặc `.otf`. Các lệnh `fonts` yêu cầu CLI phiên bản 0.33.0 trở lên. Để kiểm tra phiên bản hiện tại, chạy lệnh `adapty --version`.
+
+:::warning
+Adapty không gửi các tệp font đến thiết bị của người dùng. Để hiển thị font tùy chỉnh trong ứng dụng của bạn, hãy [thêm các tệp font tương tự vào bundle của ứng dụng](using-custom-fonts-in-flow-builder#add-the-font-files-to-your-apps-bundle), với tên font iOS và Android mà các face đó có trong Adapty.
+:::
+
+Để sử dụng font tùy chỉnh trong flow config, hãy đặt font theo họ font và độ đậm. Trên phần tử văn bản, font nằm trong `props.font`: `"font": {"family": {"type": "user", "id": "<font-family-id>"}, "weight": "bold"}`. Trên text style trong `theme.typography`, `family` và `weight` là các key của `settings` của style đó, không có object `font` bao ngoài. Family cũng có thể được đặt tên theo tên họ font. Chữ nghiêng được thiết lập trên một span văn bản phong phú. Khi bạn xuất bản flow, Adapty sẽ sử dụng mặt font có độ đậm và kiểu chữ đó. Nếu họ font không có mặt font như vậy, Adapty sẽ dùng mặt font có độ đậm gần nhất trong cùng kiểu chữ, rồi đến bất kỳ kiểu chữ nào. Khi hai mặt font có độ gần bằng nhau, mặt font nhẹ hơn sẽ được ưu tiên.
+
+Một lệnh thay đổi font family mà các flow sử dụng sẽ liệt kê các flow đó trong `flows_to_publish`. Hãy publish từng flow bằng [`flows publish`](#adapty-flows-publish) để gửi thay đổi đến người dùng. `flows_to_publish` sẽ là `null` trong hai trường hợp, và lệnh sẽ in ra cảnh báo. Với `--json`, `flows_to_publish_error` cung cấp lý do và bước tiếp theo:
+
+- **Quá trình tải lên dừng lại ở một file**, file cuối cùng hoặc file duy nhất được đưa vào: Adapty có thể đã lưu file đó, vì vậy không biết được các family nào đã thay đổi. Chạy [`fonts list`](#adapty-fonts-list) để tìm chúng, sau đó chạy [`fonts usage`](#adapty-fonts-usage) cho từng family.
+- **Chỉ việc đọc các flow bị lỗi**: Mỗi file đều có kết quả của nó. Chạy [`fonts usage`](#adapty-fonts-usage) cho từng family mà lệnh đã thay đổi.
+
+## adapty fonts list
+
+Liệt kê các font family tùy chỉnh của một ứng dụng, cùng với các kiểu chữ của chúng.
+
+```bash
+adapty fonts list --app <app-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+Đối với mỗi kiểu chữ (face), phản hồi chứa thông tin về weight, italic, tên font trên iOS và Android, kiểu chữ mặc định của font family, và định dạng file. `metadata_status` cho biết weight và italic của kiểu chữ đó có được xác định hay không: `detected` và `confirmed` nghĩa là đã biết; `needs_review` và `legacy_unconfirmed` nghĩa là chưa biết. Để thiết lập chúng, sử dụng [`fonts faces update`](#adapty-fonts-faces-update).
+
+## adapty fonts get
+
+Lấy một họ font cùng các kiểu chữ của nó.
+
+```bash
+adapty fonts get --app <app-id> <font-family-id>
+```
+
+| Argument | Description |
+|---|---|
+| `font-family-id` | ID họ font (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+## adapty fonts upload
+
+Upload font files. Adapty so sánh tên họ font được lưu trong mỗi file với tên họ font của ứng dụng, không phân biệt chữ hoa chữ thường. Nếu một họ font khớp, file sẽ được thêm vào họ font đó. Nếu không có họ font nào khớp, Adapty sẽ tạo một họ font mới.
+
+Nếu hai hoặc nhiều family trùng khớp, chẳng hạn như `Brand` và `brand`, CLI báo cáo `refused` với `font_family_name_ambiguous`. Điều này áp dụng cho cả trường hợp có hay không có `--choice`. Với `--json`, mảng `families` bao gồm `family_id` và `family_name` cho mỗi kết quả trùng khớp. Sử dụng [`fonts add`](#adapty-fonts-add) với ID của family để thêm file vào family đó. Hoặc sử dụng [`fonts rename`](#adapty-fonts-rename) cho đến khi chỉ còn một family trùng khớp. Sau đó tải file lên lại.
+
+```bash
+adapty fonts upload --app <app-id> ./Brand-Regular.otf ./Brand-Bold.otf ./Brand-Italic.otf
+```
+
+| Argument | Description |
+|---|---|
+| `file` | Đường dẫn đến tệp `.ttf` hoặc `.otf`. Để tải lên nhiều tệp, hãy liệt kê từng tệp một |
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | ID ứng dụng (UUID) |
+| `--choice` | Không | Dùng `replace` để thay thế các face trùng, hoặc `keep` để giữ nguyên các face hiện có. Lệnh vẫn có thể tải lên các face mới |
+| `--replace-face-id` | Không | Kết hợp với `--choice replace` và chỉ một file: thay thế đúng những face này — những face mà lần từ chối đã liệt kê. Truyền các face ID dưới dạng danh sách phân cách bằng dấu phẩy, hoặc lặp lại cờ. Adapty từ chối việc thay thế khi các face này không còn khớp với các va chạm nữa |
+
+A static font file creates one face. A variable font file creates one face for each named style in the file. Other formats, such as WOFF and WOFF2, aren't supported. The command reads every file before it sends the first one: if it can't read a file, it stops with exit code 2 and sends nothing.
+
+The command sends one file per request. After the last file, it prints the result of each file. With `--json`, the results are in `files`:
+
+| Kết quả | Ý nghĩa |
+|---|---|
+| `created` | File đã tạo một font family mới |
+| `added` | Các face của file đã được thêm vào một family hiện có |
+| `partly_added` | Một số face của file đã được thêm vào family. `kept_faces` liệt kê các face mà family đã có sẵn |
+| `replaced` | File đã thay thế file của các face bị trùng, sau khi dùng `--choice replace`. `replaced_faces` liệt kê chúng |
+| `kept` | `--choice keep` đã bỏ qua file vì nó trùng với một face đã được lưu |
+| `refused` | Adapty từ chối file. `error_code` và `message` cho biết lý do |
+| `failed` | Lỗi mạng, lỗi xác thực, hoặc phản hồi mà CLI không đọc được đã dừng quá trình tải lên tại file này. Sau lỗi mạng hoặc phản hồi không đọc được, Adapty có thể đã lưu file: hãy chạy [`fonts list`](#adapty-fonts-list) trước khi gửi lại |
+| `not_sent` | File chưa được gửi vì quá trình tải lên đã dừng ở một file trước đó |
+
+Một file font tĩnh xung đột với một face trong hai trường hợp: một face của font family mà file đó tham gia có cùng weight và italic, hoặc bất kỳ face nào của ứng dụng có cùng tên font iOS. Để xem kết quả của file variable font, hãy xem danh sách sau đoạn này. Hai family khác nhau đều có thể có face Regular. Adapty có thể từ chối file xung đột với `conflicts` và `choices` trong báo cáo. Khi `next_step` đề xuất một thay thế, hãy chạy lệnh được in ra cho file đó với `--choice replace` và `--replace-face-id`. Lệnh này tạo một yêu cầu upload và thay thế chính xác các face được liệt kê. Một variable font cũng có thể thêm các face mới. Để bỏ qua toàn bộ file, hãy bỏ qua bước thử lại. Lệnh `--choice keep` được in ra có thể lưu các face mới nếu các xung đột thay đổi.
+
+- Nếu các font face được liệt kê vẫn còn tồn tại và tập hợp các xung đột thay đổi, Adapty có thể từ chối với HTTP 409 và danh sách `conflicts` hiện tại. Hãy xem lại danh sách đó trước khi quyết định có chạy lệnh thay thế mới hay không.
+- Nếu một font face được liệt kê không còn tồn tại, Adapty từ chối với `font_face_not_found` (HTTP 404). Nếu không có xung đột nào, Adapty có thể từ chối với HTTP 400. Cả hai trường hợp đều không thay thế bất kỳ font face nào. Để tải file lên mà không thay thế font face nào, hãy chạy lại lệnh tương tự cho file đó mà không dùng `--choice` hoặc `--replace-face-id` và xem lại kết quả mới.
+
+:::warning
+Với `--choice replace` đơn lẻ, CLI trước tiên gửi tệp mà không có lựa chọn nào. Khi xảy ra xung đột, CLI gửi lại tệp để thay thế các font chữ mà lần chạy này tìm thấy, và những font này có thể khác với các font trong lần từ chối trước. Nếu yêu cầu đầu tiên không tìm thấy xung đột nào, tệp có thể được tải lên như các font chữ mới. Đọc `replaced_faces` để xem lệnh đã thay thế những font nào. Adapty không lưu giữ các tệp cũ. Để thay thế chỉ một số font trong danh sách, hãy dùng [`fonts faces replace`](#adapty-fonts-faces-replace) cho từng font.
+:::
+
+Tệp variable font cho một trong các kết quả sau:
+
+- **Tất cả các style của nó đều mới trong bộ font**: `created` hoặc `added`, giống như một file tĩnh.
+- **Một số style của nó đã có trong bộ font**: `partly_added`. Các style mới sẽ gia nhập bộ font, và `kept_faces` liệt kê các style mà bộ font đã có sẵn.
+- **Tất cả các style của nó đều đã có trong bộ font**: `refused`, không có lựa chọn nào. Để thay đổi file của một face, hãy dùng [`fonts faces replace`](#adapty-fonts-faces-replace).
+- **Một style mới có tên font iOS trùng với một face khác của ứng dụng**: `refused`, kèm theo các lựa chọn, giống như bất kỳ xung đột nào.
+
+Một font chữ không có tên font iOS hoặc Android sau khi tải lên được lưu, và `warnings` đặt tên cho nó. Hãy đặt tên bằng [`fonts faces update`](#adapty-fonts-faces-update).
+
+| Mã thoát | Nguyên nhân | Cần làm gì |
+|---|---|---|
+| `0` | Mọi file đều được lưu hoặc bỏ qua | — |
+| `2` | CLI không đọc được file. Hoặc `--replace-face-id` chỉ định UUID không hợp lệ, thiếu `--choice replace`, hoặc được dùng với nhiều hơn một file. Không có file nào được gửi | Sửa đường dẫn hoặc các flag, rồi chạy lại toàn bộ lệnh |
+| `3` | Adapty từ chối phiên CLI, hoặc tài khoản không có quyền truy cập vào ứng dụng. Các file sau file đó chưa được gửi | Nếu phiên bị từ chối, hãy đăng nhập lại. Nếu không có quyền truy cập, hãy xác minh ID ứng dụng hoặc đăng nhập bằng tài khoản có quyền truy cập vào ứng dụng. Sau đó upload các file chưa được lưu |
+| `4` | Adapty từ chối ít nhất một file, và các file còn lại đã được gửi. Hoặc CLI không đọc được phản hồi và quá trình upload dừng lại tại file đó. Hoặc mọi file đều có kết quả (đã lưu hoặc bỏ qua), nhưng phản hồi về các flow sử dụng các họ font đã thay đổi bị lỗi định dạng: `flows_to_publish` là `null` | Đọc kết quả của từng file bị từ chối. Với file có trạng thái `failed`, hãy chạy [`fonts list`](#adapty-fonts-list) trước khi gửi lại. Khi chỉ việc đọc thông tin flow bị lỗi, hãy chạy [`fonts usage`](#adapty-fonts-usage) cho từng họ font mà lệnh đã thay đổi |
+| `5` | Lỗi mạng. Các file sau file đó chưa được gửi | Chạy [`fonts list`](#adapty-fonts-list) để kiểm tra xem file `failed` có được lưu không, rồi upload các file chưa được lưu |
+
+## adapty fonts add
+
+Thêm các kiểu chữ từ file font vào một họ font bạn chọn, bất kể tên họ font mà các file đó đang mang.
+
+```bash
+adapty fonts add --app <app-id> <font-family-id> ./Brand-Bold.otf
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `font-family-id` | ID họ font (UUID) |
+| `file` | Đường dẫn đến file `.ttf` hoặc `.otf`. Để thêm nhiều file, hãy liệt kê từng file một |
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | ID ứng dụng (UUID) |
+| `--choice` | Không | Dùng `replace` để thay thế các face trùng lặp, hoặc `keep` để giữ nguyên các face hiện có. Lệnh vẫn có thể thêm các face mới |
+| `--replace-face-id` | Không | Với `--choice replace` và chỉ một file: thay thế đúng các face này, những face được liệt kê trong phản hồi từ chối, như trong [`fonts upload`](#adapty-fonts-upload) |
+
+Các quy tắc va chạm, kết quả và mã thoát đều giống như đối với [`fonts upload`](#adapty-fonts-upload). Với `--choice keep`, một file biến vẫn bổ sung các style mới nếu các xung đột duy nhất của nó là các cặp weight và italic mà family đó đã có.
+
+## adapty fonts rename
+
+Đổi tên font family. Các file và face của family không thay đổi.
+
+```bash
+adapty fonts rename --app <app-id> <font-family-id> "Brand Sans"
+```
+
+| Argument | Description |
+|---|---|
+| `font-family-id` | ID của font family (UUID) |
+| `name` | Tên mới của family |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+Các family khác trong cùng app không được có trùng tên. Tên chỉ khác nhau về chữ hoa/thường vẫn được chấp nhận.
+
+## Cách dùng fonts trong adapty \{#adapty-fonts-usage\}
+
+Liệt kê các flow và paywall đang sử dụng một font family.
+
+```bash
+adapty fonts usage --app <app-id> <font-family-id>
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `font-family-id` | ID font family (UUID) |
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | App ID (UUID) |
+
+Phản hồi liệt kê các flow, bao gồm cả bản nháp, và các paywall sử dụng bộ font. Với mỗi mặt chữ, phản hồi liệt kê các paywall sử dụng mặt chữ đó, hoặc `null` khi Adapty không thể phân biệt được các mặt chữ. Một flow chỉ được liệt kê khi cấu hình của nó tham chiếu đến bộ font bằng ID. Flow tham chiếu đến bộ font chỉ bằng tên sẽ không được liệt kê.
+
+## adapty fonts faces update
+
+Thay đổi độ đậm và in nghiêng của một face, hoặc tên font iOS hay Android của nó.
+
+```bash
+adapty fonts faces update --app <app-id> <font-face-id> --ios-name BrandSans-Bold --android-name brand_sans_bold
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `font-face-id` | ID font face (UUID), như lệnh [`fonts list`](#adapty-fonts-list) hiển thị |
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | App ID (UUID) |
+| `--weight` | Không | Độ đậm của font, ví dụ `400` cho regular hoặc `700` cho bold. Dùng kết hợp với `--italic` |
+| `--italic` | Không | `true` cho in nghiêng, `false` cho thẳng đứng. Dùng kết hợp với `--weight` |
+| `--ios-name` | Không | Tên font iOS: tên PostScript được lưu trong file font. Không có face nào khác của app được dùng tên này |
+| `--android-name` | Không | Tên font Android: tên file trong `res/font/` không có phần mở rộng. Phải bắt đầu bằng chữ thường và chỉ chứa chữ thường, chữ số và dấu gạch dưới |
+
+Sau khi bạn đặt trọng số (weight) và kiểu chữ nghiêng (italic), `metadata_status` của font face đó sẽ chuyển thành `confirmed`. Tên font Android sẽ thay đổi trên mọi font face của cùng một file. Các paywall đang sử dụng tên đã thay đổi sẽ nhận được tên mới.
+
+## adapty fonts faces default
+
+Đặt một face là face mặc định của gia đình font đó. Face nào đang là mặc định sẽ không còn là mặc định nữa.
+
+```bash
+adapty fonts faces default --app <app-id> <font-face-id>
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `font-face-id` | ID của font face (UUID) |
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | ID ứng dụng (UUID) |
+
+## adapty fonts faces move
+
+Di chuyển một face sang font family khác. File của face không thay đổi.
+
+```bash
+adapty fonts faces move --app <app-id> <font-face-id> --to <font-family-id>
+```
+
+| Argument | Description |
+|---|---|
+| `font-face-id` | Font face ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--to` | Yes | ID (UUID) của family cần di chuyển face vào |
+
+Face mặc định của một family không thể di chuyển. Một face đã biết weight và italic không thể di chuyển vào family đã có face với cùng weight và italic.
+
+## adapty fonts faces replace
+
+Tải lên file mới cho một face.
+
+```bash
+adapty fonts faces replace --app <app-id> <font-face-id> ./Brand-Bold.otf
+```
+
+| Argument | Description |
+|---|---|
+| `font-face-id` | ID của font face (UUID) |
+| `file` | Đường dẫn đến file `.ttf` hoặc `.otf` mới |
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | App ID (UUID) |
+| `--weight` | Không | Độ đậm của font chữ. Dùng kết hợp với `--italic` |
+| `--italic` | Không | `true` hoặc `false`. Dùng kết hợp với `--weight` |
+| `--yes` | Không | Thay thế file mà không cần xác nhận. Bắt buộc khi dùng với `--json`, trong pipe, hoặc khi không có terminal |
+
+Mặt font vẫn giữ nguyên ID, nhãn mặc định và tên font Android. Tên font iOS sẽ được lấy từ file mới. Adapty không lưu lại file cũ và bạn không thể khôi phục nó. Vì lý do này, lệnh sẽ yêu cầu xác nhận. Khi dùng `--json`, trong pipe, hoặc không có terminal, lệnh cần có `--yes`: nếu thiếu, lệnh sẽ dừng với exit code 6 (`confirm_required`) và không thay đổi gì. Để dùng file variable font cho một mặt font chưa biết weight và italic, hãy truyền `--weight` và `--italic`.
+
+Nếu face đã có weight và cài đặt italic được xác định, file mới phải khớp với cả hai. Adapty cũng từ chối file nếu một face khác trong cùng family có weight và cài đặt italic giống nhau, hoặc nếu một face khác trong ứng dụng đã sử dụng tên font iOS của file mới. Trong mỗi trường hợp, face sẽ giữ nguyên file cũ. Nếu tên font iOS đã được sử dụng, hãy upload file với tên PostScript khác hoặc thay thế file của face đang dùng tên đó.
+
+## adapty flows versions list \{#adapty-flows-versions-list\}
+
+Liệt kê các phiên bản của một flow, mới nhất trước. Đây là các phiên bản trong [lịch sử phiên bản](flow-version-history) trong Flow & Paywall Builder.
+
+```bash
+adapty flows versions list --app <app-id> <flow-id>
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `flow-id` | ID của flow (UUID) |
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | ID của app (UUID) |
+| `--search` | Không | Chỉ hiển thị các phiên bản có tiêu đề chứa đoạn văn bản này. Không phân biệt chữ hoa/thường, khớp một phần từ: `friday` tìm được **Black Friday** |
+
+Mỗi dòng hiển thị tiêu đề, trạng thái, ngày và ID của một phiên bản. Tiêu đề là tên phiên bản, hoặc **Version N** nếu phiên bản chưa có tên. Trạng thái là một trong các giá trị sau:
+
+| Trạng thái | Ý nghĩa |
+|---|---|
+| `draft` | Phiên bản bạn đang chỉnh sửa. Một flow có một draft hoặc không có. Trong khi draft đang được xuất bản, dòng đó kết thúc bằng `Publishing…`, và sau khi xuất bản thất bại thì kết thúc bằng `Publish failed` |
+| `live` | Phiên bản người dùng của bạn đang thấy |
+| `previous` | Phiên bản cũ hơn. Nó đã từng là live trước đây, hoặc một phiên bản mới hơn đã thay thế nó trước khi được xuất bản |
+
+Ngày của phiên bản `live` hoặc `previous` là ngày bắt đầu xuất bản. Với bản nháp và phiên bản `previous` chưa từng được xuất bản, đó là ngày phiên bản được tạo.
+
+Với flow chưa từng được xuất bản, lệnh sẽ in ra `History will appear after the first publish.` và dòng bản nháp bên dưới. [Lịch sử phiên bản](flow-version-history) trên dashboard không hiển thị dòng nào cho flow như vậy. Khi không có phiên bản nào khớp với `--search`, lệnh sẽ in ra `No versions match the search.`
+
+Lệnh luôn liệt kê tất cả các phiên bản và không nhận flag phân trang.
+
+Với `--json`, lệnh in ra `{data, meta}` từ Adapty không thay đổi, với các hàng nằm trong `data`. Mỗi hàng có các trường `flow_version_id`, `version`, `name`, `title`, `state`, `is_current`, `publication_status`, `published_at`, `created_at`, `updated_at`, và `last_edited_by`. `updated_at` là timestamp tính bằng mili giây của lần thay đổi nội dung cuối cùng của phiên bản: truyền giá trị `updated_at` của bản nháp vào [`flows versions restore`](#adapty-flows-versions-restore) dưới dạng `--expected-updated-at`. `last_edited_by` cho biết tên người dùng đã thay đổi phiên bản lần cuối, hoặc là `null` khi Adapty không xác định được người dùng.
+
+## adapty flows versions get
+
+Đọc một phiên bản của flow. Việc đọc phiên bản không thay đổi gì cả: bản nháp và phiên bản live vẫn giữ nguyên.
+
+Lệnh này in ra tiêu đề, ID, số thứ tự, trạng thái, ngày tạo của phiên bản, người dùng đã thay đổi nó lần cuối, và liên kết **Test on device**. Toàn bộ nội dung của phiên bản — cấu hình builder với mọi layout, Remote Config, và các paywall — nằm trong kết quả đầu ra của `--json`, và trong file của `--output`.
+
+```bash
+adapty flows versions get --app <app-id> <flow-id> <version-id> --output version.json
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `flow-id` | Flow ID (UUID) |
+| `version-id` | Version ID (UUID), từ [`flows versions list`](#adapty-flows-versions-list) |
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | App ID (UUID) |
+| `--output` | Không | Ghi toàn bộ nội dung của phiên bản vào file này dưới dạng JSON |
+| `--yes`, `-y` | Không | Thay thế file `--output` đã tồn tại mà không hỏi. Bắt buộc khi dùng `--json` hoặc trong pipe nếu file đã tồn tại |
+
+Nếu CLI không thể ghi file `--output`, ví dụ vì thư mục chứa nó không tồn tại, lệnh sẽ in ra `Could not write <path> (<errno>).` và thoát với mã lỗi 1.
+
+## adapty flows versions preview
+
+In ra link **Test on device** của một phiên bản. Mở link trên thiết bị kiểm thử để xem phiên bản đó trong [ứng dụng Adapty trên di động](paywall-device-compatibility-preview#preview-on-devices). Bất kỳ phiên bản nào cũng dùng được: bản nháp, phiên bản đang live, hoặc phiên bản cũ hơn.
+
+```bash
+adapty flows versions preview --app <app-id> <flow-id> <version-id>
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `flow-id` | Flow ID (UUID) |
+| `version-id` | Version ID (UUID) |
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | App ID (UUID) |
+
+## adapty flows versions rename
+
+Đổi tên một phiên bản. Bạn có thể đổi tên bản nháp, phiên bản đang live và các phiên bản trước đó.
+
+```bash
+adapty flows versions rename --app <app-id> <flow-id> <version-id> --name "Black Friday"
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `flow-id` | Flow ID (UUID) |
+| `version-id` | Version ID (UUID) |
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | App ID (UUID) |
+| `--name` | Có | Tên phiên bản mới. Truyền `--name ""` để xóa tên, khi đó phiên bản sẽ hiển thị lại là **Version N**. Tên chỉ gồm khoảng trắng cũng sẽ xóa tên |
+
+Lệnh này in ra ID phiên bản và tiêu đề mới. Adapty tự động cắt bỏ khoảng trắng ở đầu và cuối tên. Hai phiên bản có thể có cùng tên. Việc đổi tên không thay đổi nội dung hay `updated_at` của phiên bản, do đó sẽ không xung đột với lần lưu draft sau.
+
+## adapty flows versions restore
+
+Khôi phục một phiên bản thành bản nháp của flow tương ứng. Đây là **Duplicate as draft** trong [lịch sử phiên bản](flow-version-history#restore-an-earlier-version). Phiên bản được khôi phục sẽ không đến tay người dùng cho đến khi bạn [xuất bản](#adapty-flows-publish) nó.
+
+:::tip
+Khôi phục sẽ thay thế bản nháp hiện tại. Để giữ lại bản nháp, hãy nhân bản nó thành một flow mới trước bằng lệnh [`flows duplicate`](#adapty-flows-duplicate).
+:::
+
+```bash
+adapty flows versions restore --app <app-id> <flow-id> <version-id>
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `flow-id` | Flow ID (UUID) |
+| `version-id` | Version ID (UUID) của phiên bản `live` hoặc `previous` |
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | App ID (UUID) |
+| `--expected-updated-at` | Khi dùng `--yes` và flow có bản nháp | Giá trị `updated_at` của bản nháp, lấy từ [`flows versions list --json`](#adapty-flows-versions-list). Nếu bản nháp đã thay đổi sau lần đọc đó, lệnh sẽ thất bại thay vì ghi đè thay đổi |
+| `--yes`, `-y` | Không | Thay thế bản nháp mà không hỏi xác nhận. Bắt buộc khi dùng `--json` hoặc trong pipe nếu flow có bản nháp |
+
+Lệnh đọc các phiên bản của flow trước tiên:
+
+- **Flow không có bản nháp**: Lệnh không hỏi gì thêm. Adapty tạo một bản nháp mới với số phiên bản tiếp theo, không có tên, và toàn bộ nội dung của phiên bản đó. Phiên bản live và phiên bản bạn khôi phục vẫn giữ nguyên như cũ.
+- **Flow đã có bản nháp**: Lệnh hỏi `Replace the draft '<draft>' (last change <time> by <user>) with '<version>'? To keep the draft, duplicate it to a new flow first.`, rồi `Apply? [y/N]`. Nếu bạn trả lời `y`, bản nháp giữ nguyên ID, số và tên, và nhận nội dung của phiên bản đó. Không có phiên bản nào được thêm vào. Bất kỳ câu trả lời nào khác sẽ thoát với mã lỗi 1 và không gửi gì cả.
+
+Với `--json`, trong pipe, hoặc khi không có terminal, lệnh không thể hỏi. Khi flow có bản nháp, lệnh sẽ không gửi gì và thoát với code 6 trừ khi bạn truyền `--yes`. Thông báo của nó đặt câu hỏi và thêm `To replace it, re-run with --yes --expected-updated-at <ms> (the draft's updated_at).`, với `updated_at` của bản nháp thay cho `<ms>`. Với `--yes`, cũng cần truyền `--expected-updated-at`: nếu không có, lệnh thoát với code 6 và không gửi gì. Trong terminal mà không có `--expected-updated-at`, lệnh lấy `updated_at` của bản nháp mà nó hiển thị cho bạn trong câu hỏi.
+
+Sau khi khôi phục, lệnh sẽ in ra `Restored '<version>' as the draft '<draft>' (<draft-id>). Nothing is published.`
+
+Adapty từ chối khôi phục và không thay đổi gì trong các trường hợp sau. Lệnh sẽ in thông báo của Adapty, bổ sung hướng dẫn cho một số trường hợp, rồi thoát với mã 4:
+
+| Thông báo | Cách xử lý |
+|---|---|
+| `This flow version is already the current draft.` | Chọn một phiên bản khác. |
+| `Flow version does not exist.` | ID phiên bản không có trong danh sách các phiên bản của flow này. Lấy ID từ [`flows versions list`](#adapty-flows-versions-list). |
+| `Flow version is already being published.` | Chờ quá trình xuất bản hoàn tất, rồi khôi phục lại. |
+| `This flow version uses deleted products: …` | Chọn một phiên bản không sử dụng các sản phẩm đó. |
+| `This flow configuration was already updated by …` | Một thành viên trong nhóm đã thay đổi bản nháp sau khi bạn đọc nó. Liệt kê lại các phiên bản và thử lại. |
+| `Flow is deleted.` | Flow đã bị lưu trữ. Hãy [khôi phục nó từ kho lưu trữ](archive-flows#restore-a-flow) trong dashboard trước. |
+
+## adapty flows duplicate \{#adapty-flows-duplicate\}
+
+Sao chép một flow, hoặc một trong các phiên bản của nó, thành một flow mới. Đây là **Duplicate flow** trong nút actions của flow ở thanh trên cùng của Flow & Paywall Builder (xem [Sao chép flow](copy-flows)), và **Duplicate as new flow** trong [lịch sử phiên bản](flow-version-history#restore-an-earlier-version).
+
+```bash
+adapty flows duplicate --app <app-id> <flow-id> --version <version-id>
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `flow-id` | ID của flow (UUID) |
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | ID ứng dụng (UUID) |
+| `--version` | Không | ID phiên bản (UUID) cần sao chép, lấy từ [`flows versions list`](#adapty-flows-versions-list). Bất kỳ phiên bản nào cũng được, kể cả bản nháp. Nếu không chỉ định, lệnh sẽ sao chép bản nháp, hoặc phiên bản đang chạy nếu flow không có bản nháp |
+
+Lệnh in ra `New flow '<name>' (<flow-id>), not published.` Flow mới được đặt tên theo flow nguồn với hậu tố `_copy` ở cuối. Flow này chưa được xuất bản, và có một bản nháp với nội dung của phiên bản đó. Flow nguồn, bản nháp và lịch sử của nó vẫn giữ nguyên. Bạn có thể nhân đôi một flow trong khi nó đang được xuất bản.
+
+Adapty từ chối sao chép một phiên bản sử dụng sản phẩm đã bị xóa, và từ chối sao chép một flow đã được lưu trữ. Các thông báo lỗi giống như với [`flows versions restore`](#adapty-flows-versions-restore).
+
+## adapty flows metrics list
+
+Hiển thị chỉ số tổng hợp của nhiều flow, mỗi dòng tương ứng một flow. Đây là dữ liệu từ bảng flow trên dashboard.
+
+```bash
+adapty flows metrics list --app <app-id> --ids <flow-id>,<flow-id>
+```
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | App ID (UUID) |
+| `--ids` | Có | Flow ID (UUID). Phân tách bằng dấu phẩy hoặc lặp lại flag |
+| `--csv` | Không | In dạng CSV: mỗi hàng là một flow, bao gồm flow ID và 27 chỉ số. Không dùng được cùng với `--json` |
+
+Mỗi dòng hiển thị ID flow kèm theo lượt xem, số lần mua, số lần dùng thử, và doanh thu. `--json` và `--csv` bao gồm đầy đủ 27 chỉ số của trang [flow metrics](flow-metrics#metrics-definitions), ví dụ như `unique_profiles_views`, `net_revenue`, và `conversion_rate_purchases`. Chỉ số nào không có dữ liệu sẽ là `0`, không bao giờ là `null`. Với mỗi flow chưa được xuất bản lần nào, lệnh sẽ in `<flow-id>: No data: the flow was never published.` bên dưới bảng. `--json` thêm `note: "never_published"` vào hàng của flow đó, còn với `--csv` thì các ghi chú được xuất ra stderr để CSV luôn sạch.
+
+## Giá trị chỉ số của adapty flows \{#adapty-flows-metrics-values\}
+
+Liệt kê các khóa và giá trị bộ lọc của một flow: những gì [`flows metrics get --filter`](#filter-the-metrics) nhận vào.
+
+```bash
+adapty flows metrics values --app <app-id> <flow-id>
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `flow-id` | ID của flow (UUID) |
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | ID ứng dụng (UUID) |
+
+Mỗi dòng hiển thị một nhãn và, trong ngoặc đơn, giá trị cần truyền vào. Các giá trị được lồng nhau theo cách bộ lọc trên dashboard lồng nhau:
+
+```text
+Country (country)
+  Americas (Americas)
+    United States (US)
+  Europe (Europe)
+    Germany (DE)
+Store (store)
+  App Store (app_store)
+  Google Play (play_store)
+```
+
+Giá trị đầu tiên của mỗi nhóm là khóa bộ lọc, còn các giá trị trong cùng là những gì khóa đó nhận. Trong ví dụ trên, `--filter country=US` giữ lại Hoa Kỳ, và `--filter store=play_store` giữ lại Google Play.
+
+## adapty flows metrics get
+
+Hiển thị chỉ số của một flow trong một khoảng thời gian, dưới dạng cây của trang [chỉ số flow](flow-metrics).
+
+```bash
+adapty flows metrics get --app <app-id> <flow-id> --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date --based-on placement
+```
+
+| Tham số | Mô tả |
+|---|---|
+| `flow-id` | Flow ID (UUID) |
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | App ID (UUID) |
+| `--based-on` | Có | Cấp đầu tiên của cây phân chia theo tiêu chí gì: `placement` hoặc `audience`. Đây là chế độ xem theo placement và theo đối tượng của trang [chỉ số flow](flow-metrics#view-options-for-metrics-data) |
+| `--date-type` | Có | Ngày nào áp dụng cho khoảng thời gian: `purchase_date`, hoặc `profile_install_date` để [lọc theo ngày cài đặt](flow-metrics#filter-metrics-by-install-date) |
+| `--date-from` | Không | Ngày đầu tiên của khoảng thời gian, bao gồm ngày đó (`YYYY-MM-DD`). Dùng cùng với `--date-to` |
+| `--date-to` | Không | Ngày cuối cùng của khoảng thời gian, bao gồm ngày đó (`YYYY-MM-DD`). Dùng cùng với `--date-from` |
+| `--granularity` | Không | Chia khoảng thời gian thành các điểm: `day`, `week`, `month`, `quarter`, hoặc `year` |
+| `--filter` | Không | Chỉ giữ lại dữ liệu có các giá trị của khóa lọc này. Có thể lặp lại. Xem [Lọc chỉ số](#filter-the-metrics) |
+| `--timezone` | Không | Múi giờ IANA cho các điểm trong khoảng thời gian, ví dụ `Europe/Berlin`. Nếu không có, Adapty sẽ dùng múi giờ của ứng dụng |
+| `--depth` | Không | Số cấp của cây được in dưới `Total`. Mặc định: `1` |
+| `--csv` | Không | In dạng CSV: một hàng cho mỗi nút của toàn bộ cây. Không thể dùng cùng với `--json` |
+
+Đối với một flow chưa từng được xuất bản, lệnh sẽ in ghi chú `No data: the flow was never published.` phía trên các con số, và `--json` sẽ thêm `note: "never_published"`. Với `--csv`, ghi chú được gửi ra stderr để CSV vẫn sạch.
+
+Để xem doanh thu của một flow, chạy `adapty analytics chart --app <app-id> --chart revenue --date-from <YYYY-MM-DD> --date-to <YYYY-MM-DD> --filter flow_id=<flow-id>`. Xem [Lệnh Analytics](developer-cli-analytics).
+
+CLI thoát với mã 2 và không gửi yêu cầu nào khi thiếu `--based-on` hoặc `--date-type`, hoặc khi chỉ cung cấp một đầu của khoảng thời gian. Adapty xác thực các giá trị của `--based-on`, `--date-type` và `--granularity`: giá trị sai sẽ thoát với mã 4, và thông báo lỗi liệt kê các giá trị được chấp nhận.
+
+### Đọc kết quả đầu ra \{#read-the-output\}
+
+Lệnh in ra một dòng `Total`, sau đó là cấp đầu tiên của cây bên dưới. Mỗi dòng hiển thị lượt xem, lượt mua, số lần dùng thử và doanh thu. Khi dùng `--granularity`, các điểm dữ liệu của khoảng thời gian sẽ hiển thị ngay bên dưới nút tương ứng:
+
+```text
+Total           views 19  purchases 7  trials 4  revenue 241.93
+  Onboarding    views 10  purchases 7  trials 0  revenue 241.93
+    2026-09-01  views  0  purchases 0  trials 0  revenue   0.00
+    2026-10-01  views 10  purchases 0  trials 0  revenue 241.93
+  Settings      views  0  purchases 0  trials 0  revenue   0.00
+```
+
+Các cấp của cây tương ứng với các cấp trên dashboard: placement, đối tượng, A/B test, biến thể flow, màn hình và sản phẩm. Với `--based-on audience`, cấp placement bị bỏ qua. Để in thêm nhiều cấp hơn, truyền `--depth`, ví dụ `--depth 3`.
+
+Để xem toàn bộ cây với tất cả 27 chỉ số, sử dụng một trong các flag sau:
+
+- `--json` in nguyên văn kết quả trả về từ server.
+- `--csv` in một hàng cho mỗi nút, bao gồm cả các điểm period. Các cột gồm `path` (tiêu đề từ `Total` xuống đến nút, phân cách bằng ` > `), `level`, `title`, và sau đó là các chỉ số.
+
+### Lọc các chỉ số \{#filter-the-metrics\}
+
+Viết mỗi `--filter` theo dạng `key=value`, với các key và value mà [`flows metrics values`](#adapty-flows-metrics-values) liệt kê. Để giữ nhiều giá trị cùng lúc, hãy phân tách chúng bằng dấu phẩy hoặc lặp lại cờ với cùng key. Các filter với key khác nhau kết hợp với nhau, nghĩa là dữ liệu phải khớp với tất cả chúng:
+
+```bash
+adapty flows metrics get --app <app-id> <flow-id> --date-from 2026-09-01 --date-to 2026-10-21 \
+  --date-type purchase_date --based-on placement --filter country=US,DE --filter store=app_store
+```
+
+CLI gửi mỗi giá trị đúng như đã viết. Để đặt dấu phẩy trong một giá trị, hãy dùng `\,`. Giá trị rỗng cũng là một giá trị hợp lệ: `attribution_channel=` giữ lại dữ liệu mà không có kênh, và `flows metrics values` sẽ liệt kê giá trị đó là **No Data**.
+
+## adapty flows funnel values
+
+Liệt kê các key và value của bộ lọc cho funnel của một flow: những gì [`flows funnel get --filter`](#adapty-flows-funnel-get) nhận vào.
+
+```bash
+adapty flows funnel values --app <app-id> <flow-id>
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `flow-id` | ID của flow (UUID) |
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | ID của app (UUID) |
+
+Kết quả đầu ra có cùng định dạng với [`flows metrics values`](#adapty-flows-metrics-values).
+
+## adapty flows funnel get \{#adapty-flows-funnel-get\}
+
+Hiển thị màn hình mà người dùng rời khỏi một flow: phễu của một phiên bản flow, từng bước và từng màn hình, giống như trên tab [Funnel](flow-funnel) của flow.
+
+```bash
+adapty flows funnel get --app <app-id> <flow-id> --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `flow-id` | ID của flow (UUID) |
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | App ID (UUID) |
+| `--date-from` | Có | Ngày đầu tiên của kỳ, bao gồm cả ngày này (`YYYY-MM-DD`), theo múi giờ `--timezone` hoặc múi giờ của ứng dụng |
+| `--date-to` | Có | Ngày cuối cùng của kỳ, bao gồm cả ngày này (`YYYY-MM-DD`), theo múi giờ `--timezone` hoặc múi giờ của ứng dụng |
+| `--date-type` | Có | Ngày nào được áp dụng cho kỳ: `purchase_date` hoặc `profile_install_date` |
+| `--flow-version-id` | Không | ID phiên bản flow (UUID) cần đọc. Nếu không có, CLI sẽ đọc phiên bản đã xuất bản |
+| `--filter` | Không | Chỉ giữ lại người dùng có các giá trị này của khóa lọc, theo dạng `key=value`. Có thể lặp lại. Các khóa và giá trị lấy từ [`flows funnel values`](#adapty-flows-funnel-values) và hoạt động như trong [Filter the metrics](#filter-the-metrics) |
+| `--timezone` | Không | Múi giờ IANA của các ngày, ví dụ `Europe/Berlin`. Nếu không có, Adapty sẽ dùng múi giờ của ứng dụng |
+| `--csv` | Không | In file CSV mà dashboard tải xuống, với hàng tổng cộng ở đầu. Không thể dùng cùng với `--json` |
+
+Lệnh này in ra phiên bản flow, khoảng thời gian, một dòng tóm tắt và một bảng. Phần tóm tắt hiển thị số người dùng đã vào flow, số người đã hoàn thành, tỷ lệ thoát và doanh thu. Bảng có một hàng cho mỗi bước, với các cột `Step`, `Type`, `Reached`, `Completed`, `Drop rate` và `Revenue`. Một bước có nhiều hơn một màn hình cũng có thêm một hàng cho mỗi màn hình của nó. Giá trị không áp dụng, chẳng hạn như doanh thu của màn hình onboarding, được hiển thị là `—`.
+
+When no users entered the flow in the period, the table lists the screens of the version with zeros. For every field of the answer, use `--json`.
+
+## Tiếp theo \{#whats-next\}
+
+- [Tham chiếu lệnh](developer-cli-reference) — tất cả các chủ đề CLI, các cờ toàn cục và cờ phân trang.
+- [Lịch sử phiên bản flow](flow-version-history) — các phiên bản tương tự trong Flow & Paywall Builder.

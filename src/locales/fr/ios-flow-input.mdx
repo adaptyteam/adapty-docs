@@ -1,0 +1,289 @@
+---
+title: "Traiter les données des flows dans le SDK iOS"
+description: "Enregistrez et utilisez les données saisies par vos utilisateurs dans les flows de votre application iOS avec le SDK Adapty."
+metadataTitle: "Traiter les données des flows | SDK iOS | Documentation Adapty"
+---
+
+Lorsqu'un utilisateur remplit un champ, répond à un quiz ou actionne un bouton dans un [flow](adapty-flow-builder), le SDK transmet la valeur à votre application via son callback d'analyse.
+
+Les applications utilisent le plus souvent ces données pour :
+
+- **Enregistrer les utilisateurs sur votre propre backend** : Récupérez l'adresse e-mail et le nom saisis dans votre onboarding, puis créez leur compte à la fermeture du flow.
+- **Sauvegarder les réponses et préférences** : Conservez les choix de l'utilisateur pour que votre application puisse les exploiter ensuite — par exemple, [écrivez-les dans son profil Adapty](setting-user-attributes) en tant qu'attributs personnalisés.
+- **Personnaliser les flows suivants** : Enregistrez les réponses au quiz comme attributs personnalisés, puis ciblez un placement ultérieur pour que chaque segment reçoive un flow différent, ou un paywall différent à l'intérieur de celui-ci.
+- **Afficher des valeurs calculées à partir des réponses** : Par exemple, calculez un IMC à partir du poids et de la taille de l'utilisateur, puis [transmettez-le à un tag personnalisé dans le flow suivant](ios-flow-custom-tags#example-show-a-bmi-from-onboarding-answers).
+- **Alimenter des plateformes d'analytics tierces** : Transmettez les réponses à Amplitude, Mixpanel ou tout autre outil d'analytics produit que vous utilisez.
+
+Les entrées et les groupes de sélection rapportent leurs valeurs automatiquement. Pour les distinguer dans votre code, donnez à chaque entrée un **Element ID** significatif et à chaque groupe de sélection un **Group ID** dans le builder.
+
+<FlowIdNaming />
+
+## Avant de commencer
+
+<FlowInputPrerequisites />
+
+## Recevoir les valeurs saisies \{#receive-input-values\}
+
+Les valeurs saisies arrivent dans le même callback que tous les autres événements analytiques d'un flow, sous le nom d'événement `flow_user_input`. Enregistrez le callback avec vos autres gestionnaires d'événements de flow.
+
+<Tabs>
+<TabItem value="swiftui" label="SwiftUI" default>
+
+Passez une closure `didReceiveAnalyticEvent` au modificateur `.flow` :
+
+```swift showLineNumbers title="Swift"
+YourContentView()
+    .flow(
+        isPresented: $flowPresented,
+        flowConfiguration: flowConfiguration,
+        didFinishPurchase: { product, purchaseResult in /* handle the event */ },
+        didFailPurchase: { product, error in /* handle the error */ },
+        didFinishRestore: { profile in /* handle the event */ },
+        didFailRestore: { error in /* handle the error */ },
+        didReceiveError: { error in flowPresented = false },
+        didReceiveAnalyticEvent: { name, params in
+            handleFlowInput(name: name, params: params)
+        }
+    )
+```
+
+</TabItem>
+<TabItem value="uikit" label="UIKit">
+
+Implémentez la méthode sur votre `AdaptyFlowControllerDelegate` :
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveAnalyticEvent name: String,
+    params: [String: any Sendable]
+) {
+    handleFlowInput(name: name, params: params)
+}
+```
+
+</TabItem>
+</Tabs>
+
+La closure et la méthode du délégué reçoivent les deux mêmes arguments, le code qui lit la valeur est donc identique dans les deux cas.
+
+Le callback `didReceiveAnalyticEvent` transmet tous les événements analytiques d'un flow, y compris les [vues d'écran](ios-flow-screen-views). Pour filtrer les événements d'entrée utilisateur, comparez `name` à `flow_user_input`. Le paramètre qui stocke la valeur dépend de `element_type` :
+
+| `element_type` | Paramètre qui stocke la valeur | Type Swift |
+|:---------------|:-------------------------------|:---------|
+| `text_input`, `email_input`, `number_input`, `phone_input` | `value` | `String` |
+| `date_picker`, `time_picker`, `date_time_picker` | `value` | `Int`, Unix time en millisecondes. Divisez par 1000 pour obtenir une `Date`. |
+| `wheel_range_picker` | `value` | `Double`. Lisez-le avec `as? Double`, car `as? Int` échoue sur un nombre avec décimales. |
+| `single_choice`, `multi_choice` | `item_ids`, `item_titles` | `[String]` |
+| `toggle` | `value` | `Bool` |
+
+La section [Ce que vous recevez](#what-you-receive) liste chaque paramètre et ce que chaque élément du builder rapporte.
+
+<FlowInputVerify />
+
+## Quand votre application reçoit l'entrée \{#when-your-app-receives-the-input\}
+
+<FlowInputTiming />
+
+## Ce que vous recevez \{#what-you-receive\}
+
+<FlowInputParams />
+
+## Exemples d'événements \{#event-examples\}
+
+Ces exemples montrent les propriétés disponibles pour chaque événement, avec des valeurs illustratives en commentaires.
+
+<Details>
+<summary>Text, email, number, and phone input (Click to expand)</summary>
+
+```swift
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    name;                      // "flow_user_input"
+    params["name"];            // "flow_user_input"
+    params["instanceId"];      // "scr_J260KU5q"
+    params["isCustomerEvent"]; // true
+    params["isBackendEvent"];  // false
+    params["element_id"];      // "email"
+    params["element_type"];    // "email_input"
+    params["value"];           // "jane@example.com"   (String)
+}
+```
+</Details>
+
+<Details>
+<summary>Sélecteurs de date, d'heure et de date-heure (Cliquez pour développer)</summary>
+
+```swift
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    params["element_id"];      // "birthday"
+    params["element_type"];    // "date_picker"
+    params["value"];           // 645408000000   (Int — Unix milliseconds, 1990-06-15, local midnight; divide by 1000 for Date)
+}
+```
+</Details>
+
+<Details>
+<summary>Choix unique (Cliquez pour développer)</summary>
+
+```swift
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    params["element_id"];      // "experience"
+    params["element_type"];    // "single_choice"
+    params["item_ids"];        // ["pro"]
+    params["item_titles"];     // ["I train professionally"]
+}
+```
+</Details>
+
+<Details>
+<summary>Multi choice (Click to expand)</summary>
+
+```swift
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    params["element_id"];      // "interests"
+    params["element_type"];    // "multi_choice"
+    params["item_ids"];        // ["sports", "music"]
+    params["item_titles"];     // ["Sports", "Music"]
+}
+```
+</Details>
+
+<Details>
+<summary>Toggle (Click to expand)</summary>
+
+```swift
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    params["element_id"];      // "reminders"
+    params["element_type"];    // "toggle"
+    params["value"];           // true   (Bool)
+}
+```
+</Details>
+
+## Livraison et limitations \{#delivery-and-limitations\}
+
+<FlowInputLimitations />
+
+Stockez chaque valeur d'entrée au fur et à mesure que votre handler la reçoit, puis envoyez l'ensemble complet lorsque le flow se ferme. Pour intercepter ce moment, implémentez `flowControllerDidDisappear` sur votre `AdaptyFlowControllerDelegate` en UIKit, ou passez une closure `didDisappear` au modificateur `.flow` en SwiftUI. Les deux s'exécutent une fois que la vue du flow a quitté l'écran, que l'utilisateur ait terminé le flow ou qu'il l'ait simplement fermé.
+
+## Cas d'usage \{#use-cases\}
+
+### Enregistrer les utilisateurs sur votre backend \{#register-users-on-your-backend\}
+
+Collectez les valeurs au fur et à mesure qu'elles arrivent et envoyez-les en une seule fois à la fermeture du flow, afin qu'une seule requête contienne l'ensemble des réponses.
+
+La vue disparaît que l'utilisateur ait terminé le flow ou l'ait abandonné en cours de route. Vérifiez que les champs nécessaires sont présents avant d'appeler votre backend.
+
+Le flow ne peut pas afficher les erreurs provenant de votre backend. Le callback n'a pas de valeur de retour, et un flow en cours d'exécution ne peut pas recevoir de données depuis votre application. Si l'inscription échoue — par exemple parce que l'adresse e-mail est déjà utilisée — affichez l'erreur dans votre propre interface après la fermeture du flow.
+
+```swift showLineNumbers title="Swift"
+private var flowAnswers: [String: String] = [:]
+
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    guard name == "flow_user_input",
+          let elementId = params["element_id"] as? String,
+          let value = params["value"] as? String
+    else { return }
+
+    flowAnswers[elementId] = value
+}
+
+func flowControllerDidDisappear(_ controller: AdaptyFlowController) {
+    guard flowAnswers["email"] != nil else { return }
+
+    // Send flowAnswers to your backend here to create the account.
+
+    flowAnswers.removeAll()
+}
+```
+
+### Enrichir les profils utilisateurs avec des données \{#enrich-user-profiles-with-data\}
+
+Pour relier ce qu'un utilisateur a saisi à son profil et éviter de lui redemander les mêmes informations, [mettez à jour le profil utilisateur](setting-user-attributes) au fur et à mesure que les valeurs arrivent.
+
+Par exemple, si votre flow comporte un champ texte avec l'ID d'élément `name` et un champ e-mail avec l'ID d'élément `email` :
+
+```swift showLineNumbers title="Swift"
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    guard name == "flow_user_input",
+          let elementId = params["element_id"] as? String,
+          let value = params["value"] as? String
+    else { return }
+
+    let builder = AdaptyProfileParameters.Builder()
+
+    switch elementId {
+    case "name":
+        builder.with(firstName: value)
+    case "email":
+        builder.with(email: value)
+    default:
+        return
+    }
+
+    // Delegate methods are synchronous; kick off the async update in a Task.
+    Task {
+        do {
+            try await Adapty.updateProfile(params: builder.build())
+        } catch {
+            // handle the error
+        }
+    }
+}
+```
+
+### Personnaliser les flows affichés ultérieurement \{#customize-flows-shown-later\}
+
+Les réponses à un quiz peuvent également déterminer ce qu'un utilisateur voit à un [placement](placements) ultérieur — un flow différent, ou un paywall différent à l'intérieur de celui-ci.
+
+Par exemple, demandez aux utilisateurs leur expérience sportive dans votre flow d'onboarding, puis montrez à chaque groupe son propre flow avec des produits et des textes différents.
+
+1. Ajoutez un [quiz](onboarding-quizzes) à votre flow. Donnez au [groupe sélectionnable](flow-selectable-elements) le Group ID `experience`, et à chaque option un Element ID significatif.
+2. Gérez les réponses et [définissez des attributs personnalisés](setting-user-attributes) pour l'utilisateur.
+
+```swift showLineNumbers title="Swift"
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    guard name == "flow_user_input",
+          params["element_id"] as? String == "experience",
+          let optionId = (params["item_ids"] as? [String])?.first
+    else { return }
+
+    let builder = AdaptyProfileParameters.Builder()
+    // Set the custom attribute 'experience' to the option the user selected
+    // (beginner, amateur, or pro).
+    try? builder.with(customAttribute: optionId, forKey: "experience")
+
+    Task {
+        do {
+            try await Adapty.updateProfile(params: builder.build())
+        } catch {
+            // handle the error
+        }
+    }
+}
+```
+
+3. [Créez un segment](segments) pour chaque valeur d'attribut personnalisé.
+4. Créez un [placement](placements) et ajoutez une [audience](audience) pour chaque segment.
+5. [Affichez le flow](ios-present-paywalls) correspondant à ce placement dans votre application.
+
+### Envoyer les réponses à votre plateforme d'analyse \{#send-answers-to-your-analytics-platform\}
+
+Pour filtrer vos graphiques par réponse utilisateur, envoyez chaque réponse sous forme d'événement à votre plateforme d'analyse.
+
+Par exemple, si votre flow contient un groupe sélectionnable avec l'ID de groupe `experience`, envoyez l'option sélectionnée à Amplitude :
+
+```swift showLineNumbers title="Swift"
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    guard name == "flow_user_input",
+          params["element_id"] as? String == "experience",
+          let optionId = (params["item_ids"] as? [String])?.first
+    else { return }
+
+    // `amplitude` is your initialized Amplitude instance.
+    amplitude.track(
+        eventType: "Experience Selected",
+        eventProperties: ["experience": optionId]
+    )
+}
+```

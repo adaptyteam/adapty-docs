@@ -79,12 +79,15 @@ for (const [filepath, mod] of Object.entries(sidebars)) {
 
 const learnMoreHref = isAppleAdsPage ? 'developer-cli-ads-manager-skill' : (SKILL_SLUGS[detected ?? 'ios'] ?? SKILL_SLUGS.ios);
 const description = isAppleAdsPage ? t.descriptionAppleAds : t.description;
+const capabilities = isAppleAdsPage ? t.capabilitiesAppleAds : t.capabilities;
 const toolset = isAppleAdsPage ? agentTools.appleAds : agentTools;
 // Resolve optional per-tool notes ("note" holds a key into the installTools string group)
 const tools = toolset.tools.map((tool) => ({
     ...tool,
     noteText: 'note' in tool ? (t as Record<string, string>)[tool.note] : undefined,
 }));
+// A single command needs no tab bar; per-agent methods live behind moreUrl instead
+const moreUrl = 'moreUrl' in toolset ? toolset.moreUrl : undefined;
 ---
 
 <div id="install-tools-modal" class="itm-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="install-tools-title">
@@ -102,18 +105,20 @@ const tools = toolset.tools.map((tool) => ({
             {description}
             <a href={learnMoreHref} class="itm-learn-more">{t.learnMore}</a>
         </p>
-        <div class="itm-tabs" role="tablist">
-            {
-                tools.map((tool, i) => (
-                    <button type="button" class={`itm-tab${i === 0 ? ' active' : ''}`} role="tab" aria-selected={i === 0 ? 'true' : 'false'} data-tool={tool.id}>
-                        {tool.label}
-                    </button>
-                ))
-            }
-        </div>
+        {
+            tools.length > 1 && (
+                <div class="itm-tabs" role="tablist">
+                    {tools.map((tool, i) => (
+                        <button type="button" class={`itm-tab${i === 0 ? ' active' : ''}`} role="tab" aria-selected={i === 0 ? 'true' : 'false'} data-tool={tool.id}>
+                            {tool.label}
+                        </button>
+                    ))}
+                </div>
+            )
+        }
         {
             tools.map((tool, i) => (
-                <div class="itm-panel" role="tabpanel" data-tool={tool.id} hidden={i !== 0}>
+                <div class="itm-panel" role={tools.length > 1 ? 'tabpanel' : undefined} data-tool={tool.id} hidden={i !== 0}>
                     {tool.noteText && <p class="itm-note">{tool.noteText}</p>}
                     <div class="itm-code">
                         <div class="itm-cmd">{tool.commands.join('\n')}</div>
@@ -130,19 +135,14 @@ const tools = toolset.tools.map((tool) => ({
                 </div>
             ))
         }
-        <p class="itm-usage">{t.usageNote}</p>
-        <div class="itm-code">
-            <div class="itm-cmd">{toolset.usageCommand}</div>
-            <button type="button" class="itm-copy" title={t.copy} aria-label={t.copy}>
-                <svg class="itm-copy-icon-default" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
-                <svg class="itm-copy-icon-done" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-            </button>
-        </div>
+        {
+            moreUrl && (
+                <p class="itm-more">
+                    <a href={moreUrl} class="itm-learn-more" target="_blank" rel="noopener">{t.otherMethods}</a>
+                </p>
+            )
+        }
+        <p class="itm-capabilities">{capabilities}</p>
     </div>
 </div>
 
@@ -320,10 +320,18 @@ const tools = toolset.tools.map((tool) => ({
         display: inline-block;
     }
 
-    .itm-usage {
-        margin: 1.125rem 0 0.5rem;
+    .itm-capabilities {
+        margin: 1.125rem 0 0;
+        padding-top: 1.125rem;
+        border-top: 1px solid var(--border-primary);
         font-size: 0.8125rem;
+        line-height: 1.5;
         color: var(--text-secondary);
+    }
+
+    .itm-more {
+        margin: 0.625rem 0 0;
+        font-size: 0.8125rem;
     }
 
     .itm-note {
@@ -403,10 +411,8 @@ const tools = toolset.tools.map((tool) => ({
                 if (!code) return;
                 try {
                     await navigator.clipboard.writeText(code.textContent ?? '');
-                    // Panel copy buttons report their tool id; the bottom
-                    // usage-command block sits outside any panel.
                     (window as any).docsTrack?.('docs_install_tool_copied', {
-                        tool: btn.closest<HTMLElement>('.itm-panel')?.dataset.tool ?? 'usage-command',
+                        tool: btn.closest<HTMLElement>('.itm-panel')?.dataset.tool ?? 'unknown',
                     });
                     btn.classList.add('copied');
                     setTimeout(() => btn.classList.remove('copied'), 2000);

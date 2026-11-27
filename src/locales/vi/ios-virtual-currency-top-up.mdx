@@ -1,0 +1,367 @@
+---
+title: "Tiêu và bán tiền tệ ảo trong flow"
+description: "Xây dựng hai flow cho ứng dụng iOS với tiền tệ ảo: người dùng tiêu tiền tệ bằng nút gốc trong một flow, và mua thêm trong flow kia khi số dư quá thấp."
+metadataTitle: "Tiêu và bán tiền tệ ảo trong flow | iOS SDK | Tài liệu Adapty"
+---
+
+Làm theo hướng dẫn này để kết hợp flow với tiền tệ ảo trong ứng dụng iOS của bạn. Hướng dẫn này chỉ cách:
+
+- Hiển thị số dư tiền tệ trong một flow và giữ cho nó luôn cập nhật khi flow đang mở.
+- Tiêu tiền tệ khi người dùng nhấn vào một nút native trong flow, và hiển thị spinner trong khi quá trình tiêu chạy.
+- Hiển thị cho người dùng biết họ cần thêm bao nhiêu tiền tệ.
+- Cung cấp các gói tiền tệ và gói đăng ký trong một flow.
+- Đóng một flow và mở flow khác từ code ứng dụng của bạn.
+
+Vì các gói và gói đăng ký đều nằm trong một flow, bạn có thể thay đổi chúng mà không cần phát hành lại ứng dụng, và [A/B test](ab-tests) chúng. Báo cáo A/B test đếm các lượt mua. Các lần tiêu tiền tệ không xuất hiện trong đó: backend của bạn gửi chúng đến Adapty mà không có liên kết đến bài test.
+
+Đến cuối hướng dẫn này, bạn sẽ có hai flow cho một trò chơi. Trong flow hết năng lượng, người chơi dùng kim cương để mua năng lượng. Trong flow nạp kim cương, họ mua kim cương bằng tiền thật. Các bước tương tự áp dụng cho mọi ứng dụng có người dùng chi tiêu tiền tệ ảo, chẳng hạn như credit cho mỗi lần tạo AI hay coin cho mỗi tập phim. Trong ứng dụng của bạn, hãy thay thế các tùy chọn năng lượng và kim cương bằng tùy chọn và tiền tệ của riêng bạn. Ví dụ hoàn chỉnh hoạt động như sau:
+
+<VcTopUpHowItWorks />
+
+<DocVideo id="vc-top-up-demo.mp4" width="300px" alt="Flow hết năng lượng trên điện thoại, hiển thị số dư kim cương và hai nút. Khi không đủ kim cương, người chơi nhấn vào một nút và flow nạp tiền mở ra với dòng chữ “Bạn cần thêm 10 kim cương”. Sau khi mua gói, flow hết năng lượng mở lại và dấu tích xuất hiện sau khi nhấn vào nút đổi năng lượng." />
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+- Yêu cầu người dùng đăng nhập để họ [giữ số dư](virtual-currency-balance#balances-profiles-and-devices) trên mọi thiết bị và sau khi cài đặt lại. Khi người dùng đăng nhập, hãy [định danh người dùng](identifying-users) trong code ứng dụng bằng customer user ID. Backend của bạn cần ID này để xác định người dùng với Adapty.
+- Để hiển thị số dư và các nút trong flow, hãy cập nhật ứng dụng lên Adapty iOS SDK 4.4 trở lên.
+- Thiết lập ứng dụng để [tải](get-pb-paywalls) và [hiển thị](ios-present-paywalls) flow.
+- Thiết lập backend để gọi server-side API với [secret API key](ss-authorization) của bạn. Hãy giữ key trên backend: bất kỳ ai có key đều có thể thêm kim cương vào bất kỳ số dư nào.
+- Trong App Store Connect, [tạo sản phẩm consumable](app-store-products) cho mỗi gói kim cương và một gói đăng ký tự động gia hạn. Sau đó [thêm từng sản phẩm vào Adapty](create-product).
+- [Tạo virtual currency](create-virtual-currency) với mã `DIAMONDS`. [Liên kết](create-virtual-currency#link-products) từng sản phẩm với `DIAMONDS` và thiết lập số kim cương Adapty thêm vào số dư:
+  - **Diamond pack**: **Credit amount** cho mỗi lần mua.
+  - **Subscription**: **Credit per cycle** cho mỗi chu kỳ thanh toán. Khi người dùng bắt đầu dùng thử miễn phí, Adapty chỉ thêm **Credit on trial start**.
+
+  Set each of the three values to at least 30 diamonds, the price of an hour of unlimited energy. With these values, every purchase in the top-up flow covers the missing diamonds.
+
+## 1. Xây dựng flow nơi người chơi tiêu kim cương \{#1-build-the-flow-where-players-spend-diamonds\}
+
+<VcTopUpEnergyFlowPlacement />
+
+### Hiển thị số dư kim cương \{#show-the-diamond-balance\}
+
+<VcTopUpFlowBalance />
+
+### Thêm nút để nạp năng lượng và sử dụng năng lượng không giới hạn \{#add-buttons-for-an-energy-refill-and-unlimited-energy\}
+
+<VcTopUpSpendButtons />
+
+## 2. Dùng kim cương khi người chơi nhấn nút \{#2-spend-diamonds-when-a-player-taps-a-button\}
+
+Trong bước này, bạn viết code phía backend và code ứng dụng cho flow hết năng lượng. Sau bước này, những người chơi có đủ kim cương có thể dùng chúng trong flow.
+
+### Chi tiêu kim cương từ backend của bạn
+
+<VcTopUpSpend />
+
+### Tạo balance view
+
+Tạo một model cho diamond balance và một SwiftUI view cho custom element `currency_balance`. Code ở phần sau trong bước này và bước 4 sẽ cập nhật balance trong model từ response của backend. View sẽ quan sát model, do đó nó sẽ được vẽ lại khi balance thay đổi:
+
+```swift showLineNumbers title="Swift"
+
+// The diamond balance that your app keeps up to date
+@MainActor
+final class DiamondWallet: ObservableObject {
+    @Published var balance: Int? // nil until your backend returns a balance
+}
+
+struct DiamondBalanceView: View {
+    @ObservedObject var wallet: DiamondWallet
+
+    var body: some View {
+        Label(wallet.balance?.formatted() ?? "—", systemImage: "diamond.fill")
+    }
+}
+```
+
+`DiamondBalanceView` sử dụng màu chữ của hệ thống, màu này sẽ chuyển sang trắng khi thiết bị ở chế độ tối. Một flow giữ nguyên màu sáng trừ khi bạn [thêm giao diện tối](paywall-dark-mode#add-a-dark-theme) vào nó. Nếu các flow của bạn không có giao diện tối, hãy đặt màu chữ cố định trong view, chẳng hạn như `.foregroundStyle(.black)`.
+
+Để hiển thị view trong cả hai flow, hãy trả nó về từ [resolver toàn ứng dụng](ios-flow-custom-elements#set-an-app-wide-resolver) của bạn, nơi ánh xạ từng custom element với một view dựa trên Type và ID của nó. Thêm thuộc tính `wallet` kiểu `DiamondWallet`, và một case trả về `DiamondBalanceView` cho Type `currency_balance` và ID `diamonds`. Các dòng được highlight cho thấy những gì cần thêm. Nếu ứng dụng của bạn chưa có resolver toàn ứng dụng, hãy sao chép toàn bộ đoạn code:
+
+```swift showLineNumbers title="Swift" {5,13-14}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let wallet: DiamondWallet
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "currency_balance" where id == "diamonds":
+            return AnyView(DiamondBalanceView(wallet: wallet))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+Tạo resolver với `DiamondWallet` và đặt nó làm resolver toàn ứng dụng. Gọi `AdaptyUI.setCustomElementsResolver(_:)` một lần, chẳng hạn khi khởi động ứng dụng:
+
+```swift showLineNumbers title="Swift"
+
+@MainActor let diamondWallet = DiamondWallet()
+
+// keep this instance: a resolver for one flow can reuse it
+@MainActor let customElementsResolver = CustomElementsResolver(wallet: diamondWallet)
+
+// at app launch, such as in application(_:didFinishLaunchingWithOptions:)
+AdaptyUI.setCustomElementsResolver(customElementsResolver)
+```
+
+### Tạo button view \{#create-the-button-view\}
+
+Tạo một SwiftUI view dùng chung cho cả hai button. View nhận vào text của button và một closure thực hiện việc tiêu kim cương, trả về `true` khi giao dịch thành công. Trong lúc xử lý, người chơi thấy spinner trên button và button không nhận thêm thao tác nhấn. Sau khi thành công, người chơi thấy dấu tích:
+
+```swift showLineNumbers title="Swift"
+
+struct SpendButton: View {
+    let title: String
+    let spend: @MainActor () async -> Bool // true when the spend goes through
+
+    @State private var phase = Phase.ready
+    private enum Phase { case ready, spending, done }
+
+    var body: some View {
+        Button {
+            guard phase == .ready else { return } // ignore more taps while the spend runs
+            phase = .spending
+            // a Task keeps running when the flow closes and this view disappears
+            Task {
+                phase = await spend() ? .done : .ready
+            }
+        } label: {
+            Group {
+                switch phase {
+                case .ready: Text(title)
+                case .spending: ProgressView().tint(.white) // white on the filled button
+                case .done: Image(systemName: "checkmark")
+                }
+            }
+            .frame(maxWidth: .infinity) // the full width of the custom element
+        }
+        .buttonStyle(.borderedProminent)
+    }
+}
+```
+
+### Kết nối các nút với backend của bạn \{#connect-the-buttons-to-your-backend\}
+
+Tạo một enum cho hai tùy chọn. Dùng ID của custom element tương ứng làm raw value cho mỗi tùy chọn:
+
+```swift showLineNumbers title="Swift"
+// the options to spend diamonds on, with the IDs of their custom elements
+enum EnergyOption: String {
+    case energyRefill = "energy_refill"
+    case unlimitedEnergy = "unlimited_energy"
+
+    // keep the numbers equal to the costs on your backend
+    var title: String {
+        switch self {
+        case .energyRefill: return "Energy refill · 10 ◆"
+        case .unlimitedEnergy: return "Unlimited energy for 1 hour · 30 ◆"
+        }
+    }
+}
+```
+
+The following code is for UIKit. In the view controller that opens the out-of-energy flow, add a method that spends diamonds on an option. The method sends the option to your backend, and sets the balance in `diamondWallet` from the response. Then the method does one of the following:
+
+- **Giao dịch thành công**: Phương thức trả về `true` và người chơi thấy dấu tích trong nút. Sau một giây, code đóng flow lại.
+- **Số dư không đủ**: Phương thức gọi `openTopUpFlow`, hàm [mở flow nạp tiền](#open-the-top-up-flow-when-a-player-doesnt-have-enough-diamonds).
+
+```swift showLineNumbers title="Swift"
+private var outOfEnergyFlow: AdaptyFlowController? // set when the out-of-energy flow opens
+
+// true when the spend goes through
+func spendDiamonds(on option: EnergyOption) async -> Bool {
+    do {
+        // the client of your backend: your backend sends the spend to Adapty
+        let result = try await GameBackend.shared.spendDiamonds(
+            on: option.rawValue,
+            idempotencyKey: UUID() // a new key for each spend; UUID() creates a version 4 UUID
+        )
+        switch result {
+        case let .spent(available):
+            diamondWallet.balance = available
+            // your backend gave the player the energy: show it in the game
+            Task {
+                try? await Task.sleep(for: .seconds(1)) // players see the checkmark first
+                outOfEnergyFlow?.dismiss(animated: true)
+            }
+            return true
+        case let .insufficientBalance(diamondsNeeded, available):
+            diamondWallet.balance = available
+            await openTopUpFlow(diamondsNeeded: diamondsNeeded)
+            return false
+        }
+    } catch {
+        // handle the error
+        return false
+    }
+}
+```
+
+Sau đó, hãy viết một resolver cho flow hết năng lượng. Với mỗi phần tử tùy chỉnh có Type là `spend_button`, resolver đọc tùy chọn từ ID và trả về một `SpendButton` gọi phương thức spend. Resolver mà bạn [gắn vào một flow](ios-flow-custom-elements#attach-a-resolver-to-one-flow) sẽ thay thế resolver toàn cục trong flow đó. Để hiển thị số dư trong flow hết năng lượng, resolver này gọi resolver toàn cục:
+
+```swift showLineNumbers title="Swift"
+
+struct OutOfEnergyResolver: AdaptyUICustomElementsResolver {
+    let spend: @MainActor (EnergyOption) async -> Bool // the spend method of your view controller
+    let appWideResolver: any AdaptyUICustomElementsResolver
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        // the ID tells the buttons apart: energy_refill or unlimited_energy
+        if type == "spend_button", let option = EnergyOption(rawValue: id) {
+            return AnyView(SpendButton(title: option.title) { await spend(option) })
+        }
+        // other custom elements, such as the balance: the views of the app-wide resolver
+        return appWideResolver.view(forType: type, id: id, context: context)
+    }
+}
+```
+
+### Mở flow hết năng lượng từ code ứng dụng của bạn \{#open-the-out-of-energy-flow-from-your-app-code\}
+
+Khi người chơi hết năng lượng, hãy mở flow hết năng lượng bằng hàm sau. Hàm này sẽ hỏi backend của bạn về số dư trước tiên, để người chơi thấy được khi flow mở ra. Sau đó hàm gắn `OutOfEnergyResolver` vào flow và giữ controller của flow trong `outOfEnergyFlow`. Với tham chiếu này, `spendDiamonds` có thể đóng flow lại:
+
+```swift showLineNumbers title="Swift"
+// call when a player runs out of energy
+func openOutOfEnergyFlow() async {
+    // the balance that players see when the flow opens; without it, players see a dash
+    if let available = try? await GameBackend.shared.diamondBalance() {
+        diamondWallet.balance = available
+    }
+    do {
+        let flow = try await Adapty.getFlow(placementId: "out_of_energy")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            customElementsResolver: OutOfEnergyResolver(
+                spend: { [weak self] option in
+                    await self?.spendDiamonds(on: option) ?? false
+                },
+                appWideResolver: customElementsResolver // the instance that you set app-wide
+            )
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        outOfEnergyFlow = flowController
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+Là delegate của flow hết năng lượng, view controller cũng phải triển khai các [phương thức delegate](ios-handling-events#handling-events-in-uikit) cho việc mua hàng và khôi phục. Đối với `didFinishPurchase`, sử dụng code từ [bước 4](#open-the-out-of-energy-flow-again-after-a-purchase).
+
+Trong SwiftUI, gắn `OutOfEnergyResolver` khi bạn tải cấu hình flow. Trong closure `spend` của resolver, gọi phương thức spend của bạn. Hiển thị cấu hình flow bằng modifier `.flow`, và sử dụng các closure của nó thay vì các phương thức delegate. Các closure không nhận view controller. Để đóng flow, đặt `isPresented` thành `false`.
+
+## 3. Xây dựng flow để người chơi mua kim cương \{#3-build-the-flow-where-players-buy-diamonds\}
+
+<VcTopUpFlowPlacement />
+
+### Hiển thị số kim cương mà người chơi cần \{#show-how-many-diamonds-the-player-needs\}
+
+<VcTopUpFlowDiamondsNeeded />
+
+### Thêm gói kim cương và gói đăng ký
+
+<VcTopUpFlowOffers />
+
+## 4. Đóng flow này và mở flow kia \{#4-close-one-flow-and-open-the-other\}
+
+Sau bước này, những người chơi không có đủ kim cương có thể mua thêm trong flow nạp tiền, rồi tiêu chúng. Trong hướng dẫn này, một view controller đóng vai trò delegate của cả hai flow. Để phân biệt các flow trong phương thức delegate, hãy so sánh thuộc tính `controller.flowPlacementId` với placement ID của từng flow. Trong SwiftUI, hãy hiển thị flow nạp tiền bằng modifier `.flow` thứ hai, và mở flow này từ closure `didDisappear` của flow kia.
+
+### Mở flow nạp tiền khi người chơi không đủ kim cương \{#open-the-top-up-flow-when-a-player-doesnt-have-enough-diamonds\}
+
+Hàm sau đây truyền số kim cương còn thiếu vào thẻ `diamonds_needed`, và mở flow nạp tiền. Một view controller chỉ hiển thị một flow tại một thời điểm, vì vậy hàm sẽ đóng flow hết năng lượng trước, rồi mở flow nạp tiền:
+
+```swift showLineNumbers title="Swift"
+func openTopUpFlow(diamondsNeeded: Int) async {
+    // with no value, players see the Initial value of the tag
+    let tags = diamondsNeeded > 0 ? ["diamonds_needed": diamondsNeeded.formatted()] : [:]
+    do {
+        let flow = try await Adapty.getFlow(placementId: "out_of_diamonds")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            tagResolver: tags
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        // a view controller presents one flow at a time
+        outOfEnergyFlow?.dismiss(animated: true) {
+            self.present(flowController, animated: true)
+        }
+    } catch {
+        // handle the error
+    }
+}
+```
+
+### Mở lại flow hết năng lượng sau khi mua hàng \{#open-the-out-of-energy-flow-again-after-a-purchase\}
+
+Khi người chơi mua một gói hoặc gói đăng ký trong flow nạp tiền, Adapty thường cộng kim cương vào số dư trước. Sau đó Adapty SDK gọi `didFinishPurchase`, nhưng không đóng flow. Trong phương thức này, đoạn code dưới đây sẽ yêu cầu backend của bạn trả về số dư mới, đóng flow nạp tiền lại, rồi mở lại flow hết năng lượng. Người chơi sẽ thấy số dư mới ở đó và nhấn nút để tiêu kim cương. Đừng tiêu kim cương ngay sau khi mua: người chơi có thể không còn muốn dùng năng lượng nữa.
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFinishPurchase product: AdaptyPaywallProduct,
+    purchaseResult: AdaptyPurchaseResult
+) {
+    // canceled or pending: the flow stays open
+    guard purchaseResult.isPurchaseSuccess,
+          controller.flowPlacementId == "out_of_diamonds" // the top-up flow
+    else { return }
+    Task {
+        let balanceBefore = diamondWallet.balance ?? 0
+        if let available = try? await GameBackend.shared.diamondBalance() {
+            diamondWallet.balance = available
+        }
+        let diamondsArrived = (diamondWallet.balance ?? 0) > balanceBefore
+        controller.dismiss(animated: true) {
+            if diamondsArrived {
+                Task { await self.openOutOfEnergyFlow() } // the player taps a button again
+            } else {
+                // Adapty adds the diamonds later: tell the player in your own UI
+            }
+        }
+    }
+}
+```
+
+Khi người chơi hủy mua hàng, hoặc khi giao dịch đang chờ xử lý, code để nguyên flow nạp tiền. SDK cũng gọi `didFinishPurchase` trong những trường hợp này, nhưng số dư không thay đổi.
+
+Khi giao dịch mua thành công nhưng số dư từ backend của bạn vẫn không thay đổi, code sẽ đóng flow nạp tiền và không mở flow hết năng lượng. Trong cả hai flow, người chơi sẽ thấy số dư cũ ngay sau khi mua. Số dư không thay đổi khi Adapty SDK không thể xác thực giao dịch với Adapty ngay lập tức. Adapty sẽ cộng thêm kim cương sau, khi Adapty SDK gửi lại giao dịch mua cho Adapty, chẳng hạn như khi khởi động lại ứng dụng. Cho đến lúc đó, hãy thông báo cho người chơi trong giao diện của bạn rằng kim cương đang được xử lý.
+
+Đừng cộng thêm kim cương từ backend của bạn khi người dùng mua sản phẩm [được liên kết với `DIAMONDS`](create-virtual-currency#link-products): Adapty sẽ tự thêm số kim cương này, và người dùng sẽ nhận được chúng hai lần.
+
+## 5. Kiểm thử trên thiết bị \{#5-test-on-a-device\}
+
+Flow & Paywall Builder không thể chạy code của ứng dụng, vì vậy trên canvas, bạn chỉ thấy các giá trị fallback của những phần tử tùy chỉnh.
+
+Để xem kim cương từ các lần mua, hãy kiểm thử bằng [tài khoản sandbox](test-purchases-in-sandbox). Trong sandbox, một gói đăng ký sẽ gia hạn vài phút một lần, và Adapty thêm kim cương sau mỗi lần gia hạn. Khi dùng file cấu hình StoreKit trong Xcode, Adapty SDK sẽ không xác thực giao dịch mua với Adapty, và Adapty sẽ không thêm kim cương.
+
+Để kiểm thử recipe:
+
+1. [Xuất bản cả hai flow](builder-save-publish). Để xem phiên bản mới nhất đã xuất bản thay vì phiên bản được lưu trong cache, hãy đăng ký thiết bị làm [thiết bị kiểm thử](test-devices).
+2. Chạy ứng dụng với mã recipe và đăng nhập với tư cách người chơi không có kim cương. Hết năng lượng trong game. Kiểm tra xem flow hết năng lượng có mở ra với số dư bằng 0 không.
+3. Nhấn nút năng lượng vô hạn. Kiểm tra xem có spinner xuất hiện trong nút không, sau đó flow nạp tiền mở ra với dòng chữ "You need 30 more diamonds".
+4. Mua một gói kim cương. Kiểm tra xem flow hết năng lượng có mở lại với số dư mới không.
+5. Nhấn nút nạp lại năng lượng. Kiểm tra xem có dấu tích xuất hiện trong nút không, flow đóng lại và game trao cho người chơi lượng năng lượng được nạp.
+6. Trên Adapty Dashboard, mở hồ sơ người dùng của người chơi. [Trừ số dư](virtual-currency-balance#adjust-a-balance-manually) xuống dưới 10 bằng thao tác **Adjustment**. Hết năng lượng lại, nhấn nút nạp lại năng lượng và mua gói đăng ký trong flow nạp tiền. Kiểm tra xem flow hết năng lượng có mở lại với số dư mới không.
+7. Nhấn nút năng lượng vô hạn. Kiểm tra xem có dấu tích xuất hiện trong nút không, flow đóng lại và game trao cho người chơi năng lượng vô hạn.
+8. <VcTopUpVerifyProfile />
+
+Để tìm hiểu lý do tại sao paywall dự phòng xuất hiện thay vì số dư hoặc nút, hãy làm theo [các bước kiểm tra phần tử tùy chỉnh](ios-flow-custom-elements#test-on-a-device).

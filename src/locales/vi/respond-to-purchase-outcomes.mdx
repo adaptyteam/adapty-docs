@@ -1,64 +1,77 @@
 ---
-title: "Phản hồi kết quả mua hàng"
-description: "Xử lý mọi kết quả mua hàng trong code ứng dụng và mở flow thứ hai khi mua hàng thành công."
-metadataTitle: "Phản hồi kết quả mua hàng | Flow Builder | Tài liệu Adapty"
+title: "Phản hồi sau khi mua hàng và khôi phục giao dịch"
+description: "Tiếp tục một flow sau màn hình paywall: thiết lập nội dung người dùng thấy sau mỗi kết quả mua hàng hoặc khôi phục giao dịch."
+metadataTitle: "Phản hồi sau khi mua hàng và khôi phục giao dịch | Flow & paywall | Tài liệu Adapty"
 ---
 
-Khi quá trình mua hàng hoàn tất, Adapty SDK sẽ gọi lại ứng dụng của bạn với kết quả tương ứng. Màn hình sẽ không thay đổi cho đến khi ứng dụng phản hồi. Ứng dụng có thể đóng paywall, giữ nguyên để người dùng thử lại, hoặc mở flow thứ hai để xác nhận giao dịch thành công.
+Một flow có thể tiếp tục sau màn hình paywall — tiếp tục onboarding, hiển thị màn hình cảm ơn cho người đăng ký mới, hoặc chào đón lại những người khôi phục giao dịch trước đó.
 
-Builder không thể phân nhánh dựa trên kết quả mua hàng: không có [trigger](onboarding-actions#trigger-types) nào được kích hoạt khi mua hàng hoàn tất, và không có [biến](onboarding-variables) nào mang kết quả đó. Vì vậy, việc chuyển tiếp phải được xử lý trong code của bạn, nơi nhận được kết quả.
+Bạn đặt kết quả trong cài đặt hành động, mỗi điều kiện mua hàng tương ứng một kết quả. Kết quả không có hành động sẽ giữ người dùng ở lại màn hình paywall.
 
-Công việc chia thành ba phần:
-
-- Xây dựng flow sau khi mua hàng và gán nó vào placement riêng.
-- Trong code ứng dụng, phân nhánh dựa trên kết quả mua hàng.
-- Khi thành công, đóng paywall và hiển thị flow sau khi mua hàng.
+- Hành động **Purchase** có các điều kiện sau: **When succeeded**, **When failed**, **When cancelled by user** và **When pending**.
+- Hành động **Restore purchases** có hai điều kiện: **When restore completed** và **When restore failed**.
 
 ## Trước khi bắt đầu \{#before-you-start\}
 
-- Flow yêu cầu Adapty SDK v4.0 trở lên.
-- Xây dựng một paywall — ví dụ, làm theo hướng dẫn [Tạo màn hình paywall cơ bản](basic-paywall-screen).
+Hãy đảm bảo rằng:
 
-## 1. Xây dựng flow sau khi mua hàng \{#1-build-the-post-purchase-flow\}
+- Ứng dụng của bạn sử dụng Adapty SDK v4.0 trở lên.
+- Flow có một màn hình paywall. Để tạo màn hình này, hãy xem recipe [Tạo màn hình paywall cơ bản](basic-paywall-screen).
+- Một phần tử trên màn hình paywall, chẳng hạn như một nút, có [hành động **Purchase**](paywall-product-block#trigger-a-purchase).
+- Ứng dụng của bạn giữ flow mở trong <InlineTooltip tooltip="callback mua hàng và khôi phục">[iOS](ios-handling-events), [Android](android-handling-events), [React Native](react-native-handling-events-1), [Flutter](flutter-handling-events), [Unity](unity-handling-events), [Kotlin Multiplatform](kmp-handling-events), và [Capacitor](capacitor-handling-events)</InlineTooltip>.
 
-[Tạo flow](paywall-builder-templates). Flow này chạy sau khi mua hàng nên không cần sản phẩm. Để đưa người dùng trở lại giao diện ứng dụng của bạn, hãy thêm một nút với hành động **Close Flow** vào màn hình cuối cùng.
+## Thêm hành động cho kết quả \{#add-actions-for-a-result\}
 
-<ZoomImage id="post-purchase-flow-close-action.webp" width="700px" alt="Post-purchase flow in the builder with a Thank you screen, the Start button selected, and its On Tap trigger set to the Close Flow action" />
-
-Sử dụng [**Custom Action**](onboarding-actions#custom-actions) khi flow có nhiều hơn một hướng đi. Tạo nhiều nút, mỗi nút có action ID riêng, để ứng dụng của bạn có thể phân biệt **Set up now** với **Set up later**.
-
-## 2. Thêm flow hậu mua hàng vào placement riêng của nó \{#2-add-the-post-purchase-flow-to-its-own-placement\}
-
-Để lấy flow hậu mua hàng từ ứng dụng của bạn, hãy gán nó vào một placement riêng. Placement của paywall không thể phục vụ flow đó — mỗi placement chỉ phục vụ một flow cho mỗi đối tượng.
-
-1. [Xuất bản flow](builder-save-publish).
-2. [Tạo một flow placement](create-placement). Lưu ý **Placement ID** — ứng dụng của bạn sử dụng nó để lấy flow.
-3. Gán flow hậu mua hàng vào placement mới.
-
-## 3. Xử lý kết quả mua hàng \{#3-branch-on-the-purchase-result\}
-
-Ứng dụng của bạn nhận kết quả mua hàng qua hai callback:
-
-- **Completion**: Giao dịch mua đã kết thúc — thành công, người dùng hủy, hoặc thanh toán đang chờ phê duyệt (ví dụ: chờ xác nhận từ phụ huynh). Đọc kiểu của kết quả để phân biệt ba trường hợp này. Khi thành công, kết quả sẽ chứa `AdaptyProfile` đã được cập nhật.
-- **Failure**: Một lỗi đã ngăn quá trình mua hàng, và callback mang theo một `AdaptyError` — hạn chế thanh toán, sản phẩm không hợp lệ, lỗi mạng, hoặc lỗi xác minh giao dịch.
-
-Tên và chữ ký callback: [iOS](ios-handling-events) | [Android](android-handling-events) | [React Native](react-native-handling-events-1) | [Flutter](flutter-handling-events) | [Unity](unity-handling-events) | [Kotlin Multiplatform](kmp-handling-events) | [Capacitor](capacitor-handling-events)
-
-Xử lý theo kết quả:
-
-- Nếu thành công, đóng paywall rồi hiển thị flow sau khi mua.
-- Nếu hủy, thanh toán đang chờ xử lý, hoặc thất bại, giữ nguyên paywall.
-
-:::note
-Tính năng khôi phục báo cáo thông qua callback riêng, xử lý cả trường hợp người dùng cài lại ứng dụng hoặc đổi thiết bị. Xác nhận rằng hồ sơ người dùng trả về có [mức độ truy cập](access-level) đang hoạt động, sau đó đóng và hiển thị một flow theo cách tương tự. Hãy trỏ callback đó vào một flow riêng — màn hình cảm ơn người dùng sau khi mua hàng không phù hợp cho trường hợp khôi phục.
+:::important
+Flow chỉ có thể phản hồi các giao dịch mua qua **In-App Store**. Flow không nhận được kết quả của giao dịch mua qua **Web Payment**.
 :::
 
-## 4. Tải và hiển thị flow sau mua hàng \{#4-load-and-present-the-post-purchase-flow\}
+1. Chọn phần tử có hành động **Purchase** hoặc **Restore purchases**.
+2. Nhấp vào hành động **Purchase** hoặc **Restore purchases**.
+3. Với kết quả mua hàng hoặc khôi phục bạn cần, chẳng hạn như **When succeeded**, nhấp vào <Inline id="plus.svg" alt="Add action" />.
+4. Từ danh sách thả xuống **Action**, chọn hành động muốn chạy thay vì **Do nothing**.
 
-Để mở flow sau mua hàng mà không phải chờ, hãy tải nó cùng lúc với paywall thay vì bên trong handler. SDK sẽ tải trước và lưu cache hình ảnh.
+:::note
+Một hành động điều hướng hoặc **Close Flow** theo sau **Purchase** hoặc **Restore purchases** trong cùng một trigger sẽ chạy ngay lập tức, trước khi có kết quả. Hãy thêm nó vào làm hành động kết quả thay thế.
+:::
 
-Để làm nóng cache cho nhiều placement trong một lần gọi, hãy dùng [`preloadFlows`](ios-optimize-paywall-fetching#preload-placements) (SDK 4.1+).
+:::tip
+Khi một hành động **Purchase** có các hành động kết quả, việc nhấn đúp không bắt đầu một giao dịch mua thứ hai. Flow sẽ bỏ qua các lần nhấn thêm vào hành động đó cho đến khi cửa hàng trả về kết quả, trong tối đa 60 giây. **Restore purchases** hoạt động tương tự.
+:::
 
-Lấy flow và paywall: [iOS](get-pb-paywalls) | [Android](android-get-pb-paywalls) | [React Native](react-native-get-pb-paywalls) | [Flutter](flutter-get-pb-paywalls) | [Unity](unity-get-pb-paywalls) | [Kotlin Multiplatform](kmp-get-pb-paywalls) | [Capacitor](capacitor-get-pb-paywalls)
+Để xem các hành động kết quả trong ứng dụng của bạn, [thực hiện mua hàng sandbox](test-purchases-in-sandbox).
 
-Hiển thị flow và paywall: [iOS](ios-present-paywalls) | [Android](android-present-paywalls) | [React Native](react-native-present-paywalls) | [Flutter](flutter-present-paywalls) | [Unity](unity-present-paywalls) | [Kotlin Multiplatform](kmp-present-paywalls) | [Capacitor](capacitor-present-paywalls)
+Bạn không thể thực hiện giao dịch mua thực trong [bản xem trước trên ứng dụng di động Adapty](paywall-device-compatibility-preview#preview-on-devices).
+
+Nếu flow bỏ qua các hành động kết quả trong ứng dụng của bạn, hãy xem [lý do flow bỏ qua các hành động kết quả](flow-common-issues#the-flow-doesnt-run-the-actions-set-for-a-purchase-result).
+
+:::tip
+Để xử lý kết quả mua hàng trong code ứng dụng của bạn, chẳng hạn như để mở một màn hình native, hãy sử dụng các callback mua hàng và khôi phục của Adapty SDK. Mỗi thay đổi đối với code đó cần phải phát hành lại ứng dụng. Nếu ứng dụng của bạn mở một flow thứ hai sau khi mua hàng, bạn có thể chuyển các màn hình của nó vào flow chứa paywall.
+:::
+
+### Hiển thị màn hình tiếp theo sau khi mua hàng thành công \{#show-the-next-screen-after-a-successful-purchase\}
+
+Để tiếp tục onboarding hoặc hiển thị màn hình cảm ơn sau khi mua hàng thành công, hãy ghép kết quả **When succeeded** với hành động [**Navigate to Screen**](onboarding-actions#navigate-to-screen), rồi chọn màn hình đó làm đích đến.
+
+### Đóng flow sau khi mua hàng thành công \{#close-the-flow-after-a-successful-purchase\}
+
+Để kết thúc flow sau khi mua hàng thành công, hãy thêm [**Close Flow**](onboarding-actions#close-flow) cho **When succeeded** thay vì điều hướng. Flow sẽ chỉ đóng khi việc mua hàng thành công, vì vậy code trong app của bạn không cần phải tự đóng nó.
+
+### Phản hồi khi mua hàng thất bại, bị hủy, hoặc đang chờ xử lý \{#respond-to-a-failed-canceled-or-pending-purchase\}
+
+Để hiển thị thông báo hoặc màn hình sau khi mua hàng thất bại, bị hủy, hoặc đang chờ xử lý, hãy thêm các hành động cho những kết quả này của hành động **Purchase**:
+
+- **When failed**: Có lỗi xảy ra khiến giao dịch thất bại. Ví dụ: [hiển thị thông báo](onboarding-actions#show-alert) yêu cầu người dùng thử lại sau.
+- **When cancelled by user**: Người dùng đã hủy giao dịch. Ví dụ: hiển thị màn hình với một ưu đãi khác.
+- **When pending**: Giao dịch đang chờ xác nhận, ví dụ như ngân hàng đang xác minh thanh toán, hoặc phụ huynh đang phê duyệt qua Ask to Buy trên iOS. Flow không phản hồi khi ngân hàng hoặc phụ huynh chấp thuận giao dịch, vì vậy hãy hiển thị màn hình giải thích thời gian chờ.
+
+:::tip
+Để cho phép người dùng thử lại giao dịch mua thất bại, hãy giữ họ ở lại paywall, ví dụ bằng cách hiển thị cảnh báo cho **When failed**. Bạn không thể thêm **Purchase**, **Restore purchases**, hay [**Request permission**](onboarding-actions#request-permission) vào một outcome.
+:::
+
+### Phản hồi khi khôi phục giao dịch mua \{#respond-to-a-purchase-restoration\}
+
+Hành động [**Restore purchases**](paywall-product-block#restore-purchases) có hai kết quả: **When restore completed** và **When restore failed**.
+
+**When restore completed** có nghĩa là quá trình khôi phục đã hoàn tất mà không có lỗi, chứ không có nghĩa là người dùng có quyền truy cập. Bạn không thể xác minh mức độ truy cập trong một flow. Để hiển thị nội dung phụ thuộc vào quyền truy cập, hãy thêm **Close Flow** cho **When restore completed**, và xác minh [mức độ truy cập](access-level) trong ứng dụng.
+

@@ -6,15 +6,13 @@ toc_max_heading_level: 4
 keywords: ['AdaptyUIFlowsEventsObserver', 'flowViewDidPerformAction', 'flowViewDidSelectProduct', 'flowViewDidStartPurchase', 'flowViewDidFinishPurchase', 'flowViewDidFailPurchase', 'flowViewDidStartRestore', 'flowViewDidFinishRestore', 'flowViewDidFailRestore', 'flowViewDidFailLoadingProducts', 'flowViewDidReceiveError', 'AdaptyUIPaywallsEventsObserver', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
 ---
 
-import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
-
 <SDKv4>
 
 :::important
-Bu kılavuz; satın alma, geri yükleme, ürün seçimi ve flow görüntüleme için olay işlemeyi kapsar. Ayrıca düğme işlemeyi de (flow'u kapatma, bağlantı açma vb.) uygulamanız gerekir. Ayrıntılar için [flow aksiyonlarını işleme kılavuzumuza](kmp-handle-paywall-actions) bakın.
+Bu kılavuz; satın almalar, yenileme işlemleri, ürün seçimi ve flow render işlemleri için event yönetimini kapsar. Ayrıca buton işleme (flow'u kapatma, linkleri açma vb.) işlemlerini de uygulamanız gerekir. Ayrıntılar için [flow aksiyonlarını yönetme kılavuzumuza](kmp-handle-paywall-actions) bakın.
 :::
 
-[Flow Builder](adapty-flow-builder) veya [Paywall Builder](adapty-paywall-builder) ile yapılandırılan flow'lar ve paywaller, satın alma yapmak ve geri yüklemek için ekstra kod gerektirmez. Ancak uygulamanızın yanıt verebileceği bazı olaylar üretirler. Bu olaylar; düğme tıklamalarını (kapat düğmeleri, URL'ler, ürün seçimleri vb.) ve satın alma işlemleriyle ilgili bildirimleri kapsar. Bu olaylara nasıl yanıt vereceğinizi aşağıda öğrenebilirsiniz.
+Adapty'nin render ettiği flow'lar ve paywall'lar, satın alma yapmak ve geri yüklemek için ekstra kod gerektirmez. Ancak, uygulamanızın yanıt verebileceği bazı olaylar üretirler. Bu olaylar; buton tıklamaları (kapat butonları, URL'ler, ürün seçimleri vb.) ve satın alma ile ilgili eylemlere dair bildirimleri kapsar. Bu olaylara nasıl yanıt vereceğinizi aşağıda öğrenebilirsiniz.
 
 Mobil uygulamanızdaki flow ekranında gerçekleşen süreçleri kontrol etmek veya izlemek için `AdaptyUIFlowsEventsObserver` arayüzü yöntemlerini uygulayın ve gözlemcinizi `AdaptyUI.setFlowsEventsObserver()` ile kaydedin. Bazı yöntemlerin yaygın senaryoları otomatik olarak ele alan varsayılan uygulamaları bulunur; bu nedenle yalnızca değiştirmek istediğiniz yöntemleri geçersiz kılın:
 
@@ -122,7 +120,10 @@ override fun flowViewDidStartPurchase(view: AdaptyUIFlowView, product: AdaptyPay
 
 #### Başarılı, iptal edilmiş veya bekleyen satın alma \{#successful-canceled-or-pending-purchase\}
 
-Bir satın alma tamamlandığında bu metot çağrılır. Varsayılan olarak hiçbir şey yapmaz — satın alma sonrasında siz kapatana kadar flow açık kalır; bu nedenle kullanıcı erişim kazandığında `view.dismiss()` metodunu kendiniz çağırmanız gerekir:
+Bir satın alma tamamlandığında bu metot çağrılır. Varsayılan olarak hiçbir şey yapmaz ve flow açık kalır. Satın almaya iki farklı yerden yanıt verebilirsiniz:
+
+- **Flow içinde (önerilen)**: Başarılı bir satın alma sonrasında flow'u kapatmak veya bir teşekkür ekranı göstermek için Flow & Paywall Builder'da [sonuç aksiyonları](respond-to-purchase-outcomes#add-actions-for-a-result) ayarlayın. Bunları uygulama güncellemesi gerektirmeden değiştirebilirsiniz.
+- **Uygulama kodunda**: Flow'un yapamadığı şeyler için, örneğin özel bir bildirim. Flow'u koddan kapatmak için kullanıcı erişim kazandıktan sonra `view.dismiss()` çağırın:
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun flowViewDidFinishPurchase(
@@ -207,11 +208,9 @@ override fun flowViewDidFinishPurchase(
 ```
 </Details>
 
-Başarılı satın alım durumunda flow ekranını kapatmanızı öneririz.
+#### Başarısız satın alma \{#failed-purchase\}
 
-#### Başarısız satın alım \{#failed-purchase\}
-
-Bir satın alım hata nedeniyle başarısız olursa bu metot çağrılır. Bu durum; StoreKit/Google Play Billing hatalarını (ödeme kısıtlamaları, geçersiz ürünler, ağ hataları), işlem doğrulama hatalarını ve sistem hatalarını kapsar. Kullanıcı iptalleri bu metodu değil, iptal sonucuyla birlikte `flowViewDidFinishPurchase`'ı tetikler; bekleyen ödemeler ise bu metodu tetiklemez.
+Bir satın alma işlemi hata nedeniyle başarısız olursa bu metot çağrılır. Bu durum; StoreKit/Google Play Billing hataları (ödeme kısıtlamaları, geçersiz ürünler, ağ hataları), işlem doğrulama hataları ve sistem hatalarını kapsar. Kullanıcının iptal etmesi durumunda ise bu metot yerine `flowViewDidFinishPurchase` iptal sonucuyla tetiklenir; beklemedeki ödemeler bu metodu tetiklemez.
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun flowViewDidFailPurchase(
@@ -300,7 +299,7 @@ override fun flowViewDidFinishRestore(view: AdaptyUIFlowView, profile: AdaptyPro
 ```
 </Details>
 
-Kullanıcı gerekli `accessLevel`'a sahipse ekranı kapatmanızı öneririz. Bunu nasıl kontrol edeceğinizi öğrenmek için [Abonelik durumu](subscription-status) konusuna bakın.
+Kullanıcılara satın alma geri yükleme işleminin ardından hoş geldiniz ekranı gibi ek ekranlar göstermek için Flow & Paywall Builder'da [sonuç aksiyonları](respond-to-purchase-outcomes#respond-to-a-purchase-restoration) ayarlayın. Flow'un yapamadıkları için, örneğin kullanıcı erişim kazandıktan sonra uygulamanızda bir ekran açmak gibi durumlarda uygulama kodunu kullanın. Access level'ı nasıl doğrulayacağınızı öğrenmek için [Abonelik durumu](subscription-status) konusuna bakın.
 
 #### Başarısız geri yükleme \{#failed-restore\}
 
@@ -331,7 +330,7 @@ override fun flowViewDidFailRestore(view: AdaptyUIFlowView, error: AdaptyError) 
 
 #### Web ödeme navigasyonu tamamlama \{#web-payment-navigation-completion\}
 
-Bir kullanıcı [web paywall](web-paywall) aracılığıyla satın alma işlemini başlatırsa bu metot çağrılır:
+Bir kullanıcı [web paywall](web-paywall) üzerinden satın alma işlemini başlatırsa, bu metot çağrılır:
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun flowViewDidFinishWebPaymentNavigation(
@@ -348,7 +347,7 @@ override fun flowViewDidFinishWebPaymentNavigation(
 ```
 
 <Details>
-<summary>Etkinlik örnekleri (Genişletmek için tıklayın)</summary>
+<summary>Olay örnekleri (Genişletmek için tıklayın)</summary>
 
 ```javascript
 // Başarılı web ödeme navigasyonu
@@ -454,6 +453,8 @@ Kotlin Multiplatform, olay parametrelerini ham bir JSON dizesi olarak iletir; bu
 
 Bunlarla ne yapacağınızı öğrenmek için [Flow ekran görüntülemelerini takip etme](kmp-flow-screen-views) sayfasına bakın.
 
+Bir flow aynı zamanda kullanıcıların yazdığı ve seçtiği değerleri de raporlar. Bunları okumak için [Flow'lardan gelen verileri işleme](kmp-flow-input) bölümüne bakın.
+
 ### Navigasyon \{#navigation\}
 
 #### Android sistem geri butonu \{#android-system-back-button\}
@@ -474,16 +475,16 @@ override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAc
 }
 ```
 
-[Flow aksiyonlarını yönetme kılavuzuna](kmp-handle-paywall-actions) tüm aksiyonların listesi için bakın.
+[Flow aksiyonlarını yönetme kılavuzuna](kmp-handle-paywall-actions) bakarak tam aksiyon listesini inceleyebilirsiniz.
 
 </SDKv4>
 
 <SDKv3>
 
-[Paywall Builder](adapty-paywall-builder) ile yapılandırılmış paywalllar, satın alma yapmak veya geri yüklemek için ekstra kod gerektirmez. Ancak uygulamanızın yanıt verebileceği bazı olaylar üretirler. Bu olaylar; düğme basışlarını (kapat düğmeleri, URL'ler, ürün seçimleri vb.) ve paywall üzerinde gerçekleştirilen satın alma ile ilgili aksiyonlara dair bildirimleri kapsar. Bu olaylara nasıl yanıt vereceğinizi aşağıda öğrenebilirsiniz.
+[Paywall Builder](adapty-paywall-builder) ile yapılandırılan paywalllar, satın alma yapmak ve geri yüklemek için ekstra kod gerektirmez. Ancak uygulamanızın yanıt verebileceği bazı olaylar üretirler. Bu olaylar; buton tıklamalarını (kapat butonları, URL'ler, ürün seçimleri vb.) ve paywall üzerinde gerçekleştirilen satın alma ile ilgili aksiyon bildirimlerini içerir. Bu olaylara nasıl yanıt vereceğinizi aşağıda öğrenin.
 
 :::warning
-Bu kılavuz yalnızca **yeni Paywall Builder paywallları** içindir.
+Bu kılavuz yalnızca **eski builder ile oluşturulan paywalllar** içindir.
 :::
 
 Mobil uygulamanızdaki paywall ekranında gerçekleşen süreçleri kontrol etmek veya izlemek için `AdaptyUIPaywallsEventsObserver` arayüz metotlarını uygulayın. Bazı metotların, yaygın senaryoları otomatik olarak işleyen varsayılan uygulamaları mevcuttur.

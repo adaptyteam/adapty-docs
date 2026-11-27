@@ -27,7 +27,7 @@ Most readers will either:
 This fundamentally shapes how to structure documentation:
 - **The intro must stand alone.** A reader who reads only the intro should understand what this article covers and whether it's relevant to them.
 - **Every H2 section must be self-contained.** A reader jumping to "Configure competitors" shouldn't need to have read "Configure products" first, unless there's an explicit prerequisite stated at the top of the section.
-- **Don't bury critical information.** If something applies to the entire workflow (a prerequisite, a limitation, a gotcha), put it in the intro or in a dedicated "Before you begin" section — not inside step 4 of 7.
+- **Don't bury critical information.** If something applies to the entire workflow (a prerequisite, a limitation, a gotcha), put it in the intro or in a dedicated "Before you begin" section — not inside step 4 of 7. Likewise, put a fact that concerns one step under that step, not in **Before you start**: a name the code uses, a setup item, or a requirement. When a prerequisite has to come before its step, say in the same sentence what it's for.
 - **Headings are the article's API.** Readers scan headings to decide what to read. Each heading must clearly signal what that section covers. Vague headings ("Additional options", "Other settings") force the reader to read the section to understand it.
 - **Front-load value in each section.** The first sentence of each section should tell the reader what they'll get from reading it. Don't start with background — start with the outcome.
 
@@ -90,6 +90,8 @@ Remember a folder is not a platform and a filename is not a topic — some `vers
 
 If the zone brief and roster still leave candidates open, search the map:
 
+0. **Build the map first**: run `npm run mill:map`. The map is gitignored, so it is absent on a fresh clone and stale after any pull — and a grep on a missing file returns nothing, which reads as "no article covers this".
+
 1. **Search by feature keywords**: Grep for the feature name, UI element names, and related terms across `.claude/context-mill/docs-map.jsonl` (`title`, `headings`, `symbols`, `links`), falling back to the relevant docs if the map misses
 2. **Search by product area**: If the task mentions "autopilot," search for all articles containing "autopilot." If it mentions "A/B tests," find every article that covers A/B test configuration, results, or related workflows.
 3. **Think about ripple effects**: A feature change may affect more than the obvious article. Ask yourself:
@@ -104,6 +106,14 @@ If the zone brief and roster still leave candidates open, search the map:
    - **No change needed**: Articles that mention the broader area but aren't affected by this specific change
 5. **Verify content fit per article**: When planning shared content (reusable components, callouts, or identical text) across multiple articles, don't assume that matching a structural pattern means the content applies. Read what each article actually does and verify the shared content is relevant there. For example, a note about user ID timing is irrelevant in an article that only passes device IDs.
 
+**Then check open PRs for the same articles.** Docs often wait in an open PR until the feature ships, and that PR can name a different ticket than yours. For each affected article, list the open PRs that change it:
+
+```bash
+gh pr list --state open --json number,title,author,headRefName,files --jq '.[] | select(any(.files[]; .path | endswith("/<article>.mdx"))) | "#\(.number) \(.title) by \(.author.login) (\(.headRefName))"'
+```
+
+When an open PR already covers the feature, don't draft it again. Read the PR, and plan only what it lacks or what the code changed after its last commit. Those changes go into that PR's branch as commits, with a PR comment that says what you added and why. Leave the merge to the PR's author.
+
 **Documentation research** (for each affected article):
 1. **Read the full article**: Understand the current structure, tone, depth, and heading patterns
 2. **Read neighboring articles**: Understand how this article fits in its sidebar section
@@ -114,6 +124,35 @@ If the zone brief and roster still leave candidates open, search the map:
 2. **Primary audience**: From the article's location (Dashboard guide? SDK guide? API reference?), determine whether the reader is a developer, PM, marketer, or mixed.
 3. **User workflow**: From the existing article's step sequence, determine where this feature fits in the user's workflow. Does the user encounter this during initial setup, daily use, or occasional configuration?
 4. **Feature importance**: Is this a core part of the workflow that every reader needs, or an optional setting that most users skip? This determines prominence in the structure.
+
+**Fact research** (every claim the content will make about what Adapty, the SDK, or the UI does):
+1. **Write each fact with its source.** Keep a facts list: the claim, and the file and line, doc, or test that settles it. For a fact from code, also record the repo, the branch, and the commit you read. A UI label is a code fact too: a later commit on the same branch can rename it. A claim with no source is a question for the user, not a fact.
+2. **Follow a control end to end.** For a control the article documents, trace it from the frontend call through the backend route to the code that handles it. A stub (a 501, a TODO, an empty list) is a fact: record it, and don't document the control as working.
+3. **Trace a mechanism for every case the article covers.** A mechanism verified for one product type, store, or platform is a fact about that one only. Subscriptions and one-time purchases, the App Store and Google Play, and the native and cross-platform SDKs can each take a different path. For each case, trace both ends: what the SDK does, and which backend path completes it. When a case takes another path, describe it separately, or narrow the claim to the cases you traced.
+4. **Use the owning article for side effects.** Before you record a side effect, find the article that owns that mechanism and use its facts.
+5. **Verify third-party claims on the third party's side.** What a third-party tool does with forwarded data (aggregates, deduplicates, reports) needs that tool's own docs or a test. Adapty's code settles only the Adapty side. In a compound claim, verify each part or cut the part you can't.
+6. **Check scenarios against the product.** A scenario the text puts to the reader is a claim: "if you publish a broken flow" fails when publishing blocks broken flows. A behavior claim is true only in the states you verified: list the settings and device states that can change it (alignment, element size, an open or closed display), verify it in each, and narrow the claim or add a step when one changes the outcome.
+7. **Name icons from the SVG or a screenshot**, never from the file name.
+8. **Confirm release state in code.** A ticket status, a chat announcement, or a wiki page is a claim, not proof. Find the change on the production branch. When a team brief contradicts production, document production. When you researched a fact before its release tag existed, re-check the fact against the tag once the tag exists: a signature, an overload, or a default can change before release.
+
+**Then classify the change for shipped-skill ripple.** The same feature often changes one of the
+seven skills shipped from `sdk-integration-skill`, and the plan is the moment to find out — asked
+later, the second half surfaces after the docs plan was already approved.
+
+Read `.claude/context-mill/surfaces/skills.md` and classify. It is corpus-wide; the zone brief's
+`Ripple rules` adds only that zone's delta, which file in which skill.
+
+**Most changes do not ripple, and saying so is the point.** Citation is not the test: the skills
+cite several hundred articles between them, so well over half of docs commits touch one — a skill
+fetches its URLs at runtime and absorbs content changes by design, and structural breakage is
+already caught by that repo's lints and a daily cron. Do not route a wording fix, a corrected
+claim, an example, a screenshot, an SEO pass or a locale into a skill. Do check whether the skill
+*restates* the changed fact in its own prose, which is the one case that looks like churn and is
+not.
+
+When a class does fire, name the file, not the skill: resolve it from the skills repo's own
+`CLAUDE.md` inventory and `SKILL.md` descriptions, plus `.claude/context-mill/skill-citations.json`
+(regenerate with `npm run mill:skills`). Never keep a list of skills here.
 
 **Report what you found** to the user before proceeding:
 - **Articles affected** (if discovered, not specified by user):
@@ -126,6 +165,8 @@ If the zone brief and roster still leave candidates open, search the map:
 - Any existing content that overlaps with or relates to the planned change
 - The article's heading style (verb phrases, noun phrases, or mixed)
 - Your product analysis: who reads this, what they're trying to do, and how the new feature fits their workflow
+- **Open PRs**: each open PR that changes an affected article, and what it already covers
+- **Shipped-skill ripple**: the class that fired and which file in which skill, or one line saying none
 
 ### Step 3: Assess Documentation Scope
 
@@ -202,7 +243,28 @@ Use AskUserQuestion for structured choices where options are clear. Use direct q
 
 ### Step 5: Produce the Plan
 
+For a medium or large update, decide what the content covers before you outline it. These three rules come first; the outline follows from them.
+
+1. **Tag the reader questions.** For each goal the reader arrives with, list what they must know or decide to reach the end, and what they do next. Tag each question:
+   - `act`: the reader can't act or conclude correctly without the answer, and the screen doesn't show it.
+   - `see`: the UI answers it as soon as the reader looks or acts: navigation, defaults, and limits the UI states.
+   - `edge`: most readers never hit it.
+   - `owner`: another article owns it. Link there where the reader needs it.
+
+   Only `act` questions get a place in the content. Then match each fact from your research to the `act` question it answers. A fact that answers none stays out of the text. List the `see` and `edge` questions under **Left out** in the plan, one line each with the reason, so the user can overrule you.
+2. **Build the heading tree with path lines.** Under each heading, write one sentence of at most 20 words: what the reader does in that section, and why. Under the title, write the article's path line: who arrives, with what goal, and where the article leaves them. When readers arrive with different goals, name each one, most common first, and order their sections the same way. Under each heading, list the `act` questions it answers. Every `act` question needs a home, and no `see` or `edge` question gets one. The path lines set the order; each section still works for a reader who lands on it directly (see "Non-linear reading"). Each heading passes three tests:
+   - **One question each**: It answers an `act` question that no other heading answers. Fold a wrapper with no text of its own, an H3 that restates its H2, or a heading per field into the nearest section.
+   - **The reader's goal**: A task heading names what the reader wants to do. Often the action is the goal (`Create a placement`). When the action only serves another goal, name that goal, not the mechanism, UI element, or API call behind it. Read the heading without its body: a reader who doesn't know how the feature works should pick it for their goal. ❌ `## Publish existing flows again` ✅ `## Add iPhone Duo support to live flows`
+   - **A real contrast**: Siblings that offer a choice differ on what the reader decides by. ❌ `### Register views for every flow` / `### Register views for one flow` ✅ `### Display the same views to all users` / `### Display user-specific data, such as a daily streak`
+
+   When sections share steps, put the shared steps once in their parent section, and keep only the case-specific part in each subsection.
+3. **Limitations and troubleshooting.** A limitation earns a place only when the product can't do it in any case and a reader would plausibly try it; give its cause. Put limitations in one section at the end, unless a limit changes a step. Leave out what the product never promised and what nobody would ask. Troubleshooting covers only symptoms a reader hits in normal use, each with a fix they can apply.
+
 Generate a plan scaled to the documentation scope. Read `references/plan-templates.md` for the 4 plan format templates (small update, medium update, large update, multi-article update).
+
+If the shipped-skill classification in Step 2 fired, the plan gains an `## Affected skills`
+section — see `references/plan-templates.md`. If it did not fire, say so in one line rather than
+omitting it: a reader cannot tell a considered *no* from a forgotten question.
 
 ## Structure Review
 
@@ -265,14 +327,15 @@ These rules govern how plans should structure documentation. Apply them when pro
 - **H2 (##) and H3 (###)** for main structure — these appear in TOC
 - **H4 (####)** sparingly — only to hide minor subsections from TOC
 - **Never deeper than H4** — restructure instead
-- **Consistent style within an article**: If sibling headings use verb phrases ("Configure X", "Set up Y"), don't introduce a noun phrase ("Analytics integration"). Pick one pattern and maintain it.
-- **Prefer action-oriented** headings for task/procedure sections: Configure, Set up, Create, Enable
+- **Consistent style within an article**: If sibling task headings use verb phrases ("Configure X", "Set up Y"), don't introduce a noun phrase for another task ("Analytics integration"). Pick one pattern and maintain it. Exception: a reference section among task sections keeps its noun phrase ("Limitations", "Configuration options"); a reference section never takes a task heading.
+- **Prefer action-oriented** headings for task/procedure sections. To choose which action to name, apply the heading test **The reader's goal** in step 2 of the planning process.
 - **Use noun phrases** for concept/reference sections: Configuration options, System requirements, General requirements
 
 ### Introduction
 - Every article needs an intro paragraph before the first H2
 - The intro covers: **what** this is, **why** the reader needs it, **when** it applies
 - 2-4 sentences. Include product value without marketing copy.
+- The intro covers what the reader can build or control. Required fields, comparisons with other features, and release details go in the body.
 
 ### Non-linear reading
 - **Self-contained sections**: Each H2 section must make sense to a reader who jumped there directly. If a section depends on context from a previous section, state the prerequisite explicitly at the top ("First, configure your products as described in [section]").
@@ -286,7 +349,7 @@ These rules govern how plans should structure documentation. Apply them when pro
 - **Don't interrupt the reading flow**: Callouts must not break the default execution order. A reader following steps or reading sequentially should not be forced to jump over callouts to continue. Place callouts where they support the flow, not where they interrupt it.
 
 ### Section sizing
-- Avoid micro-subsections: Don't create an H3 for a single paragraph
+- Avoid micro-subsections: Don't create an H3 for a single paragraph. The one exception is a separate task with its own goal that the parent heading doesn't name
 - Break up text blocks longer than 200-300 words with subheadings, lists, or callouts
 - If an H2 section grows beyond 500 words, consider splitting it
 
@@ -315,7 +378,7 @@ When planning updates to existing articles, the plan must match the article's cu
 When a user pastes a long Jira task with extensive acceptance criteria, technical specs, and engineering details — assess what the documentation actually needs. A 500-word task description about backend changes to a country selector may translate to a single paragraph in the docs: "Select the target countries from the **Country** dropdown." Say this clearly: "This is a big feature change but a small documentation update."
 
 ### Always check for ripple effects
-Even when the user specifies a single article, search for other articles that mention the same feature or concept. A change to "autopilot competitor analysis" might also need a one-line update in the autopilot overview article, or a mention in a "what's new" section. Report all affected articles — the user can decide which ones to update now and which to defer, but they should know the full picture.
+Even when the user specifies a single article, search for other articles that mention the same feature or concept. A change to "autopilot competitor analysis" might also need a one-line update in the autopilot overview article. Never list `whats-new.mdx` as an affected article: it is written once a month, on demand, with the `update-whats-new` skill, never as part of a feature change. Report all affected articles — the user can decide which ones to update now and which to defer, but they should know the full picture. Ripple is not only articles: classify the change for shipped-skill ripple too, per Step 2.
 
 ### Propose, don't just ask
 After researching the existing article, come with a concrete proposal. "I'd add a 2-sentence paragraph to the 'Configure competitors' section, right after the frequency dropdown, describing the country selector and its default behavior. Does that match what you had in mind?" This gives the user something to react to instead of building the plan from scratch.

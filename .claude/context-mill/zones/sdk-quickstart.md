@@ -1,6 +1,6 @@
 ---
 zone: sdk-quickstart
-sources: [android-sdk, dashboard-interface, jscore, kmp-sdk, sdk-integration-skill]
+sources: [android-sdk, jscore, kmp-sdk, sdk-integration-skill]
 reviewed_shape:
 reviewed_at:
 ---
@@ -87,10 +87,10 @@ The "Get started" category of each platform SDK's sidebar: installing the SDK, a
   both be right, for different readers. Read the pinned `crossplatform` version's build file rather than
   copying either sentence between install articles — and see Gaps and misses #4, where the corpus currently
   states both.
-- **Exact dashboard labels** (the `GetKey` path, "Show on device") → `dashboard-interface` per
-  `sources.md`. Verified while writing this brief: "Show on device" exists only under `packages/builder`
-  (the legacy Paywall Builder) and `packages/paywall-builder-migration`, with **zero** hits in
-  `packages/unified-builder` (the Flow Builder). Do not describe it as a Flow Builder control without
+- **Exact dashboard labels** (the `GetKey` path, "Show on device") → Adapty's closed-source dashboard
+  code, not citable here — confirm with the product team. Verified while writing this brief (dashboard
+  code): "Show on device" exists only in the legacy Paywall Builder and the paywall-to-flow migration UI,
+  never in the Flow & Paywall Builder. Do not describe it as a Flow & Paywall Builder control without
   re-checking.
 - **The Adapty CLI commands inside the `GetKey` snippet are `agent-tooling`'s**, not this zone's — change
   them there, not by editing seven install articles.
@@ -172,15 +172,15 @@ The "Get started" category of each platform SDK's sidebar: installing the SDK, a
 | react-native-quickstart-identify | — | dev | 7 | react-native |
 | react-native-quickstart-paywalls | — | dev | 6 | react-native |
 | react-native-sdk-overview | entry | dev | 3 | react-native |
-| sdk-installation-android | — | dev | 13 | android |
-| sdk-installation-capacitor | — | dev | 12 | capacitor |
-| sdk-installation-flutter | — | dev | 11 | flutter |
-| sdk-installation-ios | — | dev | 11 | ios |
-| sdk-installation-kotlin-multiplatform | — | dev | 12 | kmp |
-| sdk-installation-react-native-expo | — | dev | 12 | react-native |
-| sdk-installation-react-native-pure | — | dev | 12 | react-native |
+| sdk-installation-android | — | dev | 15 | android |
+| sdk-installation-capacitor | — | dev | 15 | capacitor |
+| sdk-installation-flutter | — | dev | 14 | flutter |
+| sdk-installation-ios | — | dev | 12 | ios |
+| sdk-installation-kotlin-multiplatform | — | dev | 14 | kmp |
+| sdk-installation-react-native-expo | — | dev | 15 | react-native |
+| sdk-installation-react-native-pure | — | dev | 15 | react-native |
 | sdk-installation-reactnative | entry | dev | 0 | react-native |
-| sdk-installation-unity | — | dev | 12 | unity |
+| sdk-installation-unity | — | dev | 16 | unity |
 | unity-check-subscription-status | — | dev | 5 | unity |
 | unity-quickstart-identify | — | dev | 7 | unity |
 | unity-quickstart-paywalls | — | dev | 6 | unity |
@@ -332,14 +332,13 @@ Four of this zone's open questions were put to the docs owner and answered. Thes
 don't re-litigate them; the remaining content work is tracked as a separate task.
 
 1. **The installation family gets flow wording. Yes.** All eight install articles currently say "Paywall
-   Builder" and link `adapty-paywall-builder`, while all seven quickstarts already say "Flow Builder" and
+   Builder" and link `adapty-paywall-builder`, while all seven quickstarts already say "Flow & Paywall Builder" and
    `getFlow`. That split is not deliberate — it's a sweep that stopped short. Bring the install family
    over.
 2. **"Show on device" is not required for flows. No.** So the note is **stale in the four quickstarts that
    carry it** (Android, Flutter, Unity, KMP) rather than missing from the three that don't (iOS, RN,
-   Capacitor) — remove it, don't propagate it. This matches the code evidence: the string lives only in
-   the `builder` and `paywall-builder-migration` packages of `adapty-dashboard-interface`, with zero hits
-   in `unified-builder`.
+   Capacitor) — remove it, don't propagate it. This matches the code evidence: in the dashboard code the string lives only in
+   the legacy Paywall Builder and the paywall-to-flow migration UI, never in the Flow & Paywall Builder.
 3. **The Google Play Billing v8 fact must reach Flutter and Unity — if it is true.** The owner's condition
    is explicit, so verify before writing: on one commit of the Android SDK, `adapty/build.gradle` pins
    7.0.0 while `crossplatform/build.gradle` pins 8.0.0, and Flutter, Unity and KMP all depend on
@@ -425,8 +424,8 @@ don't re-litigate them; the remaining content work is tracked as a separate task
     obsolete on all of them.** Present in `android-quickstart-paywalls` (phrased "in the Flow Builder"),
     `flutter-quickstart-paywalls`, `unity-quickstart-paywalls`, `kmp-quickstart-paywalls`; absent from iOS,
     React Native and Capacitor — the same 4/3 split as the Developer-CLI tip, which suggests one rewrite wave
-    dropped both. In `dashboard-interface` at `origin/master` the string exists only under
-    `packages/builder` and `packages/paywall-builder-migration` and **not once** in `packages/unified-builder`,
+    dropped both. In the dashboard code the string exists only in the legacy Paywall Builder and the
+    paywall-to-flow migration UI and **not once** in the Flow & Paywall Builder,
     and in this corpus the only non-SDK article that documents it (`quickstart-paywalls`, zone
     `getting-started`) does so in its *legacy paywall* branch, not its flow branch. Question filed — this is
     either four stale notes or three missing ones, and the evidence leans stale.

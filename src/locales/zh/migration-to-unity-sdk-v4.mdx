@@ -1,14 +1,20 @@
 ---
-title: "将 Adapty Unity SDK 迁移至 v4.0"
-description: "通过将付费墙 API 替换为 flow API，迁移至 Adapty Unity SDK v4.0（beta），兼容 Flow Builder 和 Paywall Builder。"
-metadataTitle: "迁移至 Adapty Unity SDK v4.0（beta）| Adapty 文档"
+title: "将 Adapty Unity SDK 迁移至 v4.1"
+description: "迁移到 Adapty Unity SDK v4.1：将付费墙 API 替换为流程 API，采用已重命名的归因 API，显式启用 Adapty Attribution，并重新下载备用付费墙文件。"
+metadataTitle: "迁移到 Adapty Unity SDK v4.1 | Adapty 文档"
 ---
 
-Adapty Unity SDK 4.0（beta）引入了流程，并对付费墙 API 进行了相应重命名。新 API 同时兼容全新的 Flow Builder 和现有的 Paywall Builder——无需在 Adapty 看板端进行任何配置更改。
+Adapty Unity SDK 4.1 是 4.x 系列的首个稳定版本——4.0 仅以 Beta 形式发布，因此如果你目前使用的是 3.x，请直接迁移至 4.1。本指南涵盖完整的迁移流程：4.0 中引入的流程功能，以及 4.1 新增的变更内容。
+
+4.x 系列引入了流程（flows）并相应重命名了付费墙 API。新 API 支持流程，同时也兼容旧版编辑工具构建的付费墙——Adapty 看板无需进行任何配置变更。此外，4.1 还重命名了外部归因 API，将 Adapty Attribution 改为按需启用，新增了一个必须实现的监听器方法，并更改了备用文件格式。
+
+:::note
+来自 4.0 beta？将固定的 beta 标签替换为 [4.1.0 安装](#installation)，之后只有四个部分适用：[新监听器方法](#new-required-method-onreceivepromotedpurchase)、[重命名的外部归因 API](#renamed-external-attribution-apis)、[Adapty 归因默认禁用](#adapty-attribution-is-disabled-by-default)，以及[备用文件](#fallback-files)。
+:::
 
 ## 快速参考 \{#quick-reference\}
 
-| v3 | v4 |
+| v3 | v4.1 |
 |---|---|
 | `Adapty.GetPaywall(placementId, locale, ...)` | `Adapty.GetFlow(placementId, ...)` |
 | `Adapty.GetPaywallForDefaultAudience(placementId, locale, ...)` | `Adapty.GetFlowForDefaultAudience(placementId, ...)` |
@@ -21,32 +27,37 @@ Adapty Unity SDK 4.0（beta）引入了流程，并对付费墙 API 进行了相
 | `AdaptyUI.PresentPaywallView(view, ...)` / `DismissPaywallView(view, ...)` | `AdaptyUI.PresentFlowView(view, ...)` / `DismissFlowView(view, ...)` |
 | `Adapty.SetPaywallsEventsListener(listener)` | `Adapty.SetFlowsEventsListener(listener)` |
 | `AdaptyPaywallsEventsListener` | `IAdaptyFlowsEventsListener` |
-| `AdaptyEventListener` | `IAdaptyEventListener` |
+| `AdaptyEventListener` | `IAdaptyEventListener`，新增必需方法 `OnReceivePromotedPurchase` |
 | `AdaptyOnboardingsEventsListener` | `IAdaptyOnboardingsEventsListener` |
 | `PaywallViewDidPerformAction`、`PaywallViewDidAppear` 及其他 `PaywallView...` 回调 | `FlowViewDidPerformAction`、`FlowViewDidAppear` 及其他 `FlowView...` 回调 |
 | `PaywallViewDidFailRendering` | `FlowViewDidReceiveError` |
-| `Adapty.SetFallbackPaywalls(...)（v3 中已废弃）` | 已移除——请使用 `Adapty.SetFallback(fileName, ...)` |
-| `Builder.SetIDFACollectionDisabled(...)（v3 中已废弃）` | 已移除——请使用 `Builder.SetAppleIDFACollectionDisabled(...)` |
+| `Adapty.UpdateAttribution(data, source, ...)` 中 source 为 `string` | `Adapty.UpdateExternalAttribution(jsonString, provider, ...)` 中 provider 为 `AdaptyExternalAttributionProvider` |
+| `AdaptyProfile.AppliedAttributionSources` 类型为 `IReadOnlyList<string>` | `AdaptyProfile.AppliedExternalAttributionProviders` 类型为 `IReadOnlyList<AdaptyExternalAttributionProvider>` |
+| Adapty 归因默认自动启用 | 默认禁用——通过 `Builder.SetAdaptyAttributionEnabled(true)` 选择开启 |
+| 适用于 3.x 的备用付费墙文件 | 新的备用文件格式——请重新下载文件 |
+| `Adapty.SetFallbackPaywalls(...)`（v3 中已废弃） | 已移除——请使用 `Adapty.SetFallback(fileName, ...)` |
+| `Builder.SetIDFACollectionDisabled(...)`（v3 中已废弃） | 已移除——请使用 `Builder.SetAppleIDFACollectionDisabled(...)` |
 | `paywall.Products`（`AdaptyProductReference` 列表） | 已移除——请使用 `ProductIdentifiers` 或 `VendorProductIds`，或调用 `GetPaywallProducts(flow)` 获取完整产品信息 |
-| `AdaptyProductReference` | 已作为公共类型移除——请参阅[数据模型](#data-model) |
+| `AdaptyProductReference` | 已作为公开类型移除——参见[数据模型](#data-model) |
 | `paywall.RemoteConfigString` | 已移除——请使用 `flow.RemoteConfig?.Data` |
 
-`AdaptyPaywallProduct` 保持原名不变——产品仍属于一个流程，`GetPaywallProducts` 也保持原名，现在接受 `AdaptyFlow` 参数。`GetFlow` 和 `GetFlowForDefaultAudience` 方法不再接受 `locale` 参数。购买和用户画像相关 API（`MakePurchase`、`RestorePurchases`、`GetProfile`、`Identify`、`UpdateProfile`）以及通过 `SetFallback` 设置备用付费墙的功能保持不变。用户引导方法仍可使用，但已被标记为废弃——请参阅[用户引导 API 废弃说明](#onboarding-api-deprecation)。部分默认行为已发生变更——请参阅[默认行为变更](#default-behavior-changes)。
+`AdaptyPaywallProduct` 保持其名称不变——产品仍归属于某个流程，`GetPaywallProducts` 也保持其名称不变，现在接受一个 `AdaptyFlow` 参数。`GetFlow` 和 `GetFlowForDefaultAudience` 方法不再接受 `locale` 参数。购买与用户画像相关的 API（`MakePurchase`、`RestorePurchases`、`GetProfile`、`Identify`、`UpdateProfile`）保持不变。`SetFallback` 的签名不变，但它读取的文件需要重新下载——详见[备用文件](#fallback-files)。用户引导方法仍可使用，但已被废弃——详见[用户引导 API 废弃说明](#onboarding-api-deprecation)。部分默认行为已发生变化——详见[默认行为变更](#default-behavior-changes)。
 
 ## 安装 \{#installation\}
 
-v4.0 是预发布版本，请固定确切的 beta 标签。如需通过 Unity Package Manager 安装，请将标签附加到 Git URL：
+要通过 Unity Package Manager 安装 SDK 4.1，请在 Git URL 后追加版本标签：
 
 ```
-https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unity-sdk#4.0.0-beta.1
+https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unity-sdk#4.1.0
 ```
 
-如需通过 Unity 包安装，请从 [4.0.0-beta.1 release](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.0.0-beta.1) 下载 `adapty-unity-plugin-4.0.0-beta.1.unitypackage`。完整安装步骤请参阅[安装 Adapty SDK](sdk-installation-unity#install-adapty-sdk)。
+如果通过 Unity 包安装，请从 [4.1.0 release](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.1.0) 下载 `adapty-unity-plugin-4.1.0.unitypackage`。完整安装步骤请参阅 [安装 Adapty SDK](sdk-installation-unity#install-adapty-sdk)。
 
-v4 带来了两项构建配置变更：
+4.x 版本包含三项构建配置变更：
 
-- **iOS 依赖项切换至 Swift Package Manager。** 原生 Adapty iOS SDK 4.0 以远程 Swift 包的形式声明，而非 CocoaPods pod。请将 [External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver#getting-started) 更新至 **1.2.188 或更高版本**——早期版本不支持 Swift Package Manager 依赖项。CocoaPods 相关步骤（`iOS Resolver -> Install Cocoapods`、打开 `Unity-iPhone.xcworkspace`）不再适用。
-- **iOS 部署目标必须为 15.0 或更高版本。** Unity Editor 中新增了一个构建验证器，若目标版本低于该要求，iOS 构建将被中止。
+- **iOS 依赖项切换至 Swift Package Manager。** 原生 Adapty iOS SDK 现以远程 Swift 包的形式声明，不再使用 CocoaPods。请将 [External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver#getting-started) 更新至 **1.2.188 或更高版本**——更早的版本不支持 Swift Package Manager 依赖项。CocoaPods 相关步骤（`iOS Resolver -> Install Cocoapods`、打开 `Unity-iPhone.xcworkspace`）不再适用。构建 iOS 版本现在需要 **Xcode 26** 或更高版本，因为 Swift 包使用 Swift tools 6.2 构建。
+- **iOS 部署目标必须为 15.0 或更高版本。** Unity Editor 中新增的构建校验器会在目标版本低于此要求时阻止 iOS 构建。
+- **Android 构建必须针对 API level 35 或更高版本进行编译。** Adapty UI 库使用的 Jetpack Compose 1.8 有此要求。
 
 The underlying native Adapty SDKs are bumped to 4.x on both platforms and are resolved automatically — no other build changes are needed.
 
@@ -54,7 +65,7 @@ The underlying native Adapty SDKs are bumped to 4.x on both platforms and are re
 
 ### GetPaywall → GetFlow
 
-返回类型从 `AdaptyPaywall` 变更为 `AdaptyFlow`，同时移除了 `locale` 参数——当你渲染一个流程时，语言环境会自动解析；对于自定义付费墙，所有语言环境的配置都会通过 `flow.RemoteConfigs` 返回：
+返回类型从 `AdaptyPaywall` 变更为 `AdaptyFlow`，`locale` 参数移至流程视图参数（`AdaptyUICreateFlowViewParameters.SetLocale`）——详见[语言区域匹配为精确匹配](#locale-matching-is-exact)；对于自定义付费墙，所有语言区域均在 `flow.RemoteConfigs` 中返回：
 
 ```diff showLineNumbers
 - Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
@@ -68,12 +79,25 @@ The underlying native Adapty SDKs are bumped to 4.x on both platforms and are re
   });
 ```
 
-`GetPaywallForDefaultAudience` 已按相同方式重命名：
+`GetPaywallForDefaultAudience` 也以相同方式重命名：
 
 ```diff showLineNumbers
 - Adapty.GetPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", (paywall, error) => { /* ... */ });
 + Adapty.GetFlowForDefaultAudience("YOUR_PLACEMENT_ID", (flow, error) => { /* ... */ });
 ```
+
+### 语言区域匹配为精确匹配 \{#locale-matching-is-exact\}
+
+:::warning
+在 v3 中，Adapty 服务器会选择本地化方案并回退到语言级别：当付费墙没有 `pt-br` 本地化时，`pt-br` 请求会使用 `pt` 本地化。在 v4 中，SDK 在设备端选择本地化方案，且仅支持精确匹配。如果传入的语言区域代码与任何本地化方案均不匹配，流程将以其默认本地化方案渲染，不会报错或发出警告。
+:::
+
+在升级之前，请检查应用传入的语言区域代码：
+
+- 对于您传递的每个地区代码，请添加该代码对应的本地化——例如，除 `pt` 之外还需添加 `pt-BR`——或将该代码映射到流程中已有的代码。
+- 请严格按照已发布流程中的代码传递：从 **Select languages** 字段传递 `pt-BR`，而不是 `pt-br`。对于旧版付费墙编辑工具中的付费墙，请传递小写代码，例如 `pt-br`。不要直接传递系统语言区域标识符：在设置为英语（美国）的设备上，`CultureInfo.CurrentCulture.Name` 返回 `en-US`，这会导致只包含 `en` 的流程无法匹配。
+
+请参阅[本地化与语言代码](unity-localizations-and-locale-codes#flows-and-paywalls)。
 
 ### GetPaywallProducts(paywall) → GetPaywallProducts(flow)
 
@@ -122,20 +146,24 @@ The underlying native Adapty SDKs are bumped to 4.x on both platforms and are re
 
 ### LogShowPaywall → LogShowFlow
 
-`LogShowPaywall` 已重命名为 `LogShowFlow`，现在接受一个 `AdaptyFlow` 参数。事件仍记录在同一变体下，因此现有漏斗和 A/B 测试的数据图表无需在看板中进行任何更改即可继续使用。
+`LogShowPaywall` 已重命名为 `LogShowFlow`，现在接受 `AdaptyFlow` 参数。事件仍记录在同一个实验变体下，因此现有的漏斗和 A/B 测试数据图表无需修改看板即可继续正常使用。
 
 ```diff showLineNumbers
 - Adapty.LogShowPaywall(paywall, (error) => { /* ... */ });
 + Adapty.LogShowFlow(flow, (error) => { /* ... */ });
 ```
 
-与 v3 相同，使用 [Flow Builder](adapty-flow-builder) 或 [付费墙编辑工具](adapty-paywall-builder) 渲染的流程或付费墙无需调用此方法——Adapty 会自动跟踪这些视图。
+与 v3 相同，当展示由 Adapty 渲染的流程或付费墙时，无需手动调用此方法——Adapty 会自动追踪这些浏览行为。
 
 ## 显示流程 \{#displaying-flows\}
 
 ### CreatePaywallView → CreateFlowView
 
 将工厂方法重命名，并传入 `AdaptyFlow`。返回的视图类型从 `AdaptyUIPaywallView` 更名为 `AdaptyUIFlowView`，但其方法（`Present`、`Dismiss`）保持不变，可选参数对象在新名称 `AdaptyUICreateFlowViewParameters` 下保留相同字段（`LoadTimeout`、`PreloadProducts`、`CustomTags`、`CustomTimers`、`CustomAssets`、`ProductPurchaseParameters`），并新增两个字段——`Locale` 和 `EnableSafeAreaPaddings`：
+
+:::note
+`CustomTimers` 仍然存在，但它只影响旧版付费墙编辑工具的付费墙。流程的[倒计时器](flow-timer)按照 Flow & Paywall Builder 中设置的行为运行，因此流程会忽略此处传入的任何值。
+:::
 
 ```diff showLineNumbers
 - AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
@@ -148,7 +176,7 @@ The underlying native Adapty SDKs are bumped to 4.x on both platforms and are re
   });
 ```
 
-`CreateFlowView` 在流程未配置视图时会返回错误——这取代了 v3 中的 `HasViewConfiguration` 检查：
+`CreateFlowView` 在未配置视图的情况下会返回错误，用于替代 v3 中的 `HasViewConfiguration` 检查：
 
 ```diff showLineNumbers
 - if (paywall.HasViewConfiguration) {
@@ -164,7 +192,7 @@ The underlying native Adapty SDKs are bumped to 4.x on both platforms and are re
 ```
 
 :::note
-流程视图是一次性的：调用 `Dismiss` 后，视图即被销毁，如需再次展示该流程，请重新调用 `CreateFlowView`。
+流程视图是一次性的：调用 `Dismiss` 后，视图将被销毁，如需再次展示该流程，请重新调用 `CreateFlowView`。
 :::
 
 ### Android 安全区域内边距 \{#android-safe-area-paddings\}
@@ -210,25 +238,99 @@ var parameters = new AdaptyUICreateFlowViewParameters()
 
 完整回调列表请参阅[处理流程与付费墙事件](unity-handling-events)。
 
+### 新增必要方法：OnReceivePromotedPurchase \{#new-required-method-onreceivepromotedpurchase\}
+
+从 SDK 4.1 版本起，`IAdaptyEventListener` 新增了一个方法，所有实现该接口的类在添加以下代码之前将无法通过编译：
+
+```csharp showLineNumbers
+public void OnReceivePromotedPurchase(AdaptyPromotedProduct product) {
+    // The user tapped one of your in-app purchases on your App Store product page.
+    // Complete the purchase through Adapty:
+    Adapty.MakePromotedPurchase(product, (result, error) => { /* ... */ });
+}
+```
+
+此方法适用于 App Store 推广的应用内购买，在 Android 上不会被调用。请勿将方法体留空：在 iOS 16.4 及更高版本中，SDK 会在此处传递购买请求并等待你完成处理，若方法体为空，用户已发起的购买将被丢弃。早期版本会自动完成此类购买。详见[App Store 推广的应用内购买](unity-making-purchases#in-app-purchases-from-the-app-store)。
+
 ### 新 API \{#new-apis\}
 
-- `Adapty.SetObserverModeResolver(...)` 配合 `IAdaptyUIObserverModeResolver` — 在 SDK 以[观察者模式](implement-observer-mode-unity)运行时，处理从流程发起的购买和恢复操作。此前该功能仅在原生 iOS 和 Android SDK 中可用。详见[在观察者模式下展示流程](unity-present-flows-in-observer-mode)。
-- `Adapty.SetSystemRequestsHandler(...)` 配合 `IAdaptyUISystemRequestsHandler` — 用于处理流程中的系统请求：操作系统权限提示（`FlowViewDidAskPermission`）和应用评价请求（`FlowViewDidRequestAppReview`）。当前流程尚不会触发这些请求，因此无需注册处理器。
-- `AdaptyUICreateFlowViewParameters.Locale`（通过 `SetLocale` 设置）— 使用特定的[编辑工具本地化](add-paywall-locale-in-adapty-paywall-builder)来渲染流程或付费墙，而非使用流程的默认语言。流程在视图创建时完成本地化，因此这是选择本地化的唯一时机，创建完成的视图会通过 `view.Locale` 报告其构建时所用的本地化。详见[使用本地化和语言代码](unity-localizations-and-locale-codes)。
-- `IAdaptyFlowsEventsListener` 上新增的 `FlowViewDidReceiveAnalyticEvent` 回调，用于上报来自流程的分析事件，从用户打开的每个屏幕的页面浏览事件开始。详见[追踪流程屏幕浏览](unity-flow-screen-views)。
-- `AdaptyUI.OpenUrl(url, openIn, ...)` 和 `AdaptyUI.RequestAppReview(...)` — `open_url` 操作和应用评价请求背后的原生处理逻辑。在 `FlowViewDidPerformAction` 中调用 `OpenUrl` 可保留默认的 URL 处理行为；`RequestAppReview` 支持默认的应用评价提示，但流程目前尚不会触发该功能。
+- `Adapty.SetObserverModeResolver(...)` 配合 `IAdaptyUIObserverModeResolver` — 在 SDK 以[观察者模式](implement-observer-mode-unity)运行时，驱动从流程发起的购买和恢复操作。此前该功能仅在原生 iOS 和 Android SDK 中可用。请参阅[在观察者模式下呈现流程](unity-present-flows-in-observer-mode)。
+- `Adapty.SetSystemRequestsHandler(...)` 配合 `IAdaptyUISystemRequestsHandler` — 响应来自流程的系统请求：操作系统权限弹窗（`FlowViewDidAskPermission`）和应用评价请求（`FlowViewDidRequestAppReview`）。如果您的流程使用了**Request permission**操作，请注册此处理程序：参阅[处理流程中的权限请求](unity-handle-permissions)。
+- `AdaptyUICreateFlowViewParameters.Locale`（通过 `SetLocale` 设置）— 以特定[编辑工具本地化语言](add-paywall-locale-in-adapty-paywall-builder)渲染流程或付费墙。创建视图时，SDK 会加载该流程的所有本地化版本，`Locale` 用于选择要展示的那一个。若未设置 `Locale`，视图将以 `en` 渲染；若流程没有 `en` 版本，则使用默认本地化。创建的视图会通过 `view.Locale` 报告其实际使用的本地化语言。参阅[使用本地化语言和区域代码](unity-localizations-and-locale-codes)。
+- `IAdaptyFlowsEventsListener` 上新增的 `FlowViewDidReceiveAnalyticEvent` 回调，用于上报流程中的分析事件，从用户打开每个页面时的页面浏览事件开始。参阅[追踪流程页面浏览](unity-flow-screen-views)。
+- `AdaptyUI.OpenUrl(url, openIn, ...)` 和 `AdaptyUI.RequestAppReview(...)` — `open_url` 操作和应用评价请求背后的原生处理逻辑。在 `FlowViewDidPerformAction` 中调用 `OpenUrl` 可保留默认 URL 行为；`RequestAppReview` 支持默认的应用评价弹窗，目前流程尚未自动触发该弹窗。
+
+## 重命名外部归因 API \{#renamed-external-attribution-apis\}
+
+从 SDK 4.1 版本开始，用于传入外部归因数据提供商（Adjust、AppsFlyer、Branch、Tenjin 或自定义提供商）数据的 API 已重命名，以与原生 SDK 保持一致，且提供商参数从字符串改为类型。由于没有废弃别名，现有调用处在更新之前将无法编译通过：
+
+| 4.1 之前 | 4.1 |
+|---|---|
+| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(jsonString, provider, ...)` |
+| `source` 为 `string` 类型 | `provider` 为 `AdaptyExternalAttributionProvider` 类型 |
+| `AdaptyProfile.AppliedAttributionSources` 为 `IReadOnlyList<string>` | `AdaptyProfile.AppliedExternalAttributionProviders` 为 `IReadOnlyList<AdaptyExternalAttributionProvider>` |
+
+仅重命名方法还不够——需要在同一次修改中替换 provider 参数：
+
+```diff showLineNumbers
+- Adapty.UpdateAttribution(attributionJsonString, "adjust", (error) => { /* ... */ });
++ Adapty.UpdateExternalAttribution(attributionJsonString, AdaptyExternalAttributionProvider.Adjust, (error) => { /* ... */ });
+```
+
+`AdaptyExternalAttributionProvider` 携带后端识别提供商所用的标识符，内置六个共享实例：`AppleAds`（`apple_search_ads`）、`Adjust`、`Appsflyer`、`Branch`、`Tenjin` 和 `Custom`。对于本次 SDK 发布后 Adapty 新增的提供商，可通过其标识符构建实例——`new AdaptyExternalAttributionProvider("your_provider")`——数据将原样发送至后端。首尾空白字符会被自动去除。
+
+归因数据以**序列化 JSON 字符串**的形式传入。如果你持有的是字典，请先将其序列化：
+
+```csharp showLineNumbers
+var attributionJsonString = Newtonsoft.Json.JsonConvert.SerializeObject(attribution);
+```
+
+在用户画像端，通过新类型读取已应用的提供商：
+
+```diff showLineNumbers
+- if (profile.AppliedAttributionSources.Contains("apple_search_ads")) {
++ if (profile.AppliedExternalAttributionProviders.Contains(AdaptyExternalAttributionProvider.AppleAds)) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+## Adapty Attribution 默认禁用 \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+如果你使用了 [Adapty Attribution](user-acquisition)，并在未启用该功能的情况下升级到 SDK 4.1，将会发生静默故障——安装记录停止上报，且不会有任何警告提示。
+:::
+
+在早期版本中，SDK 会自动为 [Adapty Attribution](user-acquisition) 注册安装信息。从 SDK 4.1 版本起，该功能默认关闭：SDK 不再注册安装，`OnInstallationDetailsSuccess` 和 `OnInstallationDetailsFail` 监听回调不会触发，`GetCurrentInstallationStatus` 返回 `NotAvailable` 状态。
+
+如果您使用 Adapty Attribution，请在激活 SDK 时启用它：
+
+```csharp showLineNumbers
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetAdaptyAttributionEnabled(true);
+```
+
+如果您不使用 Adapty Attribution，则无需进行任何更改。
+
+## 备用文件 \{#fallback-files\}
+
+[备用文件](unity-use-fallback-paywalls)的格式在 SDK 4.1 中已发生变更。请从 **[Placements](https://app.adapty.io/placements)** > **Fallbacks** 重新下载 iOS 和 Android 备用文件，并替换 `Assets/StreamingAssets` 中的旧文件，即使你之前已为早期版本下载过。
+
+:::warning
+此步骤不会产生编译错误。如果跳过此步骤，`SetFallback` 将报告 `DecodingFailed`（`adapty_code: 2006`），且每个版位都将失去其备用付费墙。
+:::
 
 ## 默认行为变更 \{#default-behavior-changes\}
 
 这些变更不会导致编译错误，请在运行时进行测试：
 
-- **购买完成**：在 v3 中，购买成功后视图会自动关闭。在 v4 中，**购买或发生错误后，流程会保持打开状态，直到您主动关闭它** — SDK 不会应用任何默认行为。请在用户获得访问权限后，在 `FlowViewDidFinishPurchase` 中自行调用 `view.Dismiss(...)`。
-- **Android 系统返回**：系统返回按钮（或返回手势）会以 `SystemBack` 动作的形式传递给 `FlowViewDidPerformAction`，不再自动关闭流程 — 这与 iOS 保持一致，iOS 上的流程同样无法通过系统手势关闭。请为用户提供明确的退出方式（**关闭**按钮或 `on_device_back` 动作），或在处理该动作时自行关闭视图。
-- **视图只能使用一次**：调用 `Dismiss` 后，视图将被销毁。如需再次展示流程，请重新调用 `CreateFlowView`。
-- **观察者模式事务**：`ReportTransaction` 在成功时不再返回解码错误 — 在 v3 中，成功响应解析有误，导致成功的上报始终以错误结束。
+- **流程本地化**：区域语言代码不再回退到其对应语言——`pt-br` 不会使用 `pt` 本地化。如果找不到精确匹配的代码，流程将以默认本地化语言渲染。详见[语言匹配为精确匹配](#locale-matching-is-exact)。
+- **购买完成**：在 v3 中，购买成功后视图会自动关闭。在 v4 中，**流程在购买或发生错误后会保持打开状态，直到你主动关闭**——SDK 不会执行任何默认行为。请在 `FlowViewDidFinishPurchase` 中自行调用 `view.Dismiss(...)`，确保用户获得访问权限后再关闭视图。
+- **Android 系统返回**：系统返回按钮（或返回手势）将作为 `SystemBack` 动作传递给 `FlowViewDidPerformAction`，不再自动关闭流程——与 iOS 保持一致（iOS 上流程不能通过系统手势关闭）。请为用户提供明确的退出方式（如 **Close** 按钮或 `on_device_back` 动作），或在处理该动作时自行关闭视图。
+- **视图为一次性使用**：调用 `Dismiss` 后，视图将被销毁。如需再次展示流程，请重新调用 `CreateFlowView`。
+- **旁观者模式下的交易**：`ReportTransaction` 在成功时不再返回解码错误——在 v3 中，成功响应被错误解析，导致成功上报始终以错误结束。
 
 ## 用户引导 API 弃用 \{#onboarding-api-deprecation\}
 
-旧版用户引导 API 已在 v4.0 中弃用，请改用 [Flow Builder](adapty-flow-builder)。该 API 目前仍可使用，但将在未来版本中移除，请尽快将您的用户引导迁移至 Flow Builder。
+旧版用户引导 API 在 v4 中已被弃用，取而代之的是 [Flow & 付费墙编辑工具](adapty-flow-builder)。该 API 目前仍可正常使用，但将在未来版本中移除，请及时将您的用户引导迁移至 Flow & 付费墙编辑工具。
 
 已弃用的符号：`GetOnboarding`、`GetOnboardingForDefaultAudience`、`AdaptyUI.CreateOnboardingView`、`AdaptyUI.PresentOnboardingView`、`AdaptyUI.DismissOnboardingView` 以及 `Adapty.SetOnboardingsEventsListener`。

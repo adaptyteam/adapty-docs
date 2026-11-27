@@ -4,36 +4,42 @@ description: "在 iOS 中使用 AdaptyProfile.appliedExternalAttributionProvider
 metadataTitle: "首次启动时显示 AA 定向付费墙 | iOS SDK | Adapty 文档"
 ---
 
-Apple Ads (AA) 归因数据会在 `Adapty.activate()` 之后异步到达。如果过早调用 `getPaywall`，归因数据往往尚未就位，Adapty 会按默认目标受众解析版位——从而绕过你基于 AA 市场细分的付费墙。`AdaptyProfile.appliedExternalAttributionProviders` 让应用能够检测 AA 归因何时已应用到用户画像，从而让付费墙请求等到 AA 市场细分正确解析后再发出。
+Apple Ads (AA) 归因数据在 `Adapty.activate()` 之后异步到达。如果过早调用 `getFlow`，归因数据通常尚未就绪，Adapty 会根据默认目标受众来解析版位——从而绕过你基于 AA 市场细分的付费墙。`AdaptyProfile.appliedExternalAttributionProviders` 让应用能够检测 AA 归因何时已应用到用户画像，从而让付费墙请求等到 AA 市场细分正确解析后再发起。
+
+:::important
+`appliedExternalAttributionProviders` 仅报告 Apple Ads 的归因数据。来自其他提供商的归因信息可在用户画像中查看，也可用于市场细分筛选，但目前尚未在此处显示。
+:::
 
 ## 开始之前 \{#before-you-start\}
 
-你需要：
-- Adapty iOS SDK **3.17.1** 或更高版本。
+您需要：
+- Adapty iOS SDK **4.1** 或更高版本。
 - 在 Adapty 中为应用配置 Apple Ads。请参阅 [Apple Ads](apple-search-ads)。
 
 :::note
-以下示例使用 SDK 4.1+ 的属性名 `appliedExternalAttributionProviders`。在 SDK 3.17.1–4.0 版本中，该属性名为 `appliedAttributionSources`。
+以下示例使用 SDK 4.1 的 API 名称。在 SDK 4.0 中，profile 属性名为 `appliedAttributionSources`。在 SDK 3.x 中，该属性沿用相同的旧名称，且付费墙通过 `getPaywall`/`getPaywallForDefaultAudience` 获取，返回 `AdaptyPaywall`。请参阅 [将 Adapty iOS SDK 迁移至 v4.1](migration-to-ios-sdk-41)。
 :::
 
 ## 工作原理 \{#how-it-works\}
 
-调用 `Adapty.activate()` 后，SDK 会在后台向 Apple 请求 Apple Ads 归因数据，并将结果转发至 Adapty 的后端。当 AA 成为该用户画像的活跃归因来源时，SDK 会返回一个更新后的 `AdaptyProfile`，其 `appliedExternalAttributionProviders` 数组中将包含 `.appleAds`。
+调用 `Adapty.activate()` 后，SDK 会在后台向 Apple 请求 Apple Ads 归因数据，并将结果转发给 Adapty 后端。当 AA 成为该用户画像的有效归因来源时，SDK 会返回一个更新后的 `AdaptyProfile`，其 `appliedExternalAttributionProviders` 数组中包含 `.appleAds`。
 
-数组为空可能意味着以下任一情况：
+若该数组为空，可能意味着以下任一情况：
 
-- 该用户画像的 Apple Ads 归因尚未处理完成。
-- 完全没有收到任何归因数据。
+- 此用户画像的 Apple Ads 归因尚未处理完成。
+- 未收到任何归因数据。
+- 归因数据来自其他提供商，该数组不会报告此类情况。
 
-即使传入空数组，调用 `getPaywall` 依然是安全的——Adapty 会根据当前用户画像状态匹配相应的目标受众，通常为默认目标受众。
+即使传入空数组，调用 `getFlow` 也是安全的——Adapty 会根据当前用户画像状态匹配相应的目标受众，通常是默认目标受众。
 
 :::important
-等待仅适用于**首次启动**。一旦 Apple Ads 归因数据被记录，它就会永久存储在用户画像中。在后续每次启动时，缓存的用户画像已携带 `.appleAds`（位于 `appliedExternalAttributionProviders` 中），`didLoadLatestProfile` 会立即触发并返回该值，`getPaywall` 也会直接返回基于 Apple Ads 市场细分的付费墙，无需任何等待。
+等待仅适用于**首次启动**。一旦 Apple Ads 归因数据被记录，它就会永久保存在用户画像中。在后续每次启动时，缓存的用户画像已包含 `appliedExternalAttributionProviders` 中的 `.appleAds`，`didLoadLatestProfile` 会立即携带该值触发，`getFlow` 也会直接返回针对 Apple Ads 市场细分的付费墙，无需任何等待。
 :::
 
 ## 实现 \{#implementation\}
 
 首次启动时，监听用户画像中的 `.appleAds` 字段，并设置一个硬超时——即便 Apple Ads 归因数据始终未到达，这些用户也需要看到付费墙。
+
 1. **激活 SDK。** 请参阅[安装与配置 iOS SDK](sdk-installation-ios)。
 2. **订阅用户画像更新**，方法是遵循 `AdaptyDelegate` 协议并实现 `didLoadLatestProfile`。如果尚未设置委托，请参阅[监听订阅状态更新](ios-check-subscription-status#listen-to-subscription-updates)。
 3. **监测 `appliedExternalAttributionProviders` 中是否出现 `.appleAds`。** 一旦出现，即可请求付费墙——Adapty 将返回 AA 细分对应的实验变体：
@@ -42,49 +48,53 @@ Apple Ads (AA) 归因数据会在 `Adapty.activate()` 之后异步到达。如�
 extension <YourAdaptyDelegateImpl>: AdaptyDelegate {
     nonisolated func didLoadLatestProfile(_ profile: AdaptyProfile) {
         if profile.appliedExternalAttributionProviders.contains(where: { $0 == .appleAds }) {
-            // load paywall via Adapty.getPaywall(placementId:)
+            // load the paywall via Adapty.getFlow(placementId:)
         }
     }
 }
 ```
 
 4. **同步启动一个 3–5 秒的计时器。** 如果计时器触发时 `.appleAds` 尚未出现，直接请求付费墙：
+
 无论哪条路径先触发，都应加载付费墙；另一条路径应被跳过。使用一个状态标志（例如 `hasLoadedPaywall`）进行去重，避免付费墙被重复获取。为该版位配置[备用付费墙](fallback-paywalls)，确保网络请求失败时用户不会陷入等待。
+
 ## 完整示例 \{#complete-example\}
 
-以下实现将归因与超时进行竞争，同时预取默认受众的付费墙，并返回合适的付费墙。调用方只需等待一个异步函数——无需在调用处管理代理或状态标志。
+以下实现将归因获取与超时进行竞速，同时预加载默认目标受众的付费墙，并返回合适的付费墙。调用方只需等待一个异步函数，无需在调用处管理代理或状态标志。
 
-`ProfileObserver` 是一个可复用的单例，用于发布来自 `AdaptyDelegate` 的用户画像更新。`PaywallLoader.getPaywallOrDefault` 使用结构化并发 `TaskGroup` 执行竞争逻辑：
-- 如果归因数据在 `timeout` 时间内到达，则通过 `getPaywall(placementId:)` 返回按目标受众细分的付费墙。
-- 如果 `timeout` 先超时，则通过 `getPaywallForDefaultAudience(placementId:)` 返回预取的默认受众付费墙。
-```swift title="PaywallLoader.swift"
+`ProfileObserver` 是一个可复用的单例，负责发布来自 `AdaptyDelegate` 的用户画像更新。`FlowLoader.getFlowOrDefault` 使用结构化并发 `TaskGroup` 执行竞速逻辑：
+
+- 如果归因数据在 `timeout` 内到达，则通过 `getFlow(placementId:)` 返回按细分受众划分的付费墙。
+- 如果 `timeout` 先到期，则通过 `getFlowForDefaultAudience(placementId:)` 返回预取的默认受众付费墙。
+
+```swift title="FlowLoader.swift"
 
 /// Demonstrates how to fetch a paywall that depends on attribution being applied,
 /// falling back to the default-audience paywall if attribution doesn't arrive in time.
 ///
 /// Stateless and self-contained: every call kicks off its own default-audience
 /// prefetch and races it against attribution + segmented fetch.
-enum PaywallLoader {
-    static func getPaywallOrDefault(
+enum FlowLoader {
+    static func getFlowOrDefault(
         placementId: String,
         timeout: TimeInterval
-    ) async throws -> AdaptyPaywall {
+    ) async throws -> AdaptyFlow {
         struct TimedOut: Error {}
 
         // Kick off the default-audience request immediately so it has the full
         // `timeout` window to load. We'll either cancel it on success or await
         // its result on timeout — never a duplicate network call.
-        let defaultPaywallTask = Task {
-            try await Adapty.getPaywallForDefaultAudience(placementId: placementId)
+        let defaultFlowTask = Task {
+            try await Adapty.getFlowForDefaultAudience(placementId: placementId)
         }
 
         do {
             // Race two child tasks: whichever finishes first wins.
-            let result = try await withThrowingTaskGroup(of: AdaptyPaywall.self) { group in
+            let result = try await withThrowingTaskGroup(of: AdaptyFlow.self) { group in
                 // 1. Wait for attribution, then ask Adapty for the segmented paywall.
                 group.addTask {
                     await waitForAttribution()
-                    return try await Adapty.getPaywall(placementId: placementId)
+                    return try await Adapty.getFlow(placementId: placementId)
                 }
                 // 2. Time-bomb: throws `TimedOut` after `timeout` seconds.
                 group.addTask {
@@ -96,12 +106,12 @@ enum PaywallLoader {
                 return value
             }
             // Segmented paywall won — we no longer need the default-audience prefetch.
-            defaultPaywallTask.cancel()
+            defaultFlowTask.cancel()
             return result
         } catch is TimedOut {
             // Attribution didn't apply in time — return the prefetched default
             // (instant if already done, otherwise we await the in-flight request).
-            return try await defaultPaywallTask.value
+            return try await defaultFlowTask.value
         }
     }
 
@@ -129,6 +139,7 @@ final class ProfileObserver: AdaptyDelegate {
     }
 }
 ```
+
 在 `Adapty.activate()` 完成后，将 `ProfileObserver` 注册到 `AdaptyDelegate` 一次即可：
 
 ```swift
@@ -139,7 +150,7 @@ Adapty.delegate = ProfileObserver.shared
 
 ```swift
 do {
-    let paywall = try await PaywallLoader.getPaywallOrDefault(
+    let flow = try await FlowLoader.getFlowOrDefault(
         placementId: "YOUR_PLACEMENT_ID",
         timeout: 5
     )
@@ -148,4 +159,5 @@ do {
     // handle the error or show a fallback paywall
 }
 ```
+
 如果你的应用已经在使用 `AdaptyDelegate` 处理其他事务（例如[监听订阅更新](ios-check-subscription-status#listen-to-subscription-updates)），请不要将 `Adapty.delegate = ProfileObserver.shared` 直接设置，而是在现有的 delegate 中将 `didLoadLatestProfile` 转发给 `ProfileObserver.shared`。

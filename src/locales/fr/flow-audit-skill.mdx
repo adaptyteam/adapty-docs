@@ -1,0 +1,108 @@
+---
+title: "Skill d'agent pour auditer les flows"
+description: "Installez le skill flow-audit pour que votre outil de codage IA vérifie si un flow est prêt pour la production avant de le publier."
+metadataTitle: "Skill d'agent Flow Audit | Flows & paywalls | Documentation Adapty"
+---
+
+Le skill flow-audit répond à une seule question sur un flow : est-il prêt pour la production ? Pointez votre outil de codage IA vers un flow, il lit la configuration via le [CLI Adapty](developer-cli-quickstart) ou le [serveur MCP Adapty](adapty-mcp), la vérifie par rapport à votre catalogue de produits, et conclut par un verdict — pas une liste que vous devez interpréter vous-même.
+
+Un flow peut franchir toutes les étapes de publication existantes et rester dangereux à montrer aux utilisateurs. Les vérifications de publication intégrées au Flow & Paywall Builder et `flows config validate` se posent toutes les deux la même question : « ce document est-il bien formé ? » — ni l'une ni l'autre ne demande : « un vrai utilisateur pourrait-il se retrouver bloqué, ou voir quelque chose de faux ? » Un flow en statut `publication_failed` peut passer ces deux contrôles sans problème ; c'est flow-audit qui détecte le reste.
+
+:::note
+flow-audit n'écrit jamais dans un flow. Il lit la config et votre catalogue de produits, exécute ses vérifications, et vous transmet tout ce qu'il trouve — ou le transmet au [skill flow-generator](flow-generator-skill) — pour que vous puissiez corriger.
+:::
+
+## Installer le skill \{#install-the-skill\}
+
+flow-audit fait partie du [plugin Adapty](manage-adapty-with-ai).
+
+<AdaptySkillsInstall />
+
+Ensuite, demandez par exemple : « Avant de publier ce flow, est-ce que j'ai oublié quelque chose ? » Donnez le nom du flow, ou laissez-le lister vos flows et choisissez lequel.
+
+## Comment ça fonctionne \{#how-it-works\}
+
+Cinq phases, toutes en lecture seule :
+
+1. **Résolution et authentification.** Lance la dernière version de l'Adapty CLI via `npx`, donc l'audit n'installe rien sur votre machine, et confirme que votre connexion Adapty est valide.
+2. **Sélection du flow.** Liste vos flows (`adapty flows list`) et vous demande lequel vérifier.
+3. **Récupération.** Télécharge la config du flow, votre catalogue de produits et offres, ainsi que chaque placement avec ses audiences — le snapshot sur lequel chaque vérification est exécutée.
+4. **Exécution des vérifications.** Chaque vérification s'exécute uniquement contre ce snapshot.
+5. **Rapport.** Un verdict, pas une liste.
+
+## Ce qu'il vérifie \{#what-it-checks\}
+
+- **Déclencheurs** : Un élément dont le texte promet une action mais qui n'a aucune interaction dans toute sa chaîne d'ancêtres. Il s'affiche exactement comme un contrôle fonctionnel et ne fait rien.
+- **Règles du store** : Une action de restauration accessible quelque part dans le flow, un lien vers vos conditions d'utilisation, un lien vers votre politique de confidentialité, et un moyen pour l'utilisateur de quitter un paywall sans acheter. Ces vérifications proviennent du [skill paywall-compliance](paywall-compliance-skill), que flow-audit exécute lors de chaque audit.
+- **Produits** : Un produit associé absent de votre catalogue, un produit sans liaison au store, une carte affichant une période de facturation que le produit n'a pas, ou un prix codé en dur là où une variable de prix devrait être utilisée.
+- **Variables** : Une variable que le flow définit mais ne lit jamais, ce qui fait qu'un écran collecte une réponse sur laquelle rien n'agit.
+- **Localisation** : Traductions vides, valeurs non traduites et couverture par locale.
+- **Navigation** : Une branche de quiz qui ne peut jamais se déclencher ou qui mène à l'écran d'une mauvaise réponse, un écran sans moyen d'avancer, et un bouton d'achat qui quitte l'écran avant que le store ait répondu.
+- **Polices** : Un nom de police personnalisée qu'iOS ou Android ne trouve pas dans le bundle de votre application, ce qui fait que l'écran revient à la police système.
+- **Espaces réservés** : Du contenu qui n'a jamais été finalisé — `Lorem ipsum`, `TODO`, `Your headline here` — et un flow encore appelé `Untitled`.
+
+Le vérificateur de conformité des paywalls signale également les éléments visuels qui ont entraîné des rejets par les stores, comme un bouton bascule pour l'essai gratuit ou un prix par semaine supérieur au montant facturé. Ces résultats apparaissent dans leur propre section **Store review** et ne modifient jamais le verdict : les examinateurs des stores sont des personnes, donc un élément qui a provoqué un rejet n'est pas systématiquement problématique. Pour le droit de la consommation aux États-Unis, au Royaume-Uni et dans l'UE, ainsi que pour les rejets récents signalés par des développeurs, exécutez [paywall-compliance](paywall-compliance-skill) sur le même flow. flow-audit le propose comme étape suivante lorsque le flow est destiné à la vente.
+
+## Sévérité \{#severity\}
+
+Chaque constat se voit attribuer l'un des trois niveaux suivants :
+
+| Niveau | Ce que cela signifie |
+|---|---|
+| **Bloquant** | Le flow ne fonctionnera pas pour un utilisateur réel, ou il lui affichera quelque chose de faux — un prix fabriqué peut s'afficher parfaitement et mentir quand même. |
+| **Risque** | Ça fonctionne, mais ce n'est probablement pas ce que quelqu'un avait prévu : texte de remplacement, valeur identique à la locale par défaut, variable que personne ne lit. |
+| **Question** | Impossible à trancher avec les données disponibles. Le rapport indique ce qu'il a observé, ce à quoi il n'a pas pu accéder, et le seul point à vérifier — plutôt que de supposer. |
+
+## Exemple de rapport \{#example-report\}
+
+```
+Not ready to publish yet: 2 things to fix first.
+Premium onboarding · Draft · 1 screen
+
+Fix before publishing
+
+1. There's no way to restore a purchase. Someone who reinstalls your app or moves
+   to a new phone can't get their subscription back.
+   Fix: Add a "Restore purchases" action to a button, usually a small link under
+   the purchase button. (App Store 3.1.1)
+
+2. There are no links to your Terms of Use or Privacy Policy: the flow has no
+   "Open URL" action at all.
+   Fix: Add two links with "Open URL" actions that open those pages. (App Store 3.1.2)
+
+Worth fixing
+
+3. No placement shows this flow yet, so your app can't fetch it and nobody will see it.
+   Fix: Once it's published, attach it to a placement.
+
+What happens next
+
+I can fix all of these. For the links, send me the web addresses of your Terms of Use
+and Privacy Policy pages. I'll show you the screen before and after, and change nothing
+until you say yes. Want me to?
+```
+
+Le rapport commence par le verdict, suivi des conclusions numérotées, regroupées selon leur importance : **À corriger avant de publier**, **À corriger**, et **Je n'ai pas pu vérifier ces points**. Les vérifications de publication du Flow & Paywall Builder et la commande `flows config validate` peuvent toutes deux valider un flow comme celui-ci, car ni l'un ni l'autre ne lit le texte des écrans ni ne suit leurs boutons.
+
+La ligne de verdict se présente sous trois formes :
+
+| Verdict | Quand |
+|---|---|
+| **Prêt à publier** | Aucun bloquant, et vous avez répondu à toutes les questions en suspens. |
+| **Presque prêt : n points non vérifiés** | Aucun bloquant, mais des questions restent en suspens. Le rapport les liste. |
+| **Pas encore prêt à publier : n points à corriger** | Au moins un bloquant. |
+
+flow-audit ne certifie pas ce qu'il n'a pas pu vérifier, donc une question sans réponse empêche le verdict **Prêt à publier**.
+
+## Ce qu'il ne peut pas vérifier \{#what-it-cant-check\}
+
+- **Si votre application récupère le placement** : Le skill lit quels placements affichent le flow et s'ils sont activés, mais il ne peut pas voir le code de votre application. Quand un placement affiche le flow, le rapport le nomme, et votre application doit récupérer le flow via cet identifiant de placement. Pour associer un flow, voir [Créer un placement](create-placement).
+- **Ce que fait une action personnalisée** : Le rapport liste chaque action personnalisée et demande ce qu'elle fait dans votre application. Tant que vous n'avez pas répondu, le verdict ne peut pas être **Ready to publish**.
+- **Si votre application ajoute son propre bouton de fermeture** : Si un paywall dépend de l'application qui le présente pour permettre à l'utilisateur de quitter, flow-audit ne peut pas le voir, donc il pose la question.
+- **Pourquoi un flow est en statut `publication_failed`** : Le skill signale le statut sous forme de question et cite l'erreur renvoyée par Adapty, s'il y en a une. Il ne cherche pas à en deviner la cause.
+
+## Qui fait quoi \{#who-fixes-what\}
+
+Chaque rapport contenant des conclusions se termine par une section **What happens next**, répartie selon qui effectue le travail : les questions à répondre en premier, ce que l'agent peut corriger, ce que vous seul pouvez modifier dans l'Adapty Dashboard, et ce qui est optionnel. Lorsque rien ne bloque le flow, le rapport liste également ce que vous devez vérifier vous-même avant de publier, avec les endroits où regarder.
+
+flow-audit n'effectue aucune de ces modifications par lui-même — il est conçu pour être en lecture seule, donc un flow en échec reste exactement tel que vous l'avez laissé. Lorsque vous acceptez son offre, le [skill flow-generator](flow-generator-skill) applique les corrections : il sauvegarde le flow, vous montre chaque modification, et n'écrit rien tant que vous n'avez pas approuvé. Une fois le flow publié, il peut aussi l'associer à un placement.

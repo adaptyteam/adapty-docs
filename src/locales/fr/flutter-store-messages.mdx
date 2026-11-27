@@ -1,0 +1,122 @@
+---
+title: "Contrôler les messages du store dans le SDK Flutter"
+description: "Choisissez quand votre application Flutter affiche les messages de l'App Store et de Google Play concernant les hausses de prix, les problèmes de facturation et les paiements refusés, afin qu'ils n'interrompent pas un flow ou un onboarding."
+metadataTitle: "Contrôler les messages du store | SDK Flutter | Documentation Adapty"
+---
+
+L'App Store et Google Play doivent parfois afficher à vos utilisateurs un message concernant leur abonnement :
+
+- **App Store** : une demande de consentement à une hausse de prix, une notification de problème de facturation, ou une offre de reconquête. Par défaut, StoreKit affiche ces messages de lui-même pendant que votre application est ouverte.
+- **Google Play** : une notification indiquant qu'un paiement d'abonnement a été refusé et que le moyen de paiement doit être mis à jour. Par défaut, le SDK Adapty demande ces messages à chaque fois qu'une `Activity` de votre application démarre après `activate`, y compris lorsque l'application revient au premier plan et lorsqu'un flow ou un onboarding s'ouvre ou se ferme.
+
+Quoi qu'il en soit, un message peut apparaître par-dessus un flow, un onboarding ou un checkout. Pour choisir vous-même le moment, passez le SDK en gestion manuelle des messages, et appelez `showStoreMessages` quand un message n'interrompra pas l'utilisateur.
+
+:::warning
+En mode manuel, les stores n'affichent pas les messages par eux-mêmes. Si votre application n'appelle jamais `showStoreMessages`, les utilisateurs ne verront jamais de demande de consentement pour une hausse de prix, ni d'avis de problème de facturation, ni de notification de paiement refusé.
+:::
+
+## Avant de commencer \{#before-you-start\}
+
+Vous avez besoin de :
+
+- **Adapty Flutter SDK 4.3.0 ou version ultérieure** : les versions antérieures ne disposent pas de l'API des messages du store.
+- **iOS 16 ou version ultérieure** pour les messages App Store : StoreKit ne distribue pas les messages aux applications sur les versions antérieures. Sur iOS 15, `getPendingStoreMessageTypes` et `showStoreMessages` échouent avec l'erreur `decodingFailed`. Si votre application prend en charge iOS 15, appelez-les uniquement sur iOS 16 et versions ultérieures.
+
+## Activer la gestion manuelle \{#enable-manual-handling\}
+
+Pour afficher les messages du store uniquement lorsque votre application appelle `showStoreMessages`, appelez `withStoreMessagesHandling` avec `AdaptyStoreMessagesHandling.manual` lors de l'[activation du SDK](sdk-installation-flutter#activate-adapty-module-of-adapty-sdk) :
+
+```dart showLineNumbers title="main.dart"
+await Adapty().activate(
+  configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
+    ..withStoreMessagesHandling(AdaptyStoreMessagesHandling.manual), // auto is the default
+);
+```
+
+Sur iOS, le SDK ajoute chaque message de l'App Store à une liste d'attente pour la session en cours. Sur Android, le SDK cesse de demander des messages Google Play de son côté. Avec la valeur par défaut `auto`, le SDK ne capture pas les messages de l'App Store, donc sur iOS, `getPendingStoreMessageTypes` et `showStoreMessages` n'ont rien à retourner ou à afficher.
+
+## Obtenir les types de messages en attente \{#get-pending-message-types\}
+
+Sur iOS, pour savoir si des messages App Store sont en attente, appelez `getPendingStoreMessageTypes`. Cette méthode retourne les types de messages en attente sans les afficher ni les supprimer :
+
+```dart showLineNumbers
+final pendingTypes = await Adapty().getPendingStoreMessageTypes();
+
+if (pendingTypes == null) {
+  // Android: Google Play decides whether a message applies when you show it
+} else if (pendingTypes.contains(AdaptyStoreMessageType.billingIssue)) {
+  // For example, skip the upsell and show the billing message first
+}
+```
+
+Sur Android, la méthode renvoie `null` : Google Play ne signale pas les messages en attente et décide si un message s'applique uniquement lorsque votre application le demande. Une liste vide signifie qu'il n'y a aucun message en attente sur iOS. Tant que `activate` n'est pas terminé, la liste est toujours vide.
+
+Chaque message App Store est de l'un des types suivants :
+
+| Type | Message |
+|:-----|:--------|
+| `AdaptyStoreMessageType.generic` | Message App Store général. |
+| `AdaptyStoreMessageType.priceIncreaseConsent` | Demande de consentement à une augmentation de prix d'abonnement. |
+| `AdaptyStoreMessageType.billingIssue` | Avis concernant un problème de facturation d'abonnement. Disponible sur iOS 16.4 et versions ultérieures. |
+| `AdaptyStoreMessageType.winBackOffer` | Une [offre de reconquête](app-store-offers#win-back-offers) éligible. Disponible sur iOS 18 et versions ultérieures. |
+
+Un type de message que le SDK ne reconnaît pas possède une valeur `value` de `storekit_<number>`. Comparez les types avec `==` plutôt que de supposer que ces quatre types sont les seuls existants.
+
+## Afficher les messages \{#show-messages\}
+
+Lorsque votre application atteint un moment où un message du store n'interrompra pas l'utilisateur — par exemple, après qu'il ferme un flow ou termine un onboarding — appelez `showStoreMessages` :
+
+```dart showLineNumbers
+try {
+  await Adapty().showStoreMessages();
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle other errors
+}
+```
+
+- **iOS** : Le SDK affiche les messages en attente les uns après les autres. Après qu'StoreKit a affiché un message, le SDK le retire de la liste des messages en attente. Si StoreKit ne parvient pas à afficher un message, le SDK le conserve pour le prochain appel et continue avec les autres messages.
+- **Android** : Le SDK demande à Google Play les messages pour l'`Activity` en cours. Google Play décide si un message s'applique à l'utilisateur, donc une requête n'affiche pas toujours un message. L'appel se termine immédiatement sans attendre Google Play et n'échoue jamais. Si l'utilisateur corrige son moyen de paiement depuis le message, le SDK synchronise ses achats avec Adapty, et votre [écouteur de profil](flutter-listen-subscription-changes) reçoit le niveau d'accès mis à jour.
+
+### Afficher les messages au lancement sur Android \{#show-messages-at-launch-on-android\}
+
+En mode `auto` par défaut, une `Activity` démarrée avant `activate` ne déclenche pas de requête, donc les messages Google Play n'apparaissent pas au lancement. Pour les afficher au lancement, appelez `showStoreMessages` une fois après `activate`, uniquement sur Android :
+
+```dart showLineNumbers title="main.dart"
+
+await Adapty().activate(
+  configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY'),
+);
+
+if (Platform.isAndroid) {
+  await Adapty().showStoreMessages();
+}
+```
+
+N'effectuez pas cet appel sur iOS : en mode `auto`, il n'a rien à afficher, et sur iOS 15 il échoue.
+
+### Afficher uniquement certains types de messages \{#show-only-some-message-types\}
+
+Pour n'afficher que certains messages App Store en attente, passez les types dans `iosFilter`. Les autres messages restent en attente :
+
+```dart showLineNumbers
+await Adapty().showStoreMessages(
+  iosFilter: [
+    AdaptyStoreMessageType.billingIssue,
+    AdaptyStoreMessageType.priceIncreaseConsent,
+  ],
+);
+```
+
+Sans `iosFilter`, le SDK affiche tous les messages en attente, y compris les types qu'il ne reconnaît pas. Une liste vide n'en affiche aucun. Android ignore `iosFilter` et demande tous les messages Google Play.
+
+### Erreurs
+
+Sur iOS, `showStoreMessages` échoue avec une [`AdaptyError`](error-handling-on-flutter-react-native-unity) contenant l'un de ces codes :
+
+| Code | Nom | Cause |
+|:-----|:-----|:------|
+| 2006 | `decodingFailed` | L'appareil fonctionne sous iOS 15 ou une version antérieure. N'appelez cette méthode que sur iOS 16 et versions ultérieures. |
+| 3201 | `operationInProgress` | Un autre appel `showStoreMessages` affiche encore des messages. Attendez qu'il se termine, puis réessayez. |
+| 3202 | `resolverFailure` | Le SDK n'a trouvé aucune fenêtre active au premier plan pour afficher les messages. Appelez à nouveau la méthode lorsque votre application est au premier plan. |

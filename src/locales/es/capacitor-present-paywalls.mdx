@@ -4,28 +4,30 @@ description: "Presenta flows y paywalls a los usuarios en tu aplicación Capacit
 metadataTitle: "Mostrar flows y paywalls en Capacitor | Documentación de Adapty"
 ---
 
-import SampleApp from '@site/src/locales/es/reusable/SampleApp.md';
-
 <SDKv4>
-Si has creado un flow o paywall en el Flow Builder, no necesitas preocuparte por renderizarlo en el código de tu app móvil para mostrárselo al usuario. Un flow de este tipo contiene tanto lo que debe mostrarse como la forma en que debe hacerlo.
+
+Si has creado un flow, o un paywall en el antiguo Paywall Builder, no necesitas preocuparte por renderizarlo en el código de tu aplicación móvil para mostrárselo al usuario. Ese flow contiene tanto lo que debe mostrarse dentro de él como la forma en que debe mostrarse.
 
 Antes de empezar, asegúrate de que:
 
-1. Has [creado un flow o paywall](create-paywall).
+1. Has creado un [flow](paywall-builder-templates) o un [paywall](create-paywall).
 2. Lo has añadido a un [placement](placements).
 3. Has [obtenido el flow y preparado la vista](capacitor-get-pb-paywalls).
 
 :::warning
-Esta guía es exclusivamente para **flows y paywalls creados con Paywall Builder**, que requieren SDK v4.0 o posterior. El proceso para presentar flows difiere para los paywalls de Remote Config.
 
-- Para presentar **paywalls de Remote Config**, consulta [Mostrar paywall diseñado con Remote Config](present-remote-config-paywalls-capacitor).
+Esta guía es solo para **flows y paywalls renderizados por Adapty**, que requieren SDK v4.0 o posterior. El proceso para presentar flows es diferente en el caso de los paywalls personalizados.
+
+- Para presentar paywalls personalizados, consulta [Presentar paywalls personalizados](present-remote-config-paywalls-capacitor).
 
 :::
-Para mostrar un flow o paywall como pantalla independiente, usa el método `view.present()` en el `view` creado por el método [`createFlowView`](capacitor-get-pb-paywalls#fetch-the-view-configuration). Cada `view` solo puede usarse una vez. Si necesitas mostrar el flow de nuevo, llama a `createFlowView` otra vez para crear una nueva instancia de `view`.
+
+Para mostrar un flow o paywall como pantalla independiente, usa el método `view.present()` sobre el `view` creado por el método [`createFlowView`](capacitor-get-pb-paywalls#fetch-the-view-configuration). Por defecto, un `view` cerrado se destruye. Para volver a mostrar el flow, llama a `createFlowView` una vez más para crear una nueva instancia de `view`, o [conserva el flow cerrado](#keep-a-closed-flow-for-later) cuando lo descartes.
 
 :::warning
-Reutilizar el mismo `view` sin recrearlo no está permitido. Provocará un error.
+Reutilizar un `view` destruido genera un error.
 :::
+
 ```typescript showLineNumbers
 
 const view = await createFlowView(flow);
@@ -43,9 +45,10 @@ try {
 :::important
 Llamar a `setEventHandlers` varias veces sobreescribirá los handlers que proporciones, reemplazando tanto los predeterminados como los establecidos anteriormente para esos eventos específicos.
 :::
-## Configura el estilo de presentación en iOS \{#configure-ios-presentation-style\}
 
-Configura cómo se muestra el flow en iOS pasando el parámetro `iosPresentationStyle` al método `present()`. El parámetro acepta los valores `'full_screen'` (por defecto) o `'page_sheet'`. En Android, los flows siempre se muestran como una actividad a pantalla completa.
+## Configurar el estilo de presentación en iOS \{#configure-ios-presentation-style\}
+
+Configura cómo se presenta el flow en iOS pasando el parámetro `iosPresentationStyle` al método `present()`. El parámetro acepta los valores `'full_screen'` (predeterminado) o `'page_sheet'`. En Android, los flows siempre se muestran a pantalla completa dentro de la Activity de tu app.
 
 ```typescript showLineNumbers
 try {
@@ -54,19 +57,87 @@ try {
   // handle the error
 }
 ```
-## Usar temporizadores definidos por el desarrollador \{#use-developer-defined-timer\}
 
-Para usar temporizadores definidos por el desarrollador en tu app, utiliza el `timerId`, en este ejemplo `CUSTOM_TIMER_NY`, el **Timer ID** del temporizador definido por el desarrollador que configuraste en el Adapty dashboard. Esto garantiza que tu app actualice dinámicamente el temporizador con el valor correcto, como `13d 09h 03m 34s` (calculado como la hora de finalización del temporizador, por ejemplo, el Año Nuevo, menos la hora actual).
+## Mantén un flow cerrado para usarlo después \{#keep-a-closed-flow-for-later\}
+
+:::info
+La opción `destroy` y el método `destroy()` están disponibles a partir de la versión 4.3.0 del SDK.
+:::
+
+Mantén un flow cuando el usuario pueda reabrirlo pronto —por ejemplo, un paywall detrás de un botón en la pantalla de ajustes— para que se abra sin volver a cargarse y en el punto donde lo dejó.
+
+Por defecto, `view.dismiss()` cierra el flow y destruye su vista nativa, por lo que `view` no puede presentarse de nuevo. Para volver a presentar el mismo flow más adelante, pasa `destroy: false`. La siguiente llamada a `present()` abre el flow en la pantalla donde el usuario lo cerró, con el estado en que lo dejó, y tus manejadores de eventos permanecen configurados:
 
 ```typescript showLineNumbers
-const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
+// Close the flow and keep its native view in memory
+await view.dismiss({ destroy: false });
 
-const view = await createFlowView(flow, { customTimers });
+// Later: open the flow again on the same screen
+await view.present();
 ```
-En este ejemplo, `CUSTOM_TIMER_NY` es el **Timer ID** del temporizador definido por el desarrollador que configuraste en el Adapty Dashboard. El temporizador garantiza que tu app actualice dinámicamente el contador con el valor correcto, como `13d 09h 03m 34s` (calculado como la hora de finalización del temporizador, por ejemplo el Año Nuevo, menos la hora actual).
+
+La vista nativa permanece en memoria hasta que la liberas. Cuando ya no necesites el flow, llama a `destroy()`:
+
+```typescript showLineNumbers
+await view.dismiss({ destroy: false });
+// ...
+await view.destroy();
+```
+
+`destroy()` descarta la vista primero si todavía está en pantalla, y elimina sus manejadores de eventos. Llámalo solo para una vista que cerraste con `destroy: false`: un `dismiss()` normal libera la vista por sí solo, y una llamada a `destroy()` después de él falla.
+
+Libera una vista retenida cuando el componente que la posee se destruya — en `ngOnDestroy` de Angular, en la limpieza de un `useEffect` de React, o en `onUnmounted` de Vue. De lo contrario, la vista nativa permanece en memoria durante el resto de la sesión. Captura el error: la vista puede que ya haya sido liberada, por ejemplo si un manejador de eventos devolvió `true`.
+
+```typescript showLineNumbers
+// For example, in a React useEffect cleanup
+return () => {
+  view.destroy().catch(() => {
+    // the view was already released
+  });
+};
+```
+
+Un controlador de eventos que devuelve `true` cierra el flow con un `dismiss()` normal, lo que destruye la vista nativa aunque la hayas conservado antes. Los controladores predeterminados `onCloseButtonPress` y `onError` devuelven `true`. Lo mismo aplica a cualquier controlador que hagas devolver `true`, como `onAndroidSystemBack`. Para conservar el flow cuando el usuario lo cierra, ciérralo tú mismo y devuelve `false`:
+
+```typescript showLineNumbers
+await view.setEventHandlers({
+  onCloseButtonPress() {
+    view.dismiss({ destroy: false }).catch(error => {
+      // handle the error
+    });
+    return false;
+  },
+});
+```
+
+## Usa el temporizador definido por el desarrollador \{#use-developer-defined-timer\}
+
+Usa esta sección para un temporizador con el comportamiento **Developer defined** en el Flow & Paywall Builder. En el builder, cada temporizador de este tipo tiene un **Timer ID** (consulta [Permite que tu app establezca la fecha de fin](flow-timer#let-your-app-set-the-end-date)), y tu app establece la fecha de fin para él. Usa el mismo Timer ID en tu código que en el builder, carácter por carácter, incluidas mayúsculas, minúsculas y espacios. Si los IDs no coinciden, el temporizador no recibirá ninguna fecha de fin de tu app.
+
+Para establecer las fechas de fin, pasa el parámetro `customTimers` a `createFlowView`: un objeto que asocia cada ID de temporizador con un `Date`, la fecha de fin del temporizador.
+
+```typescript showLineNumbers
+
+const customTimers = {
+  CUSTOM_TIMER_NY: new Date(new Date().getFullYear() + 1, 0, 1), // next New Year's Day
+};
+
+try {
+  const view = await createFlowView(flow, { customTimers });
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+En este ejemplo, `CUSTOM_TIMER_NY` es el ID del temporizador de un temporizador **definido por el desarrollador** en el builder. El temporizador muestra el tiempo restante hasta el próximo Año Nuevo, por ejemplo `13d 09h 03m 34s`.
+
+El SDK lee `customTimers` una sola vez, cuando crea la vista, por lo que una fecha que calcules, como 6 horas a partir de ahora, comienza a contar desde ese momento. Si la fecha ya pasó, el temporizador muestra cero de inmediato y se ejecuta su trigger **On timer end**. Si `customTimers` no tiene ninguna clave para un ID de temporizador, el temporizador cuenta regresivamente una hora desde que se abre la pantalla.
+
 ## Mostrar diálogo \{#show-dialog\}
 
 Usa este método en lugar de los diálogos de alerta nativos cuando se muestre una vista de flow en Android. En Android, las alertas normales aparecen detrás de la vista del flow, lo que las hace invisibles para los usuarios. Este método garantiza que el diálogo se muestre correctamente por encima del flow en todas las plataformas.
+
 ```typescript showLineNumbers
 try {
   const action = await view.showDialog({
@@ -89,6 +160,7 @@ try {
 ## Reemplazar una suscripción por otra \{#replace-one-subscription-with-another\}
 
 Cuando un usuario intenta comprar una nueva suscripción mientras ya tiene otra activa en Android, puedes controlar cómo debe gestionarse la nueva compra pasando parámetros de actualización de suscripción al crear la vista del flow. Para reemplazar la suscripción actual por la nueva, usa `productPurchaseParams` en `createFlowView` con los parámetros `oldSubVendorProductId` y `prorationMode`.
+
 ```typescript showLineNumbers
 
 const productPurchaseParams = flow.paywalls
@@ -113,17 +185,19 @@ const view = await createFlowView(flow, { productPurchaseParams });
 
 <SDKv3>
 
-Si has personalizado un paywall con el Paywall Builder, no necesitas preocuparte por renderizarlo en el código de tu app para mostrárselo al usuario. Ese paywall contiene tanto qué mostrar como de qué forma mostrarlo.
+Si has personalizado un paywall usando el Paywall Builder, no necesitas preocuparte por renderizarlo en el código de tu app móvil para mostrárselo al usuario. Dicho paywall contiene tanto lo que se debe mostrar como la forma en que debe mostrarse.
 
 :::warning
-Esta guía es exclusivamente para **paywalls creados con el Paywall Builder**. El proceso para mostrar paywalls difiere en el caso de los paywalls con Remote Config. Para mostrar **paywalls con Remote Config**, consulta [Renderizar paywalls diseñados con Remote Config](present-remote-config-paywalls).
+Esta guía es solo para paywalls creados con el antiguo Paywall Builder. Para presentar paywalls personalizados, consulta [Presentar paywalls personalizados](present-remote-config-paywalls-capacitor).
 :::
+
 Para mostrar un paywall, usa el método `view.present()` en el `view` creado por el método [`createPaywallView`](capacitor-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder). Cada `view` solo puede usarse una vez. Si necesitas mostrar el paywall de nuevo, llama a `createPaywallView` otra vez para crear una nueva instancia de `view`.
 
 :::warning
 
 Reutilizar el mismo `view` sin recrearlo puede causar un error.
 :::
+
 ```typescript showLineNumbers
 
 const view = await createPaywallView(paywall);
@@ -144,17 +218,20 @@ try {
 
 ## Usar temporizadores definidos por el desarrollador \{#use-developer-defined-timer\}
 
-Para usar temporizadores definidos por el desarrollador en tu app, utiliza el `timerId`; en este ejemplo, `CUSTOM_TIMER_NY`, el **Timer ID** del temporizador definido por el desarrollador que configuraste en el Adapty dashboard. Esto garantiza que tu app actualice dinámicamente el temporizador con el valor correcto, como `13d 09h 03m 34s` (calculado como la hora de finalización del temporizador, por ejemplo, el Año Nuevo, menos la hora actual).
+Para usar temporizadores definidos por el desarrollador en tu app, utiliza el `timerId`, en este ejemplo `CUSTOM_TIMER_NY`, el **Timer ID** del temporizador definido por el desarrollador que configuraste en el Adapty dashboard. Esto garantiza que tu app actualice dinámicamente el temporizador con el valor correcto, como `13d 09h 03m 34s` (calculado como la hora de finalización del temporizador, por ejemplo, el Año Nuevo, menos la hora actual).
 
 ```typescript showLineNumbers
 const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
 
 const view = await createPaywallView(paywall, { customTimers });
 ```
-En este ejemplo, `CUSTOM_TIMER_NY` es el **Timer ID** del temporizador definido por el desarrollador que configuraste en el Adapty dashboard. El temporizador garantiza que tu app actualice dinámicamente el temporizador con el valor correcto, como `13d 09h 03m 34s` (calculado como la hora de finalización del temporizador, por ejemplo el Año Nuevo, menos la hora actual).
+
+En este ejemplo, `CUSTOM_TIMER_NY` es el **Timer ID** del temporizador definido por el desarrollador que configuraste en el Adapty Dashboard. El temporizador garantiza que tu app actualice dinámicamente el contador con el valor correcto, como `13d 09h 03m 34s` (calculado como la hora de finalización del temporizador, por ejemplo el Año Nuevo, menos la hora actual).
+
 ## Mostrar un diálogo \{#show-dialog\}
 
 Usa este método en lugar de los diálogos de alerta nativos cuando haya una vista de paywall en pantalla en Android. En Android, las alertas normales aparecen detrás de la vista del paywall, lo que las hace invisibles para los usuarios. Este método garantiza que el diálogo se muestre correctamente por encima del paywall en todas las plataformas.
+
 ```typescript showLineNumbers title="Capacitor"
 try {
   const action = await view.showDialog({

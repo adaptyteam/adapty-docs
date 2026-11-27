@@ -2,7 +2,8 @@
 // and reports per-zone drift against the zone briefs (human-curated layer).
 //
 // Usage:
-//   node scripts/context-mill/extract.mjs extract   # rebuild docs-map.jsonl
+//   node scripts/context-mill/extract.mjs extract   # rebuild docs-map.jsonl + re-render rosters
+//   node scripts/context-mill/extract.mjs extract --map-only   # rebuild docs-map.jsonl only
 //   node scripts/context-mill/extract.mjs status    # list new/stale/deleted enrichment
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -15,7 +16,7 @@ import {
 import { loadZones, partitionErrors, zoneHash, zoneDrift, snapshotZone, normalizeZones, stateOrphans } from './zones.mjs';
 import { buildRows, renderRoster, undeclaredMatrixKeys } from './roster.mjs';
 import { missingSections, replaceAutoBlock, isStub, briefState, parseBrief, referencedArticleIds, sectionBody, briefTemplate } from './briefs.mjs';
-import { parseSources, sourceErrors, formatRefsReport, citedSources } from './sources.mjs';
+import { parseSources, applyLocalPaths, sourceErrors, formatRefsReport, citedSources } from './sources.mjs';
 import { inspectSource, existsOnDisk, readDocsLog } from './git.mjs';
 import { coChanges, parseLog } from './cochange.mjs';
 import { parseRollout, rolloutErrors, rolloutTemplate } from './rollouts.mjs';
@@ -43,7 +44,23 @@ const ZONE_MAP_FILE = path.join(MILL_DIR, 'zone-map.json');
 const ZONES_DIR = path.join(MILL_DIR, 'zones');
 const ZONE_STATE_FILE = path.join(MILL_DIR, '.zone-state.json');
 const SOURCES_FILE = path.join(MILL_DIR, 'sources.md');
+const SOURCES_LOCAL_FILE = path.join(MILL_DIR, 'sources.local.md');
 const ROLLOUTS_DIR = path.join(MILL_DIR, 'rollouts');
+
+// sources.md is shared and records one layout; sources.local.md (gitignored)
+// carries this machine's clone paths on top of it. Absent is the normal state
+// for anyone whose clones match the shared layout, so only sources.md's own
+// absence propagates to the caller.
+async function loadSources() {
+  const sources = parseSources(await fs.readFile(SOURCES_FILE, 'utf-8'));
+  let localMd;
+  try { localMd = await fs.readFile(SOURCES_LOCAL_FILE, 'utf-8'); }
+  catch { return sources; }
+  for (const id of applyLocalPaths(sources, localMd)) {
+    console.error(`⚠ sources.local.md names a source sources.md doesn't have: ${id}`);
+  }
+  return sources;
+}
 
 // Same shape as collectDocIds in generate-llms.mjs, but records WHICH sidebar.
 function collectDocIds(items, ids) {
@@ -165,7 +182,7 @@ function briefPath(zoneId) {
   return path.join(ZONES_DIR, `${zoneId}.md`);
 }
 
-async function extract() {
+async function extract({ mapOnly = false } = {}) {
   const membership = await buildSidebarMembership();
   const records = [];
   for await (const filePath of walkMdx(DOCS_BASE)) {
@@ -187,6 +204,10 @@ async function extract() {
   const specCount = records.filter(r => r.kind === 'spec').length;
   const enrichable = records.filter(r => !r.orphan && !r.draft).length;
   console.log(`docs-map.jsonl: ${records.length - specCount} articles + ${specCount} API specs (${enrichable} enrichable, ${records.length - enrichable} orphan/draft)`);
+  // --map-only stops here. docs-map.jsonl is local-only (gitignored), but the
+  // roster blocks below live inside committed briefs, so a caller that only
+  // needs the map to search it must not leave unrelated diffs in zones/*.md.
+  if (mapOnly) return;
 
   const zonesData = await loadZoneLayer();
   if (!zonesData) {
@@ -215,7 +236,7 @@ async function extract() {
 async function status() {
   const map = await readJsonl(MAP_FILE);
   if (map.length === 0) {
-    console.error('docs-map.jsonl is missing or empty — run `npm run mill` first.');
+    console.error('docs-map.jsonl is missing or empty — run `npm run mill:map` first.');
     process.exitCode = 1;
     return;
   }
@@ -270,7 +291,7 @@ async function status() {
   let sourceIds = null;
   let sourceList = [];
   try {
-    sourceList = parseSources(await fs.readFile(SOURCES_FILE, 'utf-8'));
+    sourceList = await loadSources();
     sourceIds = new Set(sourceList.map(s => s.id));
   } catch { /* not authored yet */ }
 
@@ -317,7 +338,7 @@ async function status() {
         ...zonesData.zones.keys(),
         ...[...zonesData.articles.values()].flatMap(e => [e.family, e.version].filter(Boolean)),
         // Source ids are legitimate brief vocabulary, not article references: a
-        // `Sources of truth` section names `jscore` or `dashboard-backend` in
+        // `Sources of truth` section names `jscore` or `ios-sdk` in
         // almost every sentence, and reporting those as dangling articles was
         // the check punishing briefs for doing the thing they exist to do.
         ...(sourceIds ?? []),
@@ -399,7 +420,7 @@ async function reviewed(zoneId) {
   // `{}` into .zone-state.json — destroying the review record while
   // reporting success, before anything else runs.
   if (map.length === 0) {
-    console.error('docs-map.jsonl is missing or empty — run `npm run mill` first.');
+    console.error('docs-map.jsonl is missing or empty — run `npm run mill:map` first.');
     process.exitCode = 1;
     return;
   }
@@ -475,8 +496,8 @@ async function unreviewed(zoneId) {
 }
 
 async function refs() {
-  let md;
-  try { md = await fs.readFile(SOURCES_FILE, 'utf-8'); }
+  let sources;
+  try { sources = await loadSources(); }
   catch {
     // An absent sources.md is a state, not an error: the source-catalog layer
     // simply hasn't been authored yet, exactly like zones.json during
@@ -487,7 +508,6 @@ async function refs() {
     console.error(`No ${path.relative(ROOT, SOURCES_FILE)} yet — nothing to inspect.`);
     return;
   }
-  const sources = parseSources(md);
   const errors = sourceErrors(sources, {
     referencedIds: await referencedSourceIds(await loadZoneLayer()),
     existsOnDisk,
@@ -768,7 +788,7 @@ async function newRollout(slug) {
 }
 
 const cmd = process.argv[2] || 'extract';
-if (cmd === 'extract') await extract();
+if (cmd === 'extract') await extract({ mapOnly: process.argv.slice(3).includes('--map-only') });
 else if (cmd === 'status') await status();
 else if (cmd === 'reviewed') await reviewed(process.argv[3]);
 else if (cmd === 'unreviewed') await unreviewed(process.argv[3]);

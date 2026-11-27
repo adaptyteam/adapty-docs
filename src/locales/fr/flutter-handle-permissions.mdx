@@ -1,0 +1,100 @@
+---
+title: "Gérer les demandes d'autorisation dans les flows - Flutter"
+description: "Demandez aux utilisateurs l'autorisation de notifications push depuis un flow dans votre application Flutter avec AdaptyUISystemRequestsHandler, et renvoyez leur réponse au flow."
+metadataTitle: "Gérer les autorisations dans les flows - Flutter | Documentation Adapty"
+---
+
+Un [flow](adapty-flow-builder) peut demander aux utilisateurs l'autorisation d'envoyer des notifications push avec l'action **Request permission**, par exemple sur un écran d'onboarding qui explique à quoi servent ces notifications. Le SDK Adapty n'affiche pas lui-même la boîte de dialogue système. Il transmet la demande à un `AdaptyUISystemRequestsHandler` dans votre application. Votre app affiche la boîte de dialogue, renvoie la réponse de l'utilisateur, et le flow continue.
+
+## Avant de commencer \{#before-you-start\}
+
+Vous avez besoin de :
+
+- **Adapty Flutter SDK 4.0.0 ou version ultérieure** : les versions antérieures ne disposent pas de `AdaptyUISystemRequestsHandler`. Voir [Installer et configurer le SDK](sdk-installation-flutter).
+- **Un flow avec l'action Demande d'autorisation** : dans le Flow & Paywall Builder, ajoutez l'action **Request permission** au déclencheur **On Tap** ou **On Screen Appear** d'un élément. Dans la section **After response**, ajoutez les actions à exécuter après la réponse de l'utilisateur, comme **Navigate Next**. Pour les paramètres de l'action, consultez [Request permission](onboarding-actions#request-permission).
+- **Une bibliothèque qui affiche la boîte de dialogue de notification** : l'exemple utilise [permission_handler](https://pub.dev/packages/permission_handler). Tout autre package ou votre propre code natif fonctionne de la même façon.
+- **L'autorisation `POST_NOTIFICATIONS` dans votre manifeste Android, et `targetSdk` 33 ou supérieur** : Android 13 et versions ultérieures n'affichent la boîte de dialogue d'autorisation des notifications qu'aux applications qui déclarent cette autorisation et ciblent Android 13 ou une version ultérieure :
+
+  ```xml showLineNumbers title="android/app/src/main/AndroidManifest.xml"
+  <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+      <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+      <!-- ... -->
+  </manifest>
+  ```
+
+- **Pour iOS avec CocoaPods** : Ajoutez `PERMISSION_NOTIFICATIONS=1` à `GCC_PREPROCESSOR_DEFINITIONS` dans votre `Podfile`, comme le décrit la [documentation permission_handler](https://pub.dev/packages/permission_handler). Sans cela, `Permission.notification.request()` retourne un refus et iOS n'affiche aucune boîte de dialogue. Avec Swift Package Manager, permission_handler inclut la permission de notification par défaut.
+
+## Comment le flow demande une autorisation \{#how-the-flow-requests-a-permission\}
+
+1. Le flow atteint l'action **Request permission** : l'utilisateur appuie sur l'élément, ou l'écran apparaît.
+2. Le SDK Adapty appelle `handlePermission` sur votre gestionnaire avec `AdaptyUIPermission.push`.
+3. Votre application demande l'autorisation au système d'exploitation et renvoie `AdaptyUIPermissionResult.granted()` ou `AdaptyUIPermissionResult.denied()`.
+4. Le flow exécute les actions **After response**. Elles sont identiques quelle que soit la réponse.
+
+Le flow reste sur l'écran jusqu'à ce que votre application renvoie la réponse. Si votre application ne répond jamais, le flow reste affiché. Si l'OS n'affiche pas la boîte de dialogue — par exemple parce que l'utilisateur a déjà répondu — `Permission.notification.request()` renvoie immédiatement la réponse précédente, et le flow exécute aussitôt les actions **After response**. Si ces actions quittent l'écran, l'utilisateur ne voit l'écran de demande de permission qu'un bref instant.
+
+Avec **On Screen Appear**, le flow ne renvoie pas la requête lorsque l'utilisateur revient à l'écran via une action **Navigate back**. Avec **On Tap**, chaque appui envoie une nouvelle requête, sauf les appuis effectués pendant qu'une requête attend votre réponse.
+
+## Implémenter le gestionnaire \{#implement-the-handler\}
+
+Pour répondre aux demandes de permissions, créez une classe qui étend `AdaptyUISystemRequestsHandler` et implémentez `handlePermission`. Retournez denied pour les permissions que votre application ne demande pas.
+
+```dart showLineNumbers title="Flutter"
+
+class FlowSystemRequestsHandler extends AdaptyUISystemRequestsHandler {
+  @override
+  Future<AdaptyUIPermissionResult> handlePermission(
+    AdaptyUIFlowView view,
+    AdaptyUIPermission permission,
+    Map<String, String>? customArgs,
+  ) async {
+    // Answer "denied" to every permission your app doesn't request
+    if (permission != AdaptyUIPermission.push) {
+      return const AdaptyUIPermissionResult.denied();
+    }
+
+    try {
+      final status = await Permission.notification.request();
+      return status.isGranted
+          ? const AdaptyUIPermissionResult.granted()
+          : const AdaptyUIPermissionResult.denied();
+    } catch (_) {
+      return const AdaptyUIPermissionResult.denied();
+    }
+  }
+
+  // The base method does nothing: this keeps the native review prompt.
+  @override
+  Future<void> handleAppReviewRequest(AdaptyUIFlowView view) {
+    return AdaptyUI().requestAppReview();
+  }
+}
+```
+
+`handlePermission` reçoit :
+
+- **`view`**: La vue flow qui a envoyé la requête.
+- **`permission`**: La permission demandée par le flow. L'action **Request permission** envoie `AdaptyUIPermission.push`.
+- **`customArgs`**: Les arguments personnalisés de la requête. L'action **Request permission** n'en envoie aucun, donc la valeur est `null`.
+
+Si `handlePermission` lève une exception ou ne se termine jamais, le flow ne reçoit pas de réponse et reste sur l'écran. L'exemple intercepte les erreurs pour cette raison.
+
+Une autorisation accordée permet à votre application d'afficher des notifications. Pour recevoir des notifications push, enregistrez l'appareil auprès de votre fournisseur de push, comme votre application le fait en dehors des flows.
+
+Avec un gestionnaire enregistré, le SDK Adapty transmet les demandes d'évaluation de l'application à `handleAppReviewRequest`, dont la méthode de base ne fait rien. L'exemple conserve l'invite d'évaluation native.
+
+## Enregistrer le handler \{#register-the-handler\}
+
+:::warning
+**Sans handler, le flow s'arrête à la demande de permission.** Si votre app n'enregistre aucun handler, le SDK Adapty ne renvoie aucune réponse au flow, ni sur iOS ni sur Android. Le flow reste bloqué sur l'écran qui a envoyé la demande et n'exécute pas les actions **After response**.
+:::
+
+Pour envoyer les demandes de permission de tous les flows vers votre handler, appelez `AdaptyUI().setSystemRequestsHandler` une seule fois, avant de présenter un flow. Par exemple, appelez-le juste après avoir défini l'observateur d'événements du flow :
+
+```dart showLineNumbers title="Flutter"
+AdaptyUI().setSystemRequestsHandler(FlowSystemRequestsHandler());
+```
+
+## Tester la demande d'autorisation \{#test-the-permission-request\}
+
+iOS n'affiche la boîte de dialogue de notification qu'une seule fois par installation. Android arrête de l'afficher dès que l'utilisateur autorise les notifications ou les refuse deux fois. Pour voir à nouveau la boîte de dialogue pendant vos tests, désinstallez l'application de l'appareil et réinstallez-la. Ouvrez ensuite le flow et atteignez l'action **Request permission**. Si l'écran reste affiché sans qu'aucune boîte de dialogue n'apparaisse, le flow n'a reçu aucune réponse : vérifiez que votre application enregistre le handler avant de présenter le flow. Si le flow avance sans afficher de boîte de dialogue, vérifiez que l'application Android déclare `POST_NOTIFICATIONS` et cible Android 13 ou une version ultérieure, et que le `Podfile` iOS active `PERMISSION_NOTIFICATIONS`.

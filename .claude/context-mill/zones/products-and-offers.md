@@ -1,6 +1,6 @@
 ---
 zone: products-and-offers
-sources: [dashboard-backend, dashboard-interface, server-side-api-spec]
+sources: [server-side-api-spec]
 reviewed_shape:
 reviewed_at:
 ---
@@ -20,45 +20,39 @@ per-user entitlement or balance state that results from a purchase.
 ## Sources of truth
 
 Truth is split three ways — the store console, the Adapty Dashboard record, and the backend that
-reconciles them. Everything below is read out of `dashboard-backend` (`origin/develop`) and
-`dashboard-interface` (`origin/master`) unless another source id is named.
+reconciles them. Everything below was read out of Adapty's backend and dashboard code (closed-source,
+not citable here — confirm with the product team or by testing in the dashboard) unless another
+source id is named.
 
 - **A product's existence is the store's; the Adapty record is a pointer, and it can appear without
-  anyone creating it.** The record is split in two: `AdaptyProduct` (UUID primary key, `title`,
-  `product_set`, `paid_access_level`, `price_usd`) plus one `VendorProduct` per store carrying
-  `store_product_id`, `store`, `base_plan_id`, unique on `(adapty_product_id, store)` — which is the
-  actual reason each subscription + base-plan pair needs its own Adapty product, as `create-product`
-  says. The "our product ID isn't in the dropdown" list is the live store listing
-  (`ProductStatusSyncApp` calls `list_products_detailed` against App Store Connect / Play), so a
-  missing entry is a store-console fact and never an Adapty one. Separately, the purchase path
-  auto-creates a `VendorProduct` with `product_origin = SDK` for any store product id it has not seen
-  (`VendorProductApp.get_map(..., is_create=True)` in `src/sdk/purchase_context`), so store-side rows
-  can exist with no dashboard action and no `AdaptyProduct` attached.
+  anyone creating it.** The record is split in two: one Adapty product (title, duration, access level,
+  USD price) plus one store-specific record per store carrying the store product ID and base plan ID,
+  unique per Adapty product and store — which is the actual reason each subscription + base-plan pair
+  needs its own Adapty product, as `create-product` says. The "our product ID isn't in the dropdown"
+  list is the live store listing, fetched from App Store Connect / Play, so a missing entry is a
+  store-console fact and never an Adapty one. Separately, the purchase path auto-creates a store-side
+  product record for any store product id it has not seen, so store-side rows can exist with no
+  dashboard action and no Adapty product attached.
 - **Price is two different fields with two different owners — don't answer a price question without
-  asking which one.** The headline USD figure on the product, `AdaptyProduct.price_usd`, is write-once
-  and purely local: `AdaptyProductApp.update` keeps whatever is already stored
-  (`adapty_product.price_usd = adapty_product.price_usd or request_data.price_usd`), the edit form
-  disables the field once a value exists (`disabledBaseSection = { priceUsd: Boolean(initialValues.priceUsd) }`),
-  and no store path updates it — the one store-to-Adapty sync of the product record,
-  `ProductStatusSyncApp`, writes only `store_status` and App Store's `store_subscription_group_id`.
-  That, and not a missing sync job, is what `edit-product`'s callout is really about; note also that the
-  field is not inert, because the pricing-strategy recommendation matcher joins suggested prices to
-  products on `price_usd` within 10% (a SQL block in `src/api/services/deploy_utils.py`). **Regional
-  prices behave the opposite way** and the store is authoritative for them: they live in a separate
-  `ProductCountryPrice` table whose `source` is `USER` or `STORE`, and the App Store and Play
-  price-sync apps write `source = STORE` rows from each store's own current prices — that mirrored data
-  is what the **Download** button in `edit-product` hands the reader (`export_prices_csv.py` keys rows
-  `app_store_store` / `app_store_user`), while an upload writes `source = USER` rows and pushes them
+  asking which one.** The headline USD figure on the product is write-once and purely local: an update
+  keeps whatever is already stored, the edit form disables the field once a value exists, and no store
+  path updates it — the one store-to-Adapty sync of the product record writes only the store status
+  and App Store's subscription group ID. That, and not a missing sync job, is what `edit-product`'s
+  callout is really about; note also that the field is not inert, because the pricing-strategy
+  recommendation matcher joins suggested prices to products on that USD price within 10%. **Regional
+  prices behave the opposite way** and the store is authoritative for them: they are stored separately,
+  each row marked as user-entered or store-sourced, and the App Store and Play price syncs write
+  store-sourced rows from each store's own current prices — that mirrored data is what the **Download**
+  button in `edit-product` hands the reader, while an upload writes user-entered rows and pushes them
   out. So "Adapty never learns the store's price" is true of the dashboard figure only.
 - **Duration: Adapty owns the record, and only the push-to-store path makes it true in the store.**
-  `product_set` is an Adapty-side enum (`ProductSets` / `ProductPeriod`) — `create-product`'s dropdown
-  plus an `UNCATEGORISED` default — and it is what the SDK receives as the product's period. On
-  push, Adapty writes it into the store (`SUBSCRIPTION_PERIOD_MAP[adapty_product.product_set.period]`
-  for App Store Connect, `product_set.period.to_iso8601` for Play). On the connect-existing path
-  nothing reads the store's real billing period back, so a mismatch persists silently. Immutability is
-  a UI rule, not a backend one: `EditProductForm` sets `productSet: Boolean(productId)`, while
-  `AdaptyProductApp.update` assigns whatever it is handed — keep `edit-product`'s "create a new
-  product" advice, but don't describe it as enforced by the platform.
+  The product's duration is an Adapty-side value — `create-product`'s dropdown plus an uncategorised
+  default — and it is what the SDK receives as the product's period. On push, Adapty writes it into
+  the store (as App Store Connect's subscription period, or as an ISO 8601 period for Play). On the
+  connect-existing path nothing reads the store's real billing period back, so a mismatch persists
+  silently. Immutability is a UI rule, not a backend one: the edit form locks the field once the
+  product exists, while the backend update assigns whatever it is handed — keep `edit-product`'s
+  "create a new product" advice, but don't describe it as enforced by the platform.
 - **Offer eligibility is decided in three places and only the last one is binding.** Adapty computes
   two per-profile display hints and ships them in the flow/paywall payload:
   `introductory_offer_eligibility` is "this profile has no recorded introductory-offer use", defaulting
@@ -131,16 +125,15 @@ reconciles them. Everything below is read out of `dashboard-backend` (`origin/de
   offer types, Play's base plans and offer phases (including its console eligibility labels and phase
   rules), and store review requirements — `app-store-offers`'s "win-back needs App Review first" is one
   — are Apple/Google facts that change on their release schedule, not ours. The nearest
-  checkable proxy is the DTO Adapty mirrors of Play's API
-  (`in_app_context/.../google_android_publisher/google_subscription_offer.py`, which links Google's own
-  reference): it proves field names and shape, not console wording — it carries
+  checkable proxy is Adapty's mirror of Play's subscription-offer API, which follows Google's own
+  reference: it proves field names and shape, not console wording — it carries
   `targeting.acquisition_rule` / `upgrade_rules` with no "Developer determined" value and no
-  two-phase cap. Note also that the catalog models three offer categories (`INTRODUCTORY`,
-  `PROMOTIONAL`, `WIN_BACK`): offer codes, which `app-store-offers` lists as a fourth App Store type,
-  exist only as a transaction-side category the purchase path recognises after the fact, never as an
-  offer you configure — which is why that bullet correctly links out instead of describing setup. Cite
-  the store's own docs for this class of claim and re-verify on each store release; nothing in our
-  repos will flag the drift.
+  two-phase cap. Note also that the catalog models three offer categories (introductory, promotional,
+  win-back): offer codes, which `app-store-offers` lists as a fourth App Store type, exist only as a
+  transaction-side category the purchase path recognises after the fact, never as an offer you
+  configure — which is why that bullet correctly links out instead of describing setup. Cite the
+  store's own docs for this class of claim and re-verify on each store release; nothing in our
+  sources will flag the drift.
 
 ## What we document, what we don't
 
@@ -160,7 +153,7 @@ reconciles them. Everything below is read out of `dashboard-backend` (`origin/de
   how the product card looks and what the button does.** `create-offer`'s "Add offer to flow" is
   deliberately only the two clicks that bind an offer to the selected product card — element layout
   belongs to `paywall-layout-and-products` and purchase wiring to `paywall-product-block`. Don't grow
-  it into a Flow Builder walkthrough. `add-product-to-paywall` is the legacy-paywall equivalent and
+  it into a Flow & Paywall Builder walkthrough. `add-product-to-paywall` is the legacy-paywall equivalent and
   stays frozen at that scope.
 - **Three articles are pure routers. Don't fill them.** `offers-in-stores` is two links by design;
   `product` is a definition plus a display checklist; `offers` exists only because it names the
@@ -184,7 +177,7 @@ reconciles them. Everything below is read out of `dashboard-backend` (`origin/de
   debit is bad practice). So no article shows an automatic spend, a rewarded ad for currency, or an
   upgrade offer; an upgrade guide is planned as a separate article.
 - **We don't write the backend mechanics established above.** The eligibility derivations, the
-  write-once price field, the UI-only duration lock, and the auto-created `product_origin = SDK` row
+  write-once price field, the UI-only duration lock, and the auto-created store-side product row
   are here so a task can reason correctly; a reader can't act on any of them. They surface in an
   article only where they change what the reader should do — the In-App Purchase Key gate does, and
   gets a sentence; the ledger's internals do not.
@@ -197,9 +190,9 @@ reconciles them. Everything below is read out of `dashboard-backend` (`origin/de
 | app-store-offers | — | marketer | 4 | tutorial |
 | create-offer | — | marketer | 6 | tutorial |
 | create-product | — | marketer | 3 | tutorial |
-| create-virtual-currency | — | marketer | 3 | tutorial |
+| create-virtual-currency | — | marketer | 4 | tutorial |
 | delete-product | — | marketer | 0 | tutorial |
-| edit-product | — | marketer | 4 | tutorial |
+| edit-product | — | marketer | 5 | tutorial |
 | google-play-offers | — | marketer | 1 | tutorial |
 | grant-initial-balance | — | marketer | 4 | tutorial |
 | offers | entry | marketer | 1 | tutorial |
@@ -229,6 +222,12 @@ reconciles them. Everything below is read out of `dashboard-backend` (`origin/de
   `create-virtual-currency`, and `virtual-currency-quickstart` (step 3, after `insufficient_balance`);
   their link text must not promise an ad. The shared builder and backend steps sit in the `VcTopUp*`
   reusable snippets, ready for an Android version of the recipe.
+- **The virtual currency ledger export lives in the `integrations` zone (2026-11-19).** The daily S3 and
+  Google Cloud Storage export has a third feed, one row per balance change; its columns and limits are
+  in the "Virtual currency transactions" section of `s3-exports` and `google-cloud-storage`.
+  `virtual-currencies` only links there ("How it works", item 8). A change to the transaction fields
+  (`operation` values, `feature`, `reference_id`, `customer_placement_id`, `is_sandbox`, `metadata`)
+  also moves that 19-column table, in both pages.
 
 ## Boundaries
 
@@ -270,7 +269,7 @@ Corpus-wide synonyms live in `aliases.md` and aren't repeated here.
 | "dashboard price is wrong", "changed the price in the store console and Adapty didn't update" | `edit-product`. Store-side changes never sync back; the dashboard price is reference-only and revenue analytics come straight from the stores, so usually nothing is actually broken. |
 | "regional pricing", "bulk price change", "who changed this price" | `edit-product`. The CSV upload pushes prices *to* both consoles (only differing rows change; applying to existing subscribers is an opt-in checkbox). The audit log answers who/when. |
 | "change the subscription period", "wrong access level on a product" | `edit-product`. Duration is immutable after creation — create a new product. An access-level change applies to new subscriptions and reaches existing subscribers only at their next renewal. |
-| "can't delete this product", "swap a product on a published paywall", "which product appears first", "product display order in the app" | Product-to-paywall coupling: `delete-product` refuses deletion while any paywall uses the product, and `add-product-to-paywall` both sets the display order (preserved SDK-side, not sorted in app code) and warns that post-publish product edits skew that paywall's metrics. For placement on the Flow Builder canvas, see `flow-logic`. |
+| "can't delete this product", "swap a product on a published paywall", "which product appears first", "product display order in the app" | Product-to-paywall coupling: `delete-product` refuses deletion while any paywall uses the product, and `add-product-to-paywall` both sets the display order (preserved SDK-side, not sorted in app code) and warns that post-publish product edits skew that paywall's metrics. For placement on the Flow & Paywall Builder canvas, see `flow-logic`. |
 | "tokens", "credits", "coins", "gems", "hearts", "charge per generation", "usage allowance", "pay per use" | All virtual currency, whatever the app calls it: `virtual-currencies` for the model and its hard limits — max 20 currencies per app, and **no SDK method** to read or spend a balance, so this feature requires a backend calling the server-side API. |
 | "credits vanished", "balance reset", "lost credits after reinstall", "existing subscribers got nothing" | Three distinct causes. Expiry toggle on `create-virtual-currency` zeroes, at each renewal, only the unused credits that renewing subscription granted — credits from other subscriptions, one-time products and Server-side API grants stay (backend code, 2026-11-03); product links apply going forward only, so a current subscriber waits for their next renewal; and per `virtual-currency-balance` a balance belongs to exactly one profile, so an anonymous user loses it on reinstall or a second device. An App Store upgrade counts as a renewal of the same chain, so the lower tier's unspent expiring credits reset at the upgrade (backend code, 2026-11-17; stated in `create-virtual-currency` since 2026-11-18). |
 | "`insufficient_balance`", "double-charged tokens on a retry", "convert gems to gold" | `virtual-currency-quickstart`. Balances can't go negative, a transaction is atomic and can debit one currency while crediting another, and `Idempotency-Key` is what makes a retry safe. A failed spend releases its key, so the same key can send the spend again and debits normally (backend code, 2026-11-17). The app-side pattern, a spend flow and a top-up flow on `insufficient_balance`, with the player tapping again after a purchase, is `ios-virtual-currency-top-up` (rebuilt 2026-11-19). |
@@ -295,8 +294,9 @@ Corpus-wide synonyms live in `aliases.md` and aren't repeated here.
     re-checked on 2026-11-18. The dashboard
     adjustment is gated to Owner, Admin, and Support; requires `feature`; takes an optional reference
     ID (≤128) and one-line comment (≤200); is idempotent per request key; is marked sandbox when the
-    profile is a test user; and is not sent to webhooks or integrations (the last per the feature
-    owner, not traced in code). The comment reaches the event-history **Details** block as the
+    profile is a test user; and is not sent to webhooks or realtime integrations, but appears in the S3 and GCS virtual
+    currency export as `dashboard_transaction` (2026-11-23, backend code: the export reads the whole
+    ledger with no type filter). The comment reaches the event-history **Details** block as the
     metadata key `comment`. A **Change history** window lists manual adjustments of the last 3 months
     with the actor and role, with up to ~2 minutes of lag. Owner article: `virtual-currency-balance`.
   - *Unverified:* what makes a profile a "test user" for the sandbox flag has no UI label and no docs

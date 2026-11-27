@@ -1,29 +1,27 @@
 ---
 title: "Singular"
-description: "Integra Singular con Adapty para analizar datos de marketing y suscripciones."
+description: "Integra Singular con Adapty para analizar datos de marketing y suscripción."
 metadataTitle: "Guía de integración de Singular | Documentación de Adapty"
 ---
 
 import AccessLevelUpdatedEventFeed from '@site/src/locales/es/reusable/AccessLevelUpdatedEventFeed.mdx';
 
 
-[Singular](https://www.singular.net/) es una de las principales plataformas Mobile Measurement Partner (MMP) que recopila y presenta datos de campañas de marketing. Esto ayuda a las empresas a hacer seguimiento del rendimiento de sus campañas.
+[Singular](https://www.singular.net/) es una plataforma de Mobile Measurement Partner (MMP) que recopila y presenta datos de campañas de marketing.
 
-Adapty ofrece un conjunto completo de datos que te permite rastrear [eventos de suscripción](events) desde los stores en un solo lugar. Con Adapty, puedes ver fácilmente cómo se comportan tus suscriptores, conocer lo que les gusta y usar esa información para comunicarte con ellos de forma dirigida y efectiva. Por eso, esta integración te permite rastrear eventos de suscripción en Singular y analizar con precisión cuántos ingresos generan tus campañas.
-
-Adapty puede enviar todos los eventos de suscripción configurados en tu integración a Singular. De este modo, podrás hacer seguimiento de estos eventos desde el dashboard de Singular. Esta integración es muy útil para evaluar la efectividad de tus campañas publicitarias.
+Adapty envía los [eventos de suscripción](events) que selecciones a Singular. En el dashboard de Singular, podrás ver cuántos ingresos genera cada campaña y evaluar la efectividad de tu publicidad.
 
 ## Configurar la integración \{#set-up-integration\}
 
-### Conectar Adapty con Singular \{#connect-adapty-to-singular\}
+### Conectar Adapty con Singular
+
+Para configurar la integración con Singular, ve a [Integrations > Singular](https://app.adapty.io/integrations/singular) en tu Adapty Dashboard, activa el toggle y rellena los campos.
 
 <ZoomImage id="singular-creds.webp" />
 
-Para configurar la integración con Singular, ve a [Integrations > Singular](https://app.adapty.io/integrations/singular) en tu Adapty Dashboard, activa el interruptor y rellena los campos.
-
 Las siguientes credenciales están disponibles:
 
-- **Singular SDK Key**: Obligatoria. La clave SDK de producción de tu app en Singular.
+- **Singular SDK Key**: Obligatorio. La clave SDK de producción para tu app de Singular.
 - **Singular SDK Key (Sandbox)**: Opcional. La clave SDK para tu app de Singular en sandbox. Si no se configura, los eventos de sandbox no se enviarán a Singular.
 
 Ambas claves se encuentran en el dashboard de Singular en **Developer tools -> SDK Keys -> SDK Key (**no** SDK Secret)**:
@@ -39,7 +37,9 @@ Ambas claves se encuentran en el dashboard de Singular en **Developer tools -> S
 />
 </Zoom>
 
-Debajo de las credenciales encontrarás tres grupos de eventos que puedes enviar a Singular desde Adapty. Consulta la lista completa de eventos que ofrece Adapty [aquí](events).
+### Configurar eventos y etiquetas \{#configure-events-and-tags\}
+
+A continuación de las credenciales, hay tres grupos de eventos que puedes enviar a Singular desde Adapty. Para ver la lista completa de eventos de Adapty, consulta [Eventos](events).
 
 <Zoom>
   <img src="/assets/shared/img/e67de0c-singular_events.webp"
@@ -52,21 +52,216 @@ Debajo de las credenciales encontrarás tres grupos de eventos que puedes enviar
 />
 </Zoom>
 
-Te recomendamos usar los nombres de evento predeterminados que proporciona Adapty, aunque puedes modificarlos según tus necesidades.
+Te recomendamos usar los nombres de eventos predeterminados que ofrece Adapty, aunque puedes cambiarlos según tus necesidades.
 
-Adapty enviará los eventos de suscripción a Singular mediante una integración server-to-server, lo que te permitirá ver todos los eventos de suscripción en tu dashboard de Singular y vincularlos con tus campañas de adquisición.
+Adapty envía eventos de suscripción al servidor de Singular server-to-server, para que puedas ver todos los eventos de suscripción en tu dashboard de Singular y vincularlos a tus campañas de adquisición.
 
 :::warning
-Los perfiles creados antes de configurar las integraciones no podrán enviar sus eventos a Singular.
+Los perfiles creados antes de configurar la integración no pueden enviar sus eventos a Singular.
 :::
 
-### Conectar tu app con Singular \{#connect-your-app-to-singular\}
+### Conecta tu app con Singular
 
-La integración entre Adapty y Singular es server-to-server, por lo que no necesitas añadir ningún código adicional en tu aplicación.
+Singular habilita el Singular Device ID (SDID) por defecto en las cuentas creadas a partir del 15 de julio de 2026. Estas cuentas solo aceptan eventos a través de la API de eventos v2, y Adapty envía un evento a v2 únicamente cuando el perfil del usuario tiene un SDID. Para enviar eventos a este tipo de cuenta, pasa el SDID a Adapty desde tu app.
+
+Si tu cuenta de Singular se creó antes del 15 de julio de 2026 y el SDID no está habilitado en ella, omite este paso. Adapty envía tus eventos a la API de eventos v1 y no es necesario añadir código en la app.
+
+1. Activa Adapty y luego inicia el SDK de Singular con un callback de SDID: `sdidReceivedHandler` en iOS, `SDIDAccessorHandler` en Android, `sdidReceivedCallback` en React Native y Flutter, y `SingularSdidAccessorHandler` en Unity.
+2. Espera a que Singular llame al callback. El SDID llega a tu app de forma asíncrona, después de que el SDK de Singular se inicie. Singular llama al callback en cada lanzamiento, incluso cuando el SDID ya está almacenado en el dispositivo.
+3. Dentro del callback, pasa el SDID a Adapty con `setIntegrationIdentifier()` y la clave `singular_sdid`. Ningún SDK de Adapty tiene una constante predefinida para esta clave, así que escríbela como un literal de cadena.
+4. Llama a `Adapty.identify()` solo después de que `setIntegrationIdentifier()` se complete. Adapty crea un perfil anónimo al activarse y luego cambia al perfil identificado una vez que `identify()` se resuelve. Un SDID establecido durante ese cambio puede perderse.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS (Swift)" default>
+
+```swift showLineNumbers
+
+let config = SingularConfig(apiKey: "<SINGULAR_SDK_KEY>", andSecret: "<SINGULAR_SDK_SECRET>")
+
+config.sdidReceivedHandler = { sdid in
+    Task {
+        do {
+            try await Adapty.setIntegrationIdentifier(
+                AdaptyIntegrationIdentifier(key: "singular_sdid", value: sdid)
+            )
+            // Call Adapty.identify() here, if your app identifies users
+        } catch {
+            // handle the error
+        }
+    }
+}
+
+Singular.start(config)
+```
+
+</TabItem>
+<TabItem value="kotlin" label="Android (Kotlin)">
+
+```kotlin showLineNumbers
+val config = SingularConfig("<SINGULAR_SDK_KEY>", "<SINGULAR_SDK_SECRET>")
+    .withCustomSdid(null, object : SDIDAccessorHandler {
+        override fun didSetSdid(result: String) {}
+
+        override fun sdidReceived(result: String) {
+            Adapty.setIntegrationIdentifier(
+                AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key("singular_sdid"), result)
+            ) { error ->
+                if (error != null) {
+                    // handle the error
+                    return@setIntegrationIdentifier
+                }
+                // Call Adapty.identify() here, if your app identifies users
+            }
+        }
+    })
+
+Singular.init(context, config)
+```
+
+</TabItem>
+<TabItem value="java" label="Android (Java)">
+
+```java showLineNumbers
+SingularConfig config = new SingularConfig("<SINGULAR_SDK_KEY>", "<SINGULAR_SDK_SECRET>")
+    .withCustomSdid(null, new SDIDAccessorHandler() {
+        @Override
+        public void didSetSdid(String result) {}
+
+        @Override
+        public void sdidReceived(String result) {
+            Adapty.setIntegrationIdentifier(
+                new AdaptyIntegrationIdentifier(new AdaptyIntegrationIdentifier.Key("singular_sdid"), result),
+                error -> {
+                    if (error != null) {
+                        // handle the error
+                        return;
+                    }
+                    // Call Adapty.identify() here, if your app identifies users
+                }
+            );
+        }
+    });
+
+Singular.init(context, config);
+```
+
+</TabItem>
+<TabItem value="rn" label="React Native (TS)">
+
+```typescript showLineNumbers
+
+const config = new SingularConfig('<SINGULAR_SDK_KEY>', '<SINGULAR_SDK_SECRET>')
+  // null keeps the SDID that Singular generates. Singular's typings require a string.
+  .withCustomSdid(null as unknown as string, () => {}, async (sdid) => {
+    try {
+      await adapty.setIntegrationIdentifier('singular_sdid', sdid);
+      // Call adapty.identify() here, if your app identifies users
+    } catch (error) {
+      // handle `AdaptyError`
+    }
+  });
+
+Singular.init(config);
+```
+
+</TabItem>
+<TabItem value="flutter" label="Flutter (Dart)">
+
+```dart showLineNumbers
+
+final config = SingularConfig('<SINGULAR_SDK_KEY>', '<SINGULAR_SDK_SECRET>');
+
+config.sdidReceivedCallback = (String sdid) async {
+  try {
+    await Adapty().setIntegrationIdentifier(
+      key: 'singular_sdid',
+      value: sdid,
+    );
+    // Call Adapty().identify() here, if your app identifies users
+  } on AdaptyError catch (adaptyError) {
+    // handle the error
+  } catch (e) {
+    // handle the error
+  }
+};
+
+Singular.start(config);
+```
+
+</TabItem>
+<TabItem value="unity" label="Unity (C#)">
+
+```csharp showLineNumbers
+using AdaptySDK;
+using Singular;
+
+public class SingularSdidHandler : SingularSdidAccessorHandler
+{
+    public void DidSetSdid(string result) {}
+
+    public void SdidReceived(string result)
+    {
+        Adapty.SetIntegrationIdentifier(
+            "singular_sdid",
+            result,
+            (error) => {
+                if (error != null) {
+                    // handle the error
+                    return;
+                }
+                // Call Adapty.Identify() here, if your app identifies users
+            });
+    }
+}
+
+// Register the handler before the Singular SDK initializes
+SingularSDK.SetSingularSdidAccessorHandler(new SingularSdidHandler());
+```
+
+</TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform">
+
+```kotlin showLineNumbers
+// Call this from the SDID callback of the native Singular SDK
+// on each platform: sdidReceivedHandler on iOS, SDIDAccessorHandler on Android
+suspend fun onSingularSdidReceived(sdid: String) {
+    Adapty.setIntegrationIdentifier("singular_sdid", sdid)
+        .onSuccess {
+            // Call Adapty.identify() here, if your app identifies users
+        }
+        .onError { error ->
+            // handle the error
+        }
+}
+```
+
+</TabItem>
+<TabItem value="capacitor" label="Capacitor">
+
+```typescript showLineNumbers
+
+// Call this from the SDID callback of the Singular SDK
+async function onSingularSdidReceived(sdid: string) {
+  try {
+    await adapty.setIntegrationIdentifier({ key: 'singular_sdid', value: sdid });
+    // Call adapty.identify() here, if your app identifies users
+  } catch (error) {
+    // handle the error
+  }
+}
+```
+
+</TabItem>
+</Tabs>
 
 ## Estructura del evento \{#event-structure\}
 
-Adapty envía eventos a Singular mediante una solicitud GET con parámetros de consulta. Cada evento tiene esta estructura:
+Adapty selecciona la versión de la API de eventos de Singular según si el perfil del usuario tiene un SDID:
+
+- **Con SDID**: Adapty envía una solicitud `POST` a `https://s2s.singular.net/api/v2/evt` con un cuerpo codificado en form-urlencoded. El parámetro `sdid` reemplaza los identificadores de dispositivo `idfa`, `idfv`, `aifa`, `andi` y `asid`. Los booleanos se envían como `true` o `false`.
+- **Sin SDID**: Adapty envía una solicitud `GET` a `https://s2s.singular.net/api/v1/evt` con parámetros de consulta.
+
+Ambas versiones comparten los mismos parámetros en todo lo demás. Un evento v1 tiene esta estructura:
 
 ```json
 {
@@ -81,6 +276,9 @@ Adapty envía eventos a Singular mediante una solicitud GET con parámetros de c
   "att_authorization_status": 3,
   "custom_user_id": "user_12345",
   "utime": 1709294400,
+  "partner": "adapty",
+  "use_ip": false,
+  "is_revenue_event": true,
   "amt": 9.99,
   "cur": "USD",
   "purchase_product_id": "yearly.premium.6999",
@@ -91,27 +289,31 @@ Adapty envía eventos a Singular mediante una solicitud GET con parámetros de c
 
 Donde:
 
-| Parámetro                  | Tipo    | Descripción                                                    |
-|:---------------------------|:--------|:---------------------------------------------------------------|
-| `n`                        | String  | El nombre del evento (mapeado desde el evento de Adapty).      |
-| `a`                        | String  | Tu Singular SDK Key.                                           |
-| `p`                        | String  | Plataforma ("iOS" o "Android").                                |
-| `i`                        | String  | ID de la app en el store (Bundle ID).                          |
-| `ip`                       | String  | Dirección IP del usuario.                                      |
-| `idfa`                     | String  | **Solo iOS**. ID for Advertisers (en mayúsculas).              |
-| `idfv`                     | String  | **Solo iOS**. ID for Vendors (en mayúsculas).                  |
-| `aifa`                     | String  | **Solo Android**. Google Advertising ID (en minúsculas).       |
-| `andi`                     | String  | **Solo Android**. Android ID (en minúsculas).                  |
-| `asid`                     | String  | **Solo Android**. App Set ID (en minúsculas).                  |
-| `ve`                       | String  | Versión del sistema operativo.                                 |
-| `att_authorization_status` | Integer | **Solo iOS**. Estado ATT (p. ej., `3` para autorizado).        |
-| `custom_user_id`           | String  | El Customer User ID del usuario.                               |
-| `utime`                    | Long    | Marca de tiempo UNIX del evento en segundos.                   |
-| `amt`                      | Float   | Importe de los ingresos.                                       |
-| `cur`                      | String  | Código de moneda (p. ej., "USD").                              |
-| `purchase_product_id`      | String  | El ID del producto en el store.                                |
-| `purchase_transaction_id`  | String  | ID de transacción original.                                    |
-| `e`                        | String  | Cadena JSON con los detalles del evento (ver más abajo).       |
+| Parámetro                  | Tipo    | Descripción                                          |
+|:---------------------------|:--------|:-----------------------------------------------------|
+| `n`                        | String  | El nombre del evento (mapeado desde el evento de Adapty). |
+| `a`                        | String  | Tu clave SDK de Singular.                            |
+| `p`                        | String  | Plataforma ("iOS" o "Android").                      |
+| `i`                        | String  | ID de la app en el store (Bundle ID).                |
+| `ip`                       | String  | Dirección IP del usuario.                            |
+| `sdid`                     | String  | **Solo v2**. ID de dispositivo de Singular, obtenido del identificador de integración `singular_sdid`. |
+| `idfa`                     | String  | **iOS, solo v1**. ID para anunciantes (en mayúsculas). |
+| `idfv`                     | String  | **iOS, solo v1**. ID para proveedores (en mayúsculas). |
+| `aifa`                     | String  | **Android, solo v1**. Google Advertising ID (en minúsculas). |
+| `andi`                     | String  | **Android, solo v1**. Android ID (en minúsculas).    |
+| `asid`                     | String  | **Android, solo v1**. App Set ID (en minúsculas).    |
+| `ve`                       | String  | Versión del sistema operativo.                       |
+| `att_authorization_status` | Integer | **Solo iOS**. Estado de ATT (p. ej., `3` para autorizado). |
+| `custom_user_id`           | String  | El Customer User ID del usuario.                     |
+| `utime`                    | Long    | Marca de tiempo UNIX del evento en segundos.         |
+| `partner`                  | String  | Siempre `adapty`. Identifica el evento como enviado por Adapty. |
+| `use_ip`                   | Boolean | `true` cuando Adapty no tiene dirección IP para el usuario. |
+| `is_revenue_event`         | Boolean | `true` si el evento contiene ingresos. Se envía solo con eventos de ingresos. |
+| `amt`                      | Float   | Importe de los ingresos.                             |
+| `cur`                      | String  | Código de moneda (p. ej., "USD").                    |
+| `purchase_product_id`      | String  | El ID del producto en el store.                      |
+| `purchase_transaction_id`  | String  | ID de transacción original.                          |
+| `e`                        | String  | Cadena JSON con los detalles del evento (ver más abajo). |
 
 El parámetro `e` (datos de evento personalizados) es una cadena codificada en JSON que contiene:
 
@@ -124,6 +326,10 @@ El parámetro `e` (datos de evento personalizados) es una cadena codificada en J
 | `purchase_transaction_id` | String  | ID de transacción original.                        |
 
 ## Solución de problemas \{#troubleshooting\}
+
+### Los eventos fallan con `invalid api version: v1`
+
+Tu cuenta de Singular fue creada el 15 de julio de 2026 o después, y solo acepta eventos a través de la API de eventos v2. Adapty envió el evento a v1 porque el perfil del usuario no tiene SDID. Para solucionarlo, pasa el SDID a Adapty desde tu app, tal como se describe en [Conecta tu app a Singular](#connect-your-app-to-singular). Los eventos de usuarios que tengan una versión de la app sin la llamada `setIntegrationIdentifier()` seguirán fallando hasta que actualicen la app.
 
 ### `access_level_updated` aparece como fallido en el Event Feed \{#access_level_updated-shows-as-failed-in-the-event-feed\}
 

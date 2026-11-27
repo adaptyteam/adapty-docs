@@ -1,0 +1,61 @@
+---
+title: "在 Kotlin Multiplatform SDK 中首次启动时展示 AA 定向付费墙"
+description: "在 Kotlin Multiplatform 中，使用 AdaptyProfile.appliedAttributionSources 在请求付费墙之前等待 Apple Ads 归因。"
+metadataTitle: "首次启动时展示 AA 定向付费墙 | Kotlin Multiplatform SDK | Adapty 文档"
+---
+
+本文适用于您应用的 iOS 构建版本。Apple Ads 归因仅适用于 iOS。
+
+Apple Ads (AA) 归因数据在 `Adapty.activate()` 之后异步到达。如果过早调用 `getFlow`，归因数据往往尚未落地，Adapty 会将版位与默认目标受众进行匹配——从而绕过基于 AA 市场细分的付费墙。`AdaptyProfile.appliedAttributionSources` 让应用能够检测 AA 归因何时已应用到用户画像，从而在 AA 市场细分正确解析之前延迟付费墙请求。
+
+:::important
+此属性仅报告 Apple Ads 的数据。来自其他提供商的归因数据可在用户画像中查看，也可用于市场细分筛选，但暂不在此处显示。
+:::
+
+## 开始之前 \{#before-you-start\}
+
+您需要：
+- Adapty Kotlin Multiplatform SDK **4.0** 或更高版本。
+- 在 Adapty 中为应用配置好 Apple Ads。请参阅 [Apple Ads](apple-search-ads)。
+
+:::note
+以下示例使用的是 SDK 4.0 的 API 名称。在 SDK 3.x 中，付费墙通过 `getPaywall`/`getPaywallForDefaultAudience` 获取，返回 `AdaptyPaywall`。请参阅 [将 Adapty Kotlin Multiplatform SDK 迁移至 v4](migration-to-kmp-sdk-v4)。
+:::
+
+## 工作原理 \{#how-it-works\}
+
+调用 `Adapty.activate()` 后，SDK 会在后台向 Apple 请求 Apple Ads 归因数据，并将结果转发至 Adapty 后端。当 AA 成为该用户画像的活跃归因来源时，SDK 会将更新后的 `AdaptyProfile` 传递给你的 `OnProfileUpdatedListener`，其 `appliedAttributionSources` 列表中会包含 `"apple_search_ads"`。
+
+列表为空可能意味着以下任一情况：
+
+- 该用户画像的 Apple Ads 归因尚未处理完成。
+- 未收到任何归因数据。
+- 归因数据来自其他渠道，但该列表不会报告此类来源。
+
+即使列表为空，调用 `getFlow` 仍然是安全的——Adapty 会根据当前用户画像状态匹配相应的目标受众（通常是默认目标受众）来处理请求。
+
+:::important
+等待仅适用于**首次启动**。一旦 Apple Ads 归因数据被记录，它就会永久保存在用户画像中。在后续每次启动时，缓存的用户画像已包含 `appliedAttributionSources` 中的 `"apple_search_ads"`，监听器会立即触发该值，`getFlow` 也会直接返回针对 Apple Ads 市场细分的付费墙，无需任何等待。
+:::
+
+## 实现 \{#implementation\}
+
+首次启动时，监听用户画像中的 `"apple_search_ads"` 字段，并设置一个硬超时——如果 Apple Ads 归因数据始终未到达，这些用户仍然需要看到付费墙。
+
+1. **激活 SDK。** 请参阅[安装并配置 Kotlin Multiplatform SDK](sdk-installation-kotlin-multiplatform)。
+2. **通过 `Adapty.setOnProfileUpdatedListener` 订阅用户画像更新。** 如果尚未设置监听器，请参阅[监听订阅更新](kmp-check-subscription-status#listen-to-subscription-updates)。
+3. **监听 `appliedAttributionSources` 中的 `"apple_search_ads"`。** 一旦出现该值，请求付费墙 —— Adapty 将返回经过 AA 细分的实验变体：
+
+```kotlin
+Adapty.setOnProfileUpdatedListener { profile ->
+    if ("apple_search_ads" in profile.appliedAttributionSources) {
+        // load the paywall via Adapty.getFlow(placementId)
+    }
+}
+```
+
+4. **同时启动一个 3–5 秒的计时器。** 如果计时器在 `"apple_search_ads"` 出现之前触发，请改用 `getFlowForDefaultAudience` 请求默认受众的付费墙。该方法无需等待分群结果即可直接返回付费墙。
+
+无论哪条路径先触发，都应加载付费墙；另一条路径应被跳过。使用一个状态标志（例如 `hasLoadedPaywall`）进行去重，避免付费墙被重复获取。为该版位配置[备用付费墙](kmp-use-fallback-paywalls)，确保网络请求失败时用户不会陷入等待。
+
+`setOnProfileUpdatedListener` 只接受一个监听器。如果你的应用已经将其用于其他目的（例如[监听订阅更新](kmp-check-subscription-status#listen-to-subscription-updates)），请将检查逻辑添加到现有监听器中，而不是注册第二个监听器。

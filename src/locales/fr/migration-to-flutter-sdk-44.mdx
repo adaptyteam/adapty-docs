@@ -1,0 +1,86 @@
+---
+title: "Migrer vers le SDK Flutter Adapty v4.4"
+description: "Migrez vers le SDK Flutter Adapty v4.4 : remplacez les deux fichiers de secours et gérez les nouvelles erreurs de flow sur iOS et Android."
+metadataTitle: "Migration vers le SDK Flutter Adapty v4.4 | Documentation Adapty"
+---
+
+Adapty Flutter SDK 4.4 modifie le format du fichier de paywall de secours, exige iOS 16 pour les flows, et remonte davantage d'erreurs de flow à votre application. Pour migrer de 4.3 à 4.4, définissez la version `adapty_flutter` à `^4.4.0` et remplacez les deux fichiers de secours dans le même build. Les versions antérieures du SDK rejettent les nouveaux fichiers. Consultez ensuite chaque modification d'erreur de flow dans ce guide.
+
+Si vous êtes encore sur la version 4.1, commencez par [Migrer vers v4.3](migration-to-flutter-sdk-43) puis suivez ce guide. Une application sur 4.0 nécessite d'abord les [modifications v4.1](migration-to-flutter-sdk-41).
+
+:::warning
+Le format du fichier de secours a changé dans la version 4.4, et le compilateur ne peut pas détecter un fichier obsolète. Sans [nouveaux fichiers de secours](#replace-the-fallback-files), chaque placement perd son paywall de secours.
+:::
+
+## Référence rapide \{#quick-reference\}
+
+| v4.3 | v4.4 |
+|---|---|
+| Fichiers de secours téléchargés pour 4.1–4.3 | Nouveau format de fichier de secours ; retéléchargez les deux fichiers |
+| Les flows s'ouvrent sur iOS 15 | Les flows nécessitent iOS 16 |
+| Sur iOS, `AdaptyUIFlowPlatformView` reste vide quand son flow ne peut pas se charger | Il signale l'erreur à vos callbacks d'erreur de flow |
+| Sur iOS, les appels `AdaptyUI()` et `AdaptyUIFlowView` effectués quand AdaptyUI n'est pas activé lèvent des erreurs avec `AdaptyErrorCode.unknown` | Ils lèvent des erreurs avec `adaptyUINotActivated` ou `adaptyNotActivated` |
+| Sur Android, le SDK ne journalise que les erreurs de script de flow | Elles atteignent vos callbacks d'erreur de flow sous forme de `AdaptyErrorCode.jsException` |
+| La gestion de fermeture par défaut appelle `dismiss()` pour `AdaptyUIFlowPlatformView`, ce qui lève une erreur non interceptée | La gestion de fermeture par défaut laisse un flow intégré à l'écran ; supprimez le widget pour le fermer |
+
+## Installation \{#installation\}
+
+Mettez à jour `adapty_flutter` vers la v4.4 dans votre `pubspec.yaml` :
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter: ^4.4.0
+```
+
+Si votre application utilise le [Mode Enfants](kids-mode-flutter), spécifiez plutôt `adapty_flutter_kids` :
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter_kids: ^4.4.0
+```
+
+Les prérequis sont inchangés par rapport à la v4.3 : **Flutter 3.32.0** (Dart 3.8.0) et **iOS 15.0**. Les flows font exception : voir [Les flows nécessitent iOS 16](#flows-require-ios-16). Consultez [Installer le SDK Adapty](sdk-installation-flutter) pour la configuration complète.
+
+## Remplacer les fichiers de secours \{#replace-the-fallback-files\}
+
+Pour télécharger à nouveau les [fichiers de secours](flutter-use-fallback-paywalls), dans **[Placements](https://app.adapty.io/placements)**, cliquez sur **Fallbacks** > **Download iOS Fallback**. Dans la ligne **Adapty SDK v4.4.0 and higher**, cliquez sur **Download**. Répétez l'opération avec **Download Android Fallback**.
+
+Les fichiers téléchargés s'appellent `ios_4_4_0_fallback.json` et `android_4_4_0_fallback.json`. Déplacez-les dans le dossier `assets` de votre projet, à la place des fichiers obsolètes. Donnez à chaque fichier le nom que votre application passe à `Adapty().setFallback`, ou mettez à jour ces noms dans cet appel.
+
+Avec un fichier obsolète, `Adapty().setFallback` génère une `AdaptyError`. Pour vérifier les nouveaux fichiers, lancez l'application sur iOS et sur Android, et assurez-vous que cet appel ne génère aucune erreur.
+
+## Les flows nécessitent iOS 16 \{#flows-require-ios-16\}
+
+À partir de la version 4.4, les flows nécessitent iOS 16 ou une version ultérieure. Sur iOS 15, `AdaptyUI().createFlowView()` lève une `AdaptyError` avec `AdaptyErrorCode.platformNotSupported`, et `AdaptyUIFlowPlatformView` reste vide et signale la même erreur. Les onboardings et le reste du SDK continuent de prendre en charge iOS 15.
+
+Lorsque votre application reçoit cette erreur, affichez votre propre contenu à la place, par exemple un [paywall personnalisé](flutter-implement-paywalls-manually).
+
+## Les erreurs de chargement de flow remontent dans vos callbacks sur iOS \{#flow-load-errors-reach-your-callbacks-on-ios\}
+
+Sur iOS, le callback `onDidReceiveError` de `AdaptyUIFlowPlatformView` reçoit une erreur quand le widget ne peut pas afficher le flow. La méthode `flowViewDidReceiveError` de votre observateur d'événements de flows reçoit la même erreur. À chaque fois que votre app crée le widget, il signale l'erreur une seule fois. Avant la version 4.4, le widget restait vide. Sur Android, le widget ne signale toujours rien quand son flow échoue à se charger. Le widget remonte les erreurs suivantes :
+
+- Sur iOS 15 : `AdaptyErrorCode.platformNotSupported`.
+- Sur iOS 16 et versions ultérieures, lorsque le flow échoue à se charger : l'erreur que `AdaptyUI().createFlowView()` génère pour ce flow. Par exemple, le flow échoue à se charger si AdaptyUI n'est pas activé, ou pour un `customLayoutId` que le flow ne possède pas.
+
+La gestion des erreurs de flow, comme la fermeture de l'écran, s'exécute désormais dans ces cas également. `AdaptyUIFlowView.dismiss()` échoue pour la vue de ce widget, donc si votre `flowViewDidReceiveError` l'appelle, interceptez son erreur, comme dans [Erreurs de vue](flutter-handling-events#view-errors). Supprimez le widget et affichez votre propre contenu. Pour relancer en cas d'échec temporaire, comme `AdaptyErrorCode.networkFailed`, reconstruisez le widget avec une nouvelle `Key`.
+
+## Les erreurs AdaptyUI ont de nouveaux codes sur iOS \{#adaptyyy-errors-have-new-codes-on-ios\}
+
+Sur iOS, un appel `AdaptyUI()` ou `AdaptyUIFlowView` renvoie une erreur avec un nouveau code quand AdaptyUI n'est pas activé : avant que `Adapty().activate()` se termine, ou après activation avec `withActivateUI(false)`. Le code dépend de ce que votre app demande :
+
+- Une vue flow : `AdaptyErrorCode.adaptyUINotActivated`.
+- Un onboarding : `AdaptyErrorCode.adaptyNotActivated`.
+
+Avant la version 4.4, ces erreurs avaient le code `AdaptyErrorCode.unknown`. Si votre code gère `unknown` pour ces erreurs, gérez également les nouveaux codes. Pour `AdaptyErrorCode.platformNotSupported`, consultez [Les flows nécessitent iOS 16](#flows-require-ios-16).
+
+## Les erreurs de script de flow remontent dans vos callbacks sur Android \{#flow-script-errors-reach-your-callbacks-on-android\}
+
+Sur Android, le script d'un flow peut lever une exception lors du traitement d'un événement SDK. À partir de la version 4.4, cette exception remonte dans `flowViewDidReceiveError` et dans le callback `onDidReceiveError` de `AdaptyUIFlowPlatformView` sous la forme `AdaptyErrorCode.jsException`, comme sur iOS. Avant, le SDK se contentait de la journaliser.
+
+Si votre application ne définit pas d'observateur d'événements de flows, un flow issu de `AdaptyUI().createFlowView()` se ferme en cas d'erreur. Pour que le flow reste ouvert, définissez un observateur avec `AdaptyUI().setFlowsEventsObserver()` et gérez l'erreur à cet endroit.
+
+## Fermer les flows intégrés en supprimant le widget \{#close-embedded-flows-by-removing-the-widget\}
+
+À partir de la version 4.4, le comportement de fermeture par défaut n'appelle plus `dismiss()` pour un flow intégré avec `AdaptyUIFlowPlatformView`. Avant la version 4.4, cet appel échouait systématiquement avec une erreur `AdaptyErrorCode.wrongParam` non interceptée. Pour fermer un flow intégré, [supprimez son widget](flutter-present-paywalls#embed-in-widget-hierarchy) lorsqu'il reçoit `CloseAction`, et sur Android, `AndroidSystemBackAction`.
+
+Lorsque le traitement par défaut d'un événement de flow échoue — par exemple un rejet ou l'ouverture d'une URL —, le SDK enregistre désormais l'erreur dans son journal. Avant la version 4.4, le SDK levait une erreur non interceptée. Si votre outil de signalement de plantages enregistrait ces erreurs, elles ne lui parviennent plus.

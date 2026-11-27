@@ -1,0 +1,105 @@
+---
+title: "Mostrar el progreso del usuario con una animación Lottie"
+description: "Muestra el progreso de cada usuario, como una racha diaria, como una animación Lottie en una pantalla de flow."
+metadataTitle: "Mostrar el progreso del usuario con una animación Lottie | iOS SDK | Documentación de Adapty"
+---
+
+<CustomElementLottieIntro />
+
+## Antes de empezar \{#before-you-start\}
+
+- Actualiza tu app a Adapty iOS SDK 4.4 o posterior. Las versiones anteriores del SDK muestran el [contenido de respaldo](flow-custom-elements#set-fallback-content) para cada elemento personalizado.
+- Configura tu app para [obtener](get-pb-paywalls) y [mostrar](ios-present-paywalls) flows.
+- Añade Lottie a tu app con Swift Package Manager, desde `https://github.com/airbnb/lottie-spm.git`.
+
+<CustomElementLottieAnimationRequirements />
+
+## 1. Añade el elemento personalizado a la pantalla \{#1-add-the-custom-element-to-the-screen\}
+
+<CustomElementLottieBuilderSetup />
+
+## 2. Añade el archivo de animación a tu app \{#2-add-the-animation-file-to-your-app\}
+
+Añade el archivo de animación al target de tu app en Xcode.
+
+El nombre del archivo sin `.json` debe coincidir con el ID del elemento personalizado, por ejemplo, `streak_ring.json` para `streak_ring`.
+
+## 3. Crea la vista de animación \{#3-create-the-animation-view\}
+
+Crea un modelo para la racha y una vista que reproduzca la animación. Tu app actualiza el modelo cuando cambia la racha. La vista lee el modelo, de modo que el anillo muestra la racha actual cuando se abre la pantalla:
+
+```swift showLineNumbers title="Swift"
+
+// The streak that your app keeps up to date
+@MainActor
+final class StreakStore: ObservableObject {
+    @Published var currentStreak = 0 // days in a row
+}
+
+struct StreakRingView: View {
+    let animation: LottieAnimation
+    @ObservedObject var streakStore: StreakStore
+
+    // 7 days fill the ring: from 0 for an empty ring to 1 for a full one
+    private var progress: AnimationProgressTime {
+        min(AnimationProgressTime(streakStore.currentStreak) / 7, 1)
+    }
+
+    var body: some View {
+        LottieView(animation: animation)
+            .resizable()
+            .playing(.fromProgress(0, toProgress: progress, loopMode: .playOnce))
+    }
+}
+```
+
+`.playing(.fromProgress(0, toProgress: progress, loopMode: .playOnce))` rellena el anillo una vez, desde vacío hasta `progress`. Si tu app ya tiene el streak en un `ObservableObject`, usa ese objeto en lugar de `StreakStore`.
+
+## 4. Asocia la animación con el elemento personalizado \{#match-the-animation-to-the-custom-element\}
+
+En tu [resolver global de la app](ios-flow-custom-elements#set-an-app-wide-resolver), añade una propiedad para el modelo de racha. Luego devuelve la vista de animación para el tipo `lottie_animation` y el ID `streak_ring`. Las líneas resaltadas muestran qué añadir o cambiar. Si tu app aún no tiene un [resolver](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) global, copia todo el código:
+
+```swift showLineNumbers title="Swift" {2,6,14-18}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let streakStore: StreakStore
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "lottie_animation" where id == "streak_ring":
+            guard let animation = LottieAnimation.named(id) else {
+                return nil // no animation file: show the fallback
+            }
+            return AnyView(StreakRingView(animation: animation, streakStore: streakStore))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+Coloca el caso `streak_ring` antes de cualquier otro caso `lottie_animation`, porque Swift solo ejecuta el primer caso que coincide. Si el bundle de la app no tiene ningún archivo para ese ID, el resolver devuelve `nil` y los usuarios ven el fallback.
+
+Crea el resolver con el modelo de streak y establécelo como el resolver global de la app. Llama a `AdaptyUI.setCustomElementsResolver` una sola vez, por ejemplo al iniciar la app:
+
+```swift showLineNumbers title="Swift"
+
+// the streak model that your app updates
+@MainActor let streakStore = StreakStore()
+
+// keep this instance: a resolver for one flow can reuse it
+@MainActor let customElementsResolver = CustomElementsResolver(streakStore: streakStore)
+
+AdaptyUI.setCustomElementsResolver(customElementsResolver)
+```
+
+## 5. Prueba en un dispositivo \{#test-on-a-device\}
+
+<CustomElementLottieTest />
+
+Para descubrir por qué aparece el respaldo en lugar de la animación, sigue las instrucciones de la sección [Prueba en un dispositivo](ios-flow-custom-elements#test-on-a-device) de la guía de iOS.

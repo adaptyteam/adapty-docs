@@ -1,6 +1,6 @@
 ---
 zone: retention-messaging
-sources: [dashboard-interface, dashboard-backend]
+sources: []
 reviewed_shape:
 reviewed_at:
 ---
@@ -21,59 +21,71 @@ there is no Google Play equivalent.
 
 ## Sources of truth
 
-- **`dashboard-interface` `origin/master` is the only ground truth available locally, and
-  `dashboard-backend` has none.** Verified 2026-08-20:
-  `grep -rIln "retention_messaging\|RetentionMessag" ~/Documents/adapty-dashboard-api` returns zero hits
-  — every `retention` hit in that repo is retention *analytics* (cohort charts), a different feature.
-  Everything below was read from `adapty-dashboard-interface` `origin/master` at `ea4524711`
-  (2026-08-17). **The local checkout is not usable for this zone**: it sat at `d9a5a8788` (2026-07-23)
-  while 16 retention-messaging commits had landed on `origin/master` since, including the entire
-  access-request flow (ADP-7472), the app-level preconditions (ADP-7339), the realtime-URL query
-  (ADP-6420) and the per-locale field limits (ADP-7148). Read with `git show origin/master:<path>`.
-- **The API client is `packages/sdk/src/retentionMessaging/`.** Its `types/` files are the cheapest read
-  for state enums and request shapes. Message states are exactly `live | in_review | rejected |
-  inactive` — **there is no `draft` state on the API**; `draft` is a display-only badge in the form
-  header (`message-form/ui/FormHeader/FormHeader.tsx`, `status ?? 'draft'`) and is absent from the
-  table's State filter (`model/table/constants.ts` → `stateOptions`).
-- **Preconditions and gating live in `apps/web/src/entities/retention-messaging/model/utils/`.**
-  `getSetupBlocker.ts` blocks in order: `not_registered` → `no_products` → sandbox URL (a credentials
-  blocker is written but commented out). `getModeAvailability.ts` decides the rest: sandbox is complete
-  when credentials are present **and** the app is registered **and** the sandbox URL points to Adapty
-  **and** the performance test passed; production additionally needs the production URL. The **Sandbox
-  mode** toggle is `disabled` until sandbox setup is complete
-  (`ui/RetentionMessagingTable/FilterPanel/FilterPanel.tsx`), so production is genuinely unreachable
-  before the test passes — not merely discouraged.
-- **The endpoint URL the customer submits to Apple** comes from `GET
-  .../retention-messaging/realtime-url` (`api/realtimeUrlQuery.ts`), renders via
-  `ui/RealtimeUrlCodeBlock/`, and appears in two places: the 3-step guide shown on the Retention
-  Messaging page while the app is `not_registered`, and an **Apple Retention Messaging API** section on
-  **App settings → iOS SDK** (`pages/settings-section/ios-sdk-setting/IosSdkSetting.tsx`). **One URL
-  serves both environments** — stated verbatim in
-  `features/retention-messaging/api-url-section/constants.ts`. A 422 `realtime_url_unavailable` means the
-  backend has not provisioned a URL for the app yet, and the block renders a contact-support message.
-- **UI copy is the only source for what the performance test actually requires**, in
-  `realtime-url-setup/ui/SandboxRealtimeUrlSetupCard/toCardProps.tsx`: an active **sandbox or
-  TestFlight** transaction, which the developer purchases; **up to an hour** to run; retry button
-  **Try Again**. Note what is *not* knowable here — nothing in the frontend recognizes the backend's
-  `active_sandbox_transaction_missing` code, and `realtime-url-setup/model/useSandboxRealtimeUrlSetup.ts`
-  shows a flat "Failed to start performance test. Please try again." **Why a test failed is invisible in
-  the product**, which is why these tickets all reach support.
-- **Content limits are `message-form/model/constants.ts`**: name 60, title 66, body 144 characters;
-  `MAX_PRODUCTS = 20`; `DEFAULT_LOCALE = 'en-US'`; image hint "PNG · 3840 px wide · 160–2160 px tall ·
-  No transparency", enforced pixel-by-pixel in `validation/validateMessageImageFile.ts`. The load-bearing
-  one is `validation/validateLocalizationStep.ts`: it applies the **title and body limits to every
-  locale**, so an AI translation that runs long blocks **Submit To Review** on a cell the reader never
-  typed in.
-- **The locale set is a fixed 48-entry list**, `model/locales/appleLocales.ts`, each row mapping an Apple
-  locale code to a translation code. English (U.S.) is the source language.
-- **An edit always resubmits the whole message.** `message-form/model/submit/buildMessageWritePayload.ts`
-  sends name, title, body, products and localizations through a single `updateMessage` endpoint no matter
-  which step's button was pressed — so **Save Changes** on the General step is not a lighter-weight save,
-  and "any edit to a Live message returns it to review" is correct as the docs state it.
-- **Reactivation does not re-enter Apple's review.** The confirm-modal copy in
-  `update-message-status/model/useMessageStatusAction.tsx` is explicit: deactivating hides the message
-  "but not deleted. You can reactivate it anytime without going through review again", and activating
-  "may take a few minutes to appear for all users".
+- **Backend and dashboard behavior: Adapty's closed-source code, not citable here — confirm with the
+  product team or by testing in the dashboard.** Everything below was verified against dashboard code on
+  2026-08-17–20; the backend carries no retention-messaging logic that could be read. The feature moved
+  fast in August 2026 (the access-request flow, the app-level preconditions, the realtime-URL query and
+  the per-locale field limits all landed then), so re-confirm anything older than that.
+- **Message states are exactly `live | in_review | rejected | inactive` — there is no `draft` state on
+  the API.** **Draft** is a display-only badge in the message form header and is absent from the
+  table's State filter.
+- **Preconditions and gating** (dashboard code, 2026-08-20). Setup is blocked in order: app not
+  registered → no products → sandbox URL. Sandbox is complete when credentials are present **and** the
+  app is registered **and** the sandbox URL points to Adapty **and** the performance test passed;
+  production additionally needs the production URL. The **Sandbox mode** toggle is disabled until
+  sandbox setup is complete, so production is genuinely unreachable before the test passes — not merely
+  discouraged.
+- **The endpoint URL the customer submits to Apple** appears in two places: the 3-step guide shown on
+  the Retention Messaging page while the app is not registered, and an **Apple Retention Messaging API**
+  section on **App settings → iOS SDK**. **One URL serves both environments** — stated verbatim in the
+  dashboard copy. If Adapty has not provisioned a URL for the app yet, the block renders a
+  contact-support message.
+- **UI copy is the only source for what the performance test actually requires**: an active **sandbox
+  or TestFlight** transaction, which the developer purchases; **up to an hour** to run; retry button
+  **Try Again**. Note what is *not* knowable here — the dashboard shows a flat "Failed to start
+  performance test. Please try again." whatever the backend's reason. **Why a test failed is invisible
+  in the product**, which is why these tickets all reach support.
+- **Content limits** (dashboard code, 2026-08-20): name 60, title 66, body 144 characters; 20 products
+  per message; default locale `en-US`; image hint "PNG · 3840 px wide · 160–2160 px tall · No
+  transparency", enforced pixel by pixel. The load-bearing one: the **title and body limits apply to
+  every locale**, so an AI translation that runs long blocks **Submit To Review** on a cell the reader
+  never typed in.
+- **The locale set is a fixed 48-entry list**, each Apple locale code mapped to a translation code.
+  English (U.S.) is the source language.
+- **An edit always resubmits the whole message.** Name, title, body, products and localizations go
+  through a single update no matter which step's button was pressed — so **Save Changes** on the
+  General step is not a lighter-weight save, and "any edit to a Live message returns it to review" is
+  correct as the docs state it.
+- **Title position** (dashboard code, 2026-10-28): a Default message with an image has a **Title position**
+  choice on the Content step — **Below the image** (default) or **Above the image**; the body stays below the
+  image either way. It is fixed at creation: in edit mode the radios are disabled with a hint to create a new
+  message. No image at creation → the default position is stored, so an image added later in edit shows the
+  title below. Promo messages carry no image, so no choice.
+- **Bullet points** (dashboard code and release QA notes, 2026-11-09): Default messages only, with or without an
+  image; up to 5; each needs an icon (PNG, exactly 1024 × 1024 px, no transparency, 10 MB cap), text up to 66
+  characters, optional alt text up to 150 (empty → a default is sent). Icons are shared across locales and only
+  the text is translated; alt text is not localized. A locale with any text must fill every bullet point, and an
+  over-long or empty bullet cell blocks **Submit To Review**. Bullet points can't be reordered. Not yet shipped:
+  the **Rejected** state for an icon Apple turns down, and removing replaced icons from Apple — don't document
+  either until they land. Documented in `retention-messaging-create` → *Content* and *Localization*.
+- **Alt text is not localized** (dashboard code, 2026-10-28): one alt text is sent for the message, not per locale.
+- **Locales with an empty title and body are dropped on submit**, silently (dashboard code, 2026-10-28).
+- **Reactivation does not re-enter Apple's review.** The confirm-modal copy is explicit: deactivating
+  hides the message "but not deleted. You can reactivate it anytime without going through review
+  again", and activating "may take a few minutes to appear for all users".
+- **The analytics metrics are now readable in the backend** (backend metrics query on the production line
+  and the release QA notes, 2026-10-29) — this corrects "the backend carries no retention-messaging
+  logic" above, for analytics only. The table has six columns: **Shown**, **Retained users** (was
+  **Retained** until 2026-10-28), **Saved users**, **Retention rate**, **Save rate**, **Saved revenue**.
+  The unit is one (message, original transaction, day) — still attempts, not people, despite the "users"
+  labels. Retained = a paid start, renewal or trial conversion billed after the view and before the first
+  auto-renew-off or expiry; ties go to churn. Not retained: offer accepted then cancelled before paying,
+  a $0 period, cancel → re-enable → pay, resubscribe after expiry, a charge Apple billed before the view,
+  a refunded payment. Saved = no auto-renew-off within 24 h of the day's first view, counted only once
+  24 h have passed; Save rate = saved / views older than 24 h. Saved revenue = USD price before Apple's
+  commission of the retained attempts' payments until the first cancel or expiry, each payment credited
+  to the latest retaining view before it; Family Sharing payments count as retained but add no revenue.
+  Documented in `retention-messaging-analytics`.
 
 ## What we document, what we don't
 
@@ -82,7 +94,7 @@ Delta from `scope.md` only.
 - **The Apple access request is ours to document, even though Apple owns the decision.** The reader
   cannot guess that the endpoint URL is Adapty-provided, self-serve, and the same for both environments —
   and Apple's form asks for it before anything in Adapty can be configured. This was the single
-  highest-volume gap in the zone (13 support handoffs in 7 days, m1 mining report).
+  highest-volume gap in the zone (the most frequent support handoff in a one-week sample).
 - **Skip the visible gating, keep the delayed gating.** Disabled buttons with hints, per-message state
   badges, the 20-product hint and the image-format hint are all on screen — `scope.md`'s obvious-UI rule
   covers them. The exception is a limit that only bites later: the title/body limits reappear on
@@ -98,8 +110,8 @@ Delta from `scope.md` only.
 <!-- mill:auto:roster -->
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
-| retention-messaging | entry | — | 1 | tutorial |
-| retention-messaging-analytics | — | — | 4 | tutorial |
+| retention-messaging | entry | — | 2 | tutorial |
+| retention-messaging-analytics | — | — | 6 | tutorial |
 | retention-messaging-create | — | — | 9 | tutorial |
 | retention-messaging-setup | — | — | 7 | tutorial |
 <!-- /mill:auto -->
@@ -115,13 +127,16 @@ Delta from `scope.md` only.
 - **`analytics`** — `retention-messaging-analytics` is this zone's (the Shown / Retained / Retention rate
   columns on the Retention Messaging page). `analytics-retention` is cohort retention charts in
   `analytics`, an unrelated feature with a confusingly similar name.
+- **`agent-tooling`** — `developer-cli-retention-messaging` (2026-11-18) is the CLI topic page for the same actions, and
+  `adapty-mcp` has a Retention Messaging row. They link here for message states, setup steps and metric meanings; a change to
+  those belongs here first, then the CLI page if it restates a value (the image limits and the metric formulas).
 - **`products-and-offers`** — a promo message attaches an App Store promotional offer or a plan switch,
   but creating either is `app-store-offers` / `create-product`.
 
 ## Reader jobs
 
 One reader, moving through three stages, and almost every ticket comes from the first two. Grounded in
-the m1 mining report and the 2026-08-18 support thread; the third stage has no ticket evidence yet.
+aggregated support handoffs; the third stage has no ticket evidence yet.
 
 1. **"I'm trying to turn this on and I'm blocked by Apple or by the dashboard."** They are pre-launch,
    often before Apple has approved the app, and the blocker is an unexplained gate: Apple's form wants a
@@ -151,31 +166,51 @@ the m1 mining report and the 2026-08-18 support thread; the third stage has no t
 
 ## Gaps and misses
 
-- **`active_sandbox_transaction_missing` (m1 #180) remains unverified.** Mechanism looked for: an
-  error-code branch in the frontend.
-  `git grep -in "active_sandbox_transaction_missing\|sandbox_transaction" origin/master -- apps packages`
-  on 2026-08-20 returns only unrelated `sandbox_transaction_flow` app-settings hits. The 422 is
-  backend-only and `dashboard-backend` carries no retention-messaging code, so this needs product or
-  backend confirmation — another grep of these two repos will not settle it. The documented prerequisite
-  (active sandbox/TestFlight purchase, longest duration) is confirmed independently from UI copy and from
-  support, so the published guidance does not depend on this answer.
+- **2026-11-18, the backend does carry retention-messaging logic** (backend code, 2026-11-17, read for the CLI topic): this
+  corrects "the backend carries no retention-messaging logic that could be read" in Sources of truth for setup, messages and
+  suggestions too, not only analytics. From that read: setup status values `credentials`, `registration_status`,
+  `realtime_url_status` (`not_configured`, `configured_to_other_url`, `configured_to_adapty`) and `performance_test_status`; a
+  status read can save the test result; a list or message read asks Apple about review and can queue an approved message;
+  configuring sandbox creates a hidden test message; production configure is refused before the test passes; header image PNG
+  3840 px wide, 160–2160 px tall, no transparency, 10 MB; title position is stored as `header_position` (`above_body`,
+  `above_image`).
+- **Open question, 2026-11-18: does activation re-enter review?** `retention-messaging-create` says reactivation skips Apple's
+  review. The same backend read says `activate` moves an `inactive` message to `in_review` and that approved locales don't wait
+  for a new review. Both can be true (a state change with no new upload), but the article's sentence and the API state disagree
+  on the surface. `developer-cli-retention-messaging` states the API behavior; the create article is unchanged. Confirm with
+  product before you edit either.
+- **Resolved 2026-10-28 in favor of the dashboard code** (the docs owner's call: "trust the code"):
+  `retention-messaging-create` now says a message goes live once Apple approves **at least one** locale
+  (Localization step footer: "Production stays gated until at least one locale is approved."), and that
+  **AI Translate All Cells** overwrites manual edits in every added locale (the UI intro still claims
+  otherwise). Unconfirmed against the backend — revisit if a ticket shows a message stuck in review with
+  some locales approved.
+- **Setup copy fixed 2026-10-28**: alt texts and the two-click **Configure Sandbox URL** path updated, and
+  both setup screenshots recaptured from a mocked dashboard.
+- **A pending dashboard change will surface the missing App Store Connect key on Plan Switch** (2026-10-28,
+  unmerged): today the plan list just stays empty when the key is missing. Once it ships, a ticket line
+  ("plan switch list is empty") belongs under Ticket language pointing at the key.
+- **Unwritten but verified** (2026-10-28): the analytics table's filters (type, state, name search) and its
+  **Started at** column; the locale picker's **Add All Locales**; the empty-state copy. Low reader impact.
+- **The backend's "no active sandbox transaction" failure remains unverified.** The dashboard has no
+  error branch for it (checked 2026-08-20), and the backend carries no retention-messaging code that
+  could be read, so this needs product or backend confirmation — another code read will not settle it.
+  The documented prerequisite (active sandbox/TestFlight purchase, longest duration) is confirmed
+  independently from UI copy and from support, so the published guidance does not depend on this answer.
 - **`retention-messaging-create`'s activation-conflict claim could not be confirmed** — "if another
-  message of the same type claimed the product while this one was inactive, activation fails". Mechanism
-  looked for: a conflict error path in `api/updateMessageStatus.ts`, and any
-  `already|conflict|claimed|occupied` string across `features/retention-messaging` and
-  `entities/retention-messaging` on `origin/master`. Neither exists, and the mutation surfaces a flat
+  message of the same type claimed the product while this one was inactive, activation fails". The
+  dashboard has no conflict error path for status changes (checked 2026-08-20) and surfaces a flat
   "Failed to update message status. Please try again." Left in the article unchanged and flagged here: it
   may well be a backend rule that was known when the article was written, and this is not evidence
   against it.
-- **Both setup screenshots are stale**, neither caused by a docs edit: the sandbox card was retitled and
-  its button relabelled in ADP-7472/ADP-6698 (2026-08-04–11), and the test card's copy changed with it.
+- **Fixed 2026-10-28:** the Content, promo-offer and plan-switch screenshots in `retention-messaging-create`
+  were recaptured from a mocked dashboard (labels **Associated product**, **Associated offers**,
+  **Associated plan**, **Link Promo Offer** / **Link Plan Switch**).
+- **(Superseded 2026-10-28 — recaptured.)** Both setup screenshots were stale, neither caused by a docs edit: the sandbox card was retitled and
+  its button relabelled 2026-08-04–11, and the test card's copy changed with it.
   `retention-messaging-configure-sandbox-url.webp` and `retention-messaging-test-sandbox-url.webp` both
   need recapture, plus a new one for the access-request guide.
-- **The 2026-08-19 support thread that motivated the setup rewrite ended unresolved** — a customer's
-  retry with an annual product also failed and was being investigated as a possible bug. Nothing about
-  that residual failure was written, per the don't-document-a-bug rule.
-- **How promo offers and plan switches get chosen in the General step is unwritten here** — the suggest
-  endpoints (`products/{id}/promo-offers/suggest`, `plan-switches/suggest`) are named in the API client,
-  but what makes a product or plan eligible to appear is backend logic this zone has no source for. Wants
-  an interview pass, not another code read. The same applies to stage 3 of Reader jobs, which has no
-  ticket evidence behind it yet.
+- **How promo offers and plan switches get chosen in the General step is unwritten here** — the
+  dashboard asks the backend for suggestions, but what makes a product or plan eligible to appear is
+  backend logic this zone has no source for. Wants an interview pass, not another code read. The same
+  applies to stage 3 of Reader jobs, which has no ticket evidence behind it yet.

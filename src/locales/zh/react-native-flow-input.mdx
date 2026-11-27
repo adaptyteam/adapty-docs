@@ -1,0 +1,224 @@
+---
+title: "在 React Native SDK 中处理流程数据"
+description: "使用 Adapty SDK 保存和使用用户在流程中输入的数据（适用于 React Native 应用）。"
+metadataTitle: "处理流程数据 | React Native SDK | Adapty 文档"
+---
+
+当用户在[流程](adapty-flow-builder)中填写输入框、回答问卷或切换开关时，SDK 会通过分析回调将该值传递给你的应用。
+
+应用最常将这些数据用于：
+
+- **在自有后端注册用户**：获取用户在用户引导流程中输入的邮箱地址和姓名，在流程关闭时为其创建账号。
+- **保存答案和偏好设置**：记录用户的选择，供应用后续使用——例如，[将其作为自定义属性写入用户的 Adapty 用户画像](react-native-setting-user-attributes)。
+- **自定义后续流程**：将问卷答案保存为自定义属性，然后针对后续版位进行定向投放，让每个市场细分看到不同的流程，或者流程中不同的付费墙。
+- **展示根据答案计算得出的值**：例如，根据用户的体重和身高计算 BMI，并[将其传递到下一个流程中的自定义标签](react-native-flow-custom-tags#example-show-a-bmi-from-onboarding-answers)。
+- **向第三方分析平台传送数据**：将答案转发至 Amplitude、Mixpanel 或你正在使用的任何产品分析工具。
+
+输入框和可选组会自动上报其值。为了在代码中区分各个输入框，请在编辑工具中为每个输入框设置一个有意义的 **Element ID**，为每个可选组设置一个 **Group ID**。
+
+<FlowIdNaming />
+
+## 开始之前 \{#before-you-start\}
+
+<FlowInputPrerequisites />
+
+## 接收输入值 \{#receive-input-values\}
+
+输入值与流程中其他所有分析事件一样，通过同一个处理器传递，事件名称为 `flow_user_input`。在注册其他流程事件处理器的同时，注册 `onAnalytics`：
+
+```javascript showLineNumbers title="React Native"
+const unsubscribe = view.setEventHandlers({
+  onAnalytics(name, params) {
+    handleFlowInput(name, params);
+    return false; // keep the flow open
+  },
+});
+```
+
+`onAnalytics` 回调会传递流程中的所有分析事件，包括[页面浏览事件](react-native-flow-screen-views)。若只需筛选用户输入事件，可将 `name` 与 `flow_user_input` 进行比较。存储该值的参数取决于 `element_type`：
+
+| `element_type` | 存储值的参数 | JavaScript 类型 |
+|:---------------|:----------------------------|:--------------|
+| `text_input`, `email_input`, `number_input`, `phone_input` | `value` | `string` |
+| `date_picker`, `time_picker`, `date_time_picker` | `value` | `number`，Unix 时间（毫秒）。 |
+| `wheel_range_picker` | `value` | `number` |
+| `single_choice`, `multi_choice` | `item_ids`, `item_titles` | 字符串数组 |
+| `toggle` | `value` | `boolean` |
+
+[您将收到的内容](#what-you-receive) 部分列出了每个参数以及每个编辑工具元素所上报的内容。
+
+<FlowInputVerify />
+
+## 应用接收输入的时机 \{#when-your-app-receives-the-input\}
+
+<FlowInputTiming />
+
+## 您将收到的内容 \{#what-you-receive\}
+
+<FlowInputParams />
+
+## 事件示例 \{#event-examples\}
+
+以下示例展示了每个事件的可用属性，注释中提供了说明性的值。
+
+<Details>
+<summary>文本、邮箱、数字和手机号输入（点击展开）</summary>
+
+```javascript
+onAnalytics(name, params) {
+    name;                      // 'flow_user_input'
+    params.name;               // 'flow_user_input'
+    params.instanceId;         // 'scr_J260KU5q'
+    params.isCustomerEvent;    // true
+    params.isBackendEvent;     // false
+    params.element_id;         // 'email'
+    params.element_type;       // 'email_input'
+    params.value;              // 'jane@example.com'   (string)
+}
+```
+</Details>
+
+<Details>
+<summary>日期、时间和日期时间选择器（点击展开）</summary>
+
+```javascript
+onAnalytics(name, params) {
+    params.element_id;         // 'birthday'
+    params.element_type;       // 'date_picker'
+    params.value;              // 645408000000   (Unix milliseconds — 1990-06-15, local midnight)
+}
+```
+</Details>
+
+<Details>
+<summary>单选（点击展开）</summary>
+
+```javascript
+onAnalytics(name, params) {
+    params.element_id;         // 'experience'
+    params.element_type;       // 'single_choice'
+    params.item_ids;           // ['pro']
+    params.item_titles;        // ['I train professionally']
+}
+```
+</Details>
+
+<Details>
+<summary>多选（点击展开）</summary>
+
+```javascript
+onAnalytics(name, params) {
+    params.element_id;         // 'interests'
+    params.element_type;       // 'multi_choice'
+    params.item_ids;           // ['sports', 'music']
+    params.item_titles;        // ['Sports', 'Music']
+}
+```
+</Details>
+
+<Details>
+<summary>切换开关（点击展开）</summary>
+
+```javascript
+onAnalytics(name, params) {
+    params.element_id;         // 'reminders'
+    params.element_type;       // 'toggle'
+    params.value;              // true   (boolean)
+}
+```
+</Details>
+
+## 发送与限制条件 \{#delivery-and-limitations\}
+
+<FlowInputLimitations />
+
+将每个输入值在收到时即时存储，待流程关闭时一并发送完整数据。要捕获这一时刻，请在注册 `onAnalytics` 的同时注册 `onDisappeared` 处理器。无论用户是完成了整个流程还是中途关闭，该处理器都会在流程视图消失时触发。
+
+## 使用场景 \{#use-cases\}
+
+### 在您的后端注册用户 \{#register-users-on-your-backend\}
+
+收集用户的答案，待流程关闭后一次性发送，这样单次请求就能携带完整的数据。
+
+无论用户是完成流程还是中途退出，流程都会关闭。在调用后端之前，请先校验所需字段是否已填写。
+
+流程无法展示来自后端的错误信息。处理函数的返回值仅用于关闭流程视图，且运行中的流程无法接收来自应用的数据。如果注册失败（例如邮箱已被占用），请在流程关闭后通过您自己的 UI 展示错误提示。
+
+```javascript showLineNumbers title="React Native"
+const flowAnswers = {};
+
+const unsubscribe = view.setEventHandlers({
+  onAnalytics(name, params) {
+    if (name === 'flow_user_input' && typeof params.value === 'string') {
+      flowAnswers[params.element_id] = params.value;
+    }
+    return false;
+  },
+  onDisappeared() {
+    if (flowAnswers.email) {
+      // Send flowAnswers to your backend here to create the account.
+    }
+    return false;
+  },
+});
+```
+
+### 使用数据丰富用户画像 \{#enrich-user-profiles-with-data\}
+
+为了将用户输入的信息关联到其用户画像，并避免重复询问相同的内容，请在数据输入时[更新用户画像](react-native-setting-user-attributes)。
+
+例如，如果你的流程中有一个 Element ID 为 `name` 的文本输入框和一个 Element ID 为 `email` 的邮箱输入框：
+
+```javascript showLineNumbers title="React Native"
+function handleFlowInput(name, params) {
+  if (name !== 'flow_user_input') return;
+  if (typeof params.value !== 'string') return;
+
+  const profileParams = {};
+
+  switch (params.element_id) {
+    case 'name':
+      profileParams.firstName = params.value;
+      break;
+    case 'email':
+      profileParams.email = params.value;
+      break;
+    default:
+      return;
+  }
+
+  adapty.updateProfile(profileParams).catch(error => {
+    // handle the error
+  });
+}
+```
+
+### 自定义后续显示的流程 \{#customize-flows-shown-later\}
+
+测验答案也可以决定用户在后续[版位](placements)中看到的内容——可以是不同的流程，也可以是其中不同的付费墙。
+
+例如，在用户引导流程中询问用户的运动经验，然后为每组用户展示包含不同产品和文案的专属流程。
+
+1. 在流程中添加[测验](onboarding-quizzes)。将[可选组](flow-selectable-elements)的 Group ID 设为 `experience`，并为每个选项设置有意义的 Element ID。
+2. 处理答案并为用户[设置自定义属性](react-native-setting-user-attributes)。
+
+```javascript showLineNumbers title="React Native"
+function handleFlowInput(name, params) {
+  if (name !== 'flow_user_input') return;
+  if (params.element_id !== 'experience') return;
+
+  adapty
+    .updateProfile({
+      // Set the custom attribute 'experience' to the option the user selected
+      // (beginner, amateur, or pro).
+      codableCustomAttributes: { experience: params.item_ids[0] },
+    })
+    .catch(error => {
+      // handle the error
+    });
+}
+```
+
+3. 为每个自定义属性值[创建一个市场细分](segments)。
+4. 创建一个[版位](placements)，并为每个市场细分添加一个[目标受众](audience)。
+5. 在你的应用中[展示该版位的流程](react-native-present-paywalls)。

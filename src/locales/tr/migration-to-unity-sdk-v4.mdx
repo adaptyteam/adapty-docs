@@ -1,14 +1,20 @@
 ---
-title: "Adapty Unity SDK'yı v4.0'a Geçirin"
-description: "Adapty Unity SDK v4.0 (beta) sürümüne geçiş yapın: paywall API'lerini flow API'leriyle değiştirin; hem Flow Builder hem de Paywall Builder ile uyumludur."
-metadataTitle: "Adapty Unity SDK v4.0'a (beta) Geçiş | Adapty Dokümanları"
+title: "Adapty Unity SDK'yı v4.1'e Taşıyın"
+description: "Adapty Unity SDK v4.1'e geçiş: paywall API'lerini flow API'leriyle değiştirin, yeniden adlandırılan attribution API'lerini benimseyin, Adapty Attribution'ı açıkça etkinleştirin ve yedek dosyanızı yeniden indirin."
+metadataTitle: "Adapty Unity SDK v4.1'e Geçiş | Adapty Dokümanları"
 ---
 
-Adapty Unity SDK 4.0 (beta), flow'ları tanıtır ve paywall API'lerini buna göre yeniden adlandırır. Yeni API'ler hem yeni Flow Builder hem de mevcut Paywall Builder ile çalışır; Adapty Kontrol Paneli tarafında herhangi bir kurulum değişikliği gerekmez.
+Adapty Unity SDK 4.1, 4.x serisinin ilk kararlı sürümüdür — 4.0 yalnızca beta olarak yayımlandığından, 3.x kullanıyorsanız doğrudan 4.1'e geçin. Bu kılavuz, 4.0'da sunulan flow'ları ve bunların üzerine gelen 4.1 değişikliklerinin tamamını kapsamaktadır.
+
+4.x serisi, flow'ları tanıtıyor ve paywall API'larını buna göre yeniden adlandırıyor. Yeni API'lar flow'larla çalıştığı gibi, eski builder'dan gelen paywall'larla da çalışıyor — Adapty Kontrol Paneli tarafında herhangi bir kurulum değişikliği gerekmiyor. Bunlara ek olarak, 4.1 harici attribution API'larını yeniden adlandırıyor, Adapty Attribution'ı opt-in hale getiriyor, zorunlu bir listener metodu ekliyor ve yedek dosya formatını değiştiriyor.
+
+:::note
+4.0 beta'dan mı geliyorsunuz? Sabitlenmiş beta etiketini [4.1.0 kurulumu](#installation) ile değiştirin; ardından yalnızca dört bölüm geçerlidir: [yeni listener metodu](#new-required-method-onreceivepromotedpurchase), [yeniden adlandırılmış harici attribution API'leri](#renamed-external-attribution-apis), [Adapty Attribution varsayılan olarak devre dışı](#adapty-attribution-is-disabled-by-default) ve [yedek dosyalar](#fallback-files).
+:::
 
 ## Hızlı referans \{#quick-reference\}
 
-| v3 | v4 |
+| v3 | v4.1 |
 |---|---|
 | `Adapty.GetPaywall(placementId, locale, ...)` | `Adapty.GetFlow(placementId, ...)` |
 | `Adapty.GetPaywallForDefaultAudience(placementId, locale, ...)` | `Adapty.GetFlowForDefaultAudience(placementId, ...)` |
@@ -21,32 +27,37 @@ Adapty Unity SDK 4.0 (beta), flow'ları tanıtır ve paywall API'lerini buna gö
 | `AdaptyUI.PresentPaywallView(view, ...)` / `DismissPaywallView(view, ...)` | `AdaptyUI.PresentFlowView(view, ...)` / `DismissFlowView(view, ...)` |
 | `Adapty.SetPaywallsEventsListener(listener)` | `Adapty.SetFlowsEventsListener(listener)` |
 | `AdaptyPaywallsEventsListener` | `IAdaptyFlowsEventsListener` |
-| `AdaptyEventListener` | `IAdaptyEventListener` |
+| `AdaptyEventListener` | `IAdaptyEventListener`, yeni zorunlu `OnReceivePromotedPurchase` metoduyla birlikte |
 | `AdaptyOnboardingsEventsListener` | `IAdaptyOnboardingsEventsListener` |
 | `PaywallViewDidPerformAction`, `PaywallViewDidAppear` ve diğer `PaywallView...` geri çağırmaları | `FlowViewDidPerformAction`, `FlowViewDidAppear` ve diğer `FlowView...` geri çağırmaları |
 | `PaywallViewDidFailRendering` | `FlowViewDidReceiveError` |
+| `string` kaynaklı `Adapty.UpdateAttribution(data, source, ...)` | `AdaptyExternalAttributionProvider` kullanan `Adapty.UpdateExternalAttribution(jsonString, provider, ...)` |
+| `IReadOnlyList<string>` olarak `AdaptyProfile.AppliedAttributionSources` | `IReadOnlyList<AdaptyExternalAttributionProvider>` olarak `AdaptyProfile.AppliedExternalAttributionProviders` |
+| Adapty Attribution otomatik olarak etkin | varsayılan olarak devre dışı — `Builder.SetAdaptyAttributionEnabled(true)` ile etkinleştirin |
+| 3.x için indirilen yedek dosya | yeni yedek dosya formatı — dosyayı yeniden indirin |
 | `Adapty.SetFallbackPaywalls(...)` (v3'te kullanımdan kaldırıldı) | kaldırıldı — `Adapty.SetFallback(fileName, ...)` kullanın |
 | `Builder.SetIDFACollectionDisabled(...)` (v3'te kullanımdan kaldırıldı) | kaldırıldı — `Builder.SetAppleIDFACollectionDisabled(...)` kullanın |
-| `paywall.Products` (`AdaptyProductReference` listesi) | kaldırıldı — `ProductIdentifiers` veya `VendorProductIds` kullanın ya da tam ürünler için `GetPaywallProducts(flow)` çağırın |
-| `AdaptyProductReference` | genel tür olarak kaldırıldı — bkz. [Veri modeli](#data-model) |
+| `paywall.Products` (`AdaptyProductReference` listesi) | kaldırıldı — `ProductIdentifiers` veya `VendorProductIds` kullanın ya da tam ürünler için `GetPaywallProducts(flow)` çağrısı yapın |
+| `AdaptyProductReference` | herkese açık tür olarak kaldırıldı — bkz. [Veri modeli](#data-model) |
 | `paywall.RemoteConfigString` | kaldırıldı — `flow.RemoteConfig?.Data` kullanın |
 
-`AdaptyPaywallProduct` adını korur — ürünler hâlâ bir flow'a aittir ve `GetPaywallProducts` de adını korur, artık bir `AdaptyFlow` alır. `GetFlow` ve `GetFlowForDefaultAudience` metodları artık `locale` parametresi almaz. Satın alma ve profil API'leri (`MakePurchase`, `RestorePurchases`, `GetProfile`, `Identify`, `UpdateProfile`) ve `SetFallback` aracılığıyla yedekler değişmeden kalmıştır. Onboarding metodları hâlâ çalışır ancak kullanım dışı bırakılmıştır — bkz. [Onboarding API kullanım dışı bırakma](#onboarding-api-deprecation). Bazı varsayılan davranışlar değişti — bkz. [Varsayılan davranış değişiklikleri](#default-behavior-changes).
+`AdaptyPaywallProduct` adını korur — ürünler hâlâ bir flow'a aittir ve `GetPaywallProducts` da adını korur, artık bir `AdaptyFlow` alır. `GetFlow` ve `GetFlowForDefaultAudience` metodları artık `locale` parametresi almaz. Satın alma ve profil API'leri (`MakePurchase`, `RestorePurchases`, `GetProfile`, `Identify`, `UpdateProfile`) değişmemiştir. `SetFallback` imzasını korur, ancak okuduğu dosyanın yeniden indirilmesi gerekir — bkz. [Yedek dosyalar](#fallback-files). Onboarding metodları hâlâ çalışır ancak kullanımdan kaldırılmıştır — bkz. [Onboarding API kullanımdan kaldırma](#onboarding-api-deprecation). Bazı varsayılan davranışlar değişti — bkz. [Varsayılan davranış değişiklikleri](#default-behavior-changes).
 
 ## Kurulum \{#installation\}
 
-v4.0 bir ön sürüm olduğundan, tam beta etiketini sabitleyin. Unity Package Manager üzerinden kurmak için Git URL'sine etiketi ekleyin:
+SDK 4.1'i Unity Package Manager aracılığıyla kurmak için Git URL'sine versiyon etiketini ekleyin:
 
 ```
-https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unity-sdk#4.0.0-beta.1
+https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unity-sdk#4.1.0
 ```
 
-Unity paketi üzerinden kurulum yapıyorsanız, `adapty-unity-plugin-4.0.0-beta.1.unitypackage` dosyasını [4.0.0-beta.1 sürümünden](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.0.0-beta.1) indirin. Tam kurulum için [Adapty SDK'yı Yükle](sdk-installation-unity#install-adapty-sdk) bölümüne bakın.
+Unity paketi üzerinden kurulum yapıyorsanız, `adapty-unity-plugin-4.1.0.unitypackage` dosyasını [4.1.0 sürümünden](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.1.0) indirin. Tam kurulum için bkz. [Adapty SDK'yı Yükle](sdk-installation-unity#install-adapty-sdk).
 
-v4 ile birlikte iki derleme kurulumu değişikliği geliyor:
+4.x ile birlikte üç derleme kurulumu değişikliği geldi:
 
-- **iOS bağımlılıkları Swift Package Manager'a geçiyor.** Yerel Adapty iOS SDK 4.0, bir CocoaPods pod'u yerine uzak bir Swift paketi olarak tanımlanıyor. [External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver#getting-started)'ı **1.2.188 veya üstü** sürüme güncelleyin — daha eski sürümler Swift Package Manager bağımlılıklarını desteklemez. CocoaPods adımları (`iOS Resolver -> Install Cocoapods`, `Unity-iPhone.xcworkspace`'i açma) artık geçerli değildir.
-- **iOS deployment target 15.0 veya üzeri olmalıdır.** Unity Editor'daki yeni bir build doğrulayıcı, target daha düşükse iOS build'ini durdurur.
+- **iOS bağımlılıkları Swift Package Manager'a geçiyor.** Yerel Adapty iOS SDK'sı, bir CocoaPods pod'u yerine uzak bir Swift paketi olarak tanımlanıyor. [External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver#getting-started)'ı **1.2.188 veya üzerine** güncelleyin — eski sürümler Swift Package Manager bağımlılıklarını desteklemiyor. CocoaPods adımları (`iOS Resolver -> Install Cocoapods`, `Unity-iPhone.xcworkspace`'i açma) artık geçerli değil. iOS için derleme yapmak artık **Xcode 26 veya üzerini** gerektiriyor; Swift paketi, Swift tools 6.2 ile derleniyor.
+- **iOS deployment target 15.0 veya üzeri olmalıdır.** Unity Editor'daki yeni bir derleme doğrulayıcısı, hedef daha düşükse iOS derlemesini durduruyor.
+- **Android derlemesi API level 35 veya üzeriyle derlenmek zorundadır.** Adapty UI kütüphanesi, bunu gerektiren Jetpack Compose 1.8'i kullanıyor.
 
 Altta yatan yerel Adapty SDK'ları her iki platformda da otomatik olarak 4.x sürümüne güncellenir; başka bir derleme değişikliğine gerek yoktur.
 
@@ -54,7 +65,7 @@ Altta yatan yerel Adapty SDK'ları her iki platformda da otomatik olarak 4.x sü
 
 ### GetPaywall → GetFlow
 
-Döndürülen tür `AdaptyPaywall`'dan `AdaptyFlow`'a değişir ve `locale` parametresi kaldırılır — bir flow render ettiğinizde, locale otomatik olarak belirlenir; özel paywalllar için tüm locale'ler `flow.RemoteConfigs` içinde döndürülür:
+Döndürülen tür `AdaptyPaywall` yerine `AdaptyFlow` olarak değişir ve `locale` parametresi flow görünümü parametrelerine taşınır (`AdaptyUICreateFlowViewParameters.SetLocale`) — bkz. [Locale eşleştirmesi tam eşleşmedir](#locale-matching-is-exact); özel paywall'lar için tüm locale'ler `flow.RemoteConfigs` içinde döndürülür:
 
 ```diff showLineNumbers
 - Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
@@ -74,6 +85,19 @@ Döndürülen tür `AdaptyPaywall`'dan `AdaptyFlow`'a değişir ve `locale` para
 - Adapty.GetPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", (paywall, error) => { /* ... */ });
 + Adapty.GetFlowForDefaultAudience("YOUR_PLACEMENT_ID", (flow, error) => { /* ... */ });
 ```
+
+### Yerel ayar eşleşmesi tam olmalıdır \{#locale-matching-is-exact\}
+
+:::warning
+v3'te Adapty sunucusu yerelleştirmeyi seçer ve dile geri dönebilirdi: paywall'da `pt-br` yoksa `pt-br` isteği `pt` yerelleştirmesini alırdı. v4'te SDK, yerelleştirmeyi cihazda seçer ve yalnızca tam eşleşme kullanır. Hiçbir yerelleştirmeyle eşleşmeyen bir kod, hata veya uyarı vermeden flow'u varsayılan yerelleştirmesiyle gösterir.
+:::
+
+Yükseltme yapmadan önce, uygulamanızın ilettiği yerel ayar kodlarını kontrol edin:
+
+- Geçirdiğiniz her bölgesel kod için, o koda sahip bir yerelleştirme ekleyin — örneğin `pt`'ye ek olarak `pt-BR` — ya da kodu flow'un sahip olduğu bir kodla eşleştirin.
+- Kodları yayımlanmış flow'un sahip olduğu şekilde tam olarak geçirin: **Select languages** alanındaki `pt-br` yerine `pt-BR`. Eski Paywall Builder'dan gelen paywall'lar için küçük harfli kodlar kullanın, örneğin `pt-br`. Sistem locale tanımlayıcısını olduğu gibi geçirmeyin: İngilizce (Amerika Birleşik Devletleri) olarak ayarlanmış bir cihazda `CultureInfo.CurrentCulture.Name` değeri `en-US` döndürür; bu, yalnızca `en` içeren bir flow'u kaçırır.
+
+[Localizations ve yerel ayar kodları](unity-localizations-and-locale-codes#flows-and-paywalls) bölümüne bakın.
 
 ### GetPaywallProducts(paywall) → GetPaywallProducts(flow)
 
@@ -122,20 +146,24 @@ Döndürülen tür `AdaptyPaywall`'dan `AdaptyFlow`'a değişir ve `locale` para
 
 ### LogShowPaywall → LogShowFlow
 
-`LogShowPaywall`, `LogShowFlow` olarak yeniden adlandırıldı ve artık bir `AdaptyFlow` alıyor. Olay hâlâ aynı varyasyona karşı kaydedildiğinden, mevcut dönüşüm hunisi ve A/B testi metrikleri kontrol panelinde herhangi bir değişiklik yapılmadan çalışmaya devam eder.
+`LogShowPaywall`, `LogShowFlow` olarak yeniden adlandırıldı ve artık bir `AdaptyFlow` alıyor. Etkinlik hâlâ aynı varyasyona karşı kaydedildiğinden, mevcut huni ve A/B testi metrikleri kontrol panelinde herhangi bir değişiklik yapılmadan çalışmaya devam eder.
 
 ```diff showLineNumbers
 - Adapty.LogShowPaywall(paywall, (error) => { /* ... */ });
 + Adapty.LogShowFlow(flow, (error) => { /* ... */ });
 ```
 
-v3'te olduğu gibi, [Flow Builder](adapty-flow-builder) veya [Paywall Builder](adapty-paywall-builder) tarafından oluşturulan flow'ları ya da paywall'ları görüntülerken bu metodu çağırmanıza gerek yoktur — Adapty bu görüntülemeleri otomatik olarak takip eder.
+v3'te olduğu gibi, Adapty tarafından render edilen flow'ları veya paywallları görüntülerken bu metodu çağırmanıza gerek yoktur — Adapty bu görüntülemeleri otomatik olarak takip eder.
 
 ## Flow'ları Görüntüleme \{#displaying-flows\}
 
 ### CreatePaywallView → CreateFlowView
 
 Factory metodunu yeniden adlandırın ve `AdaptyFlow`'u iletin. Döndürülen view türü `AdaptyUIPaywallView`'dan `AdaptyUIFlowView`'a yeniden adlandırıldı, ancak metodları (`Present`, `Dismiss`) değişmedi ve isteğe bağlı parametreler nesnesi aynı alanları (`LoadTimeout`, `PreloadProducts`, `CustomTags`, `CustomTimers`, `CustomAssets`, `ProductPurchaseParameters`) yeni `AdaptyUICreateFlowViewParameters` adıyla korur, ayrıca iki yeni alan eklenmiştir — `Locale` ve `EnableSafeAreaPaddings`:
+
+:::note
+`CustomTimers` hâlâ mevcut, ancak yalnızca eski Paywall Builder paywalllarını etkiler. Bir flow'un [geri sayım sayacı](flow-timer), Flow & Paywall Builder'da belirlenen davranışa göre çalışır; dolayısıyla bir flow, buraya ilettiğiniz değeri yok sayar.
+:::
 
 ```diff showLineNumbers
 - AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
@@ -148,7 +176,7 @@ Factory metodunu yeniden adlandırın ve `AdaptyFlow`'u iletin. Döndürülen vi
   });
 ```
 
-`CreateFlowView`, flow'da yapılandırılmış bir görünüm yoksa hata döndürür — bu, v3'teki `HasViewConfiguration` kontrolünün yerini alır:
+`CreateFlowView`, flow için görünüm yapılandırılmamışsa hata döndürür — bu, v3'teki `HasViewConfiguration` kontrolünün yerini alır:
 
 ```diff showLineNumbers
 - if (paywall.HasViewConfiguration) {
@@ -164,7 +192,7 @@ Factory metodunu yeniden adlandırın ve `AdaptyFlow`'u iletin. Döndürülen vi
 ```
 
 :::note
-Flow view tek kullanımlıktır: `Dismiss` çağrıldıktan sonra view yok edilir; flow'u tekrar göstermek için `CreateFlowView` fonksiyonunu tekrar çağırmanız gerekir.
+Bir flow view tek kullanımlıktır: `Dismiss` çağrısının ardından view yok edilir; flow'u tekrar göstermek için `CreateFlowView`'ı yeniden çağırmanız gerekir.
 :::
 
 ### Android güvenli alan dolguları \{#android-safe-area-paddings\}
@@ -210,25 +238,99 @@ Bir callback yeniden adlandırıldı: `PaywallViewDidFailRendering`, `FlowViewDi
 
 Tüm callback listesi için [Flow & paywall olaylarını yönetme](unity-handling-events) bölümüne bakın.
 
+### Yeni zorunlu metod: OnReceivePromotedPurchase \{#new-required-method-onreceivepromotedinappurchase\}
+
+SDK 4.1 sürümünden itibaren `IAdaptyEventListener` arayüzüne yeni bir metod eklendiğinden, bunu uygulayan her sınıf aşağıdakini ekleyene kadar derlenmez:
+
+```csharp showLineNumbers
+public void OnReceivePromotedPurchase(AdaptyPromotedProduct product) {
+    // The user tapped one of your in-app purchases on your App Store product page.
+    // Complete the purchase through Adapty:
+    Adapty.MakePromotedPurchase(product, (result, error) => { /* ... */ });
+}
+```
+
+Bu metot, App Store'da tanıtılan uygulama içi satın almalar için kullanılır ve Android'de hiçbir zaman çağrılmaz. Gövdeyi boş bırakmayın: iOS 16.4 ve sonraki sürümlerde SDK, satın almayı burada iletir ve tamamlamanızı bekler; boş bir gövde, kullanıcının başlattığı bir satın almayı düşürür. Önceki sürümlerde bu tür satın almalar otomatik olarak tamamlanıyordu. Bkz. [App Store'dan tanıtılan uygulama içi satın almalar](unity-making-purchases#in-app-purchases-from-the-app-store).
+
 ### Yeni API'lar
 
-- `Adapty.SetObserverModeResolver(...)` ve `IAdaptyUIObserverModeResolver` — SDK [Observer mode](implement-observer-mode-unity)'da çalışırken flow'lardan başlatılan satın alma ve geri yükleme işlemlerini yönetir. Daha önce bu özellik yalnızca native iOS ve Android SDK'larında mevcuttu. Bkz. [Flow'ları Observer mode'da sunma](unity-present-flows-in-observer-mode).
-- `Adapty.SetSystemRequestsHandler(...)` ve `IAdaptyUISystemRequestsHandler` — bir flow'dan gelen sistem istekleri için ayrılmıştır: İşletim sistemi izin istemleri (`FlowViewDidAskPermission`) ve uygulama değerlendirme istekleri (`FlowViewDidRequestAppReview`). Flow'lar henüz bu istekleri tetiklemediğinden bir handler kaydetmenize gerek yoktur.
-- `AdaptyUICreateFlowViewParameters.Locale` (`SetLocale` ile ayarlanır) — bir flow veya paywall'ı, flow'un varsayılanı yerine belirli bir [Builder yerelleştirmesiyle](add-paywall-locale-in-adapty-paywall-builder) oluşturur. Bir flow, görünümü oluşturulduğunda yerelleştirilir; bu nedenle yerelleştirmeyi seçebileceğiniz tek yer burasıdır ve oluşturulan görünüm, yapılandırıldığı yerelleştirmeyi `view.Locale` aracılığıyla raporlar. Bkz. [Yerelleştirmeleri ve yerel ayar kodlarını kullanma](unity-localizations-and-locale-codes).
-- `IAdaptyFlowsEventsListener` üzerindeki yeni `FlowViewDidReceiveAnalyticEvent` callback'i, bir flow'dan gelen analitik olaylarını raporlar; kullanıcının açtığı her ekran için ekran görüntüleme olayıyla başlar. Bkz. [Flow ekran görüntülemelerini izleme](unity-flow-screen-views).
-- `AdaptyUI.OpenUrl(url, openIn, ...)` ve `AdaptyUI.RequestAppReview(...)` — `open_url` eylemleri ve uygulama değerlendirme isteklerinin arkasındaki native işleme. Varsayılan URL davranışını korumak için `FlowViewDidPerformAction` içinden `OpenUrl`'i çağırın; `RequestAppReview` ise henüz flow'ların tetiklemediği varsayılan uygulama değerlendirme istemini destekler.
+- `Adapty.SetObserverModeResolver(...)` ile bir `IAdaptyUIObserverModeResolver` — SDK [Observer mode](implement-observer-mode-unity) modunda çalışırken flow'lardan başlatılan satın alma ve geri yükleme işlemlerini yönetir. Daha önce bu yalnızca yerel iOS ve Android SDK'larında mevcuttu. Bkz. [Flow'ları Observer mode'da sunma](unity-present-flows-in-observer-mode).
+- `Adapty.SetSystemRequestsHandler(...)` ile bir `IAdaptyUISystemRequestsHandler` — bir flow'dan gelen sistem isteklerini yanıtlar: işletim sistemi izin istemleri (`FlowViewDidAskPermission`) ve uygulama değerlendirme istekleri (`FlowViewDidRequestAppReview`). Flow'larınızda **Request permission** eylemi kullanılıyorsa bir tane kaydedin: bkz. [Flow'larda izin isteklerini yönetme](unity-handle-permissions).
+- `AdaptyUICreateFlowViewParameters.Locale` (`SetLocale` ile ayarlanır) — bir flow veya paywall'ı belirli bir [Builder yerelleştirmesiyle](add-paywall-locale-in-adapty-paywall-builder) render eder. Görünümü oluşturduğunuzda SDK, flow'un tüm yerelleştirmelerini yükler ve `Locale` gösterilecek olanı seçer. `Locale` belirtilmezse görünüm `en` dilinde, ya da flow'da `en` yoksa varsayılan yerelleştirmede render edilir. Oluşturulan görünüm, hangi yerelleştirmeyle oluşturulduğunu `view.Locale` aracılığıyla raporlar. Bkz. [Yerelleştirmeleri ve yerel ayar kodlarını kullanma](unity-localizations-and-locale-codes).
+- `IAdaptyFlowsEventsListener` üzerindeki yeni `FlowViewDidReceiveAnalyticEvent` callback'i, bir flow'dan gelen analitik olayları raporlar; kullanıcının açtığı her ekran için ekran görüntüleme olayıyla başlar. Bkz. [Flow ekran görüntülemelerini takip etme](unity-flow-screen-views).
+- `AdaptyUI.OpenUrl(url, openIn, ...)` ve `AdaptyUI.RequestAppReview(...)` — `open_url` eylemleri ve uygulama değerlendirme isteklerinin arkasındaki yerel işleme mekanizması. Varsayılan URL davranışını korumak için `FlowViewDidPerformAction` içinden `OpenUrl` çağırın; `RequestAppReview` ise varsayılan uygulama değerlendirme istemine destek sağlar; flow'lar bu istemi henüz tetiklememektedir.
+
+## Yeniden adlandırılan harici attribution API'leri \{#renamed-external-attribution-apis\}
+
+SDK 4.1 sürümünden itibaren, harici bir sağlayıcıdan (Adjust, AppsFlyer, Branch, Tenjin veya özel bir sağlayıcı) attribution verisi aktarmak için kullanılan API'ler, yerel SDK'larla uyumlu olacak şekilde yeniden adlandırıldı; sağlayıcı artık bir string yerine bir tür olarak tanımlanıyor. Eski çağrı noktaları için herhangi bir deprecated takma ad bulunmuyor, bu nedenle güncelleme yapılmadığı takdirde mevcut çağrılar derlenmez:
+
+| 4.1 Öncesi | 4.1 |
+|---|---|
+| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(jsonString, provider, ...)` |
+| `string` olarak `source` | `AdaptyExternalAttributionProvider` olarak `provider` |
+| `IReadOnlyList<string>` olarak `AdaptyProfile.AppliedAttributionSources` | `IReadOnlyList<AdaptyExternalAttributionProvider>` olarak `AdaptyProfile.AppliedExternalAttributionProviders` |
+
+Yalnızca metodu yeniden adlandırmak yeterli değildir — aynı düzenlemede provider argümanını da değiştirin:
+
+```diff showLineNumbers
+- Adapty.UpdateAttribution(attributionJsonString, "adjust", (error) => { /* ... */ });
++ Adapty.UpdateExternalAttribution(attributionJsonString, AdaptyExternalAttributionProvider.Adjust, (error) => { /* ... */ });
+```
+
+`AdaptyExternalAttributionProvider`, backend'in sağlayıcıyı tanımak için kullandığı tanımlayıcıyı taşır; altı paylaşımlı örneği vardır: `AppleAds` (`apple_search_ads`), `Adjust`, `Appsflyer`, `Branch`, `Tenjin` ve `Custom`. Bu SDK sürümünden sonra Adapty'nin eklediği bir sağlayıcı için, tanımlayıcısından birini oluşturun — `new AdaptyExternalAttributionProvider("your_provider")` — ve backend'e değiştirilmeden ulaşır. Çevredeki boşluklar kırpılır.
+
+Attribution verisi **serileştirilmiş bir JSON dizesi** olarak girilir. Veriyi bir sözlük olarak tutuyorsanız, önce serileştirin:
+
+```csharp showLineNumbers
+var attributionJsonString = Newtonsoft.Json.JsonConvert.SerializeObject(attribution);
+```
+
+Profil tarafında, uygulanan sağlayıcıları yeni tür aracılığıyla okuyun:
+
+```diff showLineNumbers
+- if (profile.AppliedAttributionSources.Contains("apple_search_ads")) {
++ if (profile.AppliedExternalAttributionProviders.Contains(AdaptyExternalAttributionProvider.AppleAds)) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+## Adapty Attribution varsayılan olarak devre dışıdır \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+[Adapty Attribution](user-acquisition) kullanıyorsanız ve opt-in yapmadan SDK 4.1'e güncelleme yaparsanız, sessizce bozulur — kurulumlar kayıt edilmeyi durdurur ve sizi uyaran hiçbir şey olmaz.
+:::
+
+Önceki sürümlerde SDK, [Adapty Attribution](user-acquisition) için kurulumları otomatik olarak kaydediyordu. SDK 4.1 sürümünden itibaren bu özellik varsayılan olarak kapalıdır: SDK kurulumları kayıt etmez, `OnInstallationDetailsSuccess` ve `OnInstallationDetailsFail` dinleyici geri çağrıları hiçbir zaman tetiklenmez ve `GetCurrentInstallationStatus`, `NotAvailable` durumunu döndürür.
+
+Adapty Attribution kullanıyorsanız, SDK'yı etkinleştirirken bunu etkinleştirin:
+
+```csharp showLineNumbers
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetAdaptyAttributionEnabled(true);
+```
+
+Adapty Attribution kullanmıyorsanız herhangi bir değişiklik yapmanıza gerek yoktur.
+
+## Yedek dosyalar \{#fallback-files\}
+
+[Yedek dosya](unity-use-fallback-paywalls) formatı SDK 4.1'de değişti. iOS ve Android yedek dosyalarını **[Placements](https://app.adapty.io/placements)** > **Fallbacks** bölümünden tekrar indirin ve `Assets/StreamingAssets` klasöründekilerin yerine koyun; daha önceki bir sürüm için indirmiş olsanız bile.
+
+:::warning
+Bu adım herhangi bir derleme hatası oluşturmaz. Atlarsanız `SetFallback`, `DecodingFailed` (`adapty_code: 2006`) hatası verir ve tüm placement'lar yedek paywall'ını kaybeder.
+:::
 
 ## Varsayılan davranış değişiklikleri \{#default-behavior-changes\}
 
 Bu değişiklikler derleme hatası oluşturmaz, dolayısıyla bunları çalışma zamanında test edin:
 
-- **Satın alma tamamlama**: v3'te, başarılı bir satın almanın ardından görünüm otomatik olarak kapatılıyordu. v4'te, **bir flow satın alma veya hata sonrasında siz kapatana kadar açık kalır** — SDK herhangi bir varsayılan davranış uygulamaz. Kullanıcı erişim kazandıktan sonra `FlowViewDidFinishPurchase` içinde `view.Dismiss(...)` metodunu kendiniz çağırın.
-- **Android sistem geri tuşu**: Sistem geri tuşu (veya geri kaydırma hareketi), `FlowViewDidPerformAction`'a `SystemBack` aksiyonu olarak iletilir ve artık flow'u kendiliğinden kapatmaz — bu durum iOS ile tutarlıdır; iOS'ta bir flow sistem hareketi ile kapatılamaz. Kullanıcılara açık bir çıkış yolu sunun (bir **Close** düğmesi veya `on_device_back` aksiyonu) ya da aksiyonu işlerken görünümü kendiniz kapatın.
-- **Görünümler tek kullanımlıktır**: `Dismiss` çağrısından sonra görünüm yok edilir. Flow'u tekrar göstermek için `CreateFlowView` metodunu yeniden çağırın.
-- **Observer mode işlemleri**: `ReportTransaction` artık başarı durumunda kod çözme hatası döndürmez — v3'te başarı yanıtı hatalı şekilde ayrıştırılıyordu, bu yüzden başarılı bir rapor her zaman hatayla tamamlanıyordu.
+- **Flow yerelleştirmesi**: Bölgesel bir yerel ayar kodu artık kendi diline geri dönmez — `pt-br`, `pt` yerelleştirmesini almaz. Tam eşleşme bulunamayan bir kod, flow'u varsayılan yerelleştirmesiyle gösterir. Bkz. [Yerel ayar eşleştirmesi birebir yapılır](#locale-matching-is-exact).
+- **Satın alma tamamlama**: v3'te başarılı bir satın almanın ardından görünüm otomatik olarak kapatılıyordu. v4'te **bir flow, satın alma veya hata sonrasında siz kapatana kadar açık kalır** — SDK varsayılan bir davranış uygulamaz. Kullanıcı erişim kazandıktan sonra `FlowViewDidFinishPurchase` içinde `view.Dismiss(...)` metodunu kendiniz çağırın.
+- **Android sistem geri tuşu**: Sistem geri tuşu (veya geri hareketi) `FlowViewDidPerformAction`'a `SystemBack` eylemi olarak iletilir ve flow'u kendiliğinden kapatmaz — bu, iOS davranışıyla aynıdır (iOS'ta bir flow sistem hareketiyle kapatılamaz). Kullanıcılara açık bir çıkış yolu sunun (bir **Close** düğmesi veya `on_device_back` eylemi) ya da eylemi işlerken görünümü kendiniz kapatın.
+- **Görünümler tek kullanımlıktır**: `Dismiss` çağrısının ardından görünüm yok edilir. Flow'u tekrar göstermek için `CreateFlowView` metodunu yeniden çağırın.
+- **Observer mode işlemleri**: `ReportTransaction` artık başarılı durumda bir çözümleme hatası döndürmez — v3'te başarı yanıtı hatalı ayrıştırılıyordu, bu yüzden başarılı bir raporlama her zaman hatayla tamamlanıyordu.
 
 ## Onboarding API'sinin kullanımdan kaldırılması \{#onboarding-api-deprecation\}
 
-Eski onboarding API'si, v4.0'da [Flow Builder](adapty-flow-builder) lehine kullanımdan kaldırılmıştır. Hâlâ çalışmaya devam etmektedir ancak gelecekteki bir sürümde kaldırılacaktır; bu nedenle onboarding'lerinizi Flow Builder'a geçirmek için plan yapın.
+Eski onboarding API'si, v4'te [Flow & Paywall Builder](adapty-flow-builder) lehine kullanımdan kaldırılmıştır. Hâlâ çalışmaya devam etmektedir, ancak gelecekteki bir sürümde kaldırılacaktır; bu nedenle onboardinglarınızı Flow & Paywall Builder'a taşımayı planlayın.
 
 Kullanımdan kaldırılan semboller: `GetOnboarding`, `GetOnboardingForDefaultAudience`, `AdaptyUI.CreateOnboardingView`, `AdaptyUI.PresentOnboardingView`, `AdaptyUI.DismissOnboardingView` ve `Adapty.SetOnboardingsEventsListener`.

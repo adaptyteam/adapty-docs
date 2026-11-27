@@ -1,0 +1,216 @@
+---
+title: "SearchキャンペーンとPerformance Maxキャンペーン"
+description: "iOSアプリ、Androidアプリ、またはウェブファネル向けにGoogle Ads SearchキャンペーンとPerformance Maxキャンペーンを設定します。Adaptyが送信するトライアルや購入イベントをもとに、Googleがキャンペーンを最適化します。"
+metadataTitle: "Google AdsのSearchキャンペーンとPerformance Maxキャンペーン | Adapty ドキュメント"
+---
+
+このガイドは、次のGoogle Ads設定を対象としています。
+
+- **宣伝するもの**: App Store の iOS アプリ、Google Play の Android アプリ、またはウェブファネル。
+- **キャンペーンタイプ**:
+  - **Search**: Google 検索結果に広告を表示します。アプリまたはウェブファネルに使用します。
+  - **Performance Max**: Search、YouTube、Gmail など、Google のすべてのチャネルに広告を表示します。ウェブファネルに使用します。
+
+Search キャンペーンでは Android のみをターゲットに設定できないため、Android アプリの広告は iOS ユーザーにも配信されます。Android ユーザーのみにリーチするには、[Android App キャンペーン](google-ads-app-campaigns)を使用してください。
+
+## 仕組み \{#how-it-works\}
+
+キャンペーンを Adapty Attribution に接続すると、次のことが行われます：
+
+- Adapty からトライアルおよび購入イベントが Google に送信されます。
+- Adapty からの情報をもとに、Google はトライアルを開始したりサブスクリプションを購入したりする可能性が高いユーザーに入札します。
+- Adapty Attribution では、Google Ads から取得した広告費用をもとに、各キャンペーンの収益と ROAS を確認できます。検索キャンペーンの場合、広告グループ、広告、キーワードごとにこのデータを確認できます。
+
+このガイドでは、Adapty アトリビューションのトラッキングテンプレートをキャンペーンに追加します。トラッキングテンプレートとは、広告がクリックされるたびに Google Ads がバックグラウンドで読み込むリンクです。このリンクを通じて、Google Ads は各広告クリックを Adapty に送信します。Adapty はその後、[インストールやウェブ購入をこれらのクリックと照合します](ua-google-ads#other-campaigns-ios-and-android)。
+
+## 始める前に \{#before-you-begin\}
+
+以下を確認してください：
+
+- アプリを宣伝する場合、そのアプリは App Store または Google Play でリリースされている必要があります。
+- ウェブファネルを宣伝する場合、その購入は Adapty Attribution に届きます：
+  - FunnelFox ファネルの場合：[FunnelFox インテグレーション](ua-funnelfox)を通じて。
+  - その他のファネルの場合：[Stripe](ua-stripe) または [Paddle](ua-paddle) インテグレーションを通じて。
+- FunnelFox ファネルを宣伝する場合、FunnelFox の [Google Ads インテグレーション](https://funnelfox.com/docs/integrations/tracking/google-ads)がその購入を Google に送信します。Adapty は FunnelFox の購入を Google に送信しません。
+- アプリ内の Adapty SDK で [Adapty Attribution が有効化](user-acquisition#step-1-enable-adapty-attribution-in-the-sdk)されている必要があります。
+- Search キャンペーンや Performance Max キャンペーンを作成できるよう、Google Ads アカウントが[エキスパートモード](ua-google-ads#before-you-begin)になっている必要があります。
+- Google Ads アカウントに支払い方法が登録されている必要があります。
+- Google が Adapty からのコンバージョンを広告に紐付けられるよう、Google Ads アカウントで自動タグ設定がオンになっている必要があります。オンにするには、Google Ads で **Admin** アイコンをクリックし、**Account settings** を選択します。**Auto-tagging** セクションで **Tag the URL that people click through from my ad** チェックボックスを選択し、**Save** をクリックします。
+- you@appname.com のような Google アカウントが、Google Ads アカウントで[**Standard** または **Admin** アクセスレベル](ua-google-ads-settings#set-account-permissions)を持っている必要があります。
+- Google アカウントが [Adapty Attribution に接続](ua-google-ads-settings#connect-your-google-account)されている必要があります。2026年9月11日以前に接続した場合は、Adapty が Google Ads にコンバージョンを送信できるよう、再接続してください。
+
+## セットアップ \{#setup\}
+
+接続済みのGoogle アカウントを通じて、Adapty はキャンペーンの費用を4時間ごとに更新し、Google Ads にコンバージョンを送信します。検索キャンペーンおよびパフォーマンスマックスキャンペーンでは、Adapty アトリビューションのトラッキングテンプレートも必要です。このテンプレートを通じて、Google Ads は各広告クリックを Adapty に送信します。キャンペーンごとに新しいトラッキングテンプレートを作成する必要はありません。
+
+既存のキャンペーンを利用するには、ステップ1と2を完了してから、[既存のキャンペーンにトラッキングテンプレートを追加](#add-the-tracking-template-to-an-existing-campaign)してください。
+
+### 1. Adapty アトリビューションで設定を作成する \{#create-the-configuration-in-adapty-attribution\}
+
+設定は、Adapty 内のアプリと、キャンペーンを運用している Google Ads アカウントを接続するものです。トラッキングテンプレートを提供し、Google が入札を最適化するために使用するコンバージョンアクションをセットアップします。コンバージョンアクションは、トライアル開始などの Google Ads 内の1種類のイベントをカウントします。
+
+アプリのiOS版とAndroid版の両方が1つの設定でカバーされます。複数のGoogle Adsアカウントでキャンペーンを運用している場合は、アカウントごとに設定を作成してください。各設定には、そのアカウント内のキャンペーン用に個別のトラッキングテンプレートが含まれます。
+
+1. 広告を出したいアプリに切り替えます。
+2. **Integrations** > **Google Ads** に移動します。**Other Campaigns** タブで **Create configuration** をクリックします。
+
+   <ZoomImage id="ua-google-ads-other-campaigns.webp" width="700px" alt="Other Campaigns tab of the Google Ads integration in Adapty Attribution with the Create configuration button" />
+
+3. **Google Ads account** ドロップダウンから、キャンペーンを実行しているアカウントを選択します。Google はユーザーがクリックした広告があるアカウントのコンバージョンのみを受け付けます。配下に他の Google Ads アカウントを持つマネージャーアカウントは選択できません。
+
+   <ZoomImage id="ua-google-ads-account-select.webp" width="700px" alt="他のキャンペーン設定におけるGoogle Adsアカウントのドロップダウンと、その下にあるトラッキングテンプレート" />
+
+4. [Adapty が Google に送信するイベントを選択します](ua-google-ads-settings#map-events)。トライアル開始に対して Google に収益をレポートするには、[収益のオーバーライド](ua-google-ads-settings#revenue-override)を設定します。ユーザーが継続したトライアルのみ Google に送信するには、[クオリファイドトライアル](ua-google-ads-settings#qualified-trial)を設定します。
+5. **Save** をクリックします。有効にした各イベントに対して、Adapty がコンバージョンアクションを作成します。すでにイベントにマッピングした名前のコンバージョンアクションが存在する場合は、[Adapty がそれを再利用できるか確認してください](ua-google-ads-settings#resolve-naming-conflicts)。保存後、少なくとも 6 時間が経過してから新しいキャンペーンを公開してください。これにより、最初の広告クリックからのコンバージョンを Google が受け付けます。
+6. 広告がウェブファネルにつながっている場合は、**Web funnel** パネルを展開します。パネルには **Ad URL parameters** の値が表示されており、それを Google Ads のキャンペーン設定に貼り付けます。ファネルが FunnelFox で動作していない場合は、[Adapty ウェブピクセル](ua-web-pixel)を設定します。
+   - ファネルの全ページに **Pixel snippet** を貼り付けます。
+   - チェックアウト時に、ピクセルからの `click_id` をトランザクションに添付します。
+
+   <ZoomImage id="ua-google-ads-tracking-links.webp" width="700px" alt="トラッキングテンプレート、ピクセルスニペット、広告URLパラメータを含むその他キャンペーン設定のトラッキングリンクセクション" />
+
+### 2. Googleがすべてのコンバージョンをカウントするよう設定する \{#set-the-conversion-actions-to-count-every-conversion\}
+
+トラッキングを許可していないiOSユーザーからのコンバージョンをGoogleに受け入れてもらうには、各コンバージョンアクションがすべてのコンバージョンをカウントするよう設定してください。Adaptyが作成または再利用した各コンバージョンアクションに対して、以下の手順を実行します。
+
+1. Google Adsで **Goals** > **Conversions** > **All conversions** に移動します。`trial_started` などのコンバージョンアクションをクリックします。
+2. **Settings** タブを選択します。
+3. **Count** 設定をクリックします。**Every** を選択し、**Save** をクリックします。
+
+<ZoomImage id="google-ads-conversion-count.webp" width="700px" alt="Google Ads のコンバージョンアクションのカウント設定（「すべて」が選択された状態）" />
+
+### 3. キャンペーンを設定する \{#set-up-your-campaigns\}
+
+各キャンペーンの手順に従って設定してください：
+
+- [新規検索キャンペーン](#create-a-search-campaign)：アプリまたはウェブファネル向け。
+- [新規パフォーマンスマックスキャンペーン](#create-a-performance-max-campaign-for-a-web-funnel)：ウェブファネル向け。すべての Google チャネルに広告を配信します。
+- [既存のキャンペーン](#add-the-tracking-template-to-an-existing-campaign)：すでに稼働中の検索キャンペーンまたはパフォーマンスマックスキャンペーン向け。
+
+#### 新規検索キャンペーン \{#create-a-search-campaign\}
+
+1. Google Ads で **Campaigns** メニューを開き、**Campaigns** を選択します。プラスボタンをクリックして **New campaign** を選択します。
+2. 目標として **Create a campaign without guidance** を選択し、キャンペーンタイプとして **Search** を選択します。
+3. **Use these conversion goals for campaign performance optimization** セクションで、`trial_started` など最適化対象のコンバージョンアクションを含む目標のみを残します。その目標が表示されていない場合は、**Add goal** をクリックして選択します。
+
+   <ZoomImage id="google-ads-search-goals.webp" width="700px" alt="Google Ads の新しい検索キャンペーンのコンバージョン目標セクション" />
+
+4. キャンペーン名を入力し、**Continue** をクリックします。
+5. **Bidding** セクションで、**Maximize conversions** をそのまま選択します。これにより Google は予算をすべて使い、できるだけ多くのコンバージョンを獲得しようとします。代わりにコンバージョン単価の目標値を設定する場合は、**Set a target CPA** フィールドに金額を入力して **Apply** をクリックします。すでにキャンペーンを運用中の場合は、[Adapty アトリビューション分析](ua-analytics)に表示される **Cost per trial** または **Cost per subscription** を参考にしてください。
+6. **Networks** セクションで、Google が広告を表示するその他の場所を選択します。
+   - **Google search partners**: 他の検索サイト。
+   - **Display Network**: 検索予算が使い切られない場合に表示される他のウェブサイト。
+
+   Adapty アトリビューションでは、これらのネットワークはキャンペーンの一部として報告されており、個別には表示されません。Adapty アトリビューションで収益を比較するには、別々のキャンペーンで実行してください。
+7. ターゲットとする地域を選択します。これらの地域にいるユーザーにのみ広告を表示するには、**Location options** セクションで **Presence** を選択します。
+8. キャンペーン設定に **Languages** セクションがある場合は、広告の言語を選択します。Google は自動翻訳しません。
+9. 購入の可能性が高いユーザーへの入札を Google が最適化できるよう、オーディエンスセグメントを追加します。デフォルトでは、オーディエンスセグメントによって広告の表示対象が制限されることはありません。
+10. **More settings** を展開して **Campaign URL options** を開きます：
+    - Adapty の設定画面にある **Tracking template** の値を **Tracking template** フィールドに貼り付けます。
+    - 広告がウェブファネルに誘導する場合は、**Ad URL parameters** の値を **Final URL suffix** フィールドに貼り付けます。これらのパラメーターを使用すると、Adapty アトリビューションでキャンペーン・広告グループ・広告ごとのファネル購入を確認できます。
+
+    トラッキングテンプレートは、キャンペーン内の広告グループ、広告、またはキーワードには追加しないでください。追加すると、Google Ads はクリック情報を Adapty に送信しません。
+
+<ZoomImage id="google-ads-campaign-url-options.webp" width="700px" alt="Campaign URL options section of a Search campaign in Google Ads, with the Tracking template and Final URL suffix fields" />
+
+11. デフォルトでは、キャンペーンはGoogleが広告を承認した時点で開始され、終日配信され、終了日は設定されません。これらのデフォルト設定を変更するには、**More settings**で日程と広告スケジュールを設定してください。開始日を後にすることで、Googleが新しいコンバージョンアクションのコンバージョンを受け入れるまでに必要な6時間を確保できます。
+
+12. 広告グループにキーワードを追加します（1行に1つ）。デフォルトでは、Googleは各キーワードを関連する検索に一致させます。一致範囲を絞り込むには、キーワードを引用符で囲むか、最も近いものにするには角括弧で囲みます。Adapty アトリビューションは各キーワードのインストール数と収益を表示するため、どのキーワードが課金ユーザーをもたらしているかを確認できます。
+13. 広告を作成します。**Final URL** フィールドに、広告の遷移先ページを入力します：
+    - iOS アプリの場合：`https://apps.apple.com/app/id123456789` のようなアプリの App Store ページ。
+    - Android アプリの場合：`https://play.google.com/store/apps/details?id=com.example.app` のようなアプリの Google Play ページ。
+    - ウェブファネルの場合：ファネルの最初のページ。
+
+    Then, write a few headlines and descriptions. Google assembles the ads from them. Adapty Attribution shows the revenue of each ad, so you can compare ads by the subscriptions they bring, not only by clicks.
+14. Set the average daily budget. On some days, Google spends up to twice this amount, but no more than 30.4 times it in a month. Adapty Attribution shows the actual daily spend.
+15. Publish the campaign.
+
+16. 広告がApp StoreまたはGoogle Playに誘導する場合、公開後にコンピューターを除外してください。**Insights and reports** > **When and where ads showed** > **Devices** に移動し、コンピューターの **Bid adj.** を -100% に設定します。
+
+#### Webファネル向けの新しいPerformance Maxキャンペーン \{#create-a-performance-max-campaign-for-a-web-funnel\}
+
+1. Google Ads で **Campaigns** メニューを開き、**Campaigns** を選択します。プラスボタンをクリックして **New campaign** を選択します。
+2. 目的として **Create a campaign without guidance** を選択し、キャンペーンタイプとして **Performance Max** を選択します。**Final URL** フィールドに、ファネルの最初のページを入力します。
+3. コンバージョンゴールのセクションで、最適化したいコンバージョンアクションが含まれるゴールのみを残します。そのゴールが表示されていない場合は、**Add goal** をクリックして選択します。
+4. **Continue** をクリックし、キャンペーン名を入力します。
+5. **Bidding** セクションでは、**Maximize conversions** をフォーカスのままにします。Google に特定のコンバージョン単価を目標にさせる場合は、**Set a target cost per action** チェックボックスを選択して金額を入力します。すでにキャンペーンを運用している場合は、[Adapty アトリビューション分析](ua-analytics)に表示される **Cost per trial** または **Cost per subscription** を参考に金額を設定してください。
+6. ターゲットとする地域と、広告の言語を選択します。
+7. **More settings** を展開して **Campaign URL options** を開きます：
+   - Adapty の設定から取得した **Tracking template** の値を **Tracking template** フィールドに貼り付けます。
+   - **Ad URL parameters** の値を **Final URL suffix** フィールドに貼り付けます。
+
+   <ZoomImage id="google-ads-pmax-url-options.webp" width="700px" alt="Google Ads のパフォーマンス マックス キャンペーンにおけるキャンペーン URL オプションセクション。トラッキングテンプレートと最終 URL サフィックスフィールドが表示されています" />
+
+8. デフォルトでは、キャンペーンは Google が広告を承認した時点で開始し、終日配信され、終了日は設定されていません。これらのデフォルト設定を変更するには、**More settings** で日付と広告スケジュールを設定してください。開始日を遅らせることで、新しいコンバージョンアクションのコンバージョンを受け付けるまでに Google が必要とする 6 時間を確保できます。
+
+9. アセットグループを入力します。**Final URL** フィールドにファネルの最初のページを入力します。次に、見出し、説明文、画像、ロゴなどのアセットを追加します。Google はこれらからを組み立てます。
+
+   Adapty アトリビューションでは、Performance Max のデータを **Campaign** 単位でしかグループ化できません。アセットを比較するには、Google Ads のレポートを使用してください。
+
+10. すべての広告がファネルの最初のページに誘導されるようにするには、アセットグループの **Asset optimization** セクションで **Manage optimization settings** をクリックします。**Text** の下にある **Final URL expansion** をオフにして、**Save** をクリックします。
+
+    <ZoomImage id="google-ads-pmax-final-url-expansion.webp" width="700px" alt="Manage optimization settings dialog in Google Ads, with Final URL expansion turned off" />
+
+11. 見込み購入者に向けてGoogleを誘導するには、アセットグループにオーディエンスシグナルを追加します。これらのシグナル外のユーザーにも広告が表示される場合があります。
+12. Googleの推奨に従い、平均日予算をコンバージョン単価の3倍以上に設定します。Adapty アトリビューションではこのコストが **Cost per trial** または **Cost per subscription** として表示されます。
+13. **Publish campaign** をクリックします。
+
+#### 既存のキャンペーン \{#add-the-tracking-template-to-an-existing-campaign\}
+
+トラッキングテンプレートを既に実行中のキャンペーンに追加するには、キャンペーンの設定を変更します。
+
+1. Google Ads で **Campaigns** メニューを開き、**Campaigns** を選択します。**Settings** タブを選択し、キャンペーンを選択します。
+2. **Additional settings** の **Campaign URL options** を開きます。Adapty の設定にある **Tracking template** の値を **Tracking template** フィールドに貼り付けます。ウェブファネルの場合は、**Ad URL parameters** の値を **Final URL suffix** フィールドにも貼り付けます。**Save** をクリックします。
+3. **Conversion goals** を開き、最適化したいコンバージョンアクションを含む目標のみを選択して、**Save** をクリックします。
+4. Performance Max キャンペーンの場合は、各アセットグループを開きます。すべての広告をファネルの最初のページに誘導するには、**Asset optimization** セクションで **Manage optimization settings** をクリックします。**Text** の下で **Final URL expansion** をオフにし、**Save** をクリックします。
+
+キャンペーン内の広告グループ、広告、またはキーワードに独自のトラッキングテンプレートがある場合は、それらを削除してください。削除しないと、Google Ads はクリック情報を Adapty に送信しません。
+
+Google が新しいトラッキングテンプレートを使用し始めるまで、24〜48 時間かかります。その後、Adapty Attribution には広告クリックからのインストールと購入のみが表示されます。
+
+## 公開後 \{#after-you-publish\}
+
+- **広告審査を待つ**: Googleは各広告を公開前に審査します。審査中は広告のステータスが**審査中**となります。ほとんどの審査は1営業日以内に完了します。審査を通過すると、ステータスが**配信対象**に変わります。開始日を先の日付に設定していない限り、広告はそのまま配信されます。
+- **Googleが学習中は大きな変更を避ける**: Google入札機能がどのクリックがAdaptyからGoogleに送信されたコンバージョンをもたらすかを学習するには時間が必要です。この期間中にキャンペーンを編集すると、学習が中断される可能性があります。最適化対象のコンバージョンアクションはそのままにしておき、予算は徐々に変更してください。Performance Maxキャンペーンの場合、学習には通常1〜2週間かかります。
+- **インストール数、収益、ROASをAdapty アトリビューションで確認する**: [Adapty アトリビューション分析](ua-analytics)を開きます。AdaptyはGoogle広告の支出、インプレッション、クリックを4時間ごとに更新します。
+
+## トラブルシューティング \{#troubleshooting\}
+
+### AdaptyアトリビューションがコンフィグレーションをAdaptyできない場合 \{#adapty-attribution-doesnt-save-the-configuration\}
+
+Adaptyがコンバージョンアクションを作成できない場合、エラーが表示され、コンフィグレーションは保存されません。エラーを修正するには：
+
+- Googleアカウントが選択したGoogle Adsアカウントで[**Standard**または**Admin**のアクセスレベル](ua-google-ads-settings#set-account-permissions)を持っていることを確認してください。
+- AdaptyがGoogleアカウントへのアクセス権を失った場合は、[再接続してください](ua-google-ads-settings#connect-your-google-account)。
+- ウェブサイトタグなど別の種類のコンバージョンアクションにイベントとマッピングした名前がすでに使われている場合は、[別の名前を入力してください](ua-google-ads-settings#resolve-naming-conflicts)。
+
+### AdaptyからGoogleへのコンバージョンがGoogle Adsに表示されない \{#google-ads-shows-no-conversions-from-adapty\}
+
+AdaptyがGoogleに送信するコンバージョンを確認するには、Google Adsで **Goals** > **Conversions** > **All conversions** に移動します。最適化対象のコンバージョンアクションにコンバージョンが表示されない場合は、以下を確認してください。
+
+- 2026年9月11日より前にGoogleアカウントを連携していた場合は、[再接続済み](ua-google-ads-settings#connect-your-google-account)である。
+- [自動タグ設定](#before-you-begin)がオンになっている。
+- [Adaptyの設定](#create-the-configuration-in-adapty-attribution)で、キャンペーンを実行しているGoogle Adsアカウントを選択済みである。
+- コンバージョンが発生する少なくとも6時間前にAdaptyの設定を保存済みである。
+- 各コンバージョンアクションが[すべてのコンバージョンをカウント](#set-the-conversion-actions-to-count-every-conversion)するよう設定されている。
+- FunnelFoxファネルの場合、FunnelFoxで[Google Ads連携](https://funnelfox.com/docs/integrations/tracking/google-ads)を設定済みである。AdaptyはFunnelFoxの購入をGoogleに送信しない。
+- FunnelFox以外のWebファネルの場合:
+  - その購入が[Adapty Attribution](#before-you-begin)に届いている。
+  - すべてのページに[Adaptyウェブピクセル](#create-the-configuration-in-adapty-attribution)が設置されている。
+  - 各トランザクションにピクセルからの`click_id`が含まれている。
+- キャンペーンが最適化に使用するコンバージョンアクションを含むゴールを使用している。
+- キャンペーンに、広告対象アプリのAdapty設定からのトラッキングテンプレートが設定されている。
+- キャンペーン内のどの広告グループ、広告、またはキーワードにも独自のトラッキングテンプレートが設定されていない。
+- [既存のキャンペーン](#add-the-tracking-template-to-an-existing-campaign)の場合、少なくとも48時間前にトラッキングテンプレートを追加済みである。
+
+### Adapty アトリビューションにキャンペーンのインストール数や収益が表示されない \{#adapty-attribution-shows-no-installs-or-revenue-for-the-campaign\}
+
+以下を確認してください：
+
+- キャンペーンには、広告するアプリのAdapty設定からのトラッキングテンプレートが含まれている。
+- キャンペーン内のどの広告グループ、広告、またはキーワードにも、独自のトラッキングテンプレートがない。
+- [既存のキャンペーン](#add-the-tracking-template-to-an-existing-campaign)の場合、少なくとも48時間前にトラッキングテンプレートを追加した。
+- ウェブファネルの場合、その購入が[Adapty アトリビューションに到達](#before-you-begin)している。
+- FunnelFoxで動作していないウェブファネルの場合：
+  - すべてのページに[Adaptyウェブピクセル](#create-the-configuration-in-adapty-attribution)がある。
+  - 各トランザクションにピクセルからの`click_id`がある。
+- ウェブファネルの場合、キャンペーンの **Final URL suffix** フィールドに **Ad URL parameters** の値が設定されている。

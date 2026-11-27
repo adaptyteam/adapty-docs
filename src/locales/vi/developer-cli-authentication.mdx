@@ -7,7 +7,7 @@ keywords: ['cli', 'developer', 'authentication', 'mcp']
 
 CLI yêu cầu xác thực để gọi Adapty API.
 
-Một lần đăng nhập là đủ cho toàn bộ CLI. Các [lệnh Ads Manager](developer-cli-ads-manager) kết nối tới một dịch vụ khác, nhưng chúng dùng chung token đã lưu — không cần đăng nhập thêm lần nào nữa.
+Một lần đăng nhập là đủ cho toàn bộ CLI. Các [lệnh Ads Manager](developer-cli-ads-manager) truy cập một dịch vụ khác, nhưng vẫn dùng chung token đã lưu — không cần đăng nhập thêm lần nữa. Đối với tài khoản trên máy chủ EU, khi đăng nhập cần chỉ định vùng; xem [Đăng nhập vào tài khoản EU](#log-in-to-an-eu-account).
 
 ## Đăng nhập \{#log-in\}
 
@@ -39,23 +39,46 @@ Nếu mã hết hạn trước khi bạn ủy quyền, hoặc nếu bạn nhấp
 adapty auth login
 ```
 
+### Đăng nhập vào tài khoản EU \{#log-in-to-an-eu-account\}
+
+Đăng nhập vào tài khoản trên [máy chủ EU](eu-cluster) yêu cầu CLI 0.30.0 trở lên.
+
+Để đăng nhập vào tài khoản EU:
+
+1. Trong terminal, chạy lệnh:
+   ```bash
+   ADAPTY_REGION=eu adapty auth login
+   ```
+2. Mở liên kết trong trình duyệt đã đăng nhập qua [https://app.adapty.io/eu-login](https://app.adapty.io/eu-login). Nếu bạn chưa đăng nhập ở đó, hoặc đang đăng nhập vào tài khoản US, hãy đăng nhập trước.
+3. Xác nhận mã và nhấp **Authorize**, như trong mục [Đăng nhập](#log-in).
+
+CLI lưu region cùng với thông tin đăng nhập, nên các lệnh sau đó sẽ tự động gửi đến máy chủ EU mà không cần `ADAPTY_REGION`. Trong output của `adapty auth status`, dòng `Region: eu` xác nhận điều này.
+
+Trong script có thiết lập `ADAPTY_TOKEN`, hãy đặt thêm `ADAPTY_REGION` là `us` hoặc `eu`. Nếu không, lệnh sẽ dùng region của thông tin đăng nhập được lưu trên máy đó, có thể thuộc về một tài khoản khác.
+
+Nếu CLI báo file session bị lỗi, hãy chạy lại `adapty auth login` với `ADAPTY_REGION` được thiết lập đúng với region của tài khoản bạn. Lần đăng nhập mới sẽ ghi đè file cũ.
+
+[Ads Manager](developer-cli-ads-manager) và các lệnh [attribution](developer-cli-attribution) không khả dụng với tài khoản EU. Chúng sẽ dừng lại với thông báo lỗi trước khi gửi bất kỳ yêu cầu nào, ví dụ: `Apple Search Ads commands are not available for EU accounts.`
+
 ## Quản lý xác thực \{#manage-authentication\}
 
 ### Kiểm tra trạng thái xác thực \{#check-authentication-status\}
 
-Để xem trạng thái xác thực hiện tại, chạy:
+Để xem trạng thái xác thực hiện tại, chạy lệnh:
 
 ```bash
 adapty auth status
 ```
 
-Khi đã xác thực, kết quả hiển thị email, tiền tố token đã che, và đường dẫn đến tệp cấu hình cục bộ:
+Khi đã xác thực, kết quả hiển thị tên của bạn, tiền tố token được che và đường dẫn đến file cấu hình cục bộ:
 
 ```
-Email: you@example.com
+User: Jane Doe
 Token: abcd1234****
 Config: ~/.config/adapty/config.json
 ```
+
+Từ CLI 0.9.1 trở đi, đăng nhập sẽ lưu tên của bạn nhưng không lưu email. Dòng `Email:` chỉ xuất hiện với các phiên được lưu bởi phiên bản cũ hơn. Trong các script đọc `adapty auth status --json`, dùng trường `name` để xác định người dùng.
 
 Khi chưa xác thực:
 
@@ -75,27 +98,33 @@ Khác với `adapty auth status`, lệnh này thực hiện một yêu cầu tr�
 
 ### Đăng xuất \{#log-out\}
 
-Để xóa thông tin đăng nhập đã lưu trữ cục bộ, chạy:
+Để xóa thông tin đăng nhập đã lưu trữ cục bộ, chạy lệnh:
 
 ```bash
 adapty auth logout
 ```
 
-Lệnh này xóa `~/.config/adapty/config.json`. Token vẫn còn hiệu lực phía máy chủ cho đến khi hết hạn — nếu bạn cần vô hiệu hóa ngay lập tức, hãy dùng `adapty auth revoke` thay thế.
+Lệnh này sẽ xóa `~/.config/adapty/config.json` và migration đã lưu bởi `adapty migrations create` hoặc `adapty migrations use`. Token vẫn còn hiệu lực ở phía server cho đến khi hết hạn — nếu bạn cần vô hiệu hóa ngay lập tức, hãy dùng `adapty auth revoke` thay thế.
 
-### Thu hồi token \{#revoke-your-token\}
+### Thu hồi token của bạn \{#revoke-your-token\}
 
-Để vô hiệu hóa token trên máy chủ và xóa nó cục bộ, chạy:
+Để vô hiệu hóa token trên server và xóa nó khỏi máy, chạy lệnh:
 
 ```bash
 adapty auth revoke
 ```
 
-Dùng lệnh này khi bạn muốn vô hiệu hóa hoàn toàn một token — ví dụ, nếu thông tin đăng nhập của bạn có thể đã bị lộ. Sau khi thu hồi, chạy `adapty auth login` để xác thực lại.
+Nếu token có migration đã lưu, CLI cũng sẽ xóa nó, nhưng chỉ sau khi server xác nhận việc thu hồi. Dùng lệnh này khi bạn muốn vô hiệu hóa hoàn toàn một token — ví dụ, khi thông tin đăng nhập của bạn có thể đã bị lộ. Sau khi thu hồi, chạy `adapty auth login` để xác thực lại.
+
+## Thời hạn token \{#token-lifetime\}
+
+Token từ `adapty auth login` có hiệu lực trong 90 ngày kể từ khi bạn đăng nhập. Việc sử dụng token không kéo dài thời gian này, và CLI không có refresh token. Khi token hết hạn, các lệnh CLI sẽ trả về lỗi 401, và bạn cần đăng nhập lại trên trình duyệt.
+
+Một tác vụ định kỳ chạy tự động mà không có người xác nhận đăng nhập sẽ không thể gia hạn token. Với các tác vụ như vậy, hãy sử dụng [Export Analytics API](export-analytics-api), xác thực bằng secret API key của ứng dụng.
 
 ## Lỗi token \{#token-errors\}
 
-Nếu token bị thu hồi hoặc không còn hợp lệ, các lệnh CLI trả về lỗi 401. Để xác thực lại, chạy:
+Nếu token bị thu hồi, hết hạn hoặc không còn hợp lệ, các lệnh CLI sẽ trả về lỗi 401. Để xác thực lại, chạy:
 
 ```bash
 adapty auth login

@@ -1,24 +1,80 @@
 ---
-title: "在 Flutter SDK 的观察者模式下上报交易"
-description: "在 Adapty 观察者模式下上报购买交易，用于 Flutter SDK 的用户洞察和收入跟踪。"
+title: "在 Flutter SDK 中以观察者模式上报交易"
+description: "在 Flutter SDK 的 Adapty 观察者模式下上报购买交易，获取用户洞察并追踪收入。"
 metadataTitle: "在 Flutter SDK 观察者模式下上报交易 | Adapty 文档"
 ---
 
-<Tabs groupId="sdk-version" queryString> 
+<SDKv4>
 
-<TabItem value="current" label="Adapty SDK v3.4+（当前版本）" default> 
-在观察者模式下，Adapty SDK 无法自动跟踪通过您现有购买系统完成的购买。您需要从应用商店上报交易。在发布应用之前，务必完成此设置，否则会导致分析数据出错。
+在 Observer 模式下，Adapty SDK 无法自动追踪通过你现有购买系统完成的购买。你需要手动上报来自应用商店的交易。为避免分析数据出错，请务必在发布应用**之前**完成此配置。
 
-使用 `reportTransaction` 显式上报每笔交易，以便 Adapty 识别。
+使用 `reportTransaction` 明确上报每笔交易，以便 Adapty 识别。
 
 :::warning
 
 **不要跳过交易上报！**
-如果不调用 `reportTransaction`，Adapty 将无法识别该交易，它既不会出现在分析数据中，也不会发送到集成渠道。
+如果不调用 `reportTransaction`，Adapty 将无法识别该交易，它不会出现在分析数据中，也不会被发送到各集成渠道。
 
 :::
 
-如果你使用 Adapty 流程和付费墙，请在上报交易时传入 `variationId`。这样可以将购买行为与触发它的流程或付费墙关联起来，确保分析数据的准确性。
+如果你使用 Adapty 流程和付费墙，请在上报交易时附上 `variationId`。这样可以将购买行为与触发它的流程或付费墙关联起来，确保分析数据准确。
+
+:::warning
+- 在 Android 上，请使用 Adapty Flutter SDK 4.4.0 或更高版本。旧版本可能不会将 `variationId` 发送给 Adapty，导致购买无法与流程关联。
+- 请传入用户所购买的 `AdaptyPaywallProduct` 的 `paywallVariationId`，而非 `AdaptyFlow.variationId`。流程自身的 variation ID 无法将购买与流程关联。
+:::
+
+```dart showLineNumbers
+try {
+    // every time when calling transaction.finish()
+    await Adapty().reportTransaction(
+        transactionId: "YOUR_TRANSACTION_ID",
+        variationId: "PAYWALL_VARIATION_ID", // optional
+    );
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+    // handle the error
+}
+```
+
+参数：
+
+| 参数 | 是否必填 | 描述 |
+| ------------- | -------- | ------------------------------------------------------------ |
+| transactionId | 必填 | <ul><li> iOS：交易的标识符。</li><li> Android：购买的字符串标识符 `purchase.getOrderId`，其中 purchase 是计费库 [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) 类的实例。</li></ul> |
+| variationId   | 选填 | 实验变体的字符串标识符。请传入用户购买的 `AdaptyPaywallProduct` 的 `paywallVariationId`，其值与包含该产品的 [AdaptyFlowPaywall](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyFlowPaywall-class.html) 的 `variationId` 相同。 |
+| appleJwsTransaction | 选填 | 仅限 iOS，SDK 4.3.0 及以上版本。已签名的 StoreKit 2 交易：即与 `transactionId` 对应交易的验证结果中的 `jwsRepresentation`。SDK 会原样将其发送给 Adapty。Android 会忽略此参数。 |
+
+在 iOS 上，如果您的购买系统提供了 StoreKit 2 交易，请在 `appleJwsTransaction` 中传入其 JWS 表示：
+
+```dart showLineNumbers
+await Adapty().reportTransaction(
+    transactionId: "YOUR_TRANSACTION_ID",
+    variationId: "PAYWALL_VARIATION_ID", // optional
+    appleJwsTransaction: jwsRepresentation, // iOS only, optional
+);
+```
+
+</SDKv4>
+
+<SDKv3>
+
+<Tabs groupId="sdk-version" queryString> 
+
+<TabItem value="current" label="Adapty SDK 3.4+" default> 
+在观察者模式下，Adapty SDK 无法自动追踪通过您现有购买系统完成的购买。您需要手动上报来自应用商店的交易记录。请务必在发布应用**之前**完成此配置，以避免分析数据出现错误。
+
+使用 `reportTransaction` 明确上报每笔交易，以便 Adapty 识别。
+
+:::warning
+
+**请勿跳过交易上报！**
+如果不调用 `reportTransaction`，Adapty 将无法识别该交易，它不会出现在分析数据中，也不会被发送至各集成渠道。
+
+:::
+
+如果您使用 Adapty 流程和付费墙，请在上报交易时附上 `variationId`。这能将购买行为与触发它的流程或付费墙关联起来，从而确保分析数据的准确性。
 
 ```dart showLineNumbers
 try {
@@ -38,15 +94,15 @@ try {
 
 | 参数          | 是否必填 | 描述                                                         |
 | ------------- | -------- | ------------------------------------------------------------ |
-| transactionId | 必填     | <ul><li>iOS：交易的标识符。</li><li>Android：购买的字符串标识符 `purchase.getOrderId`，其中 purchase 是计费库 [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) 类的实例。</li></ul> |
-| variationId   | 选填     | 实验变体的字符串标识符。可通过 [AdaptyPaywall](https://pub.dev/documentation/adapty_flutter/3.17.2/adapty_flutter/AdaptyPaywall-class.html) 对象的 `variationId` 属性获取。 |
+| transactionId | 必填     | <ul><li> iOS：交易的标识符。</li><li> Android：购买的字符串标识符 `purchase.getOrderId`，其中 purchase 是计费库 [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) 类的实例。</li></ul> |
+| variationId   | 可选     | 实验变体的字符串标识符。可通过 [AdaptyPaywall](https://pub.dev/documentation/adapty_flutter/3.17.2/adapty_flutter/AdaptyPaywall-class.html) 对象的 `variationId` 属性获取。 |
 
 </TabItem>
-<TabItem value="old" label="Adapty SDK 3.3.x（旧版）" default> 
+<TabItem value="old" label="Adapty SDK 3.3.x (legacy)" default> 
 
-在观察者模式下，Adapty SDK 无法自动跟踪通过您现有购买系统完成的购买。您需要从应用商店上报或恢复交易。在发布应用之前，务必完成此设置，否则会导致分析数据出错。
+在观察者模式下，Adapty SDK 无法自行追踪通过现有购买系统完成的购买。您需要从应用商店上报交易或恢复购买。为避免分析数据出错，请务必在发布应用**之前**完成此配置。
 
-在两个平台上均使用 `reportTransaction` 显式上报每笔交易，并在 Android 上额外调用 `restorePurchases`，以确保 Adapty 能够识别该交易。
+在两个平台上均使用 `reportTransaction` 来显式上报每笔交易，并在 Android 上额外使用 `restorePurchases`，以确保 Adapty 能够识别这些交易。
 
 :::warning
 
@@ -131,4 +187,6 @@ try {
 ```
 
 </TabItem> 
-</Tabs>
+</Tabs> 
+
+</SDKv3>

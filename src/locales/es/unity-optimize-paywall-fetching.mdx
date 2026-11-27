@@ -1,32 +1,148 @@
 ---
-title: "Optimizar la carga de paywalls en Unity SDK"
-description: "Carga paywalls de Adapty de forma fiable: timing, caché y patrones de respaldo para Unity."
-metadataTitle: "Optimizar la carga de paywalls | Unity SDK | Documentación de Adapty"
+title: "Optimizar la obtención de flows y paywalls en Unity SDK"
+description: "Obtén flows y paywalls de Adapty de forma fiable: temporización, caché y patrones de respaldo para Unity."
+metadataTitle: "Optimizar la obtención de flows y paywalls | Unity SDK | Documentación de Adapty"
 ---
 
-Una carga de paywall fiable en Unity hace tres cosas: renderiza rápido, devuelve el paywall dirigido a la audiencia correcta y recurre al respaldo cuando la red es lenta. Las reglas a continuación cubren el timing, la caché y los patrones de respaldo para conseguirlo.
+Una obtención fiable de un flow o paywall en Unity hace tres cosas: renderiza rápido, devuelve la variación orientada a la audiencia y recurre al respaldo sin problemas cuando la red es lenta. Las reglas a continuación cubren la temporización, la caché y los patrones de respaldo para conseguirlo.
 
 :::tip
 Las reglas asumen que `Adapty.Activate()` y `Adapty.Identify()` ya se han resuelto. Consulta [Orden de llamadas en el SDK de Unity](unity-sdk-call-order).
 :::
 
-Los consejos a continuación usan los nombres de métodos de la v3. En el SDK v4, `GetPaywall` se renombra a `GetFlow` (consulta la [guía de migración](migration-to-unity-sdk-v4)) — todas las reglas se aplican sin cambios.
-
 ## Reglas y errores comunes \{#rules-and-pitfalls\}
 
 | Haz esto | No hagas esto | Por qué |
 |---|---|---|
-| Carga el placement que vas a mostrar.                                                                                  | Precarga todos los placements de forma concurrente al iniciar.        | La precarga masiva bloquea el hilo principal y produce una pantalla en negro durante la ráfaga.                                  |
-| Llama a `GetPaywall` después de que la atribución haya tenido tiempo de resolverse — por ejemplo, 1–2 segundos después de `Activate` o cuando se dispare `OnLoadLatestProfile`. | Llama a `GetPaywall` en `Awake()`.                        | La atribución aún no ha llegado. El paywall se resuelve contra la audiencia predeterminada y omite silenciosamente los segmentos y la personalización de ASA. |
-| Establece un `loadTimeout` y configura un [paywall de respaldo](fallback-paywalls) para cada placement.                             | Esperes indefinidamente a que `GetPaywall` responda.                     | Sin un timeout, los usuarios con conectividad deficiente ven una pantalla en blanco hasta que la red responde — o cierran la app.     |
+| Obtén el placement que vas a mostrar o precarga la caché con [`PreloadFlows`](#preload-placements) (SDK 4.3.0+). | Lances tus propias llamadas concurrentes a `GetFlow` al iniciar. | Una ráfaga de prefetch manual bloquea el hilo principal y produce una pantalla en negro. `PreloadFlows` está diseñado para esto y envía el lote al SDK nativo en una sola llamada. |
+| Llama a `GetFlow` después de que la atribución haya tenido tiempo de resolverse — por ejemplo, 1–2 segundos después de `Activate` o tras dispararse `OnLoadLatestProfile`. | Llamar a `GetFlow` en `Awake()`. | La atribución aún no ha llegado. El flow se resuelve contra la audiencia predeterminada y omite silenciosamente los segmentos y la personalización de ASA. |
+| Mantén el `loadTimeout` predeterminado de 5 segundos o establece otro valor, y configura un [paywall de respaldo](fallback-paywalls) para cada placement. | Pasar a `GetFlow` un `loadTimeout` tan grande que nunca se dispare. | Si el timeout nunca se activa, los usuarios con mala conectividad ven una pantalla en blanco hasta que la red responde, o cierran la app. |
 
-Consulta [Cargar paywalls y productos](fetch-paywalls-and-products-unity) para la referencia de los parámetros `fetchPolicy` y `loadTimeout`, y [Placements](placements) para elegir el placement adecuado.
+Consulta [Obtener paywalls y productos personalizados](fetch-paywalls-and-products-unity) como referencia para los parámetros `fetchPolicy` y `loadTimeout`, y [Placements](placements) para elegir el placement adecuado.
 
-## Ajustar para conectividad deficiente \{#tune-for-poor-connectivity\}
+## Precarga de placements \{#preload-placements\}
 
-Para mercados con conectividad sistemáticamente deficiente (zonas rurales, transporte, regiones con problemas de enrutamiento):
+:::info
+`Adapty.PreloadFlows` y `Adapty.PreloadFlowsForDefaultAudience` están disponibles a partir de la versión 4.3.0 del SDK.
+:::
 
-- Establece `fetchPolicy` a `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` en cada carga excepto la primera.
+`Adapty.PreloadFlows` guarda en caché el JSON del flow con antelación. Luego se usa con normalidad: `GetFlow` para el flow y `CreateFlowView` para su vista.
+
+`fetchPolicy` decide qué capa lee primero un `GetFlow` posterior, no si puede acceder a la caché:
+
+- `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` lee primero la copia precargada y solo accede a la red cuando no hay nada en caché. `AdaptyPlacementFetchPolicy.ReturnCacheDataIfNotExpiredElseLoad(maxAge)` hace lo mismo mientras la copia sea más reciente que `maxAge`.
+- El valor predeterminado, `AdaptyPlacementFetchPolicy.Default`, accede primero a la red y recurre a la copia precargada si la solicitud falla o supera el tiempo de espera.
+
+Una precarga resulta beneficiosa en cualquier caso, pero de forma distinta: una política cache-first elimina la solicitud de red, mientras que la política predeterminada la mantiene y obtiene una copia en caché como respaldo. En un [dispositivo de prueba](test-devices), `GetFlow` omite la caché con cualquier política y usa la copia precargada solo si la solicitud de red falla.
+
+Úsalo cuando sepas qué placements necesitará la sesión pero no quieras mostrarlos aún — por ejemplo, justo después de que `Activate` e `Identify` completen, para el flow detrás de un botón que el usuario aún no ha pulsado.
+
+```csharp showLineNumbers title="C#"
+Adapty.PreloadFlows(
+    new List<string> { "onboarding", "main_paywall" },
+    TimeSpan.FromSeconds(5),
+    (error) => {
+        if (error != null) {
+            // at least one placement failed to preload
+        }
+    }
+);
+
+// Later, when the user reaches the paywall:
+Adapty.GetFlow(
+    "main_paywall",
+    AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad,
+    TimeSpan.FromSeconds(5),
+    (flow, error) => {
+        // create the flow view
+    }
+);
+```
+
+**Parámetros:**
+
+- `placementIds` (obligatorio): los placements que se van a precargar.
+- `loadTimeout` (opcional): cuánto tiempo espera la precarga para los flows con audiencia configurada. Por defecto son 5 segundos si se pasa `null` o se usa la sobrecarga sin este parámetro. Cuando se agota el tiempo, el SDK puede cargar los flows de la audiencia por defecto.
+
+**Comportamiento importante:**
+
+- La llamada falla solo después de que se hayan intentado todos los placements, con un único error `NetworkFailed` que enumera todos los placements fallidos. El fallo de un placement no detiene los demás, y los placements que se cargaron correctamente permanecen en la caché.
+- La precarga siempre va a la red: no tiene `fetchPolicy` propio.
+- La precarga solo calienta la caché. No devuelve contenido — para mostrarlo, debes llamar a `GetFlow`.
+- La caché pertenece al perfil actual. Los flows que precargues antes de `Identify` o `Logout` no estarán disponibles después, así que realiza la precarga tras el cambio de perfil.
+
+### Lo que cubre una precarga \{#what-a-preload-covers\}
+
+Un flow llega a la pantalla en capas. Una precarga cubre la primera, exactamente igual que `GetFlow`:
+
+| Capa | Obtenida por | Precargada con un preload |
+|---|---|---|
+| JSON del flow: la variante seleccionada, sus IDs de producto y el Remote Config | `GetFlow` | Sí |
+| Diseño de UI: la estructura, el estilo y el texto de la pantalla | `CreateFlowView` | No |
+| Imágenes, incluido el fotograma estático que reemplaza a un elemento de vídeo | `CreateFlowView`, en segundo plano | No |
+| Productos | `CreateFlowView` o `GetPaywallProducts` | No |
+| Archivos de vídeo | El reproductor del sistema, al renderizar la pantalla | El SDK no los almacena en caché |
+
+`CreateFlowView` busca el diseño en tres lugares, en este orden:
+
+1. La caché en disco del SDK nativo, que persiste entre reinicios de la aplicación.
+2. Tu [archivo de respaldo](unity-use-fallback-paywalls) para SDK 4.4 o posterior, si lo descargaste después de publicar por última vez el flow.
+3. Adapty, a través de la red. Esto implica un viaje de ida y vuelta, incluso después de una precarga. La primera vez que la aplicación muestra cada versión publicada del flow, el SDK nativo realiza esta solicitud. Luego guarda el layout en la caché en disco.
+
+Cuando se activa el `LoadTimeout` de `CreateFlowView`, el SDK nativo no recurre al respaldo: solicita de nuevo el layout a la API de Adapty. El `LoadTimeout` no limita esa segunda solicitud.
+
+### Omitir la segmentación de audiencia \{#skip-audience-segmentation\}
+
+Para precalentar la caché sin esperar la segmentación de audiencia, usa la variante de audiencia predeterminada. No requiere tiempo de espera:
+
+```csharp showLineNumbers title="C#"
+Adapty.PreloadFlowsForDefaultAudience(
+    new List<string> { "main_paywall" },
+    (error) => {
+        // handle the error
+    }
+);
+```
+
+Una llamada posterior a `GetFlowForDefaultAudience` lee la copia de la misma forma que `GetFlow` lee una copia de `PreloadFlows`.
+
+## Mostrar el contenido multimedia de la primera pantalla desde el bundle de la app \{#show-first-screen-media-from-the-app-bundle\}
+
+Un flow descarga sus imágenes y vídeos desde Adapty. Para mostrar el contenido multimedia de la primera pantalla de forma instantánea, sírvelo desde el bundle de la app. Es una buena forma de reutilizar los archivos multimedia que ya incluyes, como los de un onboarding nativo existente.
+
+1. En el Flow & Paywall Builder, asigna un [ID de contenido multimedia personalizado](custom-media#custom-media-id) a la imagen o el vídeo. El archivo que subas ahí se usará como respaldo.
+2. Añade el archivo a tu proyecto de Unity.
+3. Al crear la vista del flow, pasa el archivo del bundle para ese ID con `SetCustomAssets`:
+
+```csharp showLineNumbers
+// "welcome_video" is the custom media ID set in the Flow & Paywall Builder
+var bundledAssets = new Dictionary<string, AdaptyCustomAsset>
+{
+    { "welcome_video", AdaptyCustomAsset.LocalVideoFile("custom_assets/videos/welcome.mp4") }
+};
+
+var parameters = new AdaptyUICreateFlowViewParameters()
+    .SetCustomAssets(bundledAssets);
+
+AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
+    // handle the result
+});
+```
+
+Los archivos incluidos aumentan el tamaño de descarga de tu app, así que incluye solo los recursos multimedia que los usuarios ven primero.
+
+Una imagen incluida en el bundle aparece de inmediato sin espera, pero el SDK sigue descargando en segundo plano la imagen subida.
+
+Los medios que no incluyes en el bundle también aparecen enseguida: el layout del flow incluye una copia en baja resolución de cada imagen, incluido el fotograma estático de un vídeo, y la muestra hasta que se carga el archivo completo.
+
+Para la referencia completa de `customAssets`, consulta [Personalizar assets](unity-get-pb-paywalls#customize-assets).
+
+## Ajusta para conectividad deficiente \{#tune-for-poor-connectivity\}
+
+Para mercados con conectividad consistentemente deficiente (zonas rurales, transporte, regiones con problemas de enrutamiento):
+
+- Establece `fetchPolicy` en `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` en cada fetch excepto el primero.
 - Configura un [paywall de respaldo](fallback-paywalls) para cada placement en el Adapty Dashboard.
-- Establece `loadTimeout` entre 3 y 5 segundos y acepta el paywall de respaldo cuando se agote el tiempo.
-- No condicionales la visualización del paywall a `GetProfile`. Llama a `GetPaywall` de forma independiente para que un perfil lento no bloquee la interfaz.
+- Equilibra `loadTimeout` entre velocidad y segmentación. Con un tiempo de espera más corto, los usuarios ven el respaldo antes. Con uno más largo, el flow segmentado tiene más tiempo para cargar.
+- [Mantén el flow ligero](flow-size), para que su layout se descargue antes.
+- No condicionar la visualización del flow a `GetProfile`. Llama a `GetFlow` de forma independiente para que un perfil lento no bloquee la UI.

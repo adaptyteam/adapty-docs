@@ -1,0 +1,61 @@
+---
+title: "Mostrar un paywall orientado a AA en el primer lanzamiento en el SDK de Kotlin Multiplatform"
+description: "Espera la atribución de Apple Ads antes de solicitar el paywall en Kotlin Multiplatform usando AdaptyProfile.appliedAttributionSources."
+metadataTitle: "Mostrar paywall orientado a AA en el primer lanzamiento | SDK de Kotlin Multiplatform | Documentación de Adapty"
+---
+
+Este artículo se aplica a la compilación iOS de tu app. La atribución de Apple Ads solo existe en iOS.
+
+Apple Ads (AA) attribution llega de forma asíncrona después de `Adapty.activate()`. Si llamas a `getFlow` demasiado pronto, la atribución aún no habrá llegado y Adapty resolverá el placement contra la audiencia predeterminada, sin tener en cuenta tus paywalls segmentados por AA. `AdaptyProfile.appliedAttributionSources` permite que la app detecte cuándo se ha aplicado la atribución de AA al perfil, de modo que la solicitud del paywall pueda esperar hasta que la segmentación por AA se resuelva correctamente.
+
+:::important
+Esta propiedad solo reporta Apple Ads. La atribución de otros proveedores es visible en los perfiles de usuario y está disponible en los filtros de segmentos, pero aún no aquí.
+:::
+
+## Antes de empezar \{#before-you-start\}
+
+Necesitas:
+- Adapty Kotlin Multiplatform SDK **4.0** o posterior.
+- Apple Ads configurado para la app en Adapty. Consulta [Apple Ads](apple-search-ads).
+
+:::note
+Los ejemplos usan los nombres de API del SDK 4.0. En el SDK 3.x, los paywalls se obtienen con `getPaywall`/`getPaywallForDefaultAudience`, que devuelven un `AdaptyPaywall`. Consulta [Migrar el SDK de Adapty Kotlin Multiplatform a v4](migration-to-kmp-sdk-v4).
+:::
+
+## Cómo funciona \{#how-it-works\}
+
+Tras `Adapty.activate()`, el SDK solicita en segundo plano la atribución de Apple Ads a Apple y reenvía el resultado al backend de Adapty. Cuando AA se convierte en la fuente de atribución activa del perfil, el SDK entrega un `AdaptyProfile` actualizado a tu `OnProfileUpdatedListener`, con `"apple_search_ads"` en su lista `appliedAttributionSources`.
+
+Una lista vacía puede significar cualquiera de estos casos:
+
+- La atribución de Apple Ads aún no se ha procesado para este perfil.
+- No ha llegado ninguna atribución.
+- La atribución llegó desde otro proveedor, que esta lista no registra.
+
+Incluso con una lista vacía, `getFlow` sigue siendo seguro de llamar — Adapty resuelve la solicitud según la audiencia que coincida con el estado actual del perfil, normalmente la audiencia predeterminada.
+
+:::important
+La espera solo se aplica al **primer arranque**. Una vez que se ha registrado la atribución de Apple Ads, queda almacenada en el perfil de forma permanente. En cada arranque posterior, el perfil en caché ya lleva `"apple_search_ads"` en `appliedAttributionSources`, el listener se activa con ese valor de inmediato y `getFlow` devuelve el paywall segmentado por Apple Ads sin ningún retraso.
+:::
+
+## Implementación \{#implementation\}
+
+En el primer arranque, controla si aparece `"apple_search_ads"` en el perfil y aplica un timeout estricto: si la atribución de Apple Ads nunca llega, esos usuarios igualmente tienen que ver un paywall.
+
+1. **Activa el SDK.** Consulta [Instalar y configurar el SDK de Kotlin Multiplatform](sdk-installation-kotlin-multiplatform).
+2. **Suscríbete a las actualizaciones del perfil** con `Adapty.setOnProfileUpdatedListener`. Si todavía no has configurado el listener, consulta [Escuchar actualizaciones de suscripción](kmp-check-subscription-status#listen-to-subscription-updates).
+3. **Observa si aparece `"apple_search_ads"` en `appliedAttributionSources`.** Cuando aparezca, solicita el paywall — Adapty devolverá la variante segmentada por AA:
+
+```kotlin
+Adapty.setOnProfileUpdatedListener { profile ->
+    if ("apple_search_ads" in profile.appliedAttributionSources) {
+        // load the paywall via Adapty.getFlow(placementId)
+    }
+}
+```
+
+4. **Inicia un temporizador de 3–5 segundos en paralelo con la suscripción.** Si el temporizador se dispara antes de que aparezca `"apple_search_ads"`, solicita el paywall de la audiencia predeterminada con `getFlowForDefaultAudience`. Este método devuelve el paywall sin esperar a la segmentación.
+
+Cualquiera de los dos caminos que se active primero debe cargar el paywall; el otro camino debe ignorarse. Usa una única bandera de estado (por ejemplo, `hasLoadedPaywall`) para evitar duplicados y que el paywall no se obtenga dos veces. Configura un [paywall de respaldo](kmp-use-fallback-paywalls) para el placement para que el usuario nunca se quede bloqueado si la solicitud de red falla.
+
+`setOnProfileUpdatedListener` acepta un solo listener. Si tu aplicación ya lo utiliza para otros propósitos (por ejemplo, [escuchar actualizaciones de suscripción](kmp-check-subscription-status#listen-to-subscription-updates)), añade la comprobación al listener existente en lugar de registrar uno nuevo.

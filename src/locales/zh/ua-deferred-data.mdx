@@ -4,6 +4,7 @@ description: "在 Adapty Attribution 中配置延迟深链接。"
 metadataTitle: "延迟深链接 | Adapty Attribution | Adapty 文档"
 keywords: ['adapty attribution', 'adapty ua', '用户获取', '深链接', '延迟深链接']
 ---
+
 延迟深度链接允许您在用户点击广告后安装应用时，将自定义数据传递给应用。例如，您可以在用户安装并启动应用后，立即将其导航到应用中的特定位置。
 
 :::important
@@ -12,9 +13,13 @@ keywords: ['adapty attribution', 'adapty ua', '用户获取', '深链接', '延�
 
 其工作原理如下：
 
-1. 当用户点击您的广告时，Adapty 会保存点击数据。
+1. 当用户点击你的广告时，Adapty 会保存点击数据。
 2. 当 Adapty 注册安装事件时，它会从点击中获取延迟数据。
-3. 用户安装应用并首次启动后，Adapty 会检索存储的数据，您的应用将收到自定义参数，从而可以在应用代码中对不同的值作出响应。
+3. 用户安装应用并首次启动后，Adapty 会检索存储的数据，你的应用将收到自定义参数，让你可以在应用代码中对不同的值做出响应。
+
+只有当 Adapty 将安装与点击成功匹配时，你的应用才会收到延迟数据。如果用户已经安装了你的应用，再点击广告，应用不会收到任何新的延迟数据。
+
+在 iOS 上，只有当安装和点击来自相同 IP 地址范围时，Adapty 才会将两者匹配。例如，如果用户在 Wi-Fi 下点击链接，却在蜂窝网络下首次启动应用，Adapty 将无法匹配，你的应用也不会收到任何延迟数据。
 
 Adapty 支持以下延迟数据参数：
 
@@ -22,32 +27,34 @@ Adapty 支持以下延迟数据参数：
 - `android_deferred_data`
 - `deferred_data_sub[1-10]`
 
-要添加延迟数据参数，请在推广活动设置中将其附加到您的链接中：
+如需添加延迟数据参数，请在推广活动设置中将其追加到链接末尾：
 
-1. 从 **Integrations -> Meta/TikTok Ads** 页面打开您的广告系列，或从 **Tracking links** 页面打开您的追踪链接。复制您将在广告系列中使用的点击链接。
+1. 如果您的广告活动在 Meta Ads 或 TikTok 上投放，请在 **Integrations** > **Meta Ads** 或 **TikTok Ads** 中找到您的跟踪链接。如果您的广告活动针对其他平台，请打开 **Integrations** > **Custom**。然后复制您想使用的链接。
 
 <ZoomImage id="ua-lnk.webp" width="900px" />
 
-2. 在您的广告平台（Meta、TikTok、Google Ads 等）中，将链接粘贴到广告目标 URL 字段，然后将延迟数据参数作为额外的查询参数追加到链接末尾——每个参数前加 `&`。例如，若要在安装后将 iOS 用户引导至"Welcome"页面，请添加 `&ios_deferred_data=welcome`。最终目标 URL 如下所示：
+2. 在您的广告平台（Meta、TikTok、Google Ads 等）中，将链接粘贴到广告目标 URL 字段，然后将延迟数据参数以额外查询参数的形式追加到链接末尾——每个参数前加 `&`。例如，若要在安装后将 iOS 用户引导至"Welcome"页面，请添加 `&ios_deferred_data=welcome`。最终的目标 URL 如下所示：
 
 ```
-https://api-ua.adapty.io/api/v1/attribution/click?adpt_cid=__ADAPTY__ID__&ios_deferred_data=welcome&campaign_id=__CAMPAIGN_ID__&adset_id=__AID__&ad_id=__CID__&campaign_name=__CAMPAIGN_NAME__&adset_name=__AID_NAME__&ad_name=__CID_NAME__&redirect_url=__APP_LINK__
+https://api-ua.adapty.io/api/v1/attribution/c/YOUR_CODE?campaign_id=__CAMPAIGN_ID__&adset_id=__AID__&ad_id=__CID__&campaign_name=__CAMPAIGN_NAME__&adset_name=__AID_NAME__&ad_name=__CID_NAME__&redirect_url=__APP_LINK__&ios_deferred_data=welcome
 ```
 
-3. 在你的应用代码中处理参数。请注意，延迟数据参数位于 `payload` 参数中，且 `payload` 参数是经过转义的 JSON，因此你需要在应用代码中对其进行解析。
+3. 在你的应用代码中处理这些参数。SDK 会通过安装详情的 `payload` 属性传递它们：
+   - **iOS**：从 `payload.dictionary` 读取。
+   - **Android**：从 `payload.dataMap` 读取。
+   - **React Native 和 Flutter**：`payload` 是一个 JSON 字符串，需要先解析。
 
-例如，以下是如何处理 `ios_deferred_data` 为 `welcome` 的安装情况：
+例如，以下代码展示了如何处理 `ios_deferred_data` 为 `welcome` 的安装情况：
+
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
+
 ```swift showLineNumbers
 Adapty.delegate = self
 
 nonisolated func onInstallationDetailsSuccess(_ details: AdaptyInstallationDetails) {
     guard
-        let payloadStr = details.payload,
-        let data = payloadStr.data(using: .utf8),
-        let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-        let deeplink = payload["ios_deferred_data"] as? String,
+        let deeplink = details.payload?.dictionary?["ios_deferred_data"] as? String,
         deeplink == "welcome"
     else { return }
 
@@ -59,27 +66,29 @@ nonisolated func onInstallationDetailsSuccess(_ details: AdaptyInstallationDetai
 ```
 
 </TabItem>
+
 <TabItem value="android" label="Kotlin">
 
 ```kotlin showLineNumbers
 Adapty.setOnInstallationDetailsListener(object : OnInstallationDetailsListener {
     override fun onInstallationDetailsSuccess(details: AdaptyInstallationDetails) {
-        details.payload?.let {
-            runCatching {
-                val json = JSONObject(it)
-                if (json.optString("android_deferred_data") == "welcome") {
-                    println("Navigate to welcome screen")
-                    // navigate here
-                }
-            }.onFailure(Throwable::printStackTrace)
+        if (details.payload?.dataMap?.get("android_deferred_data") == "welcome") {
+            println("Navigate to welcome screen")
+            // navigate here
         }
+    }
+
+    override fun onInstallationDetailsFailure(error: AdaptyError) {
+        // handle the error
     }
 })
 
 ```
+
 </TabItem>
 
 <TabItem value="rn" label="React Native" default>
+
 ```typescript showLineNumbers
 adapty.addEventListener('onInstallationDetailsSuccess', details => {
     // Parse the payload JSON and navigate to welcome screen if needed

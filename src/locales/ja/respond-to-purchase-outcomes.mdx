@@ -1,66 +1,77 @@
 ---
-title: "購入結果への対応"
-description: "購入結果ごとにアプリコードで対応し、購入成功時に2つ目のフローを開く方法を説明します。"
-metadataTitle: "購入結果への対応 | フロービルダー | Adapty ドキュメント"
+title: "購入および購入復元への対応"
+description: "ペイウォール画面後のフローを継続する: 購入または購入復元の各結果に応じて、ユーザーに表示する内容を設定します。"
+metadataTitle: "購入および購入復元への対応 | フローとペイウォール | Adapty ドキュメント"
 ---
 
-購入が完了すると、Adapty SDK はその結果をアプリに返します。アプリが何らかの処理を行うまで、画面上は何も変わりません。アプリはペイウォールを閉じたり、再試行のために開いたままにしたり、購入を確認する2つ目のフローを開いたりすることができます。
+ペイウォール画面の後もフローを継続できます。オンボーディングを再開したり、新規サブスクライバーにサンキュー画面を表示したり、以前の購入を復元したユーザーを歓迎したりすることが可能です。
 
-ビルダーでは購入結果に基づく分岐はできません。購入完了時に発火する[トリガー](onboarding-actions#trigger-types)も、その結果を保持する[変数](onboarding-variables)も存在しないためです。そのため、この遷移は購入結果を受け取るアプリのコードで処理する必要があります。
+アクションの設定では、購入条件ごとにアウトカムを設定します。アクションを設定しないアウトカムは、ユーザーをペイウォール画面に留まらせます。
 
-作業は3つのパートに分かれます：
-
-- 購入後のフローを作成し、専用のプレースメントに割り当てる。
-- アプリのコードで購入結果に基づいて分岐する。
-- 成功時にペイウォールを閉じ、購入後のフローを表示する。
+- **Purchase** アクションには次の条件があります：**When succeeded**、**When failed**、**When cancelled by user**、**When pending**。
+- **Restore purchases** アクションには **When restore completed** と **When restore failed** の2つの条件があります。
 
 ## 始める前に \{#before-you-start\}
 
-- フローを使用するには Adapty SDK v4.0 以降が必要です。
-- ペイウォールを作成してください。例えば、[基本的なペイウォール画面の作成](basic-paywall-screen)のレシピを参考にしてください。
+以下を確認してください：
 
-## 1. 購入後のフローを作成する \{#1-build-the-post-purchase-flow\}
+- アプリが Adapty SDK v4.0 以降を使用している。
+- フローにペイウォール画面がある。作成方法は [基本的なペイウォール画面の作成](basic-paywall-screen) レシピを参照。
+- ペイウォール画面のボタンなどの要素に [**Purchase** アクション](paywall-product-block#trigger-a-purchase) が設定されている。
+- アプリがフローを開いたままの状態で <InlineTooltip tooltip="購入と復元のコールバック">[iOS](ios-handling-events)、[Android](android-handling-events)、[React Native](react-native-handling-events-1)、[Flutter](flutter-handling-events)、[Unity](unity-handling-events)、[Kotlin Multiplatform](kmp-handling-events)、[Capacitor](capacitor-handling-events)</InlineTooltip> を処理している。
 
-[フローを作成します](paywall-builder-templates)。このフローは購入後に実行されるため、プロダクトは不要です。ユーザーをアプリ自身のUIに戻すには、最後の画面に **Close Flow** アクションを持つボタンを追加してください。
+## 結果に対するアクションを追加する \{#add-actions-for-a-result\}
 
-<ZoomImage id="post-purchase-flow-close-action.webp" width="700px" alt="Post-purchase flow in the builder with a Thank you screen, the Start button selected, and its On Tap trigger set to the Close Flow action" />
-
-カスタムアクションは、フローに複数の出口がある場合に使用してください。ボタンをそれぞれ独自のアクション IDで複数作成することで、アプリ側で **Set up now** と **Set up later** を区別できるようになります。
-
-[**カスタムアクション**](onboarding-actions#custom-actions)を使用してください。
-
-## 2. 購入後フローを専用プレースメントに追加する \{#2-add-the-post-purchase-flow-to-its-own-placement\}
-
-アプリから購入後フローを取得するには、専用のプレースメントに割り当てる必要があります。ペイウォールのプレースメントでは代用できません。1つのプレースメントはオーディエンスごとに1つのフローしか提供できないためです。
-
-1. [フローを公開する](builder-save-publish)。
-2. [フロープレースメントを作成する](create-placement)。**Placement ID** をメモしておいてください。アプリはこのIDを使ってフローを取得します。
-3. 購入後フローを新しいプレースメントに割り当てる。
-
-## 3. 購入結果に応じて処理を分岐する \{#3-branch-on-the-purchase-result\}
-
-アプリは2つのコールバックで購入結果を受け取ります。
-
-- **Completion**: 購入が完了しました — 成功、ユーザーによるキャンセル、または承認待ち（例：保護者の承認）のいずれかです。3つを区別するには、結果のタイプを確認してください。成功時には、更新された `AdaptyProfile` が結果に含まれます。
-- **Failure**: エラーにより購入が停止し、コールバックには `AdaptyError` が含まれます — 購入制限、無効なプロダクト、ネットワーク障害、またはトランザクション検証エラーが原因です。
-
-コールバック名とシグネチャ: [iOS](ios-handling-events) | [Android](android-handling-events) | [React Native](react-native-handling-events-1) | [Flutter](flutter-handling-events) | [Unity](unity-handling-events) | [Kotlin Multiplatform](kmp-handling-events) | [Capacitor](capacitor-handling-events)
-
-結果に応じて処理を分岐してください:
-
-- 成功時はペイウォールを閉じ、購入後のフローを表示します。
-- キャンセル・保留中の支払い・失敗時はペイウォールを開いたままにします。
-
-:::note
-リストア処理は専用のコールバックでレポートされ、再インストールや機種変更をしたユーザーにも対応しています。返されたプロファイルに[アクセスレベル](access-level)がアクティブになっていることを確認し、通常と同じようにフローを閉じて表示してください。このコールバックには別のフローを割り当てましょう — 購入のお礼を伝えるスクリーンはリストアには適していません。
+:::important
+フローが応答できるのは **In-App Store** での購入のみです。**Web Payment** での購入結果は受け取れません。
 :::
 
-## 4. 購入後フローの読み込みと表示 \{#4-load-and-present-the-post-purchase-flow\}
+1. **Purchase** または **Restore purchases** アクションが設定された要素を選択します。
+2. **Purchase** または **Restore purchases** アクションをクリックします。
+3. **When succeeded** など、必要な購入または復元の結果に対して、<Inline id="plus.svg" alt="Add action" /> をクリックします。
+4. **Action** ドロップダウンから、**Do nothing** の代わりに実行するアクションを選択します。
 
-待ち時間なく購入後フローを開くには、ハンドラー内ではなく、ペイウォールと並行して事前に取得してください。SDK は事前に画像をダウンロードしてキャッシュします。
+:::note
+**Purchase** または **Restore purchases** の後に同じトリガーで**Close Flow** アクションを続けると、結果が返る前にすぐ実行されてしまいます。代わりにアウトカムアクションとして追加してください。
+:::
 
-複数のプレースメントを一度にキャッシュウォームアップするには、[`preloadFlows`](ios-optimize-paywall-fetching#preload-placements)（SDK 4.1+）を使用してください。
+:::tip
+**Purchase** アクションにアウトカムアクションが設定されている場合、ダブルタップしても2回目の購入は開始されません。ストアが結果を返すまで（最大60秒）、そのアクションへの追加タップはフローによって無視されます。**Restore purchases** も同様に動作します。
+:::
 
-フローとペイウォールの取得: [iOS](get-pb-paywalls) | [Android](android-get-pb-paywalls) | [React Native](react-native-get-pb-paywalls) | [Flutter](flutter-get-pb-paywalls) | [Unity](unity-get-pb-paywalls) | [Kotlin Multiplatform](kmp-get-pb-paywalls) | [Capacitor](capacitor-get-pb-paywalls)
+アプリでアウトカムアクションを確認するには、[サンドボックス購入を行ってください](test-purchases-in-sandbox)。
 
-フローとペイウォールの表示: [iOS](ios-present-paywalls) | [Android](android-present-paywalls) | [React Native](react-native-present-paywalls) | [Flutter](flutter-present-paywalls) | [Unity](unity-present-paywalls) | [Kotlin Multiplatform](kmp-present-paywalls) | [Capacitor](capacitor-present-paywalls)
+[Adaptyモバイルアプリでのプレビュー](paywall-device-compatibility-preview#preview-on-devices)では、実際の購入はできません。
+
+フローがアプリ内で結果アクションをスキップする場合は、[フローが結果アクションをスキップする理由](flow-common-issues#the-flow-doesnt-run-the-actions-set-for-a-purchase-result)をご覧ください。
+
+:::tip
+購入結果をアプリのコードで処理したい場合（例：ネイティブ画面を開くなど）は、Adapty SDK の購入コールバックや復元コールバックを使用してください。そのコードを変更するたびにアプリのリリースが必要になります。購入後に別のフローを開いている場合は、そのスクリーンをペイウォールを含むフローに移動することもできます。
+:::
+
+### 購入成功後に次の画面を表示する \{#show-the-next-screen-after-a-successful-purchase\}
+
+購入成功後にオンボーディングを続けたり、サンクスページを表示するには、**When succeeded** のアウトカムと [**Navigate to Screen**](onboarding-actions#navigate-to-screen) アクションを組み合わせ、遷移先としてその画面を選択してください。
+
+### 購入成功後にフローを閉じる \{#close-the-flow-after-a-successful-purchase\}
+
+購入が成功した後にフローを終了するには、ナビゲーションの代わりに **When succeeded** に [**Close Flow**](onboarding-actions#close-flow) を追加します。これにより、フローは購入が成功したときのみ閉じられるため、アプリのコードでフローを閉じる処理は不要です。
+
+### 失敗・キャンセル・保留中の購入に対応する \{#respond-to-a-failed-canceled-or-pending-purchase\}
+
+**Purchase** アクションの各結果に対してアクションを追加することで、失敗・キャンセル・保留中の購入後にアラートや画面を表示できます。
+
+- **When failed**: エラーが発生して購入が失敗しました。たとえば、後でもう一度お試しくださいとユーザーに伝える[アラートを表示](onboarding-actions#show-alert)します。
+- **When cancelled by user**: ユーザーが購入をキャンセルしました。たとえば、別のオファーを表示する画面を表示します。
+- **When pending**: 銀行が支払いを確認している間や、iOS の「承認購入を依頼」で保護者が承認するのを待っている間など、購入が承認待ちになっています。銀行や保護者が承認してもフローは応答しないため、待機中であることを説明する画面を表示します。
+
+:::tip
+購入が失敗したユーザーに再試行の機会を与えるには、たとえば **When failed** にアラートを設定して、ユーザーをペイウォール上に留まらせましょう。なお、**Purchase**、**Restore purchases**、または [**Request permission**](onboarding-actions#request-permission) をアウトカムに追加することはできません。
+:::
+
+### 購入の復元に応答する \{#respond-to-a-purchase-restoration\}
+
+[**Restore purchases**](paywall-product-block#restore-purchases) アクションには、**When restore completed** と **When restore failed** の2つの結果があります。
+
+**When restore completed** は、復元がエラーなく完了したことを意味し、ユーザーがアクセス権を持っていることを意味するわけではありません。フロー内でアクセスレベルを確認することはできません。アクセスに依存するコンテンツを表示するには、**When restore completed** に **Close Flow** を追加し、アプリ内で[アクセスレベル](access-level)を確認してください。
+

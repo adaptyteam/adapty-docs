@@ -4,6 +4,7 @@ description: "Настройте отложенные диплинки в Adapty
 metadataTitle: "Отложенные диплинки | Adapty Attribution | Документация Adapty"
 keywords: ['adapty attribution', 'adapty ua', 'привлечение пользователей', 'диплинк', 'отложенный диплинк']
 ---
+
 Отложенные диплинки позволяют передавать пользовательские данные в приложение, когда пользователи устанавливают его после перехода по вашей рекламе. Например, можно сразу после установки и запуска направить их в нужный раздел приложения.
 
 :::important
@@ -12,9 +13,13 @@ keywords: ['adapty attribution', 'adapty ua', 'привлечение польз
 
 Вот как это работает:
 
-1. Когда пользователь нажимает на ваше объявление, Adapty сохраняет данные о клике.
-2. Когда Adapty регистрирует событие установки, он получает отложенные данные из клика.
-3. После того как пользователь установит приложение и запустит его впервые, Adapty извлекает сохранённые данные, и ваше приложение получает пользовательские параметры — это позволяет по-разному реагировать на различные значения в коде приложения.
+1. Когда пользователь нажимает на вашу рекламу, Adapty сохраняет данные о клике.
+2. Когда Adapty регистрирует событие установки, он получает отложенные данные о клике.
+3. После того как пользователь устанавливает приложение и запускает его впервые, Adapty извлекает сохранённые данные, и ваше приложение получает пользовательские параметры, что позволяет реагировать на различные значения в коде приложения.
+
+Приложение получает отложенные данные только в том случае, если Adapty связывает установку с кликом. Если пользователь, у которого уже установлено ваше приложение, нажимает на рекламу, приложение не получает новых отложенных данных.
+
+На iOS Adapty сопоставляет установку с кликом только в том случае, если оба события пришли с одного диапазона IP-адресов. Например, клик по Wi-Fi и первый запуск по мобильной сети не будут сопоставлены, и ваше приложение не получит отложенные данные.
 
 Adapty поддерживает следующие параметры отложенных данных:
 
@@ -24,30 +29,32 @@ Adapty поддерживает следующие параметры отлож
 
 Чтобы добавить параметры отложенных данных, добавьте их к вашей ссылке в настройках кампании:
 
-1. Откройте свою кампанию на странице **Integrations -> Meta/TikTok Ads** или перейдите на страницу **Tracking links** и откройте нужную трекинговую ссылку. Скопируйте ссылку для клика, которую вы будете использовать в кампании.
+1. Если ваша кампания запущена в Meta Ads или TikTok, найдите ссылку для отслеживания в **Integrations** > **Meta Ads** или **TikTok Ads**. Если кампания настроена на другую платформу, откройте **Integrations** > **Custom**. Затем скопируйте нужную ссылку.
 
 <ZoomImage id="ua-lnk.webp" width="900px" />
 
-2. В рекламной платформе (Meta, TikTok, Google Ads и т. д.) вставьте ссылку в поле URL назначения объявления, затем добавьте параметры отложенных данных в виде дополнительных query-параметров — каждый с префиксом `&`. Например, чтобы после установки направить пользователей iOS на экран «Welcome», добавьте `&ios_deferred_data=welcome`. Итоговый URL назначения будет выглядеть так:
+2. В рекламной платформе (Meta, TikTok, Google Ads и т. д.) вставьте ссылку в поле URL назначения объявления, затем добавьте к ней параметры отложенных данных в виде дополнительных query-параметров — каждый с префиксом `&`. Например, чтобы показать iOS-пользователям экран «Welcome» после установки, добавьте `&ios_deferred_data=welcome`. Итоговый URL назначения будет выглядеть так:
 
 ```
-https://api-ua.adapty.io/api/v1/attribution/click?adpt_cid=__ADAPTY__ID__&ios_deferred_data=welcome&campaign_id=__CAMPAIGN_ID__&adset_id=__AID__&ad_id=__CID__&campaign_name=__CAMPAIGN_NAME__&adset_name=__AID_NAME__&ad_name=__CID_NAME__&redirect_url=__APP_LINK__
+https://api-ua.adapty.io/api/v1/attribution/c/YOUR_CODE?campaign_id=__CAMPAIGN_ID__&adset_id=__AID__&ad_id=__CID__&campaign_name=__CAMPAIGN_NAME__&adset_name=__AID_NAME__&ad_name=__CID_NAME__&redirect_url=__APP_LINK__&ios_deferred_data=welcome
 ```
 
-3. Обрабатывайте параметры в коде приложения. Обратите внимание, что параметры отложенных данных передаются в параметре `payload`, который является экранированным JSON — его нужно разобрать в коде приложения.
+3. Обработайте параметры в коде приложения. SDK передаёт их в свойстве `payload` сведений об установке:
+   - **iOS**: считайте их из `payload.dictionary`.
+   - **Android**: считайте их из `payload.dataMap`.
+   - **React Native и Flutter**: `payload` — это JSON-строка, поэтому сначала распарсите её.
 
-Например, вот как можно обработать установки, где `ios_deferred_data` равен `welcome`:
+Вот как, например, можно обработать установки, у которых `ios_deferred_data` равно `welcome`:
+
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
+
 ```swift showLineNumbers
 Adapty.delegate = self
 
 nonisolated func onInstallationDetailsSuccess(_ details: AdaptyInstallationDetails) {
     guard
-        let payloadStr = details.payload,
-        let data = payloadStr.data(using: .utf8),
-        let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-        let deeplink = payload["ios_deferred_data"] as? String,
+        let deeplink = details.payload?.dictionary?["ios_deferred_data"] as? String,
         deeplink == "welcome"
     else { return }
 
@@ -59,27 +66,29 @@ nonisolated func onInstallationDetailsSuccess(_ details: AdaptyInstallationDetai
 ```
 
 </TabItem>
+
 <TabItem value="android" label="Kotlin">
 
 ```kotlin showLineNumbers
 Adapty.setOnInstallationDetailsListener(object : OnInstallationDetailsListener {
     override fun onInstallationDetailsSuccess(details: AdaptyInstallationDetails) {
-        details.payload?.let {
-            runCatching {
-                val json = JSONObject(it)
-                if (json.optString("android_deferred_data") == "welcome") {
-                    println("Navigate to welcome screen")
-                    // navigate here
-                }
-            }.onFailure(Throwable::printStackTrace)
+        if (details.payload?.dataMap?.get("android_deferred_data") == "welcome") {
+            println("Navigate to welcome screen")
+            // navigate here
         }
+    }
+
+    override fun onInstallationDetailsFailure(error: AdaptyError) {
+        // handle the error
     }
 })
 
 ```
+
 </TabItem>
 
 <TabItem value="rn" label="React Native" default>
+
 ```typescript showLineNumbers
 adapty.addEventListener('onInstallationDetailsSuccess', details => {
     // Parse the payload JSON and navigate to welcome screen if needed

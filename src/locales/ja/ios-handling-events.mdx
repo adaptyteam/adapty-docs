@@ -1,15 +1,17 @@
 ---
 title: "フローとペイウォールのイベントを処理する - iOS"
-description: "iOSアプリでフローおよびペイウォールのイベントを処理する方法。"
+description: "iOSアプリでフローとペイウォールのイベントを処理する方法。"
 metadataTitle: "フローイベントの処理 - iOS | Adapty ドキュメント"
 toc_max_heading_level: 4
 keywords: ['event', 'AdaptyFlowControllerDelegate', 'AdaptyPaywallControllerDelegate', 'flowController', 'didSelectProduct', 'didStartPurchase', 'didFinishPurchase', 'didFailPurchase', 'didFinishRestoreWith', 'didFailRestoreWith', 'didFailLoadingProductsWith', 'didFailRenderingWith', 'didReceiveError', 'didFinishWebPaymentNavigation']
 ---
 
 <SDKv4>
+
 :::important
 このガイドでは、購入・復元・プロダクト選択・ペイウォール表示に関するイベント処理について説明します。また、ボタン操作（ペイウォールを閉じる、リンクを開くなど）の実装も必要です。詳しくは[ボタン操作の処理に関するガイド](handle-paywall-actions)をご覧ください。
 :::
+
 フローとペイウォールは、購入や購入の復元に追加のコードは不要です。ただし、アプリが反応できるイベントをいくつか生成します。これらのイベントには、ボタン操作（閉じるボタン、URL、プロダクト選択など）や購入関連アクションの通知が含まれます。以下で、これらのイベントへの対応方法を説明します。
 
 :::tip
@@ -17,14 +19,16 @@ keywords: ['event', 'AdaptyFlowControllerDelegate', 'AdaptyPaywallControllerDele
 Adapty SDK をモバイルアプリに組み込む実際の例を見たいですか？ペイウォールの表示、購入、その他の基本的な機能を含む完全なセットアップを示す[サンプルアプリ](sample-apps)をぜひご確認ください。
 
 :::
+
 ## SwiftUI でのイベント処理 \{#handling-events-in-swiftui\}
 
 モバイルアプリ内のフローまたはペイウォール画面で発生するプロセスを制御・監視するには、SwiftUI の `.flow` モディファイアを使用します。
+
 ```swift showLineNumbers title="Swift"
 @State var flowPresented = false
 
 var body: some View {
-    Text("Hello, AdaptyUI!")
+    YourContentView()
         .flow(
             isPresented: $flowPresented,
             flowConfiguration: flowConfiguration,
@@ -43,7 +47,7 @@ var body: some View {
             didFinishPurchase: { product, purchaseResult in /* dismiss, or do nothing to let the flow continue */ },
             didFailPurchase: { product, error in /* handle the error */ },
             didStartRestore: { /* Handle the event */ },
-            didFinishRestore: { profile in /* check access level and dismiss */ },
+            didFinishRestore: { profile in /* check access level and dismiss, or do nothing to let the flow continue */ },
             didFailRestore: { error in /* handle the error */ },
             didReceiveError: { error in
                 flowPresented = false
@@ -57,32 +61,36 @@ var body: some View {
 ```
 
 クロージャのパラメーターは必要なものだけ登録すれば、不要なものは省略できます。
-| パラメーター                              | 必須     | 説明                                                                                                                                                                                                                                              |
-|:------------------------------------------|:---------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **isPresented**                           | 必須     | フローまたはペイウォール画面の表示を管理するバインディング。                                                                                                                                                                                      |
-| **flowConfiguration**                     | 必須     | フローまたはペイウォールのビジュアル詳細を含む `AdaptyUI.FlowConfiguration` オブジェクト。詳細は[フローとペイウォールの取得](get-pb-paywalls)を参照してください。                                                                                  |
-| **didFinishPurchase**                     | 必須     | `Adapty.makePurchase()` が正常に完了したときに呼び出されます。フローは自動的に閉じないため、ここでプレゼンテーションバインディングを `false` に設定するか、何もせずにフローを購入後も継続させてください。                                           |
-| **didFailPurchase**                       | 必須     | `Adapty.makePurchase()` が失敗したときに呼び出されます。                                                                                                                                                                                          |
-| **didFinishRestore**                      | 必須     | `Adapty.restorePurchases()` が正常に完了したときに呼び出されます。                                                                                                                                                                                |
-| **didFailRestore**                        | 必須     | `Adapty.restorePurchases()` が失敗したときに呼び出されます。                                                                                                                                                                                      |
-| **didReceiveError**                       | 必須     | フローでレンダリングエラーまたはフロースクリプトのランタイムエラー（例：JavaScript の例外、`AdaptyUIError` コード `4105`）が発生したときに呼び出されます。レンダリングエラーの場合は[Adapty サポートにお問い合わせください](mailto:support@adapty.io)。 |
-| **placeholderBuilder**                    | 任意     | フローまたはペイウォールの読み込み中にプレースホルダービューをレンダリングする関数。デフォルトは `ProgressView`。                                                                                                                                  |
-| **fullScreen**                            | 任意     | フローまたはペイウォールをフルスクリーンモードで表示するか、シートとして表示するかを決定します。デフォルトは `true`。                                                                                                                              |
-| **didAppear**                             | 任意     | フローまたはペイウォールのビューが画面に表示されたときに呼び出されます。                                                                                                                                                                          |
-| **didDisappear**                          | 任意     | フローまたはペイウォールのビューが閉じられたときに呼び出されます。                                                                                                                                                                                |
-| **didPerformAction**                      | 任意     | ユーザーがボタンをクリックしたときに呼び出されます。`close` と `openURL` の2つのアクション ID が事前定義されており、それ以外はビルダーで設定できるカスタムアクションです。                                                                           |
-| **didSelectProduct**                      | 任意     | ユーザーまたはシステムによって購入するプロダクトが選択されたときに呼び出されます。                                                                                                                                                                |
-| **didStartPurchase**                      | 任意     | ユーザーが購入プロセスを開始したときに呼び出されます。                                                                                                                                                                                            |
-| **didFinishWebPaymentNavigation**         | 任意     | ウェブ決済のナビゲーションが完了したときに呼び出されます。                                                                                                                                                                                        |
-| **didStartRestore**                       | 任意     | ユーザーが復元プロセスを開始したときに呼び出されます。                                                                                                                                                                                            |
-| **didFailLoadingProducts**                | 任意     | プロダクトの読み込み中にエラーが発生したときに呼び出されます。`true` を返すと読み込みを再試行します。                                                                                                                                              |
-| **didPartiallyLoadProducts**              | 任意     | プロダクトが部分的に読み込まれたときに呼び出されます。                                                                                                                                                                                            |
-| **showAlertItem**                         | 任意     | フローまたはペイウォールの上にアラートアイテムの表示を管理するバインディング。                                                                                                                                                                    |
-| **showAlertBuilder**                      | 任意     | アラートビューをレンダリングする関数。                                                                                                                                                                                                            |
+
+| パラメーター              | 必須 | 説明                                                                                                                                                                                                                                         |
+|:-----------------------|:---------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **isPresented**        | 必須 | フローまたはペイウォール画面が表示されるかどうかを管理するバインディング。                                                                                                                                                                             |
+| **flowConfiguration**  | 必須 | フローまたはペイウォールの視覚的な詳細を含む `AdaptyUI.FlowConfiguration` オブジェクト。詳しくは [フローとペイウォールの取得](get-pb-paywalls) を参照してください。                                                                                       |
+| **didFinishPurchase**  | 必須 | `Adapty.makePurchase()` が完了したとき（ユーザーが購入をキャンセルした場合や購入が保留中の場合を含む）に呼び出されます。フローは自動的に閉じません。`purchaseResult` に応じて、プレゼンテーションバインディングを `false` に設定するか、フローを継続させるために何もしないかを選択してください。                                     |
+| **didFailPurchase**    | 必須 | `Adapty.makePurchase()` が失敗したときに呼び出されます。                                                                                                                                                                                                         |
+| **didFinishRestore**   | 必須 | `Adapty.restorePurchases()` が正常に完了したときに呼び出されます。                                                                                                                                                                                    |
+| **didFailRestore**     | 必須 | `Adapty.restorePurchases()` が失敗したときに呼び出されます。                                                                                                                                                                                                     |
+| **didReceiveError**    | 必須 | フローでレンダリングエラーやフロースクリプトの実行時エラー（JavaScriptの例外、`AdaptyUIError` コード `4105` など）が発生したときに呼び出されます。レンダリングエラーの場合は [Adapty サポートにお問い合わせ](mailto:support@adapty.io) ください。            |
+| **placeholderBuilder** | 任意 | フローまたはペイウォールの読み込み中にプレースホルダービューをレンダリングするための関数。デフォルトは `ProgressView`。                                                                                                                                   |
+| **fullScreen**         | 任意 | フローまたはペイウォールをフルスクリーンモードで表示するか、シートとして表示するかを決定します。デフォルトは `true`。                                                                                                                                    |
+| **didAppear**          | 任意 | フローまたはペイウォールのビューが画面に表示されたときに呼び出されます。                                                                                                                                                                                            |
+| **didDisappear**       | 任意 | フローまたはペイウォールのビューが閉じられたときに呼び出されます。                                                                                                                                                                                                |
+| **didPerformAction**   | 任意 | ユーザーがボタンをクリックしたときに呼び出されます。事前定義されたアクション ID は `close` と `openURL` の2つで、それ以外はカスタムでビルダーから設定できます。                                                                                        |
+| **didSelectProduct**   | 任意 | ユーザーまたはシステムによってプロダクトが購入対象として選択されたときに呼び出されます。                                                                                                                                                                       |
+| **didStartPurchase**   | 任意 | ユーザーが購入プロセスを開始したときに呼び出されます。                                                                                                                                                                                                  |
+| **didFinishWebPaymentNavigation** | 任意 | ウェブ決済のナビゲーションが完了したときに呼び出されます。                                                                                                                                                                                          |
+| **didStartRestore**    | 任意 | ユーザーが復元プロセスを開始したときに呼び出されます。                                                                                                                                                                                                   |
+| **didFailLoadingProducts** | 任意 | プロダクトの読み込み中にエラーが発生したときに呼び出されます。再試行するには `true` を返してください。                                                                                                                                              |
+| **didPartiallyLoadProducts** | 任意 | プロダクトが部分的に読み込まれたときに呼び出されます。                                                                                                                                                                                               |
+| **showAlertItem**      | 任意 | フローまたはペイウォールの上にアラートアイテムの表示を管理するバインディング。                                                                                                                                                                        |
+| **showAlertBuilder**   | 任意 | アラートビューをレンダリングするための関数。                                                                                                                                                                                                            |
+
 ## UIKit でのイベント処理 \{#handling-events-in-uikit\}
 
 UIKit アプリでは、`AdaptyFlowControllerDelegate` プロトコルを通じてイベントを処理します。`AdaptyFlowController` と `AdaptyFlowControllerDelegate` のセットアップ方法については、[フローとペイウォールの表示 - iOS](ios-present-paywalls) を参照してください。
+
 このプロトコルには13のメソッドが宣言されており、そのうち4つはデフォルト実装がなく、準拠する際に必ず実装する必要があります：`didFinishPurchase`、`didFailPurchase`、`didFinishRestoreWith`、`didFailRestoreWith`です。残りのメソッドはデフォルトの何もしない実装を持っており、カスタム動作が必要な場合にオーバーライドできます。メソッドは以下に目的別にグループ化されています。
+
 ### ライフサイクル \{#lifecycle\}
 
 ```swift showLineNumbers title="Swift"
@@ -92,6 +100,15 @@ func flowControllerDidDisappear(_ controller: AdaptyFlowController) { }
 ```
 
 これらはフローまたはペイウォールのビューが表示・非表示になったときに呼び出されます。
+
+:::note
+SDKは、フローのクローズをアプリコードに2つの方法で通知します：
+- [`.close` アクション](#user-actions)：フロー内で**フローを閉じる**アクションが実行されたとき（例：閉じるボタンのタップ）にアプリコードへ通知されます。この時点では、フローはまだ画面に表示されています。
+- `flowControllerDidDisappear`：フローが画面から消えた後（理由を問わず）にSDKが呼び出します。フルスクリーン広告や、`.fullScreen` プレゼンテーションスタイルを使用した別のビューコントローラーがフローを覆う場合も、この理由の一つです。
+
+ユーザーがフローを閉じたときにコードを実行するには、`.close` アクションを処理してください。
+:::
+
 ### ユーザーアクション \{#user-actions\}
 
 ```swift showLineNumbers title="Swift"
@@ -102,9 +119,10 @@ func flowController(
 ```
 
 `AdaptyUI.Action` のケース:
-- `.close` — デフォルトの動作はコントローラーを閉じます。コントローラーを画面に残したり、追加のクリーンアップ処理を行う場合はオーバーライドしてください。
-- `.openURL(url:)` — デフォルトの動作は `UIApplication.shared.open(...)` でURLを開きます。
-- `.custom(id:)` — ビルダーでカスタムアクションIDが設定されたボタンがタップされたときに発火します。
+- `.close` — デフォルトの動作はコントローラーを閉じます。コントローラーを画面に残したい場合や追加のクリーンアップを行う場合はオーバーライドしてください。
+- `.openURL(url:in:)` — デフォルトの動作は、`in` の値に応じてアプリ内ブラウザまたは外部ブラウザで URL を開きます。
+- `.custom(id:)`（Adapty SDK 4.0〜4.3）または `.custom(id:arguments:)`（4.4 以降）— ビルダーでカスタムアクション ID が設定されたボタンがタップされたときに発火します。
+
 ### プロダクト選択 \{#product-selection\}
 
 ```swift showLineNumbers title="Swift"
@@ -115,7 +133,9 @@ func flowController(
 ```
 
 ユーザーまたはシステムによってプロダクトが購入対象として選択されたときに呼び出されます。プロダクトにはオファーの全情報が含まれており（v4 ではエリジビリティが自動で判定されるため、`AdaptyPaywallProductWithoutDeterminingOffer` という独立した型は存在しません）。
+
 ### 購入イベント \{#purchase-events\}
+
 ```swift showLineNumbers title="Swift"
 func flowController(
     _ controller: AdaptyFlowController,
@@ -140,6 +160,7 @@ func flowController(
 ```
 
 `didFinishPurchase` と `didFailPurchase` にはデフォルトの実装がないため、必ず実装する必要があります。購入が成功してもコントローラーは自動的に閉じられません。適切なタイミングで `controller.dismiss(animated:)` を呼び出すか、複数画面のフローで購入後も続けて進む場合はそのまま何もしなくても構いません。
+
 ### リストアイベント \{#restore-events\}
 
 ```swift showLineNumbers title="Swift"
@@ -156,7 +177,8 @@ func flowController(
 ) { }
 ```
 
-`didFinishRestoreWith` と `didFailRestoreWith` にはデフォルト実装がありません。コントローラーを閉じる前に、返された `AdaptyProfile` に目的のアクセスレベルが含まれているかどうかを確認してください。
+`didFinishRestoreWith` と `didFailRestoreWith` にはデフォルト実装がありません。購入の復元後にウェルカムバック画面などを表示したい場合は、Flow & ペイウォールビルダーで[アウトカムアクション](respond-to-purchase-outcomes#respond-to-a-purchase-restoration)を設定してください。フローで対応できない処理（ユーザーがアクセス権を取得した後にアプリの特定画面を開くなど）はアプリのコードで対応してください。
+
 ### フローエラーとプロダクト読み込みエラー \{#flow-errors-and-product-loading-errors\}
 
 ```swift showLineNumbers title="Swift"
@@ -178,7 +200,9 @@ func flowController(
     didPartiallyLoadProducts failedIds: [String]
 ) { }
 ```
+
 `didReceiveError` は、レンダリングエラーおよびフロースクリプトのランタイムエラー（JavaScript例外、`AdaptyUIError` コード `4105`）で発生します。レンダリングエラーが発生した場合は、[Adapty サポートにお問い合わせください](mailto:support@adapty.io)。読み込みエラーの場合は、`didFailLoadingProductsWith` から `true` を返すことでリトライできます。一時的なネットワーク障害に有効です。
+
 ### Web決済ナビゲーション \{#web-payment-navigation\}
 
 ```swift showLineNumbers title="Swift"
@@ -203,7 +227,9 @@ func flowController(
 
 <FlowScreenShowedParams />
 
-これらのイベントの処理方法については、[フロー画面のビューをトラッキングする](ios-flow-screen-views)を参照してください。
+これらのイベントの処理方法については、[フロー画面のビューを追跡する](ios-flow-screen-views)を参照してください。
+
+フローはユーザーが入力・選択した値もレポートします。詳細は[フローからのデータを処理する](ios-flow-input)を参照してください。
 
 </SDKv4>
 
@@ -213,9 +239,9 @@ func flowController(
 このガイドでは、購入・復元・プロダクト選択・ペイウォールレンダリングに関するイベント処理を説明します。ボタン操作（ペイウォールを閉じる、リンクを開くなど）の処理も実装する必要があります。詳細は[ボタンアクションの処理に関するガイド](handle-paywall-actions)を参照してください。
 :::
 
-[ペイウォールビルダー](adapty-paywall-builder)で設定されたペイウォールは、購入や復元のために追加のコードは必要ありません。ただし、アプリが応答できるイベントが生成されます。これらのイベントには、ボタン押下（閉じるボタン、URL、プロダクト選択など）や、ペイウォール上で行われた購入関連アクションの通知が含まれます。これらのイベントへの応答方法については以下をご覧ください。
+[ペイウォールビルダー](adapty-paywall-builder)で設定されたペイウォールは、購入や復元のために追加のコードを必要としません。ただし、アプリが反応できるいくつかのイベントが生成されます。それらのイベントには、ボタンの押下（閉じるボタン、URL、プロダクト選択など）や、ペイウォールで行われた購入関連アクションの通知が含まれます。これらのイベントへの対応方法については、以下をご覧ください。
 
-このガイドは、Adapty SDK v3.0以降が必要な**新しいペイウォールビルダーのペイウォール**専用です。
+このガイドは、Adapty SDK v3.0以降が必要な**旧ビルダーで作成されたペイウォール**のみを対象としています。
 
 :::tip
 
@@ -226,6 +252,7 @@ func flowController(
 ## SwiftUI でのイベント処理 \{#handling-events-in-swiftui\}
 
 モバイルアプリ内のペイウォール画面で発生するプロセスを制御・監視するには、SwiftUI の `.paywall` モディファイアを使用してください：
+
 ```swift showLineNumbers title="Swift"
 @State var paywallPresented = false
 
@@ -263,6 +290,7 @@ var body: some View {
 ```
 
 必要なクロージャパラメータだけを登録し、不要なものは省略できます。この場合、未使用のクロージャパラメータは作成されません。
+
 | パラメータ                            | 必須     | 説明                                                                                                                                                                                                                                                                                                                    |
 |:----------------------------------|:---------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **isPresented**                   | 必須 | ペイウォール画面の表示を管理するバインディング。                                                                                                                                                                                                                                                                |
@@ -285,9 +313,11 @@ var body: some View {
 | **showAlertItem**                 | 任意 | ペイウォールの上部にアラートアイテムの表示を管理するバインディング。                                                                                                                                                                                                                                           |
 | **showAlertBuilder**              | 任意 | アラートビューをレンダリングするための関数。                                                                                                                                                                                                                                                       |
 | **placeholderBuilder**            | 任意 | ペイウォールの読み込み中にプレースホルダービューをレンダリングするための関数。                                                                                                                                                                                                                                                    |
+
 ## UIKit でのイベント処理 \{#handling-events-in-uikit\}
 
 モバイルアプリのペイウォール画面で発生するプロセスを制御・監視するには、`AdaptyPaywallControllerDelegate` のメソッドを実装します。
+
 ### ユーザー生成イベント \{#user-generated-events\}
 
 #### プロダクトの選択 \{#product-selection\}
@@ -303,6 +333,7 @@ var body: some View {
 
 <Details>
 <summary>イベントの例（クリックして展開）</summary>
+
 ```javascript
 {
   "product": {
@@ -326,6 +357,7 @@ func paywallController(_ controller: AdaptyPaywallController,
                        didStartPurchase product: AdaptyPaywallProduct) {
 }
 ```
+
 <Details>
 <summary>イベントの例（クリックして展開）</summary>
 
@@ -346,6 +378,7 @@ func paywallController(_ controller: AdaptyPaywallController,
 オブザーバーモードでは呼び出されません。詳細については、[iOS - オブザーバーモードでペイウォールビルダーのペイウォールを表示する](ios-present-paywall-builder-paywalls-in-observer-mode)を参照してください。
 
 #### ウェブペイウォールを使用して購入を開始した \{#started-purchase-using-a-web-paywall\}
+
 ユーザーが[ウェブペイウォール](web-paywall)を使って購入プロセスを開始すると、このメソッドが呼び出されます：
 
 ```swift showLineNumbers title="Swift"
@@ -358,6 +391,7 @@ func paywallController(
 
 <Details>
 <summary>イベントの例（クリックして展開）</summary>
+
 ```javascript
 {
   "product": {
@@ -375,6 +409,7 @@ func paywallController(
 #### 購入成功またはキャンセル \{#successful-or-canceled-purchase\}
 
 購入が成功した場合、このメソッドが呼び出されます：
+
 ```swift showLineNumbers title="Swift"
 func paywallController(
     _ controller: AdaptyPaywallController,
@@ -386,6 +421,7 @@ func paywallController(
 
 <Details>
 <summary>イベントの例（クリックして展開）</summary>
+
 ```javascript
 // Successful purchase
 {
@@ -427,6 +463,7 @@ func paywallController(
 }
 ```
 </Details>
+
 この場合はペイウォール画面を閉じることをお勧めします。
 
 Observer モードでは呼び出されません。詳細は [iOS - Observer モードでペイウォールビルダーのペイウォールを表示する](ios-present-paywall-builder-paywalls-in-observer-mode) を参照してください。
@@ -442,6 +479,7 @@ func paywallController(
     error: AdaptyError
 ) { }
 ```
+
 <Details>
 <summary>イベント例（クリックして展開）</summary>
 
@@ -465,6 +503,7 @@ func paywallController(
 }
 ```
 </Details>
+
 オブザーバーモードでは呼び出されません。詳細は [iOS - オブザーバーモードでペイウォールビルダーのペイウォールを表示する](ios-present-paywall-builder-paywalls-in-observer-mode) をご覧ください。
 
 #### Webペイウォールによる購入の失敗 \{#failed-purchase-using-a-web-paywall\}
@@ -481,6 +520,7 @@ func paywallController(
 
 <Details>
 <summary>イベント例（クリックして展開）</summary>
+
 ```javascript
 {
   "product": {
@@ -505,6 +545,7 @@ func paywallController(
 #### 購入の復元に成功した場合 \{#successful-restore\}
 
 購入の復元が成功した場合、このメソッドが呼び出されます：
+
 ```swift showLineNumbers title="Swift"
 func paywallController(
     _ controller: AdaptyPaywallController,
@@ -536,6 +577,7 @@ func paywallController(
 }
 ```
 </Details>
+
 推奨する方法は、必要な `accessLevel` がある場合にスクリーンを閉じることです。確認方法については、[サブスクリプションのステータス](subscription-status)をご参照ください。
 
 #### 復元の失敗 \{#failed-restore\}
@@ -551,6 +593,7 @@ public func paywallController(
 
 <Details>
 <summary>イベント例（クリックして展開）</summary>
+
 ```javascript
 {
   "error": {
@@ -563,6 +606,7 @@ public func paywallController(
 }
 ```
 </Details>
+
 ### データの取得とレンダリング \{#data-fetching-and-rendering\}
 
 #### プロダクト読み込みエラー \{#product-loading-errors\}
@@ -580,6 +624,7 @@ public func paywallController(
 
 <Details>
 <summary>イベント例（クリックして展開）</summary>
+
 ```javascript
 {
   "error": {
@@ -605,6 +650,7 @@ public func paywallController(
     didFailRenderingWith error: AdaptyError
 ) { }
 ```
+
 <Details>
 <summary>イベント例（クリックして展開）</summary>
 
@@ -621,6 +667,6 @@ public func paywallController(
 ```
 </Details>
 
-通常、このようなエラーは発生しないはずですので、もし見かけた場合はお知らせください。
+通常の状況ではこのようなエラーは発生しないはずです。もし遭遇した場合は、ぜひご連絡ください。
 
 </SDKv3>

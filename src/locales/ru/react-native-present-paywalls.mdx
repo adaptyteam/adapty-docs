@@ -1,41 +1,44 @@
 ---
 title: "Отображение флоу и пейволов — React Native"
-description: "Показывайте флоу и пейволы пользователям вашего React Native приложения с помощью Adapty."
+description: "Показывайте флоу и пейволы пользователям в вашем React Native приложении с помощью Adapty."
 metadataTitle: "Отображение флоу и пейволов в React Native | Документация Adapty"
 
 ---
 
-import SampleApp from '@site/src/locales/ru/reusable/SampleApp.md';
-
 <SDKv4>
 
 <MethodPromo method="getFlow" label="Display flows and paywalls" />
-Если вы создали флоу или пейвол в Flow Builder, вам не нужно беспокоиться о том, как отрендерить его в коде мобильного приложения для отображения пользователю. Такой флоу содержит и то, что должно быть показано, и то, как именно это должно быть показано.
+
+Если вы создали флоу или пейвол в старом Paywall Builder, вам не нужно беспокоиться о его отображении в коде мобильного приложения — всё необходимое уже задано внутри самого флоу: и что показывать, и как это выглядит.
 
 Прежде чем начать, убедитесь, что:
 
-1. Вы [создали флоу или пейвол](create-paywall).
+1. Вы создали [флоу](paywall-builder-templates) или [пейвол](create-paywall).
 2. Вы добавили его в [плейсмент](placements).
-3. Вы [получили флоу и подготовили представление](react-native-get-pb-paywalls).
+3. Вы [получили флоу и подготовили вью](react-native-get-pb-paywalls).
 
 :::warning
-Этот гайд предназначен только для **флоу и пейволов Paywall Builder**, которые требуют SDK v4.0 или выше. Процесс отображения флоу отличается для пейволов на Remote Config.
 
-- Для отображения **пейволов на Remote Config** см. [Отображение пейвола, созданного через Remote Config](present-remote-config-paywalls).
+Это руководство предназначено только для **флоу и пейволов, отрисовываемых Adapty**, которые требуют SDK v4.0 или выше. Процесс отображения флоу отличается для кастомных пейволов.
+
+- Для отображения кастомных пейволов см. [Отображение кастомных пейволов](present-remote-config-paywalls-react-native).
 
 :::
 
 Adapty React Native SDK предоставляет два способа отображения флоу и пейволов:
 
-- **React-компонент**: встраиваемый компонент, который можно интегрировать в архитектуру и систему навигации вашего приложения.
+- **React-компонент**: встраиваемый компонент, который позволяет интегрировать его в архитектуру и систему навигации вашего приложения.
 
-- **Модальное представление**
+- **Модальное отображение**
+
 ## React-компонент \{#react-component\}
 
 Чтобы встроить флоу в существующее дерево компонентов, используйте компонент `AdaptyFlowView` напрямую в иерархии React Native-компонентов. Встроенный компонент позволяет интегрировать его в архитектуру приложения и систему навигации.
+
 :::tip
 Компонент `AdaptyFlowView` создаёт своё представление в момент рендеринга — когда загружаются конфигурация и изображения. Чтобы предзагрузить их, вызовите [`createFlowView`](react-native-get-pb-paywalls#fetch-the-view-configuration) для того же флоу раньше в приложении. Тогда компонент использует кэшированные данные и рендерится без ожидания загрузки.
 :::
+
 ```typescript showLineNumbers title="React Native (TSX)"
 
 function MyFlow({ flow }) {
@@ -83,13 +86,16 @@ function MyFlow({ flow }) {
 }
 ```
 
+Обработчик `onError` компонента `AdaptyFlowView` вызывается, когда компонент не может показать флоу. Это происходит, если флоу не удалось загрузить, или если на устройстве установлен iOS 15, который не поддерживает флоу. Прекратите рендеринг компонента и покажите собственный контент.
+
 ## Модальное отображение \{#modal-presentation\}
 
-Чтобы показать флоу как отдельный экран, используйте метод `view.present()` на объекте `view`, созданном методом [`createFlowView`](react-native-get-pb-paywalls#fetch-the-view-configuration). Каждый `view` можно использовать только один раз. Если нужно показать флоу повторно, вызовите `createFlowView` ещё раз, чтобы создать новый экземпляр `view`.
+Чтобы отобразить флоу как отдельный экран, вызовите метод `view.present()` на объекте `view`, созданном методом [`createFlowView`](react-native-get-pb-paywalls#fetch-the-view-configuration). Если нужно показать флоу повторно, вызовите `createFlowView` ещё раз, чтобы создать новый экземпляр `view`, или [сохраните закрытый view](#keep-a-closed-flow-for-later) для повторного отображения.
 
 :::warning
-Повторное использование одного и того же `view` без его пересоздания запрещено. Это приведёт к ошибке `AdaptyUIError.viewAlreadyPresented`.
+После вызова `view.dismiss()` с параметрами по умолчанию вью освобождается, и повторный вызов `present()` завершится ошибкой. Вызов `present()`, когда флоу уже отображается на экране, также завершится ошибкой. В обоих случаях вы получите `AdaptyError` с кодом `3001` (`wrongParam`), а в сообщении будет указана причина: `AdaptyUIError.viewNotFound` или `AdaptyUIError.viewAlreadyPresented`.
 :::
+
 ```typescript showLineNumbers title="React Native (TSX)"
 
 const view = await createFlowView(flow);
@@ -107,6 +113,7 @@ try {
 :::important
 Каждый повторный вызов `setEventHandlers` перезаписывает обработчики: заменяются как дефолтные, так и ранее установленные обработчики для указанных событий.
 :::
+
 ### Настройка стиля отображения на iOS \{#configure-ios-presentation-style\}
 
 Настройте способ отображения флоу на iOS, передав параметр `iosPresentationStyle` в метод `present()`. Параметр принимает значения `'full_screen'` (по умолчанию) или `'page_sheet'`.
@@ -118,15 +125,60 @@ try {
   // handle the error
 }
 ```
-## Использование таймеров, определённых разработчиком \{#use-developer-defined-timer\}
 
-Чтобы использовать таймеры, определённые разработчиком, в мобильном приложении, используйте `timerId` — в данном примере `CUSTOM_TIMER_NY`, **Timer ID** таймера, заданного в дашборде Adapty. Это обеспечивает динамическое обновление таймера с правильным значением — например, `13d 09h 03m 34s` (вычисляется как время окончания таймера, например Новый год, минус текущее время).
+### Сохранение закрытого флоу для повторного использования \{#keep-a-closed-flow-for-later\}
+
+:::info
+Опция `destroy` и метод `destroy()` доступны начиная с версии SDK 4.3.0.
+:::
+
+По умолчанию `view.dismiss()` закрывает флоу и уничтожает его нативный вид, поэтому повторно отобразить `view` не получится. Чтобы открыть тот же флоу позже, передайте `destroy: false`. Следующий вызов `present()` откроет флоу на том экране, на котором пользователь его закрыл, с тем состоянием, в котором он его оставил, а ваши обработчики событий останутся установленными:
+
+```typescript showLineNumbers
+// Close the flow and keep its native view in memory
+await view.dismiss({ destroy: false });
+
+// Later: open the flow again on the same screen
+await view.present();
+```
+
+Нативный вид остаётся в памяти до тех пор, пока вы его не освободите. Когда флоу больше не нужен, вызовите `destroy()`:
+
+```typescript showLineNumbers
+await view.dismiss({ destroy: false });
+// ...
+await view.destroy();
+```
+
+Вызывайте `destroy()` только для вида, который вы закрыли с `destroy: false`. Обычный `dismiss()` освобождает вид самостоятельно.
+
+Обработчик события, возвращающий `true`, закрывает флоу с помощью обычного `dismiss()`, который уничтожает нативный вид, даже если вы сохраняли его ранее. Обработчики `onCloseButtonPress` и `onError` по умолчанию возвращают `true`. Чтобы сохранить флоу при закрытии пользователем, закройте его самостоятельно и верните `false`:
+
+```typescript showLineNumbers
+view.setEventHandlers({
+  onCloseButtonPress() {
+    view.dismiss({ destroy: false }).catch(error => {
+      // handle the error
+    });
+    return false;
+  },
+});
+```
+
+## Используйте таймер с поведением, заданным разработчиком \{#use-developer-defined-timer\}
+
+Используйте этот раздел для таймера с поведением **Developer defined** в Flow & Paywall Builder. В билдере у каждого такого таймера есть **Timer ID** (см. [Позвольте приложению задать дату окончания](flow-timer#let-your-app-set-the-end-date)), а ваше приложение устанавливает для него дату окончания. Используйте в коде тот же Timer ID, что и в билдере, — символ в символ, включая регистр и пробелы. Если ID не совпадают, таймер не получит дату окончания от вашего приложения.
+
+Чтобы задать дату окончания, передайте параметр `customTimers`: объект, который сопоставляет каждый Timer ID с `Date` — датой окончания таймера.
+
 <Tabs>
 <TabItem value="component" label="React component">
 ```typescript showLineNumbers title="React Native (TSX)"
-const flowParams = {
-  customTimers: { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
-};
+const flowParams = useMemo(() => ({
+  customTimers: {
+    CUSTOM_TIMER_NY: new Date(new Date().getFullYear() + 1, 0, 1), // next New Year's Day
+  },
+}), []);
 
 <AdaptyFlowView
   flow={flow}
@@ -137,16 +189,29 @@ const flowParams = {
 </TabItem>
 <TabItem value="modal" label="Modal presentation">
 ```typescript showLineNumbers title="React Native (TSX)"
-const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
 
-const view = await createFlowView(flow, { customTimers });
+const customTimers = {
+  CUSTOM_TIMER_NY: new Date(new Date().getFullYear() + 1, 0, 1), // next New Year's Day
+};
+
+try {
+  const view = await createFlowView(flow, { customTimers });
+  await view.present();
+} catch (error) {
+  // handle the error
+}
 ```
 </TabItem>
 </Tabs>
-В этом примере `CUSTOM_TIMER_NY` — это **Timer ID** таймера, заданного разработчиком в дашборде Adapty. `timerResolver` обеспечивает динамическое обновление таймера с нужным значением — например, `13d 09h 03m 34s` (вычисляется как разница между временем окончания таймера, например Новым годом, и текущим временем).
+
+В этом примере `CUSTOM_TIMER_NY` — это Timer ID таймера типа **Developer defined** в билдере. Таймер показывает время до следующего Нового года, например `13d 09h 03m 34s`.
+
+SDK считывает `customTimers` один раз при создании представления, поэтому дата, вычисляемая динамически — например, 6 часов от текущего момента — отсчитывается именно с этого момента. Если дата уже прошла, таймер сразу показывает ноль и срабатывает триггер **On timer end**. Если в `customTimers` нет ключа для данного Timer ID, таймер отсчитывает один час с момента открытия экрана.
+
 ## Показ диалогов \{#show-dialog\}
 
 Используйте этот метод вместо нативных диалогов предупреждений, когда на Android отображается флоу. На Android обычные RN-алерты появляются позади флоу и становятся невидимыми для пользователей. Этот метод обеспечивает корректное отображение диалога поверх флоу на всех платформах.
+
 ```typescript showLineNumbers title="React Native (TSX)"
 try {
   const action = await view.showDialog({
@@ -166,9 +231,14 @@ try {
 }
 ```
 
+## Отправка сообщений во флоу \{#send-messages-to-a-flow\}
+
+Метод `sendAppMessage` у представления флоу отправляет сообщение во флоу в виде JSON-объекта. Метод зарезервирован для будущих возможностей Flow & Paywall Builder. Флоу игнорируют эти сообщения, поэтому вызывать данный метод не нужно.
+
 ## Замена одной подписки на другую \{#replace-one-subscription-with-another\}
 
 Когда пользователь пытается приобрести новую подписку, пока на Android активна другая, вы можете управлять тем, как должна обрабатываться новая покупка, — для этого передайте параметры обновления подписки при создании представления флоу. Чтобы заменить текущую подписку новой, используйте `productPurchaseParams` в `createFlowView` с параметрами `oldSubVendorProductId` и `prorationMode`.
+
 ```typescript showLineNumbers title="React Native (TSX)"
 
 const productPurchaseParams = flow.paywalls
@@ -202,17 +272,19 @@ const view = await createFlowView(flow, { productPurchaseParams });
 3. Вы [получили пейвол и подготовили представление](react-native-get-pb-paywalls).
 
 :::warning
-Это руководство предназначено только для **пейволов, созданных в новом Paywall Builder**, которые требуют SDK v3.0 или выше. Процесс отображения пейволов различается для пейволов, созданных в разных версиях Paywall Builder, и для Remote Config пейволов.
 
-- Чтобы отобразить **Remote Config пейволы**, см. [Отображение пейвола на основе Remote Config](present-remote-config-paywalls).
+Этот гайд распространяется только на пейволы, созданные в старом Paywall Builder для **Adapty SDK 3.x**. Для них требуется SDK v3.0 или выше. Отображение пейвола, созданного для SDK 2.x и ниже, или кастомного пейвола работает иначе.
+
+- Чтобы отображать кастомные пейволы, см. [Отображение кастомных пейволов](present-remote-config-paywalls-react-native).
 
 :::
 
 Adapty React Native SDK предоставляет два способа отображения пейволов:
 
-- **React-компонент**: встроенный компонент, который можно интегрировать в архитектуру и систему навигации вашего приложения.
+- **React-компонент**: встраиваемый компонент, который можно интегрировать в архитектуру и навигационную систему вашего приложения.
 
-- **Модальное окно**
+- **Модальное отображение**
+
 ## React-компонент \{#react-component\}
 
 :::note
@@ -220,9 +292,11 @@ Adapty React Native SDK предоставляет два способа ото�
 :::
 
 Чтобы встроить пейвол в существующее дерево компонентов, используйте компонент `AdaptyPaywallView` непосредственно в иерархии React Native компонентов. Встроенный компонент позволяет интегрировать его в архитектуру приложения и систему навигации.
+
 :::note
 На Android, если пейвол не перекрывает строку состояния, вверху может появиться визуальный оверлей. Рекомендуем отключить его для своих пейволов. См. [Визуальный оверлей в верхней части пейвола (Android)](#visual-overlay-at-the-top-of-the-paywall-android).
 :::
+
 ```typescript showLineNumbers title="React Native (TSX)"
 
 function MyPaywall({ paywall }) {
@@ -276,6 +350,7 @@ function MyPaywall({ paywall }) {
 :::warning
 Повторное использование одного и того же `view` без его пересоздания запрещено. Это приведёт к ошибке `AdaptyUIError.viewAlreadyPresented`.
 :::
+
 ```typescript showLineNumbers title="React Native (TSX)"
 
 const view = await createPaywallView(paywall);
@@ -293,6 +368,7 @@ try {
 :::important
 Каждый вызов `setEventHandlers` перезаписывает ранее установленные обработчики — включая дефолтные и те, что вы задали раньше, для указанных событий.
 :::
+
 ### Настройка стиля отображения на iOS \{#configure-ios-presentation-style\}
 
 Настройте способ отображения пейвола на iOS, передав параметр `iosPresentationStyle` в метод `present()`. Параметр принимает значения `'full_screen'` (по умолчанию) или `'page_sheet'`.
@@ -304,9 +380,11 @@ try {
   // handle the error
 }
 ```
-## Использование таймера, заданного разработчиком \{#use-developer-defined-timer\}
 
-Чтобы использовать таймеры, заданные разработчиком, в мобильном приложении, используйте `timerId` — в данном примере `CUSTOM_TIMER_NY`, **Timer ID** таймера, заданного разработчиком, который вы установили в дашборде Adapty. Это позволяет приложению динамически обновлять таймер с правильным значением — например, `13d 09h 03m 34s` (рассчитывается как время окончания таймера, например Новый год, минус текущее время).
+## Использование таймеров, определённых разработчиком \{#use-developer-defined-timer\}
+
+Чтобы использовать таймеры, определённые разработчиком, в мобильном приложении, используйте `timerId` — в данном примере `CUSTOM_TIMER_NY`, **Timer ID** таймера, заданного в дашборде Adapty. Это обеспечивает динамическое обновление таймера с правильным значением — например, `13d 09h 03m 34s` (вычисляется как время окончания таймера, например Новый год, минус текущее время).
+
 <Tabs>
 <TabItem value="component" label="React component">
 ```typescript showLineNumbers title="React Native (TSX)"
@@ -329,10 +407,12 @@ const view = await createPaywallView(paywall, { customTimers });
 ```
 </TabItem>
 </Tabs>
-В этом примере `CUSTOM_TIMER_NY` — это **Timer ID** таймера, заданного разработчиком в дашборде Adapty. `timerResolver` обеспечивает динамическое обновление таймера с нужным значением — например, `13d 09h 03m 34s` (вычисляется как время окончания таймера, например Новый год, минус текущее время).
+В этом примере `CUSTOM_TIMER_NY` — это **Timer ID** таймера, заданного разработчиком в дашборде Adapty. `timerResolver` обеспечивает динамическое обновление таймера с нужным значением — например, `13d 09h 03m 34s` (вычисляется как разница между временем окончания таймера, например Новым годом, и текущим временем).
+
 ## Отображение диалога \{#show-dialog\}
 
 Используйте этот метод вместо нативных диалогов оповещений, когда на Android отображается пейвол. На Android обычные RN-алерты появляются позади пейвола и становятся невидимы для пользователей. Этот метод обеспечивает корректное отображение диалога поверх пейвола на всех платформах.
+
 ```typescript showLineNumbers title="React Native (TSX)"
 try {
   const action = await view.showDialog({
@@ -355,6 +435,7 @@ try {
 ## Замена одной подписки на другую \{#replace-one-subscription-with-another\}
 
 Когда пользователь пытается купить новую подписку при наличии активной подписки на Android, вы можете управлять тем, как должная обрабатываться новая покупка, передав параметры обновления подписки при создании вью пейвола. Чтобы заменить текущую подписку на новую, используйте `productPurchaseParams` в `createPaywallView` с параметрами `oldSubVendorProductId` и `prorationMode`.
+
 ```typescript showLineNumbers title="React Native (TSX)"
 
 const productPurchaseParams = paywall.productIdentifiers.map((productId) => {
@@ -374,6 +455,7 @@ const view = await createPaywallView(paywall, { productPurchaseParams });
 ```
 
 ## Устранение неполадок \{#troubleshooting\}
+
 ### Визуальный оверлей в верхней части пейвола (Android) \{#visual-overlay-at-the-top-of-the-paywall-android\}
 
 :::note
@@ -381,6 +463,7 @@ const view = await createPaywallView(paywall, { productPurchaseParams });
 
 Если вы используете управляемый воркфлоу Expo, добавить этот Android-ресурс напрямую не получится. Чтобы применить этот параметр, необходимо создать кастомный Expo config plugin, который добавляет соответствующий Android-ресурс, и зарегистрировать его в app.config.js. Это обязательно, поскольку Expo управляет нативным Android-проектом за вас.
 :::
+
 Если `AdaptyPaywallView` не растягивается за пределы строки состояния, над ней всё равно может появляться визуальный оверлей. Чтобы убрать его, добавьте следующий булев ресурс в приложение:
 
 1. Перейдите в `android/app/src/main/res/values`. Если файла `bools.xml` нет — создайте его.

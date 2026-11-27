@@ -1,0 +1,474 @@
+---
+title: "Использование флоу Adapty с вашей собственной платёжной системой"
+description: "Запускайте флоу Adapty поверх уже имеющегося кода покупок, не переходя на платёжную инфраструктуру Adapty."
+metadataTitle: "Флоу Adapty с вашей собственной платёжной системой | Документация Adapty"
+---
+
+Чтобы использовать флоу Adapty, не обязательно переносить покупки в Adapty. В [режиме Observer](observer-vs-full-mode) ваш код по-прежнему обрабатывает все покупки, а Adapty отрисовывает пейвол или онбординг, решает, кому его показывать, проводит A/B-тесты и формирует отчёты по результатам.
+
+В этом гайде разбирается, что меняется, что остаётся прежним и что потребуется для настройки.
+
+:::tip
+Не знакомы с флоу? [Flow & Paywall Builder](adapty-flow-builder) расскажет, что можно создать, прежде чем приступать к настройке.
+:::
+
+## Что остаётся за вами, что берёт на себя Adapty \{#what-stays-yours-what-adapty-takes-over\}
+
+Ваш код отвечает за:
+
+- Вызов покупки
+- Завершение и подтверждение транзакций
+- Выдачу и отзыв доступа
+- Возобновления и повторные попытки списания
+
+Adapty берёт на себя:
+
+- Отрисовку флоу
+- [Плейсменты](placements) и таргетинг по [аудитории](audience)
+- [A/B-тесты](ab-tests)
+- [Аналитику](analytics) и [интеграции](configuration)
+
+Ваша биллинговая логика не меняется. Adapty отрисовывает флоу и передаёт нажатие кнопки покупки в ваш код, который и выполняет списание.
+
+## Создайте продукты в Adapty \{#create-your-products-in-adapty\}
+
+Пропустите этот раздел, если ни один экран во флоу не показывает цену и не предполагает покупку — флоу только из экранов онбординга не требует продуктов в Adapty.
+
+Как только какой-либо экран предлагает продукты, создайте продукт в Adapty для каждой подписки или разовой покупки. Флоу берёт цену для карточки из продукта, поэтому карточка отображает актуальную цену из стора, вы можете проводить A/B-тесты этой цены, а Adapty группирует выручку по продуктам в аналитике.
+
+Продукт в Adapty указывает на продукт в сторе, который вы уже продаёте, поэтому его создание не затрагивает биллинг: все списания по-прежнему выполняет ваш код. Каждый продукт привязывается к уровню доступа, и в режиме Observer Adapty его не выдаёт — управление доступом остаётся на стороне вашего кода, — но уровень доступа всё равно нужен.
+
+[Adapty CLI](developer-cli) позволяет создавать продукты без открытия дашборда. Установите его (Node.js 18 или выше) и войдите в систему:
+
+```bash
+npm install -g adapty
+```
+
+```bash
+adapty auth login
+```
+
+Получите ID приложения, затем уровень доступа для привязки — в каждом новом приложении уже есть `premium`:
+
+```bash
+adapty apps list
+```
+
+```bash
+adapty access-levels list --app <app-id>
+```
+
+Затем создайте один продукт Adapty для каждого продукта в сторе, используя идентификаторы продуктов из App Store Connect и Google Play Console:
+
+```bash
+adapty products create --app <app-id> --title "Monthly" --access-level-id <access-level-id> --period monthly --ios-product-id com.example.monthly --android-product-id com.example.monthly --android-base-plan-id monthly
+```
+
+Передайте `--period lifetime` для разовой покупки, а `--stripe-product-id` с `--stripe-price-id` (или пару Paddle) — для того, что продаёте через веб. [`products create`](developer-cli-products#adapty-products-create) содержит полный список флагов. Идентификаторы продуктов стора нельзя изменить после создания, поэтому если нужно привязать продукт к другому продукту стора — придётся создавать новый продукт.
+
+:::warning
+Элемент продукта без назначенного продукта блокирует сохранение и публикацию — вы узнаете об этом прямо в билдере. Действие **Purchase** без установленного продукта сохраняется нормально, но не работает на устройстве — кнопка просто ничего не делает. Обязательно задайте продукт для каждого действия Purchase.
+:::
+
+<Details summary="Или пропустите продукты и пишите цены как статический текст">
+
+Флоу без элемента продукта сохраняется и публикуется, поэтому вы можете вручную вписать цены в текст и позволить своему коду решать, что именно покупается по нажатию. Это обойдётся вам следующим:
+
+- Вы вручную поддерживаете цены в двух местах — в сторе и в тексте флоу — и они расходятся, как только вы меняете одно из них.
+- Нет A/B-тестов цен, а именно для этого флоу и нужен.
+- Графики и интеграции группируют выручку менее чисто, так как Adapty узнаёт продукт только из транзакции, которую вы передаёте.
+- Ваш код сопоставляет каждый нажатый элемент с продуктом вместо того, чтобы получать его из флоу.
+
+</Details>
+
+## Настройка \{#set-it-up\}
+
+1. **Активируйте SDK в режиме Observer.** Включите `observerMode` при настройке SDK: [iOS](implement-observer-mode), [Android](implement-observer-mode-android), [React Native](implement-observer-mode-react-native), [Flutter](implement-observer-mode-flutter), [Unity](implement-observer-mode-unity), [Kotlin Multiplatform](implement-observer-mode-kmp), [Capacitor](implement-observer-mode-capacitor).
+2. **Создайте продукты в Adapty**, если только флоу не обходится без отображения цены. Одна команда CLI на каждый продукт — см. [Создание продуктов в Adapty](#create-your-products-in-adapty).
+3. **Создайте флоу.** См. [Flow & Paywall Builder](adapty-flow-builder) для работы с экранами, [настройка покупок](paywall-product-block) для продуктов на экране пейвола и [создание плейсмента](create-placement), чтобы определить, где флоу будет появляться в вашем приложении.
+4. **Запустите флоу и выполните покупку в своём коде.** Adapty передаёт нажатие кнопки покупки в обработчик, который вы регистрируете.
+5. **Сообщите о транзакции**, указав идентификатор варианта пейвола купленного продукта, чтобы покупка попала в аналитику с атрибуцией на пейвол, через который она была совершена.
+
+Шаги 4 и 5 различаются в зависимости от платформы. В каждом фрагменте `flow` — это `AdaptyFlow`, полученный для плейсмента, `product` — это `AdaptyPaywallProduct`, на который нажал пользователь, а `myPurchaseApi` или `yourBillingClient` — это заменитель кода покупки, который у вас уже есть.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS">
+
+Передайте `AdaptyObserverModeResolver` в `getFlowConfiguration(forFlow:observerModeResolver:)`. Adapty вызывает resolver при нажатии на покупку вместо того, чтобы выполнять покупку самостоятельно.
+
+```swift showLineNumbers title="Swift"
+final class MyObserverModeResolver: AdaptyObserverModeResolver {
+    func observerMode(
+        didInitiatePurchase product: AdaptyPaywallProduct,
+        onStartPurchase: @MainActor @Sendable @escaping () -> Void,
+        onFinishPurchase: @MainActor @Sendable @escaping () -> Void
+    ) {
+        Task { @MainActor in
+            onStartPurchase() // the flow shows its loading indicator
+            do {
+                // your own purchase code, returning StoreKit's VerificationResult<Transaction>
+                let verificationResult = try await myPurchaseApi.purchase(product.vendorProductId)
+                try await Adapty.reportTransaction(verificationResult, withVariationId: product.variationId)
+            } catch {
+                // handle the error
+            }
+            onFinishPurchase() // the flow hides the loading indicator
+        }
+    }
+
+    func observerModeDidInitiateRestorePurchases(
+        onStartRestore: @MainActor @Sendable @escaping () -> Void,
+        onFinishRestore: @MainActor @Sendable @escaping () -> Void
+    ) {
+        Task { @MainActor in
+            onStartRestore()
+            try? await myPurchaseApi.restore()
+            onFinishRestore()
+        }
+    }
+}
+```
+
+Then present the flow with the resolver attached:
+
+```swift showLineNumbers title="Swift"
+do {
+    let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+        forFlow: flow,
+        observerModeResolver: MyObserverModeResolver()
+    )
+
+    let visualFlow = try AdaptyUI.flowController(
+        with: flowConfiguration,
+        delegate: self // an AdaptyFlowControllerDelegate
+    )
+
+    present(visualFlow, animated: true)
+} catch {
+    // handle the error
+}
+```
+
+См. [Отображение флоу в режиме Observer](ios-present-paywall-builder-paywalls-in-observer-mode) и [Отчёт о транзакциях в режиме Observer](report-transactions-observer-mode).
+
+</TabItem>
+<TabItem value="android" label="Android">
+
+Передайте `AdaptyUiObserverModeHandler` при создании представления флоу — этот обработчик является параметром `AdaptyUI.getFlowView`, `AdaptyFlowScreen` и `AdaptyFlowView`. Его метод `onPurchaseInitiated` получает нажатие на кнопку покупки. `getRestoreHandler` необязателен — без него восстановление остаётся за SDK.
+
+:::warning
+Всегда передавайте обработчик. Без него SDK завершает покупку самостоятельно — пользователь получает списание через Adapty, и об этом сообщается только в логах. На iOS то же упущение приведёт к ошибке при покупке.
+:::
+
+```kotlin showLineNumbers
+val observerModeHandler = object : AdaptyUiObserverModeHandler {
+    override fun onPurchaseInitiated(
+        product: AdaptyPaywallProduct,
+        onStartPurchase: AdaptyUiObserverModeHandler.PurchaseStartCallback,
+        onFinishPurchase: AdaptyUiObserverModeHandler.PurchaseFinishCallback,
+    ) {
+        onStartPurchase() // the flow shows its loading indicator
+        yourBillingClient.makePurchase(
+            product,
+            onSuccess = { purchase ->
+                Adapty.reportTransaction(
+                    TransactionInfo.fromPurchase(purchase),
+                    product.variationId,
+                ) {
+                    onFinishPurchase() // the flow hides the loading indicator
+                }
+            },
+            onError = { onFinishPurchase() },
+            onCancel = { onFinishPurchase() },
+        )
+    }
+
+    override fun getRestoreHandler() =
+        AdaptyUiObserverModeHandler.RestoreHandler { onStartRestore, onFinishRestore ->
+            onStartRestore()
+            yourBillingClient.restorePurchases(
+                onSuccess = { onFinishRestore() },
+                onError = { onFinishRestore() },
+            )
+        }
+}
+```
+
+Затем передайте обработчик в представление флоу:
+
+```kotlin showLineNumbers
+val flowView = AdaptyUI.getFlowView(
+    activity,
+    flowConfiguration,
+    products,
+    eventListener,
+    observerModeHandler = observerModeHandler,
+)
+```
+
+Смотрите [Показ флоу в режиме Observer](android-present-paywall-builder-paywalls-in-observer-mode) и [Отчёт о транзакциях в режиме Observer](report-transactions-observer-mode-android).
+
+</TabItem>
+<TabItem value="react-native" label="React Native">
+
+Передайте `onObserverPurchaseInitiated` и `onObserverRestoreInitiated` как пропсы в `AdaptyFlowView` или зарегистрируйте их через `view.setEventHandlers`.
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyFlow({ flow }) {
+  const onObserverPurchaseInitiated = useCallback<
+    FlowEventHandlers['onObserverPurchaseInitiated']
+  >((product, onStartPurchase, onFinishPurchase) => {
+    onStartPurchase(); // the flow shows its loading indicator
+    myPurchaseApi(product.vendorProductId)
+      .then((transactionId) => adapty.reportTransaction(transactionId, product.variationId))
+      .finally(() => onFinishPurchase()); // the flow hides the loading indicator
+  }, []);
+
+  const onObserverRestoreInitiated = useCallback<
+    FlowEventHandlers['onObserverRestoreInitiated']
+  >((onStartRestore, onFinishRestore) => {
+    onStartRestore();
+    myRestoreApi().finally(() => onFinishRestore());
+  }, []);
+
+  return (
+    <AdaptyFlowView
+      flow={flow}
+      onObserverPurchaseInitiated={onObserverPurchaseInitiated}
+      onObserverRestoreInitiated={onObserverRestoreInitiated}
+      // ... your other event handlers
+    />
+  );
+}
+```
+
+Во встроенном компоненте возвращаемое обработчиком значение не закрывает флоу. Размонтируйте компонент самостоятельно после успешной покупки или восстановления покупок.
+
+Смотрите [Показ флоу в Observer mode](react-native-present-flows-in-observer-mode) и [Отчёт о транзакциях в Observer mode](report-transactions-observer-mode-react-native).
+
+</TabItem>
+<TabItem value="flutter" label="Flutter">
+
+Зарегистрируйте резолвер через `AdaptyUI().setObserverModeResolver` — именно на `AdaptyUI()`, а не на `Adapty`. Реализуйте оба метода: `observerModeDidInitiatePurchase` и `observerModeDidInitiateRestore`; оба обязательны, и каждый получает вью флоу первым аргументом.
+
+```dart showLineNumbers title="Flutter"
+class MyObserverModeResolver extends AdaptyUIObserverModeResolver {
+  @override
+  void observerModeDidInitiatePurchase(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product,
+    void Function() onStartPurchase,
+    void Function() onFinishPurchase,
+  ) async {
+    onStartPurchase(); // the flow shows its loading indicator
+    try {
+      final transactionId = await myPurchaseApi(product.vendorProductId);
+      await Adapty().reportTransaction(
+        transactionId: transactionId,
+        variationId: product.paywallVariationId,
+      );
+    } on AdaptyError catch (adaptyError) {
+      // handle the error
+    } finally {
+      onFinishPurchase(); // the flow hides the loading indicator
+    }
+  }
+
+  @override
+  void observerModeDidInitiateRestore(
+    AdaptyUIFlowView view,
+    void Function() onStartRestore,
+    void Function() onFinishRestore,
+  ) async {
+    onStartRestore();
+    try {
+      await myRestoreApi();
+    } finally {
+      onFinishRestore();
+    }
+  }
+}
+```
+
+Зарегистрируйте resolver один раз, до того как показывать какой-либо флоу:
+
+```dart showLineNumbers title="Flutter"
+AdaptyUI().setObserverModeResolver(MyObserverModeResolver());
+```
+
+Подробнее: [Показ флоу в режиме Observer](flutter-present-flows-in-observer-mode) и [Отправка транзакций в режиме Observer](report-transactions-observer-mode-flutter).
+
+</TabItem>
+<TabItem value="unity" label="Unity">
+
+Зарегистрируйте резолвер с помощью `Adapty.SetObserverModeResolver` — на `Adapty`, а не на `AdaptyUI`. Реализуйте `IAdaptyUIObserverModeResolver` с методами `FlowViewDidInitiatePurchase` и `FlowViewDidInitiateRestore`; имена колбэков в Unity отличаются от других платформ.
+
+```csharp showLineNumbers
+using System;
+using AdaptySDK;
+
+public class MyObserverModeResolver : IAdaptyUIObserverModeResolver
+{
+    public void FlowViewDidInitiatePurchase(
+        AdaptyUIFlowView view,
+        AdaptyPaywallProduct product,
+        Action onStartPurchase,
+        Action onFinishPurchase
+    )
+    {
+        onStartPurchase(); // the flow shows its loading indicator
+        MyPurchaseApi.Purchase(product.VendorProductId, (transactionId, purchaseError) =>
+        {
+            if (purchaseError != null)
+            {
+                onFinishPurchase();
+                return;
+            }
+
+            Adapty.ReportTransaction(transactionId, product.PaywallVariationId, (reportError) =>
+            {
+                onFinishPurchase(); // the flow hides the loading indicator
+            });
+        });
+    }
+
+    public void FlowViewDidInitiateRestore(
+        AdaptyUIFlowView view,
+        Action onStartRestore,
+        Action onFinishRestore
+    )
+    {
+        onStartRestore();
+        MyPurchaseApi.Restore((restoreError) => onFinishRestore());
+    }
+}
+```
+
+Зарегистрируйте resolver один раз, до отображения любого флоу:
+
+```csharp showLineNumbers
+Adapty.SetObserverModeResolver(new MyObserverModeResolver());
+```
+
+Смотрите [Отображение флоу в режиме Observer](unity-present-flows-in-observer-mode) и [Отчёт о транзакциях в режиме Observer](report-transactions-observer-mode-unity).
+
+</TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform">
+
+Зарегистрируйте resolver с помощью `AdaptyUI.setObserverModeResolver`. Реализуйте оба метода — `observerModeDidInitiatePurchase` и `observerModeDidInitiateRestore`; оба обязательны, и каждый принимает представление флоу в качестве первого аргумента.
+
+```kotlin showLineNumbers
+
+class MyObserverModeResolver(
+    private val scope: CoroutineScope,
+) : AdaptyUIObserverModeResolver {
+
+    override fun observerModeDidInitiatePurchase(
+        view: AdaptyUIFlowView,
+        product: AdaptyPaywallProduct,
+        onStartPurchase: () -> Unit,
+        onFinishPurchase: () -> Unit,
+    ) {
+        onStartPurchase() // the flow shows its loading indicator
+        scope.launch {
+            val transactionId = myPurchaseApi(product.vendorProductId)
+            Adapty.reportTransaction(
+                transactionId = transactionId,
+                variationId = product.paywallVariationId,
+            ).onError { error ->
+                // handle the error
+            }
+            onFinishPurchase() // the flow hides the loading indicator
+        }
+    }
+
+    override fun observerModeDidInitiateRestore(
+        view: AdaptyUIFlowView,
+        onStartRestore: () -> Unit,
+        onFinishRestore: () -> Unit,
+    ) {
+        onStartRestore()
+        scope.launch {
+            myRestoreApi()
+            onFinishRestore()
+        }
+    }
+}
+```
+
+Зарегистрируйте resolver один раз, до того как показывать какой-либо флоу:
+
+```kotlin showLineNumbers
+
+AdaptyUI.setObserverModeResolver(MyObserverModeResolver(scope))
+```
+
+Смотрите [Показ флоу в режиме Observer](kmp-present-flows-in-observer-mode) и [Отчёт о транзакциях в режиме Observer](report-transactions-observer-mode-kmp).
+
+</TabItem>
+<TabItem value="capacitor" label="Capacitor">
+
+Встройте `onObserverPurchaseInitiated` и `onObserverRestoreInitiated` через `view.setEventHandlers` в каждое создаваемое вами флоу — в Capacitor нет отдельного объекта resolver, и оба обработчика входят в стандартные обработчики событий.
+
+```typescript showLineNumbers title="Capacitor"
+
+const view = await createFlowView(flow);
+
+const unsubscribe = await view.setEventHandlers({
+  onObserverPurchaseInitiated(product, onStartPurchase, onFinishPurchase) {
+    onStartPurchase(); // the flow shows its loading indicator
+    myPurchaseApi(product.vendorProductId)
+      .then((transactionId) =>
+        adapty.reportTransaction({ transactionId, variationId: product.variationId }),
+      )
+      .finally(() => onFinishPurchase()); // the flow hides the loading indicator
+    return false; // keep the flow open; dismiss it yourself after success, or let the flow continue
+  },
+  onObserverRestoreInitiated(onStartRestore, onFinishRestore) {
+    onStartRestore();
+    myRestoreApi().finally(() => onFinishRestore());
+    return false;
+  },
+});
+```
+
+Смотрите [Отображение флоу в режиме Observer](capacitor-present-flows-in-observer-mode) и [Сообщение о транзакциях в режиме Observer](report-transactions-observer-mode-capacitor).
+
+</TabItem>
+</Tabs>
+
+### Ограничения режима Observer \{#observer-mode-limits\}
+
+- **Adapty не предоставляет доступ**: Adapty не реагирует на события покупки, не выдаёт и не ограничивает платный доступ, не обрабатывает продления и повторные попытки списания. Управление уровнями доступа остаётся в вашем коде.
+- **Ваш код завершает собственные транзакции**: Adapty не завершает и не подтверждает покупки, сделанные вашим кодом, — закрытие каждой из них остаётся на вашей стороне.
+- **Репортинг обязателен**: `variationId`, передаваемый вместе с отчётом, — единственная связь между покупкой и флоу, который её инициировал. Репортите каждую транзакцию, иначе метрики флоу и результаты A/B-тестов будут неверными.
+- **SDK репортит один результат на каждую покупку**: Ваш код выполняет покупку, поэтому флоу запускает одни и те же [действия для результата](respond-to-purchase-outcomes#add-actions-for-a-result) независимо от того, что произошло, включая отменённую покупку: действия **When pending** на iOS и действия **When succeeded** на Android. Любые экраны, зависящие от результата покупки (например, экран благодарности), показывайте из своего кода. После восстановления покупок флоу запускает действия **When restore completed** независимо от результата.
+
+## Если вы уже используете другого вендора \{#if-youre-already-using-another-vendor\}
+
+Observer mode требует только одного: чтобы покупка совершалась в вашем коде — неважно, чей SDK при этом вызывается. Флоу работают поверх RevenueCat, Superwall или Qonversion точно так же, как поверх вашего собственного кода на StoreKit или Billing Library.
+
+Три решения, которые нужно принять перед релизом:
+
+- **Одна система завершает каждую транзакцию**: наиболее распространённая ошибка — когда два SDK одновременно завершают одну и ту же покупку.
+- **Одна система управляет доступом**: в режиме Observer Adapty ничего не предоставляет, поэтому оставьте уровни доступа там, где они есть.
+- **Каждая покупка сообщается один раз**: если одна и та же транзакция передаётся из двух мест, это искажает аналитику.
+
+Если вы хотите полностью перейти с другого вендора, см. [Миграция с RevenueCat](migration-from-revenuecat) или [Миграция с Superwall](migration-from-superwall).
+
+### Пусть Adapty выполняет покупки \{#let-adapty-make-the-purchase-instead\}
+
+:::tip
+В этом случае ваше приложение совершает покупки через Adapty — стандартная интеграция. Следуйте [быстрому старту](quickstart) или [миграции с RevenueCat](migration-from-revenuecat), либо передайте задачу [скиллу интеграции SDK](manage-adapty-with-ai).
+:::
+
+Observer mode — это самый быстрый способ начать работу. Если вы хотите сохранить аналитику RevenueCat, но избежать [ограничений Observer mode](#observer-mode-limits), просто поменяйте их ролями: Adapty работает в [полном режиме](observer-vs-full-mode) и проводит все покупки, а RevenueCat работает в своём собственном Observer mode и записывает покупки, которые совершает Adapty.
+
+Adapty при этом знает, какой флоу, плейсмент и вариант A/B-теста привёл к каждому списанию, и предоставляет [уровни доступа](access-level), а также обрабатывает обновления подписок, повторные попытки списания и возвраты.
+
+На стороне RevenueCat при настройке SDK укажите, что покупки завершаются вашим приложением: `.myApp` на iOS, `MY_APP` на Android. В документации RevenueCat [Using the SDK with your own IAP code](https://www.revenuecat.com/docs/migrating-to-revenuecat/sdk-or-not/finishing-transactions) описана конфигурация для каждой платформы, версия StoreKit, необходимая для iOS, и вызов `syncPurchases()`, который подтягивает уже совершённые покупки. Передайте обоим SDK одинаковый идентификатор пользователя — [customer user ID](how-profiles-work) в Adapty и `appUserID` в RevenueCat — иначе в дашбордах будут разные пользователи.
+
+:::warning
+Эта схема переводит уровни доступа RevenueCat в подчинённую роль: теперь источником истины становятся уровни доступа Adapty. RevenueCat продолжает вести наблюдение, его дашборд продолжает собирать статистику, но информацию о каждой покупке он теперь получает из вторых рук — в рамках ограничений, которые описывает его собственная документация. Всё, что сегодня читает данные об entitlements из RevenueCat — ваше приложение, бэкенд, веб- или десктопная сборка — должно либо перейти на Adapty, либо работать с копией этих данных. Решите этот вопрос до релиза. Всё остальное остаётся на месте: аккаунт RevenueCat, его история и интеграции никуда не переезжают.
+:::

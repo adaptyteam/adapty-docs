@@ -1,32 +1,65 @@
 ---
-title: "Tối ưu hóa việc tải paywall trong Kotlin Multiplatform SDK"
-description: "Tải paywall Adapty một cách đáng tin cậy: thời điểm, bộ nhớ đệm và các mẫu dự phòng cho Kotlin Multiplatform."
-metadataTitle: "Tối ưu hóa việc tải paywall | Kotlin Multiplatform SDK | Tài liệu Adapty"
+title: "Tối ưu hóa việc tải flow & paywall trong Kotlin Multiplatform SDK"
+description: "Tải flow và paywall của Adapty một cách đáng tin cậy: thời điểm, bộ nhớ đệm và các mẫu dự phòng cho Kotlin Multiplatform."
+metadataTitle: "Tối ưu hóa Tải Flow & Paywall | Kotlin Multiplatform SDK | Tài liệu Adapty"
 ---
 
-Một lần tải paywall đáng tin cậy trên Kotlin Multiplatform cần đảm bảo ba điều: hiển thị nhanh, trả về đúng paywall theo đối tượng mục tiêu, và xử lý dự phòng mượt mà khi mạng chậm. Các quy tắc dưới đây bao gồm thời điểm, bộ nhớ đệm và các mẫu dự phòng để đạt được điều đó.
+Một lần tải flow hoặc paywall đáng tin cậy trên Kotlin Multiplatform cần đảm bảo ba điều: hiển thị nhanh, trả về biến thể đúng với đối tượng mục tiêu, và có phương án dự phòng khi mạng chậm. Các nguyên tắc dưới đây sẽ hướng dẫn bạn về thời điểm, bộ nhớ đệm và các mẫu dự phòng để đạt được điều đó.
 
 :::tip
-Các quy tắc sau đây giả định `Adapty.activate()` và `Adapty.identify()` đã được thực thi xong. Xem [Thứ tự gọi trong Kotlin Multiplatform SDK](kmp-sdk-call-order).
+Các quy tắc này yêu cầu `Adapty.activate()` và `Adapty.identify()` đã được giải quyết xong. Xem [Thứ tự gọi trong SDK Kotlin Multiplatform](kmp-sdk-call-order).
 :::
-
-Các hướng dẫn dưới đây sử dụng tên phương thức của v3. Trong SDK v4, `getPaywall` được đổi tên thành `getFlow` (xem [hướng dẫn migration](migration-to-kmp-sdk-v4)) — mọi quy tắc đều áp dụng không thay đổi.
 
 ## Quy tắc và lưu ý \{#rules-and-pitfalls\}
 
-| Nên làm | Không nên làm | Lý do |
+| Nên làm thế này | Không nên làm thế này | Lý do |
 |---|---|---|
-| Fetch placement mà bạn sắp hiển thị.                                                                                                                | Prefetch tất cả các placement đồng thời khi khởi chạy.        | Bulk prefetch chặn main thread và gây ra màn hình đen trong suốt quá trình tải.                                  |
-| Fetch `getPaywall` sau khi attribution có thời gian để resolve — ví dụ: 1–2 giây sau khi `activate` hoặc sau khi `setOnProfileUpdatedListener` được kích hoạt. | Gọi `getPaywall` khi khởi chạy ứng dụng.                       | Attribution chưa được xử lý xong. Paywall sẽ resolve theo đối tượng mặc định và âm thầm bỏ qua các phân khúc cũng như cá nhân hóa ASA. |
-| Đặt `loadTimeout` và cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement.                                                           | Chờ `getPaywall` vô thời hạn.                     | Nếu không có timeout, người dùng với kết nối kém sẽ thấy màn hình trắng cho đến khi mạng phục hồi — hoặc họ sẽ đóng ứng dụng.     |
+| Fetch placement mà bạn sắp hiển thị.                                                                                                                | Prefetch tất cả các placement đồng thời lúc khởi động.        | Bulk prefetch chặn main thread và gây màn hình đen trong quá trình burst.                                  |
+| Fetch `getFlow` sau khi attribution đã có thời gian resolve — ví dụ, 1–2 giây sau `activate` hoặc sau khi `setOnProfileUpdatedListener` kích hoạt. | Gọi `getFlow` ngay khi khởi động ứng dụng.                       | Attribution chưa kịp load. Flow sẽ resolve theo đối tượng mặc định và âm thầm bỏ qua các phân khúc và cá nhân hóa ASA. |
+| Giữ `loadTimeout` mặc định là 5 giây hoặc đặt giá trị khác, và cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement. | Truyền `getFlow` một `loadTimeout` lớn đến mức không bao giờ kích hoạt. | Nếu timeout không bao giờ kích hoạt, người dùng có kết nối kém sẽ thấy màn hình trống cho đến khi mạng ổn định — hoặc họ sẽ đóng ứng dụng. |
 
-Xem [Tải paywall và sản phẩm](fetch-paywalls-and-products-kmp) để tham khảo các tham số `fetchPolicy` và `loadTimeout`, và [Placements](placements) để chọn placement phù hợp.
+Xem [Lấy paywall và sản phẩm tùy chỉnh](fetch-paywalls-and-products-kmp) để tham khảo thông số `fetchPolicy` và `loadTimeout`, và [Placements](placements) để chọn placement phù hợp.
 
-## Tối ưu cho kết nối kém \{#tune-for-poor-connectivity\}
+## Hiển thị media màn hình đầu tiên từ app bundle \{#show-first-screen-media-from-the-app-bundle\}
 
-Đối với các thị trường có kết nối thường xuyên kém (vùng nông thôn, trên phương tiện giao thông, các khu vực bị ảnh hưởng bởi định tuyến mạng):
+Một flow tải hình ảnh và video từ Adapty. Để hiển thị media ngay lập tức trên màn hình đầu tiên, hãy phục vụ chúng từ app bundle thay thế. Đây là cách tốt để tái sử dụng media mà bạn đã có sẵn trong app, chẳng hạn như hình ảnh của một onboarding gốc hiện có.
 
-- Đặt `fetchPolicy = AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` cho mọi lần tải ngoại trừ lần đầu tiên.
-- Cấu hình [paywall dự phòng](fallback-paywalls) cho mọi placement trong Adapty dashboard.
-- Đặt `loadTimeout` từ 3–5 giây và chấp nhận sử dụng paywall dự phòng khi hết thời gian chờ.
-- Đừng để hiển thị paywall phụ thuộc vào `Adapty.getProfile()`. Gọi `getPaywall` độc lập để một profile chậm không chặn giao diện người dùng.
+1. Trong Flow & Paywall Builder, đặt [custom media ID](custom-media#custom-media-id) cho ảnh hoặc video. File bạn upload ở đó sẽ là file dự phòng.
+2. Thêm file vào tài nguyên ứng dụng, trong `commonMain/composeResources/files/`.
+3. Khi tạo flow view, truyền file đã đóng gói cho ID đó vào `customAssets`:
+
+```kotlin showLineNumbers
+// "welcome_video" is the custom media ID set in the Flow & Paywall Builder
+val bundledAssets: Map<String, AdaptyCustomAsset> = mapOf(
+    "welcome_video" to AdaptyCustomAsset.localVideoResource(
+        path = Res.getUri("files/videos/welcome.mp4")
+    ),
+)
+
+AdaptyUI.createFlowView(
+    flow = flow,
+    customAssets = bundledAssets,
+).onSuccess { view ->
+    view.present()
+}.onError { error ->
+    // handle the error
+}
+```
+
+Các file đi kèm sẽ làm tăng dung lượng tải về của ứng dụng, vì vậy chỉ đóng gói các media mà người dùng nhìn thấy đầu tiên.
+
+Hình ảnh được đóng gói sẵn hiển thị ngay lập tức mà không cần chờ, nhưng SDK vẫn tải xuống hình ảnh đã upload trong nền.
+
+Các media không được đóng gói vẫn hiển thị ngay: layout của flow bao gồm một bản sao độ phân giải thấp của mỗi hình ảnh, kể cả khung tĩnh của video, và hiển thị bản đó cho đến khi file đầy đủ được tải xong.
+
+Để xem tài liệu tham khảo đầy đủ về `customAssets`, hãy xem [Tùy chỉnh assets](kmp-get-pb-paywalls#customize-assets).
+
+## Điều chỉnh cho kết nối kém \{#tune-for-poor-connectivity\}
+
+Đối với các thị trường có kết nối kém liên tục (vùng nông thôn, phương tiện giao thông, các khu vực bị ảnh hưởng bởi định tuyến):
+
+- Đặt `fetchPolicy = AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` cho mọi lần fetch trừ lần đầu tiên.
+- Cấu hình [paywall dự phòng](fallback-paywalls) cho mọi placement trong Adapty Dashboard.
+- Cân bằng `loadTimeout` giữa tốc độ và targeting. Timeout ngắn hơn thì người dùng thấy fallback sớm hơn. Timeout dài hơn thì flow được nhắm mục tiêu có thêm thời gian để tải.
+- [Giữ flow nhẹ](flow-size), để layout tải nhanh hơn.
+- Đừng chặn việc hiển thị flow ở `Adapty.getProfile()`. Gọi `getFlow` độc lập để một profile chậm không làm chặn UI.

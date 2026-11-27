@@ -1,36 +1,27 @@
 ---
 title: "Présenter des flows en mode Observateur - React Native"
-description: "Présentez des flows et des paywalls créés avec le Paywall Builder en mode Observateur dans votre application React Native tout en gérant les achats avec votre propre code."
+description: "Présentez des flows en mode Observateur dans votre application React Native en gérant les achats avec votre propre code."
 metadataTitle: "Présenter des flows en mode Observateur - React Native | Documentation Adapty"
 ---
 
-Si vous avez personnalisé un flow ou un paywall avec le builder, vous n'avez pas à vous soucier de son rendu dans le code de votre application mobile pour l'afficher à l'utilisateur. Un tel flow ou paywall contient à la fois ce qui doit être affiché et comment cela doit l'être.
+Si vous utilisez le [mode Observateur](observer-vs-full-mode), vous êtes responsable de votre propre logique d'achat. Mais vous pouvez déléguer l'interface utilisateur du paywall au [Flow & Paywall Builder](adapty-flow-builder).
 
-:::warning
-Cette section concerne uniquement le [mode Observer](observer-vs-full-mode). Si vous ne travaillez pas en mode Observer, consultez la rubrique [Afficher les flows et paywalls](react-native-present-paywalls).
-:::
+Concevez l'écran dans le builder, et le SDK Adapty le rend nativement. Modifiez son contenu, sa mise en page et ses tarifs à tout moment, sans publier de nouvelle version.
 
-:::info
-Cette fonctionnalité nécessite le SDK Adapty React Native 4.0 ou une version ultérieure — auparavant, elle n'était disponible que dans les SDK natifs iOS et Android. Consultez le [guide de migration](migration-to-react-native-sdk-v4) pour effectuer la mise à jour.
-:::
+Ce guide explique comment présenter un flow et gérer les callbacks d'achat. Si Adapty gère les achats à votre place, consultez plutôt [Afficher des flows & paywalls](react-native-present-paywalls).
 
-:::tip
-Créez le flow lui-même dans [le Flow Builder](adapty-flow-builder).
-:::
+## Avant de commencer \{#before-you-start\}
 
-<details>
-   <summary>Avant de commencer à présenter des flows (cliquez pour développer)</summary>
+Vous aurez besoin de :
 
-1. Configurez l'intégration initiale d'Adapty [avec l'App Store](initial_ios) et [avec Google Play](initial-android).
-   2. Installez et configurez le SDK Adapty. Assurez-vous de définir le paramètre `observerMode` sur `true`. Consultez le [guide d'installation du SDK React Native](sdk-installation-reactnative).
-   3. [Créez des produits](create-product) dans l'Adapty Dashboard.
-   4. [Configurez des flows ou des paywalls dans les builders](create-paywall) et assignez-leur des produits.
-   5. [Créez des placements et assignez-leur vos flows ou paywalls](create-placement).
-   6. [Récupérez les flows et leur configuration](react-native-get-pb-paywalls) dans le code de votre application mobile.
+- **Adapty React Native SDK 4.0 ou version ultérieure** : les versions antérieures ne peuvent pas afficher les flows. Sur Android, utilisez la version 4.4.0 ou ultérieure : les versions antérieures peuvent ne pas associer les achats signalés au flow. Pour migrer une application existante, consultez le [guide de migration](migration-to-react-native-sdk-v4).
+- **`observerMode` défini sur `true`** : consultez le [guide d'installation du SDK React Native](sdk-installation-reactnative).
+- **Intégration initiale au store** : configurez Adapty [avec l'App Store](initial_ios) et [avec Google Play](initial-android).
+- **Un flow publié avec des produits** : créez-le dans le [Flow & Paywall Builder](adapty-flow-builder) et associez-lui des [produits](create-product).
+- **Un placement de flow** : [créez un placement](create-placement) et assignez-y votre flow.
+- **Le flow récupéré dans votre application** : [obtenez le flow et sa configuration](react-native-get-pb-paywalls) avant de l'afficher.
 
-</details>
-
-En mode Observateur, le SDK n'effectue pas les achats à votre place. Lorsqu'un utilisateur appuie sur le bouton d'achat ou de restauration dans un flow ou un paywall rendu par Adapty, le SDK appelle votre gestionnaire d'événements `onObserverPurchaseInitiated` ou `onObserverRestoreInitiated` — effectuez l'achat ou la restauration avec votre propre code à cet endroit.
+En mode Observer, le SDK n'effectue pas les achats à votre place. Lorsqu'un utilisateur appuie sur le bouton d'achat ou de restauration dans un flow rendu par Adapty, le SDK appelle votre gestionnaire d'événements `onObserverPurchaseInitiated` ou `onObserverRestoreInitiated` — effectuez l'achat ou la restauration avec votre propre code à cet endroit.
 
 ## Définir les gestionnaires d'événements en mode observateur \{#set-the-observer-mode-event-handlers\}
 
@@ -49,9 +40,9 @@ function MyFlow({ flow }) {
   >((product, onStartPurchase, onFinishPurchase) => {
     onStartPurchase(); // the flow shows its loading indicator
     myPurchaseApi(product.vendorProductId)
-      .then((transactionId) => adapty.reportTransaction(transactionId, flow.variationId))
+      .then((transactionId) => adapty.reportTransaction(transactionId, product.variationId))
       .finally(() => onFinishPurchase()); // the flow hides the loading indicator
-  }, [flow]);
+  }, []);
 
   const onObserverRestoreInitiated = useCallback<
     FlowEventHandlers['onObserverRestoreInitiated']
@@ -72,11 +63,11 @@ function MyFlow({ flow }) {
 ```
 
 :::note
-Dans le composant intégré, la valeur retournée par un handler ne ferme pas le flow — démontez vous-même le composant après un achat ou une restauration réussis.
+Dans le composant intégré, la valeur retournée par un handler ne ferme pas le flow. Démontez vous-même le composant dès qu'un achat ou une restauration d'achat réussit.
 :::
 
 </TabItem>
-<TabItem value="standalone" label="Présentation modale">
+<TabItem value="standalone" label="Modal presentation">
 
 Pour une présentation modale, définissez les handlers sur la vue que vous avez créée :
 
@@ -88,9 +79,9 @@ const unsubscribe = view.setEventHandlers({
   onObserverPurchaseInitiated(product, onStartPurchase, onFinishPurchase) {
     onStartPurchase(); // the flow shows its loading indicator
     myPurchaseApi(product.vendorProductId)
-      .then((transactionId) => adapty.reportTransaction(transactionId, flow.variationId))
+      .then((transactionId) => adapty.reportTransaction(transactionId, product.variationId))
       .finally(() => onFinishPurchase()); // the flow hides the loading indicator
-    return false; // keep the flow open; dismiss it yourself after success
+    return false; // keep the flow open; dismiss it yourself after success, or let the flow continue
   },
   onObserverRestoreInitiated(onStartRestore, onFinishRestore) {
     onStartRestore();
@@ -114,10 +105,12 @@ N'oubliez pas non plus d'appeler les callbacks suivants pour notifier AdaptyUI d
 | onStartRestore()   | Ce callback doit être invoqué pour notifier AdaptyUI que la restauration a démarré.   |
 | onFinishRestore()  | Ce callback doit être invoqué pour notifier AdaptyUI que la restauration est terminée.  |
 
+Après `onFinishPurchase()`, le flow exécute les mêmes [actions de résultat](respond-to-purchase-outcomes#add-actions-for-a-result) quoi qu'il se soit passé, y compris en cas d'achat annulé : les actions **When pending** sur iOS et les actions **When succeeded** sur Android. Affichez tout écran dépendant du résultat de l'achat depuis votre code : seul votre code connaît le résultat. Après `onFinishRestore()`, le flow exécute les actions **When restore completed**, quoi qu'il se soit passé.
+
 ## Présenter le flow \{#present-the-flow\}
 
 Présentez le flow comme d'habitude : [récupérez le flow et créez sa vue](react-native-get-pb-paywalls), puis [présentez-le](react-native-present-paywalls). Aucun paramètre supplémentaire n'est nécessaire — les handlers se déclenchent uniquement lorsque le SDK a été activé avec `observerMode: true`.
 
 :::warning
-N'oubliez pas de [signaler la transaction et de l'associer au paywall](report-transactions-observer-mode-react-native). Sinon, Adapty ne reconnaîtra pas la transaction et ne pourra pas déterminer le paywall source de l'achat.
+N'oubliez pas de [signaler la transaction et de l'associer au paywall](report-transactions-observer-mode-react-native). Sinon, Adapty ne reconnaîtra pas la transaction et ne pourra pas déterminer le paywall source de l'achat. Transmettez le `variationId` de l'`AdaptyPaywallProduct` acheté par l'utilisateur, et non le `AdaptyFlow.variationId` : l'identifiant de variation propre à un flow ne relie pas l'achat au flow.
 :::

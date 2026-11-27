@@ -117,7 +117,7 @@ table in the roster as a *transcription* of an enum, never as the enum.
   do not restate the store's taxonomy past that sentence and do not reproduce its remediation guidance —
   the Adapty-authored content is the Solution column. The exception is where a store condition has a
   consequence the store's page will not mention: the Play testing-track and Testers-group cause behind
-  `ITEM_UNAVAILABLE`, or the fact that `1006` wraps one of codes 0–14. That is content about our wrapper,
+  `ITEM_UNAVAILABLE`, or what `1006` wraps on iOS. That is content about our wrapper,
   not about their taxonomy.
 - **Android's table omits numbers deliberately — don't "fix" it by adding them.**
   `android-sdk-error-handling` is keyed by error name only, and adding numbers means choosing *which*
@@ -165,7 +165,7 @@ table in the roster as a *transcription* of an enum, never as the enum.
 | InvalidProductIdentifiers-react-native | — | dev | 6 | react-native |
 | InvalidProductIdentifiers-unity | — | dev | 6 | unity |
 | android-reference | entry | dev | 0 | android |
-| android-sdk-error-handling | — | dev | 2 | android |
+| android-sdk-error-handling | — | dev | 3 | android |
 | cantMakePayments | — | dev | 0 | ios |
 | cantMakePayments-flutter | — | dev | 0 | flutter |
 | cantMakePayments-kmp | — | dev | 0 | kmp |
@@ -176,10 +176,10 @@ table in the roster as a *transcription* of an enum, never as the enum.
 | error-handling-on-flutter-react-native-unity | entry | dev | 6 | flutter |
 | flutter-reference | entry | dev | 0 | flutter |
 | ios-reference | entry | dev | 0 | ios |
-| ios-sdk-error-handling | entry | dev | 4 | ios |
+| ios-sdk-error-handling | entry | dev | 5 | ios |
 | kmp-handle-errors | entry | dev | 9 | kmp |
 | kmp-reference | entry | dev | 0 | kmp |
-| react-native-handle-errors | entry | dev | 5 | react-native |
+| react-native-handle-errors | entry | dev | 6 | react-native |
 | react-native-reference | entry | dev | 0 | react-native |
 | unity-handle-errors | entry | dev | 5 | unity |
 | unity-reference | entry | dev | 0 | unity |
@@ -213,7 +213,7 @@ platforms). Corpus-wide synonyms live in `aliases.md` and are not repeated here.
 | `1000`, `noProductIDsFound`, `InvalidProductIdentifiers` warning, "empty paywall", "no purchase options", "products approved but not found" | `InvalidProductIdentifiers` (iOS, plus `-react-native` / `-flutter` / `-unity` / `-kmp` variants). A **store-configuration** problem, not a code problem, and the pages are App-Store-only: bundle ID, Ready to Submit, availability, prices, Paid Apps Agreement / bank / tax. The warning **without** an error is harmless and should be ignored. Android and Capacitor have no variant page — the Google Play equivalent (package name, tax status, testing track) is inline as `NO_PRODUCT_IDS_FOUND` in `android-sdk-error-handling`. |
 | "everything matches and the product is Approved, but still 1000" | Still `InvalidProductIdentifiers`, final step: the product can be stuck in Apple's registry — visible in App Store Connect but not exposed to StoreKit lookup. Delete and recreate it with the same ID, then wait up to 24 h. |
 | `1003`, `cantMakePayments`, "in-app purchases not allowed on this device" | `cantMakePayments` (iOS, plus `-react-native` / `-flutter` / `-unity` / `-kmp`). **Two causes, both real, and the reusable `1003.md` that forms the whole body of those five articles has been right all along.** (1) **Device restrictions** — Screen Time's IAP restriction, a suspended Apple account, an unsupported region; iOS's error text says exactly that. (2) **Observer mode plus `makePurchase`, which cannot coexist.** The mechanism is a nil collaborator, not a dedicated error: `Sources/Adapty.swift` builds `purchaser` only `if !observerMode`, and `Sources/StoreKit/Adapty+MakePurchase.swift` opens with `guard let purchaser = sdk.purchaser else { throw .cantMakePayments() }`. A second route exists too — `InternalAdaptyError.swift` maps `notAllowedInObserveMode` onto `cantMakePayments`. Android is different: its enum defines no `CANT_MAKE_PAYMENTS` at all, so this code is not portable. **History worth keeping, because it cost two wrong edits:** this row first named observer mode, then "corrected" it away on the strength of a grep for `notAllowedInObserveMode` alone — the wrong grep, since the real path never mentions that name. Disproving one mechanism is not disproving the claim. |
-| `1006`, `productPurchaseFailed`, "purchase failed with no reason given" | The code table. The message is deliberately empty — it **wraps** a StoreKit code 0–14 (usually `paymentCancelled`, `paymentInvalid`, `paymentNotAllowed`, `invalidOfferPrice`). Read `originalError` (`detail` on Capacitor) or turn on verbose logs; the wrapped error is the actual answer. |
+| `1006`, `productPurchaseFailed`, "purchase failed with no reason given" | The code table. The message is deliberately empty — it **wraps** the error StoreKit's purchase call threw. **Corrected 2026-11-23 against `ios-sdk` `origin/master` (4.4.1) and tag `3.17.3`:** on iOS that is a StoreKit 2 `StoreKitError` / `Product.PurchaseError`, never an `SKError` — `CustomAdaptyError.adaptyErrorCode` converts any `SKError` to its own code 0–14 first, so an `SKError` never surfaces as `1006`. Cancel and pending are `AdaptyPurchaseResult` cases, not errors. Developers upgrading from 2.x with `SKErrorDomain` checks miss every one (ticket, 2026-11-19). Fixed in `ios-sdk-error-handling`; the same "codes 0–14" claim is still in `react-native-handle-errors`, `unity-handle-errors` and `CrossPlatformErrors.md` (unconfirmed how each bridge surfaces the wrapped error). Read `originalError` (`detail` on Capacitor) or turn on verbose logs; the wrapped error is the actual answer. |
 | `2002` / `notActivated` / `ADAPTY_NOT_INITIALIZED` / `AUTHENTICATION_ERROR`, "SDK not initialized", "app not activated" | The code table, which hands off to the platform's call-order article. Typically a splash screen or early UI hook calling Adapty before `activate` returns — **intermittent, and often does not reproduce on simulator/emulator** because real-device timing differs. **Ask which platform before reading the number — corrected 2026-08-11:** these four are one *ticket*, not one code. `2002` is `notActivated` on iOS, Flutter, Unity and `jscore`, but on **Android and KMP `2002` is `AUTHENTICATION_ERROR`** and not-activated is a different number entirely, `20` (`ADAPTY_NOT_INITIALIZED`). So an Android developer pasting `2002` has an auth problem, not a call-order problem, and this row previously sent them to the wrong article. |
 | `3006` / `profileWasChanged` / `PROFILE_WAS_CHANGED`, "profile changed mid-call" | The code table. Cause is a call issued while `identify` is still in flight; the call lands on a profile about to be swapped and the SDK rejects it. Await `identify` first. |
 | `3001` / `wrongParam` / `WRONG_PARAMETER`, "some of your parameters are not correct" | The code table — and the message **misdescribes the cause**. For a builder flow that won't display, it usually means **Show on device** is off in the builder, or the local fallback file's version doesn't match the SDK version. Configuration, not parameters. |
@@ -228,3 +228,26 @@ platforms). Corpus-wide synonyms live in `aliases.md` and are not repeated here.
 
 ## Gaps and misses
 
+### `1004` / `NO_PURCHASES_TO_RESTORE` is no longer an outcome to handle — 2026-09-01
+
+Found while documenting Android SDK 3.17.3. The *Ticket language* row that pairs `2` /
+`paymentCancelled` with `1004` / `noPurchasesToRestore` and says "neither is a defect to fix — they are
+normal outcomes the store reported. Handle them in business logic (offer a discount, show an
+empty-restore message)" is now wrong for the second half of that pair on Android.
+
+- **The code is deprecated and no longer returned.** `git diff 3.17.2 3.17.3 --
+  adapty/src/main/java/com/adapty/errors/AdaptyErrorCode.kt` in `android-sdk` adds
+  `@Deprecated("No longer returned by restorePurchases(): when there is nothing to restore, the method
+  completes successfully with the current profile.")` to `NO_PURCHASES_TO_RESTORE(1004)`, and the same
+  diff on `Adapty.kt` adds the matching KDoc. The 4.x line got this in 4.0.2, so both maintained
+  Android lines now behave this way. `android-sdk-error-handling`, `android-restore-purchase` and
+  `sdk-installation-android` were updated to read "3.17.3 and 4.0.2" on 2026-09-01.
+- **The advice inverts rather than softens.** An empty-restore message can no longer hang off the
+  error — it has to come from the access level on the `AdaptyProfile` the call returns. App code that
+  only branches on `AdaptyResult.Error` shows the user nothing at all.
+- **`2` / `paymentCancelled` still holds.** Splitting the row is the fix, not deleting it.
+- **The wrappers are on the same path, but this is their docs' claim, not verified ground truth.**
+  `react-native-restore-purchase` names React Native SDK 4.0.3 and `flutter-restore-purchase` names
+  Flutter SDK 4.0.4, each with a matching "Deprecated in …" row in its code table. I did not read
+  `jscore` or `flutter-sdk` to confirm which Android version those pin, and no wrapper 3.x line has
+  been checked at all.

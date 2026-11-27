@@ -1,6 +1,6 @@
 ---
 zone: integrations
-sources: [analytics-export-api-spec, dashboard-backend, dashboard-interface, server-side-api-spec, ua-service]
+sources: [analytics-export-api-spec, server-side-api-spec]
 reviewed_shape: 99bfe705d975
 reviewed_at: 2026-08-10
 ---
@@ -22,9 +22,15 @@ and error troubleshooting). In the sidebar this is the "Third-party integrations
   event-name mapping. One per destination article.
 - The webhook JSON payload (`POST` to the developer's own endpoint) — canonical schema lives in
   `webhook-event-types-and-fields`.
-- The daily S3 / Google Cloud Storage gzip `.csv` export — a separate, narrower schema
+- The daily S3 / Google Cloud Storage `.csv` export — a separate, narrower schema
   (`revenue_usd`/`proceeds_usd`/`net_revenue_usd` columns), not a re-serialization of the webhook's
-  `event_properties` field names.
+  `event_properties` field names. **Corrected 2026-11-19:** this line said "gzip `.csv`"; the files
+  are plain, uncompressed UTF-8 `.csv` with a header row (backend code, 2026-11-19: the export writes
+  and uploads a `.csv` file and has no compression step). Three feeds, each with its own switch,
+  credentials, bucket, and folder: events (`<app_id>_<date>.csv`), paywall visits
+  (`<app_id>_paywalls_<date>.csv`), and virtual currency transactions
+  (`<app_id>_virtual_currency_<date>.csv`, one row per balance change of one currency). `<date>` is
+  the day after the exported UTC day (backend code and product spec, 2026-11-19).
 - In-app SDK calls the reader adds to their own app code: `setIntegrationIdentifier()` (hand a
   destination's device/user ID to Adapty) and `updateAttribution()` (push attribution data Adapty
   received from a source back into the user's profile). Documented per destination under
@@ -34,18 +40,19 @@ and error troubleshooting). In the sidebar this is the "Third-party integrations
 
 ## Sources of truth
 
-- **dashboard-backend** — integration setup page field labels, `required` flags, and hint text come
-  from `portal/integration_context/constants/share.py` in that repo, not from `dashboard-interface`
-  (which only carries the field key, per its own entry in `sources.md`). Cite this id for any task about
-  why a dashboard integration field says what it says.
+- **Backend and dashboard behavior: Adapty's closed-source code, not citable here — confirm with the
+  product team or by testing in the dashboard.** Integration setup page field labels, `required` flags,
+  and hint text are served by the backend, not defined in the dashboard code (which only carries the
+  field key). For why a dashboard integration field says what it says, the live setup page is the
+  citable source.
 - **server-side-api-spec** — `webhook-event-types-and-fields` links two of its operations directly
   (`setTransaction`, `grantAccessLevel`) for the store-override and manually-granted-access cases it
   documents.
 - TODO(owner): no entry in `sources.md` covers the webhook/event **payload schema** itself (field names,
   types, which fields are event-type-specific). The one clean precedent of a schema change (commit
   `c65300c71`, "New webhook fields", 2026-07-22) shows the docs PR itself introducing the new field
-  definitions, with no backend source cited. Is there a backend repo/service that owns this schema, or
-  is a verified live test payload the only ground truth an agent can check against?
+  definitions, with no backend source cited. The schema is owned by closed-source backend code, so a
+  verified live test payload or the product team is the only ground truth an agent can check against.
 
 ## What we document, what we don't
 
@@ -66,7 +73,7 @@ and error troubleshooting). In the sidebar this is the "Third-party integrations
 <!-- mill:auto:roster -->
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
-| adjust | — | dev, analyst | 8 | tutorial |
+| adjust | — | dev, analyst | 9 | tutorial |
 | airbridge | — | dev, analyst | 7 | tutorial |
 | amplitude | — | dev, analyst | 6 | tutorial |
 | analytics-integration | entry | dev, analyst | 4 | tutorial |
@@ -77,23 +84,23 @@ and error troubleshooting). In the sidebar this is the "Third-party integrations
 | attribution-integration | entry | dev, analyst | 5 | tutorial |
 | branch | — | dev, analyst | 7 | tutorial |
 | braze | — | dev, analyst | 5 | tutorial |
-| configuration | — | dev, analyst | 2 | tutorial |
-| event-flows | — | dev, analyst | 17 | tutorial |
+| configuration | — | dev, analyst | 3 | tutorial |
+| event-flows | — | dev, analyst | 18 | tutorial |
 | event-statuses | — | dev, analyst | 0 | tutorial |
-| events | — | dev, analyst | 3 | tutorial |
+| events | — | dev, analyst | 7 | tutorial |
 | facebook-ads | — | dev, analyst | 7 | tutorial |
-| firebase-and-google-analytics | — | dev, analyst | 17 | tutorial |
+| firebase-and-google-analytics | — | dev, analyst | 19 | tutorial |
 | firebase-apps | — | dev, analyst | 1 | tutorial |
-| google-cloud-storage | — | dev, analyst | 9 | tutorial |
-| handle-integration-errors | — | dev, analyst | 7 | tutorial |
+| google-cloud-storage | — | dev, analyst | 15 | tutorial |
+| handle-integration-errors | — | dev, analyst | 8 | tutorial |
 | messaging | entry | dev, analyst | 1 | tutorial |
 | mixpanel | — | dev, analyst | 9 | tutorial |
-| onesignal | — | dev, analyst | 8 | tutorial |
+| onesignal | — | dev, analyst | 9 | tutorial |
 | posthog | — | dev, analyst | 15 | tutorial |
 | pushwoosh | — | dev, analyst | 5 | tutorial |
-| s3-exports | — | dev, analyst | 7 | tutorial |
-| set-up-webhook-integration | — | dev, analyst | 6 | tutorial |
-| singular | — | dev, analyst | 6 | tutorial |
+| s3-exports | — | dev, analyst | 13 | tutorial |
+| set-up-webhook-integration | — | dev, analyst | 7 | tutorial |
+| singular | — | dev, analyst | 8 | tutorial |
 | slack | — | dev, analyst | 6 | tutorial |
 | splitmetrics | — | dev, analyst | 7 | tutorial |
 | switch-from-appsflyer-s2s-api-2-to-3 | — | dev, analyst | 0 | tutorial |
@@ -153,6 +160,23 @@ right shape, not a reusable: a 50-row table inside a callout would be unreadable
    snippet — not the new field rows. Older base fields (`price_usd`, `proceeds_usd`, `net_revenue_usd`,
    `subscription_expires_at`, etc.) do appear in all of these tables, so the rule reads as "new fields
    default to webhook-only until told otherwise," not "these tables are always kept in lockstep."
+   Counter-example, 2026-11-16: `virtual_currency_credits` went into the webhook schema *and* both
+   duplicated tables, because the product brief named the destinations that receive it (Amplitude,
+   Mixpanel, PostHog, Braze, Branch as an array; Adjust as a JSON string inside `callback_params`;
+   Firebase, AppsFlyer and other fixed-parameter integrations not at all; confirmed by product,
+   2026-11-13). So "told otherwise" means a per-destination list from product — ask for one. Amplitude,
+   Branch and Adjust describe their payload as "all available event fields" with a link to the webhook
+   schema, so they need no row of their own; only a destination that changes the wire shape (Adjust)
+   needs a sentence.
+   S3/GCS got `virtual_currency_credits` too, but only behind the opt-in export option **Add virtual
+   currency credits** (off by default; backend code, 2026-11-19), as the last CSV column, after the
+   flow and A/B test columns. The option also covers the manual export. The export rule differs from
+   the webhook: a paying row with no credits gets `[]` (the webhook leaves the field out), every other
+   row and an imported row get an empty cell, and a row of a transaction written before 2026-07-02
+   (no import marker) gets `[]` even when it was imported. So an export-column change is documented in
+   `s3-exports` (column table and "Events and tags" settings table), `google-cloud-storage` (column
+   table and settings table) and the destination list of the webhook article, and the "come at the end
+   of the file" sentence in both export articles moves with it.
 2. **`messaging`'s and `analytics-integration`'s "## Event properties" tables are a maintained
    duplicate, not a canonical-plus-copy relationship.** Confirmed byte-identical today (`diff` of the
    current table sections returns nothing). Nothing enforces that an edit to one is mirrored in the
@@ -172,6 +196,21 @@ right shape, not a reusable: a 50-row table inside a callout would be unreadable
    into `export-analytics-with-ai`. Both ids are assigned to `agent-tooling` in `zones.json`. A task that
    changes webhook or export behavior should check whether either agent guide needs a matching update,
    even though neither article is in this roster.
+6. **The "Virtual currency transactions" section of `s3-exports` and `google-cloud-storage` is a
+   maintained duplicate (added 2026-11-19).** Both pages carry the same setup steps, 19-column table,
+   example SQL join with the events table, and limitations, adapted only for the destination's name and
+   credential fields. Edit both. The column order is a contract with customer loaders: product decision
+   (2026-11-19) that a new column goes only at the end. `virtual-currencies` (zone
+   `products-and-offers`) links to both sections by the anchor `#virtual-currency-transactions`, so a
+   heading rename there breaks that link.
+7. **`subscription_deferred` covers both stores since 2026-10-15** (backend code, checked 2026-11-10): a
+   Google Play deferral, and an App Store renewal date extension made through the App Store Server API.
+   The extension moves the subscription's expiration date and the access level with it. The event's
+   description lives once, in the `WebhookEvents` reusable (rendered in `events`, `webhook`, and
+   `webhook-event-types-and-fields`), but destination articles carry their own labels: `facebook-ads` said
+   "(Android only)" until 2026-11-11, matching the integration settings label, which dropped it at the
+   same time. `rg -n -i deferr src/content/docs` finds every copy; `push-notifications` lists the event
+   without naming a store. **Subscription paused** is still Android only.
 
 ## Boundaries
 
@@ -232,9 +271,13 @@ repeated here.
 | "connect SplitMetrics / Asapty" | `splitmetrics` / `asapty`, but both require the `apple-search-ads` integration to be connected first — an undocumented-looking prerequisite that surfaces as "not receiving events". |
 | "field X isn't in our CSV", "which columns does the export have", "paywall impression columns" | `s3-exports` / `google-cloud-storage` "Data structure" — a narrower, separately-maintained schema, so a field's presence in the webhook reference says nothing about the export. |
 | a "Firebase" ticket | Split by what it's about: event forwarding / GA4 / Google Ads → `firebase-and-google-analytics`; keeping Firebase Auth user ids in sync with Adapty profiles → `firebase-apps` (and see Gaps and misses before citing its code). |
+| "subscription_deferred on iOS", "renewal date extension", "we extended subscriptions after an outage and users lost access" | `events` (the shared event table). Since 2026-10-15 an App Store renewal date extension moves the access level to the new date and sends `subscription_deferred`; before that, Adapty kept the old date, so users lost access early. The event has to be turned on per integration, like any other. |
 
 ## Gaps and misses
 
+- **`appmetrica` doesn't say which AppMetrica event `subscription_deferred` becomes.** Backend code
+  (2026-11-10) sends it as `cancellation`, for both stores. Checked with
+  `rg -c -i deferr src/content/docs/version-3.0/appmetrica.mdx` (no hit, 2026-11-11).
 - `firebase-and-google-analytics` is a recently and thoroughly rewritten article (Troubleshooting,
   Limitations, `ZoomImage` component, cross-links to Stripe/S3/GCS/Adapty Attribution) — visibly newer
   and deeper than the rest of the zone's destination articles, most of which still follow a shorter,
@@ -245,11 +288,66 @@ repeated here.
 - `firebase-apps` uses a pre-v4 Adapty API throughout (`Adapty.activate("KEY")`, `PurchaserInfoModel`,
   `Adapty.delegate`) — see Boundaries. Flag before citing it as a pattern for any current-SDK task.
 - **Answered by the docs owner (2026-08-10): there is no docs-side default. Which integrations carry a
-  field is a fact about the backend, and it is verified by reading the code, not inferred from the last
+  field is a fact about the backend, and it is verified against the backend, not inferred from the last
   ticket.** So a task that adds or changes an event field is not done when the webhook article is
-  updated: read the backend to establish which destinations actually emit it, then update exactly those.
+  updated: confirm with backend/product (or a live test payload per destination) which destinations
+  actually emit it, then update exactly those.
   Commit `c65300c71` scoping `original_price_*` and `discount_amount_*` to the webhook article is what
   the code said at that time, not a rule to reuse. See *Sources of truth* for where to read.
-- The payload schema needs a registered ground-truth source, because the rule above makes reading the
-  backend mandatory rather than optional for this zone. Until `sources.md` has an entry for it, use
-  `dashboard-backend` and say in the task which module you read.
+- The payload schema has no public ground-truth source, yet the rule above makes confirming backend
+  behavior mandatory rather than optional for this zone. Say in the task how the field list was
+  confirmed (product team, or which live payloads were checked).
+- **Singular is no longer SDK-free (2026-10-05).** Profiles that carry `singular_sdid` are routed to
+  Singular's v2 Event API (`POST /api/v2/evt`, form-urlencoded, `sdid` replaces IDFA/IDFV/AIFA/ASID/ANDI);
+  without it, the v1 `GET` is unchanged. Every request gains `partner=adapty`. Singular accounts created
+  on or after 2026-07-15 reject v1, so for them the SDK call is mandatory. No SDK ships a named constant
+  for the key: all seven platforms pass the raw string through the open-ended key type. Side effect:
+  webhook and S3/GCS `integration_ids` gain a `singular_sdid` key. The server-side API is out of scope
+  for this change, so `adapty-api.yaml` stays as is.
+- **S3 and GCS keys are checked at save time; the uploads are separate (2026-11-19, backend code).**
+  When the integration settings are saved, the backend opens the bucket of each credential set whose
+  export switch is on (events, paywall visits, virtual currency). One invalid set refuses the whole
+  save, and the dashboard's one **Save** sends all tabs, so no tab's changes are saved. After the save,
+  each feed's daily upload reads only its own credentials and catches its own error: a failed upload of
+  one feed does not stop the others. The `google-cloud-storage` warning and its "Troubleshooting" said "all uploads will fail";
+  corrected 2026-11-23 to the save-time check. Both pages state it in the virtual currency section.
+- **S3 and GCS default event names depend on when the integration was created (2026-11-23, backend
+  code).** Since mid-September 2025 a new S3 or GCS integration gets Adapty's internal event names as
+  defaults, so a subscription start is `subscription_initial_purchase`; an older integration keeps its
+  stored map, where it is `subscription_started`. The stored maps were not migrated. The example SQL of
+  the virtual currency section lists both names: don't "fix" it to one.
+- **Braze revenue goes out only as legacy purchases (2026-10-23, backend code + Braze docs).** Adapty
+  sends revenue as the `purchases` array of `/users/track`, with no format setting in the integration.
+  Braze put legacy purchase events in maintenance mode and does not enable them for new customers; such
+  a workspace rejects the whole request with HTTP 400 ("Legacy purchase ingestion is disabled…"), so
+  every revenue-bearing event (first purchase, renewal, trial conversion, refund) is lost, not only the
+  revenue. Braze is not retried automatically. A revenue-format selector (eCommerce
+  `ecommerce.order_placed` / `ecommerce.order_refunded` vs legacy) is planned but not shipped; until it
+  is, `braze` carries a warning to check that the workspace accepts legacy purchases; replace it with
+  the selector docs when the selector ships. The same check found the setup section
+  stale: Braze now creates REST keys and lists app identifiers under **Settings** > **APIs and
+  Identifiers**, and a key's permissions can't be edited after creation.
+- **Flow and A/B test fields (2026-10-29, confirmed by the backend team and checked against backend code on the feature branch before merge; QA-tested on the webhook only).**
+  Seven fields join the events that already carry `developer_id`/`variation_id`: `flow_id`, `flow_name`,
+  `flow_variation_id`, `ab_test_id`, `ab_test_variant_id`, `ab_test_variant_name`, `ab_test_parent_name`.
+  Absent rather than `null` when empty. Existing fields keep their values on purpose: for flows
+  `variation_id` is a paywall-screen ID and `paywall_name` is `scr_...`; for crossplacement tests
+  `ab_test_name` is the per-placement `<name> child-N`. Destination split, per the backend team: the
+  whole event (so the new fields) reaches webhook, Amplitude, Mixpanel, Adjust, Branch, Braze, PostHog,
+  SplitMetrics, AppMetrica, Pushwoosh; A/B fields still don't reach AppsFlyer, Facebook, Singular,
+  Tenjin, Asapty, Airbridge, OneSignal, Slack. Firebase gets a subset (no `flow_variation_id`), only
+  where the 25-parameter limit leaves room, except `purchase`/`refund`. S3/GCS get 8 trailing CSV
+  columns. Unlike ripple rule 1's 2026-07-22 precedent, this change did land in the shared
+  `messaging`/`analytics-integration` table and the S3/GCS tables.
+- **Corrected 2026-10-29:** `mixpanel`'s "Mixpanel event structure" read as a closed list of ten
+  properties; the backend team confirmed the whole event goes out in `properties`. And
+  `firebase-and-google-analytics` cited a 36-character value limit for everything — that is the
+  user-property limit; event parameter values allow 100, and Adapty now cuts text values to 100.
+- **Code-verified details of the same change (backend code, 2026-10-29):** the four IDs are UUIDs; the
+  names are strings. The fields are added in the same branch of the event body as `variation_id`, gated on
+  `developer_id`, so `access_level_updated` carries them too. S3/GCS columns follow `attributes`, the
+  last pre-existing column in the export (the docs tables list `integration_ids` last, so the file order
+  and the table order differ). Firebase cuts every text value, `transaction_id` and the item ID included,
+  to 100 characters. Regular onboarding A/B tests also get `ab_test_id` and the variant fields, which
+  the docs don't call out. The same branch drops the segment-title fallback from `cohort_name`, which
+  is now the audience title only (the docs already describe it that way).

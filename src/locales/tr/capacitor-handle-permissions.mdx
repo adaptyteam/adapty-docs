@@ -1,0 +1,81 @@
+---
+title: "Flow'larda izin isteklerini yönetme - Capacitor"
+description: "onRequestPermission işleyicisi ile Capacitor uygulamanızdaki bir flow'dan kullanıcılara push bildirim izni isteyin ve yanıtlarını flow'a döndürün."
+metadataTitle: "Flow İzinlerini Yönetme - Capacitor | Adapty Dokümanları"
+---
+
+Bir [flow](adapty-flow-builder), örneğin bildirimlerin ne işe yaradığını açıklayan bir onboarding ekranında, kullanıcıdan bildirim gönderme izni istemek için **Request permission** eylemini kullanabilir. Adapty SDK, sistem izin diyaloğunu kendisi göstermez. İsteği uygulamanızdaki `onRequestPermission` handler'ına iletir. Uygulamanız diyaloğu gösterir, kullanıcının yanıtını döndürür ve flow kaldığı yerden devam eder.
+
+## Başlamadan önce \{#before-you-start\}
+
+Şunlara ihtiyacınız var:
+
+- **Adapty Capacitor SDK 4.1.0 veya üzeri**: 4.1.0 sürümü, `onRequestPermission` işleyicisini içeren ilk kararlı sürümdür.
+- **Request permission eylemi içeren bir flow**: Flow & Paywall Builder'da bir öğenin **On Tap** veya **On Screen Appear** tetikleyicisine **Request permission** eylemini ekleyin. **After response** bölümünde, kullanıcı yanıt verdikten sonra çalıştırılacak eylemleri (örneğin **Navigate Next**) ekleyin. Eylem ayarları için bkz. [Request permission](onboarding-actions#request-permission).
+- **Bildirim diyaloğunu gösteren bir kütüphane**: Örnekte [`@capacitor/push-notifications`](https://capacitorjs.com/docs/apis/push-notifications) eklentisi kullanılmaktadır. Diyaloğu gösteren başka herhangi bir eklenti de çalışır.
+- **Android manifest dosyanızda `POST_NOTIFICATIONS` izni ve `targetSdk` 33 veya üzeri**: Android 13 ve sonrası, bildirim izni diyaloğunu yalnızca bu izni bildiren ve Android 13 veya üzerini hedefleyen uygulamalara gösterir:
+
+  ```xml title="android/app/src/main/AndroidManifest.xml"
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  ```
+
+## Flow bir izni nasıl talep eder \{#how-the-flow-requests-a-permission\}
+
+1. Flow, **Request permission** eylemine ulaşır: kullanıcı öğeye dokunur ya da ekran açılır.
+2. Adapty SDK, `onRequestPermission` işleyicinizi `push` izniyle çağırır.
+3. Uygulamanız sistem diyaloğunu gösterir ve işleyicinin promise'ini `{ status: 'granted' }` ya da `{ status: 'denied' }` olarak çözümler.
+4. Flow, **After response** eylemlerini çalıştırır. Bu eylemler her iki yanıt için de aynıdır.
+
+Flow, işleyicinizin promise'i çözümlenene kadar ekranda bekler. Promise hiçbir zaman çözümlenmezse, flow ekranda kalmaya devam eder. İşletim sistemi diyaloğu göstermezse, örneğin kullanıcı zaten yanıt verdiyse, `PushNotifications.requestPermissions()` mevcut durumu hemen döndürür ve flow **After response** eylemlerini anında çalıştırır. Android 12 ve öncesinde uygulamalar bildirimler için çalışma zamanı izni gerektirmez, bu yüzden eklenti diyalog göstermeden `granted` döndürür. **After response** eylemleri ekrandan ayrılıyorsa, kullanıcı izin isteyen ekranı yalnızca bir an için görür.
+
+**On Screen Appear** ile kullanıcı **Navigate back** eylemiyle ilgili ekrana geri döndüğünde flow tekrar istek göndermez. **On Tap** ile her dokunuş yeni bir istek gönderir; ancak bir istek yanıtınızı beklerken yapılan dokunuşlar bunun dışındadır.
+
+## Handler'ı uygulayın \{#implement-the-handler\}
+
+`onRequestPermission` handler'ı asenkrondur. Kullanıcının yanıtını içeren bir nesneye çözümlenen bir promise döndürür:
+
+```typescript showLineNumbers title="permissions.ts"
+
+export const onRequestPermission: FlowEventHandlers['onRequestPermission'] = async (permission) => {
+  if (permission !== 'push') {
+    // Answer every request: the flow waits on the screen until it gets the answer.
+    return { status: 'denied' };
+  }
+
+  // Shows the system dialog, or returns the current status without showing it.
+  const { receive } = await PushNotifications.requestPermissions();
+  return { status: receive === 'granted' ? 'granted' : 'denied' };
+};
+```
+
+`onRequestPermission` şunları alır:
+
+- **`permission`**: Flow'un talep ettiği izin. **Request permission** aksiyonu `push` gönderir. Diğer değerler için `denied` döndürün; böylece flow devam eder.
+- **`customArgs`**: İsteğin özel argümanları. **Request permission** aksiyonu hiçbir şey göndermez, dolayısıyla nesne boştur.
+
+Promise'i yalnızca kullanıcı bildirimlere izin verdiğinde `{ status: 'granted' }` olarak çözümlendirin. Adapty SDK, handler'ınız hata fırlatırsa veya promise reddedilirse `denied` yanıtını döndürür.
+
+Verilen izin, uygulamanızın bildirim göstermesine olanak tanır. Push bildirimleri almak için, cihazı push sağlayıcınıza kaydedin; bunu flow'ların dışında uygulamanızın yaptığı şekilde yapın.
+
+## Handler'ı kaydedin \{#register-the-handler\}
+
+:::warning
+**`onRequestPermission` handler'ı olmadan kullanıcıya hiçbir zaman izin sorulmaz.** Handler'ı olmayan bir flow görünümünde Adapty SDK, diyalog göstermeden `denied` yanıtı verir, günlüğüne bir uyarı yazar ve flow hemen **After response** eylemlerini çalıştırır.
+:::
+
+Her flow görünümü oluşturduğunuzda, diğer [flow olay yöneticilerinizle](capacitor-handling-events) birlikte, görünümü göstermeden önce bu yöneticiyi ayarlayın. Flow yazarları daha sonra, uygulama güncellemesi gerektirmeden herhangi bir flow'a **Request permission** eylemini ekleyebilir; yönetici ayarlanmamış bir flow görünümü, kullanıcıya sormadan `denied` yanıtı döndürür.
+
+```typescript showLineNumbers title="Capacitor"
+
+const view = await createFlowView(flow);
+
+await view.setEventHandlers({
+  onRequestPermission,
+});
+
+await view.present();
+```
+
+## İzin isteğini test etme \{#test-the-permission-request\}
+
+iOS, bildirim iletişim kutusunu uygulama başına yalnızca bir kez gösterir. Android ise kullanıcı bildirimlere izin verdikten veya iki kez reddettikten sonra bu iletişim kutusunu göstermeyi bırakır. Flow'u test ederken iletişim kutusunu tekrar görmek için uygulamayı cihazdan silin ve yeniden yükleyin. Ardından flow'u açın ve **Request permission** eylemine ulaşın. Flow iletişim kutusu görünmeden devam ederse, flow view'inin `onRequestPermission` işleyicisine sahip olduğundan ve Android uygulamasının `POST_NOTIFICATIONS` izni bildirdiğinden ve Android 13 veya sonrasını hedeflediğinden emin olun.

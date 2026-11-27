@@ -67,7 +67,7 @@ Three dependencies must be live before any work starts. Check all three up front
 
 **Check A — GitLab MCP is connected.** Call `mcp__claude_ai_GitLab_Adapty__get_mcp_server_version`. If the tool isn't loaded or returns an error, stop. Tell the user: "GitLab MCP isn't connected. Connect it in Claude settings, then re-run." Don't fall through to alternate paths — the rest of the workflow depends on MCP tools for MR search and pipeline lookup.
 
-**Check B — Atlassian (Jira) MCP is connected.** Call `mcp__claude_ai_Atlassian__getAccessibleAtlassianResources`. This serves two purposes: it verifies the MCP is connected, and it returns the Atlassian cloud ID you'll need if you fall through to Jira lookup later. Cache the returned cloud ID for any later Jira call this session. If the tool errors, stop. Tell the user: "Atlassian MCP isn't connected. Connect it in Claude settings, then re-run."
+**Check B — Atlassian (Jira) MCP is connected.** Call `mcp__claude_ai_Atlassian__atlassianUserInfo`. A profile back means the MCP is live. Do **not** use `getAccessibleAtlassianResources` as the probe: for this account it returns `[]` even when auth is fine, so an empty list proves nothing. No cloud ID lookup is needed — every Atlassian call in this skill takes the site hostname `adaptyio.atlassian.net` as `cloudId`. If `atlassianUserInfo` errors, stop and tell the user: "Atlassian MCP isn't connected. Connect it in Claude settings, then re-run."
 
 The Atlassian MCP is technically only required if MR search fails (MR-first), but checking it now avoids the alternative: getting halfway through and then failing at the fallback step. The check is one cheap call.
 
@@ -101,7 +101,7 @@ Branch on input type:
 | **FE MR URL** | Done — extract project + IID from URL. |
 | **BE MR URL** | `get_merge_request` on the BE repo, read its `description` for an `ADP-XXXX` Jira key, then search FE MRs for that key. |
 | **Branch name** | `search` scope=`merge_requests` in `adapty/adapty-dashboard-interface` for the branch name (or the Jira key inside it). |
-| **Jira key (e.g. `ADP-XXXX`)** | `search` scope=`merge_requests` in `adapty/adapty-dashboard-interface` for the key string — it appears in MR titles. |
+| **Jira key (e.g. `ADP-XXXX`)** | `search` scope=`merge_requests` with `project_id: "adapty/adapty-dashboard-interface"` for the key string — it appears in MR titles. Without `project_id` the search returns nothing. |
 | **Feature description** | `search` scope=`merge_requests` in `adapty/adapty-dashboard-interface` for the most distinctive keyword (e.g. "template library"). |
 
 Use `state=opened` and `sort=desc` (default) to bias toward active MRs.
@@ -174,36 +174,35 @@ Keep it short — three or four lines.
 
 ## Jira fallback
 
-Use Jira only when the FE MR search returns nothing. Two common pitfalls — both observed in real runs — and how to avoid them:
+Use Jira only when the FE MR search returns nothing. This workspace's Atlassian MCP exposes only the Teamwork Graph tools, `atlassianUserInfo`, and a resource listing that returns `[]`. There is no `searchJiraIssuesUsingJql` and no `getJiraIssue`, so the fallback needs a Jira key or URL to start from — it cannot search Jira by feature description.
 
-### Always discover the cloud ID first
-
-Calls to `searchJiraIssuesUsingJql` / `getJiraIssue` fail with `Cloud id ... isn't explicitly granted` if you guess the cloud ID. **Always** start with:
+### Read an issue by key or URL
 
 ```
-getAccessibleAtlassianResources  → returns { id: "<cloudId>", url: "https://adaptyio.atlassian.net", ... }
-```
-
-Adapty's tenant URL is `adaptyio.atlassian.net` (note: no dot between `adapty` and `io`). Use the returned cloud ID for every subsequent Atlassian call this session.
-
-### Always restrict `fields` to keep responses small
-
-Bare `searchJiraIssuesUsingJql` calls return the full issue object for every match and routinely blow past the token limit (observed: 74 KB on a 3-issue search). **Always** pass a minimal `fields` array:
-
-```
-searchJiraIssuesUsingJql({
-  cloudId: "<id from above>",
-  jql: 'text ~ "template library" AND project = ADP ORDER BY updated DESC',
-  fields: ["summary", "status", "issuetype", "updated"],
-  nextPageToken: undefined,
+getTeamworkGraphObject({
+  cloudId: "adaptyio.atlassian.net",
+  objects: ["https://adaptyio.atlassian.net/browse/ADP-XXXX"],
 })
 ```
 
-If you need the description or comments, fetch the single best match with `getJiraIssue` and `fields: ["summary","description","status","issuelinks"]` after the user confirms the ticket.
+Returns summary, description, status, assignee, and reporter in one call (verified 2026-09-08 on ADP-7740). Pass the hostname as `cloudId`; the UUID form is `cbfbff78-d084-45f9-aae2-5fb2120c99a6` if a tool ever insists on one.
+
+### Find linked tickets and MRs
+
+```
+getTeamworkGraphContext({
+  cloudId: "adaptyio.atlassian.net",
+  objectType: "JiraWorkItem",
+  objectIdentifier: "ADP-XXXX",
+  detailLevel: "full",
+})
+```
+
+Lists related work items, users, and linked pull requests. For an epic, the child stories are where the MRs hang: read the epic, then search FE MRs for each child key.
 
 ### Use Jira only to reach an MR
 
-The goal of the Jira detour is to get back to a GitLab MR. Once you have a Jira key, return to Step 1 and search FE MRs for that key — Adapty MR titles include the key, which is the most reliable join.
+The goal of the Jira detour is to get back to a GitLab MR. Once you have a Jira key, return to Step 1 and search FE MRs for that key **with `project_id: "adapty/adapty-dashboard-interface"`** — an unscoped `search` for a Jira key returns nothing even when the MR exists (observed 2026-09-08 on ADP-6712's children).
 
 ## GitLab token setup (one-time)
 
@@ -246,8 +245,8 @@ We investigated several "is there a faster path" angles and ruled them out. Don'
 ## Common mistakes
 
 - **Going to Jira first.** MR titles include the Jira key; search the FE repo by feature name or key and you almost always find it in one call.
-- **Guessing the Atlassian cloud ID.** Always call `getAccessibleAtlassianResources` first.
-- **Calling `searchJiraIssuesUsingJql` without `fields`.** Response explodes past the token limit.
+- **Treating an empty `getAccessibleAtlassianResources` as "Jira is down".** It returns `[]` here regardless. Probe with `atlassianUserInfo`, pass `adaptyio.atlassian.net` as `cloudId`.
+- **Searching merge requests without `project_id`.** An unscoped GitLab search for a Jira key finds nothing; scope it to the FE repo.
 - **Using the backend MR's pipeline.** The URL host is served from the FE deployment. A BE NAME (`dashboard-api-…`) won't match the `review.adpinfra.dev` review host.
 - **Picking an older pipeline.** Review stands are overwritten on every push — always use the latest pipeline.
 - **Returning a URL without checking job status.** If `Deploy to review` is failed/manual, say so.

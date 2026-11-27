@@ -6,12 +6,11 @@ keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'cre
 rank: 100
 ---
 
-
 <SDKv4>
 
 <MethodPromo method="getFlow" />
 
-After [you designed your flow or Paywall Builder paywall](adapty-paywall-builder), you can display it in your mobile app. The first step is to get the flow or paywall associated with the placement and its view configuration as described below.
+After [you designed your flow](adapty-flow-builder), you can display it in your mobile app. The first step is to get the flow or paywall associated with the placement and its view configuration as described below.
 
 :::tip
 
@@ -19,20 +18,24 @@ Want to see a real-world example of how Adapty SDK is integrated into a mobile a
 
 :::
 
-<details>
-<summary>Before you start</summary>
+## Before you start
 
-1. [Create your products](create-product) in the Adapty Dashboard.
-2. [Create a flow/paywall and incorporate products into it](create-paywall) in the Adapty Dashboard.
-3. [Create placements and incorporate your flow/paywall into it](create-placement) in the Adapty Dashboard.
-4. Install [Adapty SDK](sdk-installation-ios) in your mobile app.
-</details>
+You need:
+
+- **Products in the Adapty Dashboard**: [Create your products](create-product).
+- **A flow with products**: Build it in the [Flow & Paywall Builder](adapty-flow-builder) and [assign products to it](paywall-product-block).
+- **A placement**: [Create a placement](create-placement) and assign your flow to it.
+- **Adapty SDK installed**: See the [iOS SDK installation guide](sdk-installation-ios).
 
 ## Fetch flow/paywall
 
-If you've designed a flow or paywall using the Flow Builder or Paywall Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a flow or paywall contains both what should be shown within it and how it should be shown. Nevertheless, you need to get its ID via the placement, its view configuration, and then present it in your mobile app.
+If you've designed a flow or paywall in the builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a flow or paywall contains both what should be shown within it and how it should be shown. Nevertheless, you need to get its ID via the placement, its view configuration, and then present it in your mobile app.
 
 Fetch the flow or paywall and its [view configuration](get-pb-paywalls#fetch-the-view-configuration) as early as possible — ideally well before you present it. As soon as you fetch the view configuration, the SDK starts downloading and caching its images in the background. The earlier you fetch it, the more time these downloads have to complete. By the time you present the flow or paywall, its configuration and images can already be cached and ready to display.
+
+:::tip
+To warm several placements at once, call [`preloadFlows`](ios-optimize-paywall-fetching#preload-placements) (iOS SDK 4.1+). It caches the placement JSON only, so you still fetch the view configuration to get the layout and images.
+:::
 
 To get a flow or paywall, use the `getFlow` method:
 
@@ -68,20 +71,20 @@ Parameters:
 | Parameter | Presence | Description |
 |---------|--------|-----------|
 | **placementId** | required | The identifier of the desired [Placement](placements). This is the value you specified when creating a placement in the Adapty Dashboard. |
-| **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `.returnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p><p></p><p>Adapty SDK stores paywalls locally in two layers: regularly updated cache described above and [fallback paywalls](fallback-paywalls). We also use CDN to fetch paywalls faster and a stand-alone fallback server in case the CDN is unreachable. This system is designed to make sure you always get the latest version of your paywalls while ensuring reliability even in cases where internet connection is scarce.</p> |
-| **loadTimeout** | default: 5 sec | <p>This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.</p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p> |
+| **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>`fetchPolicy` sets which layer the SDK reads first, not whether it can use the cache. By default the SDK goes to the server first and returns cached data if that request fails. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider `.returnCacheDataElseLoad`, which reverses that order — it reads the cache first and goes to the server only when nothing is cached. Users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>A third policy, `.returnCacheDataIfNotExpiredElseLoad(maxAge:)`, sits between the two: it reads the cache first while the cached copy is younger than `maxAge` seconds, and goes to the server once it is older.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p><p></p><p>Adapty SDK stores paywalls locally in two layers: regularly updated cache described above and [fallback paywalls](fallback-paywalls). We also use CDN to fetch paywalls faster and a stand-alone fallback server in case the CDN is unreachable. This system is designed to make sure you always get the latest version of your paywalls while ensuring reliability even in cases where internet connection is scarce.</p> |
+| **loadTimeout** | default: 5 sec | <p>This value limits the timeout for this method. If the Adapty server doesn't respond in time or returns an error, the SDK returns the cached flow. If nothing is cached and the server timed out or returned a server error, the SDK requests the flow from the fallback server (a CDN copy that serves only the placement's **All Users** audience). As a last resort, the SDK returns the flow from your [fallback file](ios-use-fallback-paywalls).</p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p> |
 
 Response parameters:
 
 | Parameter | Description |
 | :-------- | :---------- |
-| Flow   | An `AdaptyFlow` object containing the placement, identifiers (`id`, `variationId`), name, remote configs, and a `hasViewConfiguration` flag indicating whether the flow includes a view configuration. To fetch the actual products for pre-loading, custom UI, or programmatic checks, call `getPaywallProducts(flow:)`. |
+| Flow   | An `AdaptyFlow` object containing the placement, identifiers (`id`, `variationId`), variation name (`variationName`, optional, SDK 4.2+), name, its paywall variations (`paywalls`), remote configs, and a `hasViewConfiguration` flag indicating whether the flow includes a view configuration. To fetch the actual products for pre-loading, custom UI, or programmatic checks, call `getPaywallProducts(flow:)`. |
 
 ## Fetch the view configuration
 
 After fetching the flow or paywall, check whether it includes a view configuration via `flow.hasViewConfiguration`. The flag distinguishes how the placement was designed in the Adapty Dashboard:
 
-- **`true`** — the placement was designed in the **Flow Builder** (a flow) or the **Paywall Builder** (a paywall). Adapty renders the UI for you. Continue with the steps below to fetch the view configuration and [present the flow or paywall](ios-present-paywalls).
+- **`true`** — the placement was designed in the **Flow & Paywall Builder** (a flow) or the **old Paywall Builder** (a paywall). Adapty renders the UI for you. Continue with the steps below to fetch the view configuration and [present the flow or paywall](ios-present-paywalls).
 - **`false`** — the placement is a custom paywall with no Builder UI.
 
 Use the `getFlowConfiguration` method to load the view configuration.
@@ -112,7 +115,7 @@ import AdaptyUI
 import AdaptyUIBuilder
 
 guard flow.hasViewConfiguration else {
-    // handle as remote config paywall
+    // handle as custom paywall
     return
 }
 
@@ -133,10 +136,11 @@ Parameters:
 | **customLayoutId**       | <p>optional</p><p>default: `nil`</p><p>SDK 4.1+</p> | The custom ID of a layout in the flow's layout configuration. Pass it to render that specific layout instead of the one the SDK picks automatically from the device type and screen size. If no layout matches the ID, the call fails with a no-view-configuration error. The Flow & Paywall Builder doesn't assign custom layout IDs yet, so leave this unset. |
 | **loadTimeout**          | default: 5 sec | This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned. Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood. |
 | **products**             | optional       | Provide an array of `AdaptyPaywallProduct` objects to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products. |
-| **systemRequestsHandler** | optional      | An object conforming to `AdaptySystemRequestsHandler` that handles system permission and review requests triggered by flow actions. Required only if your flow includes such actions. |
+| **tagResolver**          | optional       | Your app's values for the flow's [custom tags](flow-custom-tags), in a `[String: String]` dictionary keyed by each tag's full name, or in an object conforming to `AdaptyTagResolver`. For details, read [Pass data to flows](ios-flow-custom-tags). |
+| **timerResolver**        | optional       | An object conforming to `AdaptyTimerResolver` that returns the end date of each **Developer defined** timer in the flow, by Timer ID. See [Set up developer-defined timers](#set-up-developer-defined-timers). |
 | **assetsResolver**       | optional       | A `[String: AdaptyCustomAsset]` dictionary that overrides images and videos in the flow/paywall. See [Customize assets](#customize-assets). |
-| **timerResolver**        | optional       | An object conforming to `AdaptyTimerResolver` that supplies end dates for developer-defined timers. See [Set up developer-defined timers](#set-up-developer-defined-timers). |
 | **customElementsResolver** | <p>optional</p><p>SDK 4.4+</p> | Your app's native views for the flow's [custom elements](flow-custom-elements), in an object conforming to `AdaptyUICustomElementsResolver`, or in a `[String: AdaptyUICustomElementBuilder]` dictionary keyed by Type. Replaces the app-wide resolver in this flow. For details, read [Display custom elements](ios-flow-custom-elements). |
+| **systemRequestsHandler** | optional      | An object conforming to `AdaptySystemRequestsHandler` that asks iOS for a permission when the flow requests one, and returns the user's answer to the flow. Pass it if the flow has the **Request permission** action: without a handler, the flow stays on the screen that sent the request. For details, read [Handle permission requests in flows](ios-handle-permissions). |
 
 Once loaded, [present the flow/paywall](ios-present-paywalls).
 
@@ -144,7 +148,7 @@ Once loaded, [present the flow/paywall](ios-present-paywalls).
 
 Typically, flows and paywalls are fetched almost instantly, so you don't need to worry about speeding up this process. However, in cases where you have numerous audiences and placements, and your users have a weak internet connection, fetching a flow or paywall may take longer than you'd like. In such situations, you might want to display a default flow or paywall to ensure a smooth user experience rather than showing nothing at all.
 
-To address this, you can use the `getFlowForDefaultAudience` method, which fetches the flow or paywall of the specified placement for the **All Users** audience. However, it's crucial to understand that the recommended approach is to fetch the flow or paywall by the `getFlow` method, as detailed in the [Fetch Paywall Information](get-pb-paywalls#fetch-paywall-designed-with-paywall-builder) section above.
+To address this, you can use the `getFlowForDefaultAudience` method, which fetches the flow or paywall of the specified placement for the **All Users** audience. However, it's crucial to understand that the recommended approach is to fetch the flow or paywall by the `getFlow` method, as detailed in the [Fetch Paywall Information](get-pb-paywalls#fetch-flowpaywall) section above.
 
 :::warning
 Why we recommend using `getFlow`
@@ -154,7 +158,7 @@ The `getFlowForDefaultAudience` method comes with a few significant drawbacks:
 - **Potential backward compatibility issues**: If you need to show different paywalls for different app versions (current and future), you may face challenges. You'll either have to design paywalls that support the current (legacy) version or accept that users with the current (legacy) version might encounter issues with non-rendered paywalls.
 - **Loss of targeting**: All users will see the same paywall designed for the **All Users** audience, which means you lose personalized targeting (including based on countries, marketing attribution or your own custom attributes).
 
-If you're willing to accept these drawbacks to benefit from faster flow or paywall fetching, use the `getFlowForDefaultAudience` method as follows. Otherwise stick to `getFlow` described [above](get-pb-paywalls#fetch-paywall-designed-with-paywall-builder).
+If you're willing to accept these drawbacks to benefit from faster flow or paywall fetching, use the `getFlowForDefaultAudience` method as follows. Otherwise stick to `getFlow` described [above](get-pb-paywalls#fetch-flowpaywall).
 :::
 
 ```swift showLineNumbers
@@ -171,7 +175,7 @@ Adapty.getFlowForDefaultAudience(placementId: "YOUR_PLACEMENT_ID") { result in
 | Parameter | Presence | Description |
 |---------|--------|-----------|
 | **placementId** | required | The identifier of the [Placement](placements). This is the value you specified when creating a placement in your Adapty Dashboard. |
-| **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `.returnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p> |
+| **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>`fetchPolicy` sets which layer the SDK reads first, not whether it can use the cache. By default the SDK goes to the server first and returns cached data if that request fails. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider `.returnCacheDataElseLoad`, which reverses that order — it reads the cache first and goes to the server only when nothing is cached. Users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>A third policy, `.returnCacheDataIfNotExpiredElseLoad(maxAge:)`, sits between the two: it reads the cache first while the cached copy is younger than `maxAge` seconds, and goes to the server once it is older.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p> |
 
 ## Customize assets
 
@@ -186,6 +190,7 @@ For example, you can:
 - Show a different image or video to some users.
 - Show a local preview image while a remote main image is loading.
 - Show a preview image before running a video.
+- Show media bundled with the app, so the first screen renders without a download. See [Show first-screen media from the app bundle](ios-optimize-paywall-fetching#show-first-screen-media-from-the-app-bundle).
 - Provide a video's pixel resolution so the player reserves layout space (aspect ratio = `width / height`) before the video loads. Pass `nil` to skip this.
 
 Here's an example of how you can provide custom assets via a simple dictionary:
@@ -227,7 +232,9 @@ If an asset is not found, the paywall/flow will fall back to its default appeara
 
 ## Set up developer-defined timers
 
-To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. Here is an example:
+Use this section for a timer with the **Developer defined** behavior in the Flow & Paywall Builder. In the builder, each such timer has a **Timer ID** (see [Let your app set the end date](flow-timer#let-your-app-set-the-end-date)), and your app sets the end date for it. Use the same Timer ID in your code as in the builder, character for character, including letter case and spaces. If the IDs differ, the timer gets no end date from your app.
+
+To set the end dates, create an object that conforms to the `AdaptyTimerResolver` protocol. The object returns the end date for each Timer ID. You can also use a `[String: Date]` dictionary, because it already conforms to this protocol. Here is an example:
 
 ```swift showLineNumbers
 @MainActor
@@ -237,7 +244,11 @@ struct AdaptyTimerResolverImpl: AdaptyTimerResolver {
         case "CUSTOM_TIMER_6H":
             Date(timeIntervalSinceNow: 3600.0 * 6.0) // 6 hours
         case "CUSTOM_TIMER_NY":
-            Calendar.current.date(from: DateComponents(year: 2025, month: 1, day: 1)) ?? Date(timeIntervalSinceNow: 3600.0)
+            Calendar.current.nextDate(
+                after: Date(),
+                matching: DateComponents(month: 1, day: 1),
+                matchingPolicy: .nextTime
+            ) ?? Date(timeIntervalSinceNow: 3600.0) // next New Year's Day
         default:
             Date(timeIntervalSinceNow: 3600.0) // 1 hour
         }
@@ -245,10 +256,26 @@ struct AdaptyTimerResolverImpl: AdaptyTimerResolver {
 }
 ```
 
-In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s of developer-defined timers you set in the Adapty Dashboard. The `timerResolver` ensures your app dynamically updates each timer with the correct value. For example:
+Pass the resolver to the `timerResolver` parameter of `getFlowConfiguration`:
 
-- `CUSTOM_TIMER_NY`: The time remaining until the timer's end, such as New Year's Day.
-- `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the paywall.
+```swift showLineNumbers
+do {
+    let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+        forFlow: flow,
+        timerResolver: AdaptyTimerResolverImpl()
+    )
+    // present the flow
+} catch {
+    // handle the error
+}
+```
+
+In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the Timer IDs of two **Developer defined** timers in the builder:
+
+- `CUSTOM_TIMER_NY`: The time left until the next New Year's Day.
+- `CUSTOM_TIMER_6H`: A 6-hour countdown that starts again each time the user opens the screen.
+
+The SDK calls the resolver each time a screen with the timer opens. If the resolver returns a date in the past, the timer shows zero at once and its **On timer end** trigger runs. If you pass no resolver, or a dictionary with no key for a Timer ID, the timer counts down one hour from the screen open.
 
 </SDKv4>
 
@@ -256,7 +283,7 @@ In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s o
 
 After [you designed the visual part for your paywall](adapty-paywall-builder) with the Paywall Builder in the Adapty Dashboard, you can display it in your mobile app. The first step is to get the paywall associated with the placement and its view configuration as described below.
 
-Please be aware that this topic refers to Paywall Builder-customized paywalls. If you are implementing your paywalls manually, refer to [Fetch paywalls and products for remote config paywalls](fetch-paywalls-and-products).
+Please be aware that this topic refers to Paywall Builder-customized paywalls. If you implement custom paywalls, refer to [Fetch custom paywalls and products](fetch-paywalls-and-products).
 
 :::tip
 
@@ -312,9 +339,9 @@ Parameters:
 | Parameter | Presence | Description |
 |---------|--------|-----------|
 | **placementId** | required | The identifier of the desired [Placement](placements). This is the value you specified when creating a placement in the Adapty Dashboard. |
-| **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the [paywall localization](add-paywall-locale-in-adapty-paywall-builder). This parameter is expected to be a language code composed of one or two subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p>See [Localizations and locale codes](localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p> |
-| **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `.returnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p><p></p><p>Adapty SDK stores paywalls locally in two layers: regularly updated cache described above and [fallback paywalls](fallback-paywalls). We also use CDN to fetch paywalls faster and a stand-alone fallback server in case the CDN is unreachable. This system is designed to make sure you always get the latest version of your paywalls while ensuring reliability even in cases where internet connection is scarce.</p> |
-| **loadTimeout** | default: 5 sec | <p>This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.</p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p> |
+| **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the paywall localization. This parameter is expected to be a language code composed of one or two subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p>See [Localizations and locale codes](localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p> |
+| **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>`fetchPolicy` sets which layer the SDK reads first, not whether it can use the cache. By default the SDK goes to the server first and returns cached data if that request fails. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider `.returnCacheDataElseLoad`, which reverses that order — it reads the cache first and goes to the server only when nothing is cached. Users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>A third policy, `.returnCacheDataIfNotExpiredElseLoad(maxAge:)`, sits between the two: it reads the cache first while the cached copy is younger than `maxAge` seconds, and goes to the server once it is older.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p><p></p><p>Adapty SDK stores paywalls locally in two layers: regularly updated cache described above and [fallback paywalls](fallback-paywalls). We also use CDN to fetch paywalls faster and a stand-alone fallback server in case the CDN is unreachable. This system is designed to make sure you always get the latest version of your paywalls while ensuring reliability even in cases where internet connection is scarce.</p> |
+| **loadTimeout** | default: 5 sec | <p>This value limits the timeout for this method. If the Adapty server doesn't respond in time or returns an error, the SDK returns the paywall from the fallback server (a CDN copy that serves only the placement's **All Users** audience), the cache, or your [fallback file](ios-use-fallback-paywalls).</p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p> |
 
 Response parameters:
 
@@ -328,7 +355,7 @@ Response parameters:
 Make sure to enable the **Show on device** toggle in the paywall builder. If this option isn't turned on, the view configuration won't be available to retrieve.
 :::
 
-After fetching the paywall, check if it includes a view configuration, which indicates that it was created using Paywall Builder. This will guide you on how to display the paywall. If the view configuration is present, treat it as a Paywall Builder paywall; if not, [handle it as a remote config paywall](present-remote-config-paywalls).
+After fetching the paywall, check if it includes a view configuration, which indicates that it was created using Paywall Builder. This will guide you on how to display the paywall. If the view configuration is present, treat it as a Paywall Builder paywall; if not, [handle it as a custom paywall](present-remote-config-paywalls).
 
 Use the `getPaywallConfiguration` method to load the view configuration.
 
@@ -361,7 +388,7 @@ Parameters:
 | **products**             | optional       | Provide an array of `AdaptyPaywallProduct` objects to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products. |
 
 :::note
-If you are using multiple languages, learn how to add a [Paywall Builder localization](add-paywall-locale-in-adapty-paywall-builder) and how to use locale codes correctly [here](localizations-and-locale-codes).
+If you support multiple languages, add a localization to your paywall. For the codes to use, see [Localizations and locale codes](localizations-and-locale-codes).
 :::
 
 Once loaded, [present the paywall](ios-present-paywalls).
@@ -402,7 +429,7 @@ The `getPaywallForDefaultAudience` method is available starting from iOS SDK ver
 |---------|--------|-----------|
 | **placementId** | required | The identifier of the [Placement](placements). This is the value you specified when creating a placement in your Adapty Dashboard. |
 | **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the [paywall localization](add-remote-config-locale). This parameter is expected to be a language code composed of one or more subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p></p><p>See [Localizations and locale codes](localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p> |
-| **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `.returnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p> |
+| **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>`fetchPolicy` sets which layer the SDK reads first, not whether it can use the cache. By default the SDK goes to the server first and returns cached data if that request fails. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider `.returnCacheDataElseLoad`, which reverses that order — it reads the cache first and goes to the server only when nothing is cached. Users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>A third policy, `.returnCacheDataIfNotExpiredElseLoad(maxAge:)`, sits between the two: it reads the cache first while the cached copy is younger than `maxAge` seconds, and goes to the server once it is older.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p> |
 
 ## Customize assets
 

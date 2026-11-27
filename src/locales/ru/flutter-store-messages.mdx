@@ -1,0 +1,122 @@
+---
+title: "Управление сообщениями стора в Flutter SDK"
+description: "Выбирайте, когда ваше Flutter-приложение показывает сообщения App Store и Google Play о повышении цен, проблемах с оплатой и отклонённых платежах, чтобы они не прерывали флоу или онбординг."
+metadataTitle: "Управление сообщениями стора | Flutter SDK | Документация Adapty"
+---
+
+App Store и Google Play иногда показывают пользователям сообщения о состоянии их подписки:
+
+- **App Store**: Запрос согласия на повышение цены, уведомление о проблеме с оплатой или win-back offer. По умолчанию StoreKit показывает эти сообщения самостоятельно, пока открыто ваше приложение.
+- **Google Play**: Уведомление о том, что платёж по подписке отклонён и способ оплаты нужно обновить. По умолчанию Adapty SDK запрашивает эти сообщения каждый раз, когда `Activity` вашего приложения запускается после `activate`, в том числе при возврате приложения на передний план и при открытии или закрытии флоу или онбординга.
+
+Как бы то ни было, сообщение может появиться поверх флоу, онбординга или чекаута. Чтобы самостоятельно выбирать момент, переключите SDK на ручную обработку сообщений и вызывайте `showStoreMessages` тогда, когда сообщение не будет мешать пользователю.
+
+:::warning
+В ручном режиме сторы не показывают сообщения самостоятельно. Если приложение никогда не вызывает `showStoreMessages`, пользователи не увидят ни запрос на согласие с изменением цены, ни уведомление о проблеме с оплатой, ни уведомление об отклонённом платеже.
+:::
+
+## Прежде чем начать \{#before-you-start\}
+
+Вам потребуется:
+
+- **Adapty Flutter SDK 4.3.0 или выше**: более ранние версии не поддерживают API сообщений стора.
+- **iOS 16 или выше** для сообщений App Store: StoreKit не доставляет сообщения приложениям на более ранних версиях. На iOS 15 вызовы `getPendingStoreMessageTypes` и `showStoreMessages` завершаются с ошибкой `decodingFailed`, поэтому если ваше приложение поддерживает iOS 15, вызывайте их только на iOS 16 и выше.
+
+## Включение ручной обработки \{#enable-manual-handling\}
+
+Чтобы сообщения стора отображались только когда ваше приложение вызывает `showStoreMessages`, передайте `withStoreMessagesHandling` со значением `AdaptyStoreMessagesHandling.manual` при [активации SDK](sdk-installation-flutter#activate-adapty-module-of-adapty-sdk):
+
+```dart showLineNumbers title="main.dart"
+await Adapty().activate(
+  configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
+    ..withStoreMessagesHandling(AdaptyStoreMessagesHandling.manual), // auto is the default
+);
+```
+
+На iOS SDK добавляет каждое сообщение App Store в список ожидающих для текущей сессии приложения. На Android SDK прекращает самостоятельно запрашивать сообщения Google Play. При значении `auto` по умолчанию SDK не перехватывает сообщения App Store, поэтому на iOS `getPendingStoreMessageTypes` и `showStoreMessages` не имеют что возвращать или отображать.
+
+## Получение типов ожидающих сообщений \{#get-pending-message-types\}
+
+На iOS, чтобы узнать, есть ли ожидающие сообщения App Store, вызовите `getPendingStoreMessageTypes`. Метод возвращает типы ожидающих сообщений, не показывая и не удаляя их:
+
+```dart showLineNumbers
+final pendingTypes = await Adapty().getPendingStoreMessageTypes();
+
+if (pendingTypes == null) {
+  // Android: Google Play decides whether a message applies when you show it
+} else if (pendingTypes.contains(AdaptyStoreMessageType.billingIssue)) {
+  // For example, skip the upsell and show the billing message first
+}
+```
+
+На Android этот метод возвращает `null`: Google Play не сообщает об ожидающих сообщениях заранее и решает, относится ли сообщение к вашему приложению, только когда оно явно запрашивает это. Пустой список означает, что на iOS нет ожидающих сообщений. До завершения `activate` список всегда пуст.
+
+Каждое сообщение App Store относится к одному из следующих типов:
+
+| Тип | Сообщение |
+|:-----|:--------|
+| `AdaptyStoreMessageType.generic` | Общее сообщение App Store. |
+| `AdaptyStoreMessageType.priceIncreaseConsent` | Запрос на согласие с повышением цены подписки. |
+| `AdaptyStoreMessageType.billingIssue` | Уведомление о проблеме с оплатой подписки. Доступно на iOS 16.4 и выше. |
+| `AdaptyStoreMessageType.winBackOffer` | Подходящий [win-back offer](app-store-offers#win-back-offers). Доступно на iOS 18 и выше. |
+
+Тип сообщения, который SDK не распознаёт, имеет `value` равное `storekit_<number>`. Сравнивайте типы с помощью `==`, а не предполагайте, что существуют только эти четыре типа.
+
+## Показ сообщений \{#show-messages\}
+
+Когда приложение достигает точки, в которой сообщение стора не прервёт пользователя — например, после закрытия флоу или завершения онбординга — вызовите `showStoreMessages`:
+
+```dart showLineNumbers
+try {
+  await Adapty().showStoreMessages();
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle other errors
+}
+```
+
+- **iOS**: SDK показывает ожидающие сообщения по одному. После того как StoreKit показал сообщение, SDK удаляет его из списка ожидающих. Если StoreKit не смог показать сообщение, SDK сохраняет его для следующего вызова и продолжает обработку остальных сообщений.
+- **Android**: SDK запрашивает сообщения Google Play для текущего `Activity`. Google Play сам решает, применимо ли сообщение к данному пользователю, поэтому запрос не всегда приводит к показу сообщения. Вызов возвращается немедленно, не дожидаясь ответа Google Play, и никогда не завершается ошибкой. Если пользователь исправит способ оплаты через сообщение, SDK синхронизирует покупки пользователя с Adapty, и ваш [слушатель профиля](flutter-listen-subscription-changes) получит обновлённый уровень доступа.
+
+### Отображение сообщений при запуске на Android \{#show-messages-at-launch-on-android\}
+
+В режиме по умолчанию `auto` `Activity`, запущенная до `activate`, не инициирует запрос, поэтому сообщения Google Play не появляются при старте приложения. Чтобы отображать их при запуске, вызовите `showStoreMessages` один раз после `activate`, только на Android:
+
+```dart showLineNumbers title="main.dart"
+
+await Adapty().activate(
+  configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY'),
+);
+
+if (Platform.isAndroid) {
+  await Adapty().showStoreMessages();
+}
+```
+
+Не вызывайте это на iOS: в режиме `auto` ему нечего показывать, а на iOS 15 это приведёт к ошибке.
+
+### Показывать только некоторые типы сообщений \{#show-only-some-message-types\}
+
+Чтобы показать только часть ожидающих сообщений App Store, передайте нужные типы в `iosFilter`. Остальные сообщения останутся в очереди:
+
+```dart showLineNumbers
+await Adapty().showStoreMessages(
+  iosFilter: [
+    AdaptyStoreMessageType.billingIssue,
+    AdaptyStoreMessageType.priceIncreaseConsent,
+  ],
+);
+```
+
+Без `iosFilter` SDK показывает все ожидающие сообщения, включая неизвестные типы. Пустой список не показывает ни одного. Android игнорирует `iosFilter` и запрашивает все сообщения Google Play.
+
+### Ошибки \{#errors\}
+
+На iOS метод `showStoreMessages` завершается с ошибкой [`AdaptyError`](error-handling-on-flutter-react-native-unity) с одним из следующих кодов:
+
+| Код | Название | Причина |
+|:-----|:-----|:------|
+| 2006 | `decodingFailed` | Устройство работает под управлением iOS 15 или более ранней версии. Вызывайте метод только на iOS 16 и выше. |
+| 3201 | `operationInProgress` | Другой вызов `showStoreMessages` ещё показывает сообщения. Дождитесь его завершения и повторите попытку. |
+| 3202 | `resolverFailure` | SDK не нашёл активного оконного сцены на переднем плане для отображения сообщений. Вызовите метод снова, когда приложение будет на переднем плане. |

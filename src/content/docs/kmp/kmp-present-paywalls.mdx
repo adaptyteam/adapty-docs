@@ -13,13 +13,13 @@ import TabItem from '@theme/TabItem';
 
 <MethodPromo method="getFlow" label="Display flows and paywalls" />
 
-If you've created a flow or paywall, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a flow or paywall contains both what should be shown within it and how it should be shown.
+If you've created a flow, or a paywall in the old Paywall Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a flow or paywall contains both what should be shown within it and how it should be shown.
 
 :::warning
 
-This guide covers flows and **new Paywall Builder paywalls** rendered by Adapty. The process differs for remote config paywalls and [Observer mode](observer-vs-full-mode).
+This guide covers flows and paywalls rendered by Adapty. The process differs for custom paywalls and [Observer mode](observer-vs-full-mode).
 
-- For presenting **Remote config paywalls**, see [Render paywall designed by remote config](present-remote-config-paywalls-kmp).
+- To present custom paywalls, see [Present custom paywalls](present-remote-config-paywalls-kmp).
 - For presenting flows in **Observer mode**, see [Present flows in Observer mode](kmp-present-flows-in-observer-mode).
 
 :::
@@ -160,6 +160,10 @@ nativeView.dispose()
 
 ## Custom tags
 
+:::link
+Main article: [Pass data to flows](kmp-flow-custom-tags)
+:::
+
 Custom tags let you avoid creating separate flows or paywalls for different scenarios. Imagine a single flow that adapts dynamically based on user data. For example, instead of a generic "Hello!", you could greet users personally with "Hello, John!" or "Hello, Ann!"
 
 Here are some ways you can use custom tags:
@@ -170,11 +174,7 @@ Here are some ways you can use custom tags:
 
 Custom tags help you create a flexible flow that adapts to various situations, making your app's interface more personalized and engaging.
 
-:::warning
-In some cases, your app might not know what to replace a custom tag with—especially if users are on an older version of the AdaptyUI SDK. To prevent this, always add fallback text that will replace lines containing unknown custom tags. Without this, users might see the tags displayed as code (`<USERNAME/>`).
-:::
-
-To use custom tags in your flow or paywall, pass them when creating the flow view:
+Pass your app's values to the `customTags` parameter of `AdaptyUI.createFlowView` or `AdaptyUI.createNativeFlowView`, as a `Map<String, String>`:
 
 <Tabs>
 <TabItem value="standalone" label="With Compose Multiplatform" default>
@@ -184,8 +184,8 @@ import com.adapty.kmp.AdaptyUI
 
 viewModelScope.launch {
     val customTags = mapOf(
-        "USERNAME" to "John",
-        "DAY_OF_WEEK" to "Thursday"
+        "username" to "DragonSlayer42",
+        "day_of_week" to "Thursday"
     )
 
     AdaptyUI.createFlowView(
@@ -204,8 +204,8 @@ viewModelScope.launch {
 import com.adapty.kmp.AdaptyUI
 
 val customTags = mapOf(
-    "USERNAME" to "John",
-    "DAY_OF_WEEK" to "Thursday"
+    "username" to "DragonSlayer42",
+    "day_of_week" to "Thursday"
 )
 
 val nativeView = AdaptyUI.createNativeFlowView(
@@ -221,8 +221,8 @@ val nativeView = AdaptyUI.createNativeFlowView(
 import com.adapty.kmp.AdaptyUI
 
 val customTags = mapOf(
-    "USERNAME" to "John",
-    "DAY_OF_WEEK" to "Thursday"
+    "username" to "DragonSlayer42",
+    "day_of_week" to "Thursday"
 )
 
 val nativeView = AdaptyUI.createNativeFlowView(
@@ -234,25 +234,35 @@ val nativeView = AdaptyUI.createNativeFlowView(
 </TabItem>
 </Tabs>
 
+If your app passes no value for a custom tag, users see [the tag's Initial value](kmp-flow-custom-tags#what-users-see-without-a-value) instead.
+
 ## Custom timers
 
-The timer is a great tool for promoting special and seasonal offers with a time limit. However, it's important to note that this timer isn't connected to the offer's validity or the campaign's duration. It's simply a standalone countdown that starts from the value you set and decreases to zero. When the timer reaches zero, nothing happens—it just stays at zero.
+Use this section for a timer with the **Developer defined** behavior in the Flow & Paywall Builder. In the builder, each such timer has a **Timer ID** (see [Let your app set the end date](flow-timer#let-your-app-set-the-end-date)), and your app sets the end date for it. Use the same Timer ID in your code as in the builder, character for character, including letter case and spaces. If the IDs differ, the timer gets no end date from your app.
 
-You can customize the text before and after the timer to create the desired message, such as: "Offer ends in: 10:00 sec."
+When the timer reaches zero, the flow runs the timer's **On timer end** trigger, if the timer has one. You can customize the text before and after the timer to create the desired message, such as: "Offer ends in: 10:00 sec."
 
-To use custom timers in your flow or paywall, pass them when creating the flow view:
+To set the end dates, pass the `customTimers` parameter when you create the flow view: a map of Timer IDs to `LocalDateTime` values. The SDK reads each `LocalDateTime` as a UTC time.
 
 <Tabs>
 <TabItem value="standalone" label="With Compose Multiplatform" default>
 ```kotlin showLineNumbers title="Kotlin Multiplatform"
+@file:OptIn(ExperimentalTime::class)
+
 import kotlinx.coroutines.launch
 import com.adapty.kmp.AdaptyUI
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
+import kotlin.time.ExperimentalTime
 
 viewModelScope.launch {
+    val now = Clock.System.now()
     val customTimers = mapOf(
-        "CUSTOM_TIMER_NY" to LocalDateTime(2025, 1, 1, 0, 0, 0),
-        "CUSTOM_TIMER_SALE" to LocalDateTime(2024, 12, 31, 23, 59, 59)
+        "CUSTOM_TIMER_NY" to LocalDateTime(now.toLocalDateTime(TimeZone.UTC).year + 1, 1, 1, 0, 0), // next New Year's Day, UTC
+        "CUSTOM_TIMER_SALE" to now.plus(3.days).toLocalDateTime(TimeZone.UTC) // in 3 days
     )
 
     AdaptyUI.createFlowView(
@@ -268,12 +278,20 @@ viewModelScope.launch {
 </TabItem>
 <TabItem value="native" label="Without Compose Multiplatform">
 ```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+@file:OptIn(ExperimentalTime::class)
+
 import com.adapty.kmp.AdaptyUI
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
+import kotlin.time.ExperimentalTime
 
+val now = Clock.System.now()
 val customTimers = mapOf(
-    "CUSTOM_TIMER_NY" to LocalDateTime(2025, 1, 1, 0, 0, 0),
-    "CUSTOM_TIMER_SALE" to LocalDateTime(2024, 12, 31, 23, 59, 59)
+    "CUSTOM_TIMER_NY" to LocalDateTime(now.toLocalDateTime(TimeZone.UTC).year + 1, 1, 1, 0, 0), // next New Year's Day, UTC
+    "CUSTOM_TIMER_SALE" to now.plus(3.days).toLocalDateTime(TimeZone.UTC) // in 3 days
 )
 
 val nativeView = AdaptyUI.createNativeFlowView(
@@ -286,12 +304,20 @@ val nativeView = AdaptyUI.createNativeFlowView(
 ```
 
 ```kotlin showLineNumbers title="Kotlin Multiplatform (iOS)"
+@file:OptIn(ExperimentalTime::class)
+
 import com.adapty.kmp.AdaptyUI
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
+import kotlin.time.ExperimentalTime
 
+val now = Clock.System.now()
 val customTimers = mapOf(
-    "CUSTOM_TIMER_NY" to LocalDateTime(2025, 1, 1, 0, 0, 0),
-    "CUSTOM_TIMER_SALE" to LocalDateTime(2024, 12, 31, 23, 59, 59)
+    "CUSTOM_TIMER_NY" to LocalDateTime(now.toLocalDateTime(TimeZone.UTC).year + 1, 1, 1, 0, 0), // next New Year's Day, UTC
+    "CUSTOM_TIMER_SALE" to now.plus(3.days).toLocalDateTime(TimeZone.UTC) // in 3 days
 )
 
 val nativeView = AdaptyUI.createNativeFlowView(
@@ -303,6 +329,8 @@ val nativeView = AdaptyUI.createNativeFlowView(
 </TabItem>
 </Tabs>
 
+The SDK reads `customTimers` once, when it creates the view, so a computed date such as `CUSTOM_TIMER_SALE` counts from that moment, also when the user opens the screen again. If the date is in the past, the timer shows zero at once and its **On timer end** trigger runs. If `customTimers` has no key for a Timer ID, the timer counts down one hour from the screen open.
+
 </SDKv4>
 
 <SDKv3>
@@ -311,9 +339,9 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 
 :::warning
 
-This guide is for **new Paywall Builder paywalls** only. The process for presenting paywalls differs for paywalls designed with remote config paywalls and [Observer mode](observer-vs-full-mode).
+This guide is for **paywalls built in the old builder** only. The process for presenting paywalls differs for custom paywalls and [Observer mode](observer-vs-full-mode).
 
-For presenting **Remote config paywalls**, see [Render paywall designed by remote config](present-remote-config-paywalls-kmp).
+To present custom paywalls, see [Present custom paywalls](present-remote-config-paywalls-kmp).
 
 :::
 

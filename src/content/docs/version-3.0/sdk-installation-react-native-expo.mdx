@@ -8,9 +8,7 @@ rank: 60
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import Details from '@site/src/components/Details';
-import SampleApp from '@site/src/components/reusable/SampleApp.md';
 import GetKey from '@site/src/components/reusable/GetKey.md';
-import AndroidBackupRules from '@site/src/components/reusable/AndroidBackupRules.md';
 import InstallationPrereqs from '@site/src/components/reusable/InstallationPrereqs.mdx';
 
 :::important
@@ -22,7 +20,7 @@ If you’re using **pure React Native (without Expo)**, follow the [React Native
 Adapty SDK includes two key modules for seamless integration into your React Native app:
 
 - **Core Adapty**: This module is required for Adapty to function properly in your app.
-- **AdaptyUI**: This module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls. AdaptyUI is automatically activated along with the core module.
+- **AdaptyUI**: This module renders flows, in addition to old builder paywalls. AdaptyUI is automatically activated along with the core module.
 
 If you need a full tutorial on how to implement IAP in your React Native app, check [this](https://adapty.io/blog/react-native-in-app-purchases-tutorial/) out.
 
@@ -42,24 +40,32 @@ For a complete implementation walkthrough, you can also see the video:
 | React Native | 0.75 or later |
 | iOS | 15.0 or later. Starting from SDK 4.4, flows require iOS 16.0 or later. |
 | Swift | 6.2 or later, bundled with Xcode 26 |
-
-Building for iOS requires **Swift 6.0** or later. [Kids Mode](kids-mode-react-native) requires **Swift 6.1** or later.
-
-:::info
-Adapty React Native SDK 4.0.3 and later works with Google Play Billing Library v8.
-
-Compatibility with a Billing Library version doesn't mean Adapty supports every feature Google introduced in it. Before you adopt a new Google Play billing capability, see [Product in Play Store](android-products).
-:::
+| Android | `compileSdkVersion` 35 or later |
 
 <InstallationPrereqs />
+
+## Dependencies
+
+Adapty SDK works with these Google Play Billing Library versions on Android:
+
+| Adapty SDK version | Billing Library version |
+|---|---|
+| 3.17.0 and later | v8 |
+| 3.15.0–3.15.6 | v7 by default, v8 if another dependency raises it |
+
+:::note
+Compatibility with a Billing Library version doesn't mean Adapty supports every feature Google introduced in it. Before you adopt a new Google Play billing capability, see [Product in Play Store](android-products).
+:::
 
 ## Install Adapty SDK
 
 :::important
-Starting from v4, the Adapty React Native SDK no longer supports CocoaPods installation of its native dependencies. If you need v4 or later (for the [Flow Builder](adapty-flow-builder)), follow [Adapty SDK 4.0: enable Swift Package Manager](#adapty-sdk-40-enable-swift-package-manager) below instead.
+Adapty React Native SDK v4 and later ship their native iOS SDKs (`Adapty`, `AdaptyUI`, `AdaptyPlugin`) as Swift packages. CocoaPods still installs them in an Expo project, but Swift packages link dynamically, so your build needs dynamic frameworks. Starting with SDK 4.2.3, projects that can't switch to dynamic frameworks can install the native SDKs as pods instead. See [Set up your iOS project](#enable-dynamic-frameworks).
 :::
 
 [![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-React-Native.svg?style=flat&logo=react)](https://github.com/adaptyteam/AdaptySDK-React-Native/releases)
+
+<LatestSdkVersion />
 
 :::important
 [Expo Dev Client](https://docs.expo.dev/versions/latest/sdk/dev-client/) (a custom development build) is required to use Adapty in an Expo project.
@@ -100,15 +106,24 @@ Expo Go doesn't support custom native modules, so you can only use it with [**mo
    npx expo start --dev-client
    ```
 
-### Adapty SDK 4.0: enable Swift Package Manager
+### Set up your iOS project \{#enable-dynamic-frameworks\}
 
-React Native SDK 4.0 — which adds [Flow Builder](adapty-flow-builder) support — requires **React Native 0.75 or later**. Install the SDK:
+React Native SDK 4.0 — which adds support for [flows](adapty-flow-builder) — requires **React Native 0.75 or later**. Install the SDK:
 
 ```sh
 npx expo install react-native-adapty@^4.0.0
 ```
 
-v4 pulls the native iOS SDKs (`Adapty`, `AdaptyUI`, `AdaptyPlugin`) through Swift Package Manager instead of CocoaPods sub-dependencies ([CocoaPods' spec repo goes read-only in December 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/)). SPM requires dynamic frameworks, which in Expo you enable with the [`expo-build-properties`](https://docs.expo.dev/versions/latest/sdk/build-properties/) plugin. Add it to `app.json` (or `app.config.js`):
+The React Native SDK installs its native iOS SDKs (`Adapty`, `AdaptyUI`, `AdaptyPlugin`) in one of two ways:
+
+- **CocoaPods + SPM (default, SDK 4.0 and later)**: CocoaPods adds Adapty's Swift packages to your project. Swift packages link dynamically, so your build has to switch to dynamic frameworks. This is the recommended path.
+- **CocoaPods without SPM (SDK 4.2.3 and later)**: CocoaPods installs the native SDKs as pods from [Adapty's spec repo](https://github.com/adaptyteam/AdaptySDK-CocoaPods-Specs), not from the public CocoaPods spec repo, which [goes read-only in December 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/). The pods don't require dynamic frameworks.
+
+<Tabs groupId="ios-package-manager" queryString>
+
+<TabItem value="cocoapods" label="CocoaPods + SPM (recommended)" default>
+
+To enable dynamic frameworks in Expo, use the [`expo-build-properties`](https://docs.expo.dev/versions/latest/sdk/build-properties/) plugin. Add it to `app.json` (or `app.config.js`):
 
 ```json showLineNumbers title="app.json"
 {
@@ -136,6 +151,38 @@ npx expo prebuild --clean
 
 If the iOS build then fails with `'React/RCTBridge.h' file not found`, see [the troubleshooting entry](#react-header-not-found).
 
+</TabItem>
+
+<TabItem value="cocoapods-pods" label="CocoaPods without SPM">
+
+:::warning
+Use this option only if your project can't switch to dynamic frameworks — for example, because it relies on static linkage or Flipper. For all other projects, install the native SDKs as Swift packages.
+:::
+
+This option requires SDK 4.2.3 or later. To install the pods, enable the `iosDisableSPM` option of the Adapty config plugin in `app.json` (or `app.config.js`):
+
+```json showLineNumbers title="app.json"
+{
+  "expo": {
+    "plugins": [
+      ["react-native-adapty", { "iosDisableSPM": true }]
+    ]
+  }
+}
+```
+
+Then regenerate the native project:
+
+```sh
+npx expo prebuild
+```
+
+With `iosDisableSPM` enabled, you don't need the `expo-build-properties` plugin for Adapty.
+
+</TabItem>
+
+</Tabs>
+
 See [Migrate Adapty React Native SDK to v4](migration-to-react-native-sdk-v4) for the full migration.
 
 ## Activate Adapty module of Adapty SDK
@@ -156,7 +203,7 @@ Wait for `activate` to resolve before calling any other Adapty SDK method. See [
 
 Now set up paywalls in your app:
 
-- If you use [Adapty Paywall Builder](adapty-paywall-builder), follow the [Paywall Builder quickstart](react-native-quickstart-paywalls).
+- If you use the [Flow & Paywall Builder](adapty-flow-builder), follow the [quickstart](react-native-quickstart-paywalls).
 - If you build your own paywall UI, see the [quickstart for custom paywalls](react-native-quickstart-manual).
 
 :::tip
@@ -165,7 +212,7 @@ To avoid activation errors in the development environment, use the [tips](#devel
 
 ## Activate AdaptyUI module of Adapty SDK
 
-If you plan to use [Paywall Builder](adapty-paywall-builder), you need the AdaptyUI module. It is activated automatically when you activate the core module; you don't need to do anything else.
+If you plan to use the [Flow & Paywall Builder](adapty-flow-builder), you need the AdaptyUI module. It is activated automatically when you activate the core module; you don't need to do anything else.
 
 ## Optional setup
 
@@ -181,6 +228,7 @@ Adapty logs errors and other important information to help you understand what i
 | `warn`     | Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged |
 | `info`     | Errors, warnings, and various information messages will be logged |
 | `verbose`  | Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged |
+| `debug`    | Everything above, plus low-level internal details of the native SDK. Available starting from SDK version 4.3.0 |
 
 You can set the log level in your app before or during Adapty configuration:
 
@@ -279,6 +327,36 @@ adapty.activate('YOUR_PUBLIC_SDK_KEY', {
 });
 ```
 
+### Store messages handling
+
+:::info
+This parameter is available starting from SDK version 4.3.0.
+:::
+
+By default, StoreKit shows App Store messages — price increase consent requests, billing issue notices, and win-back offers — on its own while your app is open, and the SDK requests Google Play messages, such as declined payment notices, every time an `Activity` of your app starts. To choose when your app shows them, set `storeMessagesHandling` to `'manual'`. The default value is `'auto'`.
+
+```typescript showLineNumbers title="App.tsx"
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+   storeMessagesHandling: 'manual',
+});
+```
+
+In manual mode, the stores don't show messages on their own, so your app must call `showStoreMessages`. See how in [Control store messages](react-native-store-messages).
+
+### Enable Adapty Attribution
+
+:::info
+This parameter is available starting from SDK version 4.1.
+:::
+
+If you use [Adapty Attribution](user-acquisition), set `adaptyAttributionEnabled` to `true` when activating the SDK. The default value is `false`: without this parameter, the SDK doesn't register installs or deliver installation details to your app. In SDK versions below 4.1, Adapty Attribution is enabled automatically.
+
+```typescript showLineNumbers title="App.tsx"
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+   adaptyAttributionEnabled: true,
+});
+```
+
 ## Development environment tips
 
 #### Set up mock mode for Expo Go / Expo Web
@@ -289,7 +367,7 @@ Expo Go and Expo Web environments don't have access to Adapty's native modules. 
 Mock mode is **not** a tool for testing real purchases:
 
 - It **doesn't open** App Store / Google Play purchase flows and **doesn't create** real transactions.
-- It **doesn't render** paywalls/onboardings created with **Adapty Paywall Builder (AdaptyUI)**.
+- It **doesn't render** flows or old builder paywalls (AdaptyUI).
 - Adapty's native modules are **completely bypassed**—even missing native SDK files in the Xcode/Android build or an invalid API key won't trigger errors.
 
 To test real purchases and Paywall Builder paywalls, use an Expo Dev Client / production build where mock mode is automatically disabled.
@@ -446,7 +524,7 @@ If other libraries in your project define custom backup rules, you’ll need to 
 
 #### iOS build fails with `'React/RCTBridge.h' file not found` \{#react-header-not-found\}
 
-With [dynamic frameworks enabled for Adapty SDK 4.0](#adapty-sdk-40-enable-swift-package-manager), the iOS build may fail in `expo-updates`, `@expo/ui`, or another package with Objective-C sources:
+With [dynamic frameworks enabled for Adapty SDK v4](#enable-dynamic-frameworks), the iOS build may fail in `expo-updates`, `@expo/ui`, or another package with Objective-C sources:
 
 ```
 error: 'React/RCTBridge.h' file not found

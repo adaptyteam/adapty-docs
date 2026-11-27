@@ -1,0 +1,86 @@
+---
+title: "Migrate Adapty Flutter SDK to v4.4"
+description: "Migrate sang Adapty Flutter SDK v4.4: thay thế cả hai file dự phòng và xử lý các lỗi flow mới trên iOS và Android."
+metadataTitle: "Migration sang Adapty Flutter SDK v4.4 | Tài liệu Adapty"
+---
+
+Adapty Flutter SDK 4.4 thay đổi định dạng file fallback, yêu cầu iOS 16 cho flow, và báo cáo nhiều lỗi flow hơn cho ứng dụng của bạn. Để cập nhật ứng dụng từ 4.3 lên 4.4, đặt phiên bản `adapty_flutter` thành `^4.4.0`, và thay thế cả hai file fallback trong cùng một bản build. Các phiên bản SDK cũ hơn sẽ từ chối các file mới. Sau đó, hãy xem xét từng thay đổi lỗi flow trong hướng dẫn này.
+
+Nếu bạn vẫn đang dùng 4.1, hãy bắt đầu với [Migrate to v4.3](migration-to-flutter-sdk-43) rồi theo dõi hướng dẫn này. Ứng dụng đang dùng 4.0 cần thực hiện [các thay đổi v4.1](migration-to-flutter-sdk-41) trước.
+
+:::warning
+Định dạng file dự phòng đã thay đổi trong phiên bản 4.4, và trình biên dịch không thể phát hiện file lỗi thời. Nếu không có [file dự phòng mới](#replace-the-fallback-files), mọi placement sẽ mất paywall dự phòng.
+:::
+
+## Tham khảo nhanh \{#quick-reference\}
+
+| v4.3 | v4.4 |
+|---|---|
+| Các file fallback được tải xuống cho 4.1–4.3 | Định dạng file fallback mới; tải lại cả hai file |
+| Flow hoạt động trên iOS 15 | Flow yêu cầu iOS 16 |
+| Trên iOS, `AdaptyUIFlowPlatformView` hiển thị trống khi flow không thể tải | Nó báo lỗi về flow error callbacks của bạn |
+| Trên iOS, các lệnh gọi `AdaptyUI()` và `AdaptyUIFlowView` khi AdaptyUI chưa được kích hoạt sẽ ném lỗi với `AdaptyErrorCode.unknown` | Chúng ném lỗi với `adaptyUINotActivated` hoặc `adaptyNotActivated` |
+| Trên Android, SDK chỉ ghi log các lỗi flow script | Chúng sẽ đến flow error callbacks của bạn dưới dạng `AdaptyErrorCode.jsException` |
+| Xử lý đóng mặc định gọi `dismiss()` cho `AdaptyUIFlowPlatformView`, gây ra lỗi không được bắt | Xử lý đóng mặc định giữ nguyên embedded flow trên màn hình; xóa widget để đóng nó |
+
+## Cài đặt \{#installation\}
+
+Cập nhật `adapty_flutter` lên v4.4 trong file `pubspec.yaml` của bạn:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter: ^4.4.0
+```
+
+Nếu ứng dụng của bạn sử dụng [Kids Mode](kids-mode-flutter), hãy chỉ định `adapty_flutter_kids` thay thế:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter_kids: ^4.4.0
+```
+
+Yêu cầu không thay đổi so với 4.3: **Flutter 3.32.0** (Dart 3.8.0) và **iOS 15.0**. Flow là ngoại lệ: xem [Flow yêu cầu iOS 16](#flows-require-ios-16). Xem [Cài đặt Adapty SDK](sdk-installation-flutter) để biết hướng dẫn cài đặt đầy đủ.
+
+## Thay thế các file dự phòng \{#replace-the-fallback-files\}
+
+Để tải lại các [file dự phòng](flutter-use-fallback-paywalls), trong **[Placements](https://app.adapty.io/placements)**, nhấn **Fallbacks** > **Download iOS Fallback**. Ở hàng **Adapty SDK v4.4.0 and higher**, nhấn **Download**. Lặp lại với **Download Android Fallback**.
+
+Các file tải về có tên là `ios_4_4_0_fallback.json` và `android_4_4_0_fallback.json`. Di chuyển chúng vào thư mục `assets` của dự án, thay thế các file cũ. Đặt tên mỗi file trùng với tên mà ứng dụng của bạn truyền vào `Adapty().setFallback`, hoặc cập nhật tên trong lệnh gọi đó.
+
+Với file lỗi thời, `Adapty().setFallback` sẽ ném ra `AdaptyError`. Để xác minh các file mới, hãy chạy ứng dụng trên iOS và Android, và đảm bảo rằng lệnh gọi này không ném ra lỗi nào.
+
+## Flow yêu cầu iOS 16 \{#flows-require-ios-16\}
+
+Kể từ phiên bản 4.4, flow yêu cầu iOS 16 trở lên. Trên iOS 15, `AdaptyUI().createFlowView()` sẽ ném ra một `AdaptyError` với `AdaptyErrorCode.platformNotSupported`, và `AdaptyUIFlowPlatformView` sẽ hiển thị trống và báo lỗi tương tự. Onboarding và các phần còn lại của SDK vẫn hỗ trợ iOS 15.
+
+Khi ứng dụng của bạn nhận được lỗi này, hãy hiển thị nội dung của riêng bạn thay thế, chẳng hạn như [paywall tùy chỉnh](flutter-implement-paywalls-manually).
+
+## Lỗi tải flow được đưa đến callback của bạn trên iOS \{#flow-load-errors-reach-your-callbacks-on-ios\}
+
+Trên iOS, callback `onDidReceiveError` của `AdaptyUIFlowPlatformView` nhận được lỗi khi widget không thể hiển thị flow. Phương thức `flowViewDidReceiveError` trong trình quan sát sự kiện flow của bạn cũng nhận được lỗi tương tự. Mỗi khi ứng dụng tạo widget, lỗi sẽ được báo cáo một lần. Trước phiên bản 4.4, widget chỉ hiển thị trống. Trên Android, widget vẫn không báo cáo gì khi flow không tải được. Widget báo cáo các lỗi sau:
+
+- Trên iOS 15: `AdaptyErrorCode.platformNotSupported`.
+- Trên iOS 16 trở lên, khi flow không tải được: lỗi mà `AdaptyUI().createFlowView()` ném ra cho flow đó. Ví dụ: flow không tải được do AdaptyUI chưa được kích hoạt, hoặc do `customLayoutId` mà flow không có.
+
+Việc xử lý lỗi flow của bạn, chẳng hạn như đóng màn hình, giờ cũng chạy trong những trường hợp này. `AdaptyUIFlowView.dismiss()` sẽ thất bại với view của widget này, vì vậy nếu `flowViewDidReceiveError` của bạn gọi nó, hãy bắt lỗi đó, như trong [Lỗi View](flutter-handling-events#view-errors). Xóa widget và hiển thị nội dung của riêng bạn. Để thử lại lỗi tạm thời, chẳng hạn như `AdaptyErrorCode.networkFailed`, hãy build lại widget với một `Key` mới.
+
+## Mã lỗi AdaptyUI mới trên iOS \{#adaptyui-errors-have-new-codes-on-ios\}
+
+Trên iOS, khi gọi `AdaptyUI()` hoặc `AdaptyUIFlowView` mà AdaptyUI chưa được kích hoạt — trước khi `Adapty().activate()` hoàn tất, hoặc sau khi kích hoạt với `withActivateUI(false)` — một lỗi sẽ được ném ra với mã mới. Mã lỗi cụ thể phụ thuộc vào những gì ứng dụng của bạn yêu cầu:
+
+- Flow view: `AdaptyErrorCode.adaptyUINotActivated`.
+- Onboarding: `AdaptyErrorCode.adaptyNotActivated`.
+
+Trước phiên bản 4.4, những lỗi này có mã `AdaptyErrorCode.unknown`. Nếu code của bạn xử lý `unknown` cho chúng, hãy xử lý thêm các mã mới này. Đối với `AdaptyErrorCode.platformNotSupported`, đọc [Flow yêu cầu iOS 16](#flows-require-ios-16).
+
+## Lỗi script flow trên Android sẽ được chuyển đến callback của bạn \{#flow-script-errors-reach-your-callbacks-on-android\}
+
+Trên Android, script flow có thể ném ra một exception trong khi xử lý sự kiện SDK. Kể từ phiên bản 4.4, exception này sẽ được chuyển đến `flowViewDidReceiveError` và callback `onDidReceiveError` của `AdaptyUIFlowPlatformView` dưới dạng `AdaptyErrorCode.jsException`, tương tự như trên iOS. Trước đây, SDK chỉ ghi log lỗi này.
+
+Nếu ứng dụng của bạn không thiết lập observer cho sự kiện flow, một flow từ `AdaptyUI().createFlowView()` sẽ đóng lại khi gặp lỗi này. Để giữ flow không bị đóng, hãy thiết lập observer bằng `AdaptyUI().setFlowsEventsObserver()` và xử lý lỗi ở đó.
+
+## Đóng flow nhúng bằng cách xóa widget \{#close-embedded-flows-by-removing-the-widget\}
+
+Từ phiên bản 4.4 trở đi, cơ chế đóng mặc định sẽ không gọi `dismiss()` cho flow nhúng bằng `AdaptyUIFlowPlatformView`. Trước phiên bản 4.4, lệnh gọi này luôn thất bại với lỗi `AdaptyErrorCode.wrongParam` chưa được xử lý. Để đóng flow nhúng, hãy [xóa widget của nó](flutter-present-paywalls#embed-in-widget-hierarchy) khi nhận được `CloseAction`, và trên Android, là `AndroidSystemBackAction`.
+
+Khi xử lý mặc định một sự kiện flow thất bại — chẳng hạn như khi đóng màn hình hoặc mở URL — SDK sẽ ghi lỗi vào log của nó. Trước phiên bản 4.4, SDK sẽ ném ra một lỗi không được bắt. Nếu trình báo cáo crash của bạn từng ghi nhận những lỗi này, chúng sẽ không còn được gửi đến đó nữa.

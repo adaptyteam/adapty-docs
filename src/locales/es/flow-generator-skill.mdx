@@ -1,0 +1,252 @@
+---
+title: "Skill de agente para trabajar con flows"
+description: "Instala el skill flow-generator para que tu propia herramienta de IA pueda crear, traducir y reestructurar flows de Adapty a través de la CLI de Adapty o el servidor MCP."
+metadataTitle: "Skill de agente Flow Generator | Flows y paywalls | Documentación de Adapty"
+---
+
+El [skill flow-generator](https://github.com/adaptyteam/adapty-skills) permite que tu herramienta de IA construya y edite tus flows. Dile qué quieres crear o cambiar, en lenguaje natural, y la herramienta lee la configuración del builder del flow a través de la [CLI de Adapty](developer-cli-quickstart) o el [servidor MCP de Adapty](adapty-mcp), la reescribe, genera una vista previa y guarda un borrador una vez que lo apruebas.
+
+Una skill es un conjunto de instrucciones que tu herramienta de IA carga bajo demanda. Esta cubre las partes de la configuración de flow que son más fáciles de equivocarse: qué ediciones detienen una publicación, qué referencias se rompen al eliminar una pantalla, y qué puede y qué no puede demostrar una vista previa renderizada.
+
+:::important
+La skill del generador de flows es experimental y guarda los cambios directamente en los flows de tu dashboard. Ejecútala primero contra un borrador o una copia, y revisa cada cambio en el Flow & Paywall Builder antes de publicar.
+:::
+
+## Antes de empezar
+
+- **Una herramienta de IA con el plugin de Adapty**: Un agente de código como Claude Code, Codex, Copilot CLI o Gemini CLI, o claude.ai. El skill prefiere el CLI de Adapty. Si solo dispone del servidor MCP, ofrece configurar el CLI; si lo rechazas, continúa a través de MCP e indica cada paso de verificación local que no se pudo ejecutar.
+- **Productos en tu catálogo de Adapty**: Antes de diseñar una pantalla de venta, el skill lista tus productos y pregunta cuáles deben aparecer en ella. Si ninguno encaja, puede crear uno a partir de los IDs de producto de la store que le proporciones, y lo pregunta antes de hacerlo.
+
+## Qué puedes hacer con esto \{#what-you-can-do-with-it\}
+
+### Crear un flow desde cero \{#author-a-flow-from-scratch\}
+
+- **Desde una descripción**: "Un paywall para mi app de fitness, dos planes, el anual preseleccionado." La skill elige la composición, lo construye a partir de patrones verificados por renderizado — tabs, tarjetas de plan, toggles, cuentas atrás, barras de progreso, bottom sheets — y usa los productos que elegiste de tu catálogo.
+- **Desde una captura de pantalla o un diseño**: Pásale una referencia y ajusta el layout, los colores, la tipografía y el estilo de iconos, indicándote además cada diferencia que no pudo cerrar. La referencia puede ser el paywall de un competidor, una de tus propias pantallas o un frame de tu herramienta de diseño. Si tu herramienta de IA está conectada a esa herramienta de diseño a través de MCP, lee el frame directamente — nadie tiene que exportar una captura ni volver a describir el diseño con palabras.
+- **Evaluado según lo que convierte**: Cuando no le proporcionaste un diseño, la skill ejecuta la librería `paywall-teardown` de Adapty sobre la pantalla que construyó y corrige lo que tiene mayor impacto, antes de que tú la veas siquiera. Obtienes una pantalla construida según los patrones que venden en tu categoría, no un layout genérico.
+
+### Cambiar un flow existente \{#change-a-flow-you-already-have\}
+
+- **Localizar en nuevos mercados**: Añade un locale y rellena todos los campos localizables: títulos, etiquetas de botones, descripciones de planes, espacios para imágenes y placeholders de campos. Es la forma más rápida de llevar un paywall que ya funciona a diez idiomas.
+- **Reescribir textos en todos los locales a la vez**: Cambia la redacción sin tocar la estructura y edita alrededor de las variables de precio en lugar de a través de ellas, para que los precios sigan resolviéndose correctamente.
+- **Reestructurar el flow**: Añade, elimina y reordena pantallas, luego repara la navegación que se rompe con el cambio e informa de cualquier pantalla que quede inaccesible.
+- **Añadir cuestionarios y ramificaciones**: Construye grupos seleccionables, IDs de opciones y las acciones condicionales que enrutan cada respuesta a su propia pantalla — el paso de personalización que convierte un onboarding en una visita cualificada al paywall.
+- **Crear variantes para una prueba**: Duplica la versión en producción de un flow que ya funciona a un nuevo flow y luego aplica el cambio que quieres probar. Las pantallas, el tema, las fuentes, los locales, los productos y los Remote Configs se mantienen, de modo que la variante solo difiere donde tú lo decidiste.
+- **Cambiar el diseño para una temporada o campaña**: Toma colores de una imagen de referencia y aplica un nuevo tema a todo el flow, en lugar de rediseñar cada pantalla a mano.
+- **Volver a una versión anterior**: Encuentra una versión anterior en el [historial de versiones](flow-version-history) del flow y la restaura como borrador o la copia a un nuevo flow. El skill continúa sus ediciones desde esa versión.
+
+## Qué produce \{#what-it-produces\}
+
+### Un paywall con una línea de tiempo de planes \{#a-paywall-with-a-plan-timeline\}
+
+<ZoomImage id="flow-generator-timeline-paywall.webp" width="320px" alt="Un paywall de finanzas generado: una línea de tiempo numerada de tres pasos conectada por un rail verde, luego una tarjeta del plan Anual seleccionada que muestra el precio equivalente por mes junto al precio anual, una tarjeta Mensual sin seleccionar y un botón Continuar" />
+
+Una línea de tiempo numerada sobre dos tarjetas de planes. Renderizado en un dispositivo, por lo que el store ha resuelto los precios, incluido el precio por mes que Adapty calcula para el plan anual.
+
+### Un paywall a partir de una frase
+
+<ZoomImage id="flow-generator-paywall.webp" width="320px" alt="Un paywall de fitness generado con tema oscuro: encabezado, tres filas de beneficios con iconos, una tarjeta Anual seleccionada con la etiqueta Mejor valor, una tarjeta Mensual no seleccionada y un botón Comenzar entrenamiento" />
+
+El prompt fue «añadir una pantalla de paywall» — sin referencia, sin flow de origen. El `$0.00` es un marcador de vista previa, y la etiqueta muestra **Best value** porque nadie proporcionó un descuento.
+
+### Un flow de tres pantallas \{#a-three-screen-flow\}
+
+<ZoomImage id="flow-generator-flow-strip.webp" width="700px" alt="Tres pantallas generadas una al lado de la otra: un cuestionario de objetivos de entrenamiento con la segunda opción seleccionada, un plan de ocho semanas dividido en tres fases y una pantalla de oferta con una cuenta atrás sobre una tarjeta Anual" />
+
+Cuestionario, plan, oferta, con la navegación conectada entre ellos. La cuenta atrás se muestra, pero solo un dispositivo puede confirmar que se activa.
+
+## Instala el skill \{#install-the-skill\}
+
+El skill forma parte del [plugin de Adapty](manage-adapty-with-ai).
+
+<AdaptySkillsInstall />
+
+Luego describe lo que quieres en lenguaje natural. La mayoría de las solicitudes son de uno de estos tipos:
+
+- **Describe el flow**: qué hace la app, qué vende la pantalla, qué plan preseleccionar.
+- **Apunta a un diseño**: una captura de pantalla, una de tus propias pantallas o un frame en tu herramienta de diseño.
+- **Pide un cambio concreto**: indica el flow y el cambio — una nueva localización, copy diferente, una pantalla extra, una rama en una respuesta de quiz.
+- **Responde sus preguntas**: te preguntará qué productos poner en una pantalla y, ante cualquier número real, se negará a inventarlo.
+
+## Cómo funciona \{#how-it-works\}
+
+Todo lo que construye la skill converge en un archivo local. Nada llega a tu dashboard hasta el último paso.
+
+1. **Configuración y autenticación**. La skill instala o actualiza el [Adapty CLI](developer-cli-quickstart) si es necesario, verifica tu inicio de sesión en Adapty y lee tu ID de app. Si no has iniciado sesión, abre el navegador para que te identifiques y espera a que termines.
+
+2. **Elige o crea el flow**. Para una edición, obtiene la configuración del flow e informa de lo que encontró — pantallas, idiomas, productos y el grafo de navegación — así se detecta un flow incorrecto antes de que cambie nada. Antes de editar, el skill guarda una copia de la configuración obtenida como respaldo. El [historial de versiones](flow-version-history) conserva todas las versiones publicadas, pero no los estados anteriores de un borrador, por lo que para un borrador que nunca se publicó, esa copia es la única forma de volver atrás. Para trabajo nuevo, crea un flow desde cero en lugar de generarlo sobre uno que ya tiene contenido.
+
+3. **Valida la configuración**. La skill ejecuta dos validaciones contra el archivo local y una contra Adapty. El par local confirma que las referencias internas siguen siendo coherentes y que las propiedades tienen el formato correcto. `adapty flows config validate` ejecuta entonces el mismo servicio que controla la publicación, por lo que un resultado verde significa que la configuración es publicable. Ninguna de las tres guarda nada.
+
+4. **Vista previa e iteración**. La skill renderiza cada pantalla modificada como una captura de pantalla y la examina. Si proporcionaste una imagen de referencia, compara el render con el archivo elemento a elemento —color, tipografía, estilo de iconos, proporciones— y corrige las diferencias que pueda resolver. Si algo no encaja, la skill vuelve al paso 3, lo que consume una captura de pantalla en lugar de un guardado.
+
+5. **Aprobar y guardar**. Sobrescribir una configuración existente requiere tu confirmación explícita. La skill te muestra un antes y un después renderizado de cada pantalla que ha modificado, enumera los cambios que no tienen representación visual, abre una pantalla en vivo en el navegador y te indica el nombre del archivo de copia de seguridad. Solo entonces escribe.
+
+## Después de la ejecución \{#after-the-run\}
+
+La skill te deja un borrador guardado. Para que llegue a los usuarios:
+
+1. **Abre el flow en el Flow & Paywall Builder.** Si ya tenías el flow abierto en una pestaña del navegador, recarga la página — el Flow & Paywall Builder no detecta los cambios realizados mediante la CLI.
+2. **Revisa qué cambió.** Adapty marca un flow que estaba **Published** antes de guardar como **Dirty**, y todo tu equipo verá ese estado. Tus usuarios siguen viendo la última versión publicada.
+3. **Previsualiza en un dispositivo real.** [Vista previa de flows](paywall-device-compatibility-preview) explica el proceso con código QR a través de la app móvil de Adapty. Prueba todo lo que el skill indicó como no verificado: ramificaciones, interruptores y cualquier idioma distinto al que renderizó.
+4. **Publica.** Haz clic en **Publish to Live** en la esquina superior derecha del Flow & Paywall Builder, o ejecuta [`adapty flows publish`](developer-cli-flows#adapty-flows-publish) desde el terminal. Un flow que no esté en un [placement](create-placement) no llegará a nadie, y un flow en estado Draft no se puede añadir a ninguno, así que publica primero. Consulta [Guardar y publicar flows](builder-save-publish).
+
+Si el resultado no es correcto, pide al skill que lo revierta. El skill lista las versiones del flow, restaura la versión que elijas como borrador y te muestra el resultado. Una restauración reemplaza el borrador actual, así que antes de hacerlo el skill te pregunta y te ofrece duplicar el borrador a un nuevo flow. Para un borrador que nunca se publicó, el historial no tiene ningún estado anterior, así que pide al skill que vuelva a escribir su copia de seguridad. También puedes corregir el flow manualmente en el Flow & Paywall Builder. En cualquier caso, un borrador guardado no cambia nada para tus usuarios.
+
+La versión histórica también deshace una publicación errónea. Pídele al skill que vuelva a la versión que estaba activa antes: restaura esa versión como borrador, y tú publicas el borrador cuando estés listo.
+
+## Ejemplos de prompts \{#example-prompts\}
+
+La skill lleva incorporados los comandos, el formato de configuración y sus propios pasos de verificación, así que no hace falta detallarlos en el prompt. Indica qué flow quieres y qué debe cumplirse cuando termine.
+
+#### Traducir un paywall \{#translate-a-paywall\}
+
+```
+Add Brazilian Portuguese to my "Summer 2026" paywall. Translate every
+localizable field, not just the headline, and tell me what you couldn't.
+```
+
+#### Construir desde un diseño \{#build-from-a-design\}
+
+```
+Build a new paywall flow from the "Winter promo" frame in our Figma file.
+Show me my products first and let me pick which ones go on it.
+```
+
+#### Añadir un cuestionario con ramificaciones \{#add-a-quiz-that-branches\}
+
+```
+Add a quiz screen before my paywall: "What's your main goal?" with three
+options, each routing to its own benefit screen, then on to the paywall.
+```
+
+#### Reescribir el copy
+
+```
+Rewrite the headline and CTA on my onboarding to be shorter and more direct.
+Keep the price variables working, and apply it to every locale.
+```
+
+#### Crear una variante de prueba
+
+```
+Copy my "Main paywall" into a new flow and make the monthly plan the
+preselected one. Leave the original alone.
+```
+
+#### Rediseñar para una campaña
+
+```
+Re-theme my paywall flow to match the colors in ./design/spring.png.
+Copy and layout stay as they are.
+```
+
+#### Añade una pantalla \{#add-a-screen\}
+
+```
+Add a social proof screen between the quiz and the paywall in my activation
+flow — star rating and two testimonials. Ask me for the real numbers.
+```
+
+## Dale tus imágenes y vídeos \{#give-it-your-images-and-videos\}
+
+El skill sube una imagen o un vídeo desde tu ordenador y vincula la URL resultante en el flow, para que no tengas que añadir los archivos multimedia a mano en el Flow & Paywall Builder. Necesita una **ruta de archivo**, no una imagen: cuando pegas o adjuntas una imagen en el chat, tu herramienta de IA recibe los píxeles pero no el archivo, por lo que no hay nada que subir.
+
+Coloca los recursos en una carpeta de tu ordenador y luego indícale la ruta a la herramienta:
+
+```
+The hero images are in ./design/paywall/. Use hero-calm.png on the first
+screen and the three icons in ./design/paywall/icons/ for the benefit rows.
+```
+
+Los formatos y límites de tamaño coinciden con los de una subida manual en el Flow & Paywall Builder; consulta [Imágenes, vídeos e iconos](custom-media). SVG es la única excepción: no se puede subir, por lo que el skill dibuja glifos de un solo color en línea.
+
+Antes de subir un archivo PNG o JPEG de más de 1 MB, el skill lo convierte a WebP. Cuando la respuesta de subida incluye una [advertencia de imagen grande](developer-cli-flows#adapty-flows-media-upload), el skill indica el nombre de la imagen y su peso, y ofrece reducirla, ejecutando cada paso solo cuando tú lo confirmas. El peso de la imagen nunca bloquea el guardado ni la publicación del flow.
+
+Antes de cada guardado y cada publicación, el skill mide el flow y sus imágenes y vídeos. Si algo está [demasiado pesado](flow-size), el skill lo identifica y propone una solución.
+
+El skill sube un vídeo con [`adapty flows media upload-video`](developer-cli-flows#adapty-flows-media-upload-video). El vídeo debe ser un archivo MP4 o WebM, de 30 segundos como máximo y no más de 50 MB, con un ancho y alto de al menos 640 píxeles cada uno. Los GIF no son compatibles y el skill no convierte una imagen animada en vídeo. Cuando el skill se ejecuta solo a través del servidor MCP, aún no puede subir vídeos: coloca un elemento de vídeo con un marcador de posición vacío, y tú subes el clip en el Flow & Paywall Builder.
+
+Cada subida añade un recurso independiente a tu biblioteca de medios, y ningún comando de la CLI elimina ninguno, por lo que volver a ejecutar una compilación deja copias acumuladas.
+
+Si indicas un nombre de archivo que la herramienta no encuentra, pregunta en lugar de sustituirlo por uno parecido. Un archivo incorrecto genera una pantalla que se renderiza correctamente pero con la imagen equivocada, algo que ningún paso del flujo de trabajo detecta.
+
+## Dale tus fuentes \{#give-it-your-fonts\}
+
+El skill sube tu [fuente personalizada](using-custom-fonts-in-flow-builder) a la app con [`adapty fonts upload`](developer-cli-flows#adapty-fonts-upload) y la usa en el flow. Dale los archivos `.ttf` u `.otf`, uno por cada peso y estilo, o un archivo de fuente variable:
+
+```
+The brand font is in ./design/fonts/: BrandSans-Regular.otf and BrandSans-Bold.otf.
+Use it for the headings and the buttons.
+```
+
+El skill entonces:
+
+1. Sube los archivos. Si Adapty propone reemplazar caras en conflicto, el skill las nombra y pregunta si deseas reemplazarlas o dejar el archivo fuera. Tras un reemplazo, el skill muestra qué caras cambiaron. Si Adapty rechaza con una nueva lista de caras en conflicto, el skill vuelve a preguntar por esa lista. Si una cara de la lista ha desaparecido o Adapty indica que no hay conflictos, el skill intenta subir de nuevo sin reemplazo e informa del resultado. Si varias familias coinciden con el nombre del archivo, el skill pregunta cuál usar. Si se pierde la respuesta de la subida, el skill verifica qué caras almacenó Adapty antes de intentarlo de nuevo. Si la familia ya tiene todos los estilos de un archivo de fuente variable, el skill pregunta por cada cara antes de reemplazar su archivo. Adapty no conserva los archivos antiguos.
+2. Verifica el peso, el estilo y los nombres de fuente para iOS y Android de cada cara. Ningún archivo de fuente lleva el nombre de fuente para Android, así que el skill te lo pregunta directamente.
+3. Establece la fuente de los estilos de texto y los elementos por familia de fuente y peso. En el dispositivo, el flow usa la cara con ese peso y estilo. Si la familia no tiene esa cara, usa el peso más cercano en el mismo estilo, luego en cualquier estilo, y la cara más ligera cuando dos están igualmente cerca.
+4. Cuando le pides que publique el flow, lo publica y espera hasta que el flow esté publicado.
+
+:::warning
+Adapty no envía los archivos de fuente subidos a los dispositivos de los usuarios. Para mostrar la fuente en tu app, [añade los mismos archivos de fuente al bundle de tu app](using-custom-fonts-in-flow-builder#add-the-font-files-to-your-apps-bundle).
+:::
+
+Si la app ya tiene una familia de fuentes adecuada, el skill la usa y no sube nada. Si la familia no está disponible y no tienes archivos de fuente, el skill usa una fuente sustituta e indica cuál. Cuando el skill se ejecuta solo a través del servidor MCP, no puede subir una fuente todavía: sube la fuente en el Flow & Paywall Builder y luego indícale al skill el nombre de su familia.
+
+## Trae tu propio agente \{#bring-your-own-agent\}
+
+Adapty también tiene un [Editor de IA](flow-ai-editor) dentro del Flow & Paywall Builder. La diferencia no está en cuál tiene más funciones, sino en el entorno donde se realiza el trabajo.
+
+El Editor de IA es el agente de Adapty, que trabaja en la pantalla que tienes abierta. La skill es el arreglo contrario: tu agente, tu modelo, tus herramientas, y Adapty como una herramienta más que sabe cómo operar. Todo lo que tu herramienta de IA ya puede alcanzar viene con ella: tu repositorio, tus archivos de diseño, tus servidores MCP, tus propios prompts y contexto.
+
+| | AI Editor | flow-generator skill |
+|---|---|---|
+| De quién es el agente | De Adapty, en el navegador | Tuyo: un agente de codificación o claude.ai |
+| Qué puede ver | La pantalla que tienes abierta, más las imágenes que adjuntas | Todo lo que tu herramienta de IA pueda alcanzar |
+| Alcance de un prompt | Una pantalla | El flow completo: pantallas, navegación, idiomas |
+| Localización | No está incluida | Añade un idioma y rellena todos los campos localizables |
+| Deshacer | Un clic por prompt | Una copia de seguridad del flow, el historial de versiones y tu aprobación antes de cada guardado |
+| Configuración | Ninguna | El plugin de Adapty, más el Adapty CLI o el servidor MCP |
+
+Usa el AI Editor cuando ya estés en el builder y quieras rediseñar la pantalla que tienes delante. Usa la skill cuando prefieras no salir de tu propio entorno para trabajar en el flow.
+
+## Lo que la skill no hará \{#what-the-skill-wont-do\}
+
+La skill trata tus flows como contenido en producción, ya que un flow publicado está sirviendo a usuarios reales.
+
+- **La publicación es tuya**: El skill guarda los cambios como borrador. Solo publica un flow cuando tú lo pides. Para publicar sin el skill, usa el Flow & Paywall Builder o [`adapty flows publish`](developer-cli-flows#adapty-flows-publish).
+- **Sobrescribir requiere tu aprobación**: Al guardar se reemplaza toda la configuración, sin escrituras parciales ni opción de deshacer el borrador. La confirmación muestra el nombre del flow, su ID, su estado y el archivo de copia de seguridad que el skill tomó antes de editar.
+- **Una restauración queda como borrador**: El skill restaura una versión anterior como borrador y nunca la publica. Antes de reemplazar un borrador, te lo pregunta.
+- **Los cambios no guardados son tuyos**: Antes de que el skill abra o restaure otra versión, te pregunta si quieres guardar los cambios pendientes, descartarlos o quedarte en la versión actual.
+- **Una edición simultánea hace fallar la escritura**: Cada escritura tras la primera envía el timestamp `updated_at` de la configuración de vuelta a Adapty. Si un compañero guardó el flow mientras tanto, Adapty rechaza la escritura en lugar de sobrescribir su trabajo.
+- **Eliminar un flow es una acción del dashboard**: La CLI no tiene comando de eliminación, así que un flow que el skill haya creado permanece hasta que tú lo elimines desde el dashboard.
+- **Los números reales y los assets los pones tú**: Las valoraciones, el número de reseñas, los porcentajes de descuento y los precios de la store nunca se inventan. Cuando un patrón requiere uno que no has proporcionado, el skill te lo pide o deja el elemento fuera, e indica cuál de las dos ha hecho.
+
+:::note
+Las lecturas, validaciones y previsualizaciones no tienen ningún coste ni cambian nada. Guardar una configuración es la única acción que llega a tu dashboard, y requiere tu aprobación.
+:::
+
+## Limitaciones \{#limitations\}
+
+#### Las ejecuciones tardan tiempo \{#runs-take-time\}
+
+El skill valida y vuelve a renderizar tras cada cambio que realiza, lo que evita que una configuración rota llegue a tu dashboard — y hace que una ejecución sea más lenta que una respuesta de chat. Una edición pequeña termina en pocos minutos. Crear un flow multipantalla con ramificaciones lleva **entre 10 y 40 minutos**. Inícialo y vuelve cuando esté listo, en lugar de quedarte mirando.
+
+#### La previsualización renderiza una sola pantalla, en un único estado \{#the-preview-renders-one-screen-in-one-state\}
+
+La página de vista previa del skill muestra una sola pantalla y no recorre el flow. No puede mostrarte ninguno de los siguientes aspectos. Prueba cada uno en un dispositivo real — [Vista previa de flows](paywall-device-compatibility-preview) explica cómo hacerlo:
+
+- **Navegación y ramificación**: Un botón con una acción de navegación permanece donde está en la previsualización, así que una ruta condicional no puede activarse. Cada pantalla se renderiza por separado.
+- **Selección de toggle y opción múltiple**: Una fila de toggle y una fila de opción múltiple se muestran en su estado desactivado según su valor predeterminado. Las filas de opción única y las tarjetas de producto sí renderizan su estado seleccionado.
+- **Cualquier idioma que no sea el que muestra**: La previsualización ignora el idioma predeterminado del flow y el orden de la lista de idiomas, por lo que no es posible verificar visualmente una traducción. Cambia el idioma en el Flow & Paywall Builder y comprueba si algún texto desborda su contenedor.
+- **Todo lo que se resuelve en tiempo de ejecución**: Precios reales, moneda del store y entrada del usuario. Una variable de precio se muestra como su token literal, que es más largo que cualquier precio y puede empujar texto por debajo de un botón anclado —una superposición que desaparece una vez que el precio se resuelve.
+- **Tamaños de pantalla que la página desconoce**: Un diseño cuya seguridad depende de la altura del viewport necesita un teléfono pequeño para demostrarlo.
+
+## ¿Qué viene ahora? \{#whats-next\}
+
+- [skill flow-audit](flow-audit-skill) — verificación de solo lectura para comprobar si el borrador que deja este skill está listo para producción, antes de publicarlo.
+- [skill paywall-compliance](paywall-compliance-skill) — comprueba el flow según las normas de App Store y Google Play antes de enviarlo.
+- [Guardar y publicar flows](builder-save-publish) — termina el borrador que deja el skill.
+- [Problemas habituales](flow-common-issues) — qué impide publicar un flow.
+- [Añadir una configuración regional en Adapty Flow & Paywall Builder](add-paywall-locale-in-adapty-paywall-builder) — usa la interfaz del builder para agilizar el proceso de traducción.
+- [Gestionar Adapty con agentes de IA y herramientas de codificación](manage-adapty-with-ai) — los otros skills de Adapty y las herramientas de IA.

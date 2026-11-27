@@ -1,0 +1,183 @@
+---
+title: "iOS SDKでカスタム要素を表示する"
+description: "フローの各カスタム要素にネイティブのSwiftUIビューを表示し、デバイスでフローをテストします。"
+metadataTitle: "カスタム要素を表示する | iOS SDK | Adapty ドキュメント"
+---
+
+<FlowCustomElementsIntro />
+
+## 始める前に \{#before-you-start\}
+
+必要なもの：
+
+- **Adapty iOS SDK 4.4 以降**: それより古いバージョンでは、すべてのカスタム要素にフォールバックが表示されます。
+- **ネイティブ iOS アプリ**: React Native アプリの場合は[React Native SDK でカスタム要素を表示する](react-native-flow-custom-elements)を、Flutter アプリの場合は[Flutter SDK でカスタム要素を表示する](flutter-flow-custom-elements)を参照してください。その他のクロスプラットフォームフレームワーク向け Adapty SDK では、すべてのカスタム要素にフォールバックが表示されます。
+- **カスタム要素の命名規則**: 各ネイティブビューに `lottie_animation` のような Type を付けてください。Type には小文字、数字、アンダースコアのみ使用できます。同じ Type のカスタム要素を区別するには、`welcome_wave` のような ID を各要素に付けてください。コード内の Type と ID は、[フロー & ペイウォールビルダー](flow-custom-elements#add-and-configure)内のものと一致している必要があります。
+
+## カスタム要素のビューを作成する \{#create-views-for-custom-elements\}
+
+各 Type に対して、ネイティブの SwiftUI ビューを新規作成するか、アプリ内の既存ビューを再利用してください。以下は `lottie_animation` Type の Lottie アニメーションを再生するビューの例です：
+
+```swift showLineNumbers title="Swift"
+
+struct LottieElementView: View {
+    let animation: LottieAnimation?
+
+    var body: some View {
+        LottieView(animation: animation)
+            .resizable()
+            .looping()
+    }
+}
+```
+
+### 要件とベストプラクティスの確認 \{#view-requirements-and-best-practices\}
+
+- **サイズ設定**:
+  - **パディングと整列**: ネイティブビューが、フロー＆ペイウォールビルダーで確保したコンテナにパディングを引いたサイズで収まるようにしてください。ビューがエリア全体を占有しない場合、デフォルトではそのエリアの左上隅に表示されます。位置を変更するには、カスタム要素の **Layout** セクションで整列を変更してください。
+  - **Hug の高さ**: カスタム要素の高さが **Hug** に設定されている場合、利用可能なスペースいっぱいに広がるビュー（マップなど）は折りたたまれてしまいます。代わりにカスタム要素に [**Fixed** の高さ](flow-custom-elements#add-and-configure)を指定してください。
+- **フローアクション**: ネイティブビューは、次の画面への遷移などのフローアクションを実行できません。エレメントコンテキストの `sendMessage` メソッドは、フロー＆ペイウォールビルダーの将来の機能のために予約されています。ナビゲーションボタン、購入ボタン、その他フローアクションを持つボタンはカスタム要素の外に配置してください。
+- **選択可能な要素**: カスタム要素をプロダクトカードやその他の[選択可能な要素](flow-selectable-elements)の外に配置してください。選択が変更されると、ネイティブビューが状態を失う場合があります。
+- **ナビゲーションの処理**: ユーザーが次の画面に移動すると、SwiftUI はネイティブビューの `onDisappear` アクションを実行します。このアクション内で、カメラセッション、プレーヤー、位置情報のアップデートなど、ビューが開始したものを停止してください。非同期処理には `.task` を使用してください。ビューが消えると SwiftUI がキャンセルします。ユーザーが戻ってくると、SDK は再びリゾルバーを呼び出し、SwiftUI はビューの状態をリセットします。
+- **UIKit のビュー**: `UIViewRepresentable` でラップしてください。
+
+## カスタム要素とビューを照合するリゾルバを作成する \{#write-a-resolver-to-match-custom-elements-and-views\}
+
+リゾルバを作成するには、型を `AdaptyUICustomElementsResolver` プロトコルに準拠させ、`view(forType:id:context:)` メソッドを実装します。
+
+`lottie_animation` タイプに対して、次のリゾルバは `LottieElementView` を返します。ID はアプリバンドル内のアニメーションファイル名（例：`welcome_wave`）を指定します。
+
+```swift showLineNumbers title="Swift"
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "lottie_animation":
+            // the ID names the animation file, such as welcome_wave.json
+            guard let animation = LottieAnimation.named(id) else {
+                return nil // no file for this ID: show the fallback
+            }
+            return AnyView(LottieElementView(animation: animation))
+        default:
+            return nil
+        }
+    }
+}
+```
+
+`default` ケースでは `nil` を返します。アプリのリリース後に[新しいTypeのカスタム要素を追加した](flow-custom-elements#what-changes-require-an-app-release)場合、リリース済みバージョンのユーザーにはフォールバックが表示されます。
+
+リゾルバーには以下の要件があります。
+
+- **ネットワークデータとプレイヤー**: ネットワークデータとプレイヤーは、リゾルバーではなく[ネイティブビュー](#create-views-for-custom-elements)のステートに保持してください。SDKは、プロダクトの読み込みや購入開始時など、画面が開いている間にリゾルバーを何度も呼び出します。リゾルバー内のコードは呼び出しのたびに再実行されるため、ネットワークリクエストが繰り返され、プレイヤーが最初からやり直しになります。SwiftUIは呼び出し間でネイティブビューのステートを保持するため、データは一度だけ読み込まれ、プレイヤーは再生を続けられます。プレイヤー、セッション、ネットワークリクエストは、`@State`プロパティの初期値ではなく、`.task`や`@StateObject`の中で作成してください。Swiftはリゾルバーがビューを作成するたびにその初期値を再評価します。
+- **カスタム要素ごとに1つのネイティブビュー**: 一部のネイティブビューは、データの読み込み時やユーザーのタップ時など、画面が開いている間に変化します。このロジックはリゾルバーではなく、ビューの`body`自体に実装してください。同じカスタム要素に対してリゾルバーが異なるビューを返すと、SwiftUIはそのビューのステートをリセットします。
+- **アプリデータ**: データを保持するアプリオブジェクト（例：[デイリーストリーク](custom-element-lottie-animation)を持つ`ObservableObject`）は、リゾルバーのプロパティに格納してください。そのオブジェクトをネイティブビューに渡し、ビューでは`@ObservedObject`を使って監視します。ストリーク数のようにリゾルバーにコピーした値は、リゾルバーを作成した時点の値のまま変わりません。このデータには環境オブジェクトを使わないでください。UIKitの[フローコントローラー](ios-present-paywalls#present-flows-and-paywalls-in-uikit)では、ネイティブビューはアプリのSwiftUI環境を受け取りません。
+
+### フォールバックコンテンツの条件を設定する \{#set-conditions-for-fallback-content\}
+
+<FlowCustomElementsFallbackConditions />
+
+権限については、スクリーンが開く前にユーザーが拒否した場合にのみ `nil` を返してください。ユーザーがまだ権限リクエストに回答していない場合は、`nil` の代わりにネイティブビューを返し、その中で権限を要求してください。たとえば、[フロー内のマップで近くの場所を表示する](custom-element-map#3-match-the-map-to-the-custom-element)では、iOS はマップが表示されたときに位置情報アクセスのプロンプトを表示します。ユーザーがアクセスを許可するとすぐに、ネイティブビューはマップを表示できます。`nil` を返した場合、その後ユーザーがアクセスを許可しても、フォールバックが表示されたままになります。権限の変更によって SDK がリゾルバーを再度呼び出すことはありません。ネイティブビューが表示されるのは、ユーザーが画面に戻ったときなど、SDK がリゾルバーを再度呼び出したときのみです。
+
+## リゾルバーをSDKに渡す \{#pass-the-resolver-to-the-sdk\}
+
+まずはアプリ全体のリゾルバーを設定しましょう。SDKは、個別のリゾルバーを持たないすべてのフローでこれを呼び出します。アプリをリリースしなくても、新しいフローやA/Bテストでユーザーがネイティブビューを見られるようになります。これらのビューは[デイリーストリーク](custom-element-lottie-animation)など、アプリからデータを読み込むため、各ユーザー固有のデータを表示できます。
+
+フローを開く際にアプリが初めてデータを取得できる場合は、そのフローにリゾルバーをアタッチします。たとえば、ペイウォールに[ユーザーが以前のフローで入力した体重](custom-element-interactive-chart)を表示したり、ユーザーがエクスポートしようとしているドキュメントをプレビューしたりする場合がこれにあたります。また、そのフロー内の Type に対して別のビューを表示するために、1 つのフローにリゾルバーをアタッチすることもできます。
+
+### アプリ全体にリゾルバーを設定する \{#set-an-app-wide-resolver\}
+
+すべてのフローでリゾルバーを使用するには、アプリ起動時などに `AdaptyUI.setCustomElementsResolver(_:)` を一度呼び出します。
+
+```swift showLineNumbers title="Swift"
+
+// keep this instance: a resolver for one flow can reuse it
+@MainActor let customElementsResolver = CustomElementsResolver()
+
+AdaptyUI.setCustomElementsResolver(customElementsResolver)
+```
+
+:::tip
+リゾルバーアプローチのよりシンプルで機能が限定された代替手段として、Type キーを持つ `[String: AdaptyUICustomElementBuilder]` 辞書を渡す方法があります。辞書を使うとコード量を減らせますが、[フォールバックコンテンツの条件設定](#set-conditions-for-fallback-content)はできません。
+
+```swift showLineNumbers title="Swift"
+AdaptyUI.setCustomElementsResolver([
+    "lottie_animation": .init { _, id, _ in LottieElementView(animation: .named(id)) },
+])
+```
+:::
+
+### 1つのフローにリゾルバーを紐付ける \{#attach-a-resolver-to-one-flow\}
+
+フローに紐付けたリゾルバーは、そのフロー内でアプリ全体のリゾルバーを上書きします。このリゾルバーに渡した値は、フロー設定を取得したときの値のまま保持されます。新しい値を表示するには、設定を再取得してください。
+
+このフロー内でアプリ全体のビューを維持するには、アプリ全体のリゾルバーをこのリゾルバーに渡し、他のタイプやIDに対してはアプリ全体のリゾルバーを呼び出してください。次のリゾルバーは、ユーザーがエクスポートしようとしているドキュメントをプレビューし、その他すべてのカスタム要素に対してアプリ全体のリゾルバーを呼び出します。
+
+```swift showLineNumbers title="Swift"
+
+struct ExportPaywallResolver: AdaptyUICustomElementsResolver {
+    let document: Document // the document that the user wants to export
+    let appWideResolver: any AdaptyUICustomElementsResolver
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        if type == "document_preview" {
+            return AnyView(DocumentPreview(document: document))
+        }
+        // other Types: the views of the app-wide resolver
+        return appWideResolver.view(forType: type, id: id, context: context)
+    }
+}
+```
+
+フローの設定を取得する際に、リゾルバをフローにアタッチします：
+
+```swift showLineNumbers title="Swift"
+func showExportPaywall(flow: AdaptyFlow, document: Document) async {
+    do {
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            customElementsResolver: ExportPaywallResolver(
+                document: document,
+                appWideResolver: customElementsResolver // the instance that you set app-wide
+            )
+        )
+        // present the flow
+    } catch {
+        // handle the error
+    }
+}
+```
+
+ディクショナリをリゾルバの代わりに使用する場合は、2つのディクショナリをマージし、その結果をフローにアタッチします: `appWideViews.merging(flowViews) { _, flowView in flowView }`。両方のディクショナリに同じ型が存在する場合、このコードはそのフロー用のビューを保持します。
+
+## デバイスでテストする \{#test-on-a-device\}
+
+フローおよびペイウォールビルダーはアプリのコードを実行できないため、キャンバスにはフォールバックのみが表示されます。ネイティブビューにエラーがあると、アプリがクラッシュする可能性があります。アプリをリリースする前に、カスタム要素を含むすべての画面をデバイスでテストしてください。
+
+1. 各フローの最新の公開バージョンをキャッシュ済みのバージョンではなく表示するには、デバイスを[テストデバイス](test-devices)として登録してください。
+2. デバイス上で、リゾルバーを含むビルドを実行します。カスタム要素があるすべての画面を開き、ネイティブビューが表示されてカスタム要素に収まっていることを確認してください。ビューがスクロールやドラッグに対応している場合は、これらのジェスチャーもテストしてください。
+3. ネイティブビューの代わりにフォールバックが表示される場合は、Xcode コンソールで `custom element <type>:<id> is not served by a resolver` という警告を探してください。その上で、以下を確認してください。
+   - 警告内の Type と ID が、コード内のものと一字一句一致しているか。
+   - アプリが、ビューに必要なファイル、データ、または権限を持っているか。
+   - カスタム要素を含む画面が開く前に、アプリ全体のリゾルバーが設定されているか。
+   - [このフロー用のリゾルバー](#attach-a-resolver-to-one-flow)（アタッチしている場合）が、その Type と ID に対応するビューを返しているか。
+
+   もし警告が表示されない場合は、アプリが Adapty iOS SDK 4.4 以降を使用していること、および [`Adapty.logLevel`](sdk-installation-ios#logging) が `.error` に設定されていないことを確認してください。
+4. フォールバックをプレビューするには、Type に `nil` を返し、画面を再度開いてください。
+
+## 例 \{#examples\}
+
+各レシピでは、ビルダーの設定とアプリのコードを紹介します。
+
+- [Lottieアニメーションでユーザーの進捗を表示する](custom-element-lottie-animation): ストリークが増えるにつれて塗りつぶされるリング。
+- [ペイウォールにインタラクティブな体重目標チャートを表示する](custom-element-interactive-chart): オンボーディングフローに続くペイウォールフローでの体重目標チャート。
+- [フローで近くの場所をマップに表示する](custom-element-map): 各ユーザーの近くにあるフィットネスセンターのマップ。
+- [フローで仮想通貨を使用・販売する](ios-virtual-currency-top-up): ダイヤモンドの残高と、プレイヤーがエネルギーにダイヤモンドを使うためにタップするボタン。

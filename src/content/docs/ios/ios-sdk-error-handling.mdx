@@ -9,27 +9,31 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 Adapty SDK has its own wrapper for all kinds of errors, called `AdaptyError`. Basically, every error returned by an SDK is `AdaptyError`. It has two useful properties: `originalError` and `adaptyErrorCode`, described below.
 
-**originalError** contains an original error in case you need the original one to work with. Can be [SKError](https://developer.apple.com/documentation/storekit/skerror), [NSError](https://developer.apple.com/documentation/foundation/nserror) or just general Swift [Error](https://developer.apple.com/documentation/swift/error). This property is optional since some errors can be generated directly by SDK, like inconsistent or missing data, and won't have the original error around which the wrapper was initially built.
+**originalError** contains an original error in case you need the original one to work with. Purchases go through StoreKit 2, so for a failed purchase this is usually a StoreKit 2 error: [StoreKitError](https://developer.apple.com/documentation/storekit/storekiterror) or [Product.PurchaseError](https://developer.apple.com/documentation/storekit/product/purchaseerror). Other errors can carry an [SKError](https://developer.apple.com/documentation/storekit/skerror), an [NSError](https://developer.apple.com/documentation/foundation/nserror) or a general Swift [Error](https://developer.apple.com/documentation/swift/error). This property is optional since some errors can be generated directly by SDK, like inconsistent or missing data, and won't have the original error around which the wrapper was initially built.
 
 **adaptyErrorCode** can be used to handle common issues, like:
 
 - invalid credentials
 - network errors
-- cancelled payments
 - billing issues
 - invalid receipt
 - and much more
 
-It's pretty easy to check the error for specific codes and react to them accordingly.
+A cancelled or pending purchase isn't an error. `makePurchase` returns it as the `.userCancelled` or `.pending` result, so handle it in the result. In `catch`, compare the error code with the codes you want to handle:
 
 ```swift showLineNumbers title="Swift"
 do {
-    let info = try await Adapty.makePurchase(product: product)
-} catch {
-    if error.adaptyErrorCode == .paymentCancelled {
+    let purchaseResult = try await Adapty.makePurchase(product: product)
+    if case .userCancelled = purchaseResult {
         // purchase was cancelled
         // you can offer discount to your user or remind them later
     }
+} catch let error as AdaptyError {
+    if error.adaptyErrorCode == .productPurchaseFailed {
+        // read error.originalError for the StoreKit reason
+    }
+} catch {
+    // handle other errors
 }
 ```
 
@@ -64,11 +68,12 @@ If these solutions don't resolve your issue, see [Other issues](#other-issues) f
 | productRequestFailed                                                                                                                       | 1002 | Unable to fetch available products at the moment.                                                                                                                                                                                                                                                                                                                                                                                                   |
 | cantMakePayments                                                                                                                           | 1003 | In-app purchases are not allowed on this device. See the troubleshooting [guide](cantMakePayments).                                                                                                                                                                                                                                                                                                                                                 |
 | [cantReadReceipt](https://developer.apple.com/documentation/storekit/skerror/code/paymentcancelled)                                        | 1005 | <p>There is no valid receipt available on the device. This can be an issue during sandbox testing.</p><p>In the sandbox, you won't have a valid receipt file until you actually make a purchase, so make sure you do one before accessing it. During sandbox testing also make sure you signed in on a device with a valid Apple sandbox account.</p>                                                                                               |
-| productPurchaseFailed                                                                                                                      | 1006 | Product purchase failed. This wraps an underlying StoreKit error — read `originalError` (or enable verbose logs to see it in the console) for the actual reason. The wrapped error is typically one of the StoreKit codes 0–14 in the table above — most commonly `paymentCancelled`, `paymentInvalid`, `paymentNotAllowed`, or `invalidOfferPrice`. If you can't identify a specific reason, try a new [sandbox profile](test-purchases-in-sandbox); if it still fails, contact Apple support. |
+| productPurchaseFailed                                                                                                                      | 1006 | Product purchase failed. Read `originalError` (or enable verbose logs to see it in the console) for the actual reason. `originalError` contains the StoreKit 2 error that the purchase returned, such as `StoreKitError` or `Product.PurchaseError`, so code that looks for `SKErrorDomain` doesn't find it. The SDK reports an `SKError` with its own code from the table above, not as `1006`. In rare cases, `originalError` is empty. If you can't identify a specific reason, try a new [sandbox profile](test-purchases-in-sandbox); if it still fails, contact Apple support. |
 | refreshReceiptFailed                                                                                                                       | 1010 | The receipt refresh operation failed.                                                                                                                                                                                                                                                                                                                                                                                                               |
 | fetchSubscriptionStatusFailed                                                                                                              | 1020 | Failed to fetch the subscription status from App Store.                                                                                                                                                                                                                                                                                                                                                                                             |
 | unknownTransactionId                                                                                                                       | 1030 | The transaction identifier is unknown.                                                                                                                                                                                                                                                                                                                                                                                                              |
 | paymentPendingError                                                                                                                        | 1050 | The payment is currently pending.                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| billingPlanUnavailable | 1060 | The product doesn't offer the requested billing plan on this device. A [12-month commitment](app-store-12-month-commitment) plan requires iOS 26.4 or later, and an app built with Xcode 26.5 or later. |
 
 ## Network errors
 
@@ -86,13 +91,21 @@ If these solutions don't resolve your issue, see [Other issues](#other-issues) f
 | Error                | Code | Solution                                                                                                                                                                                                                                                                                                                                                                                                  |
 | :------------------- | :--- |:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | analyticsDisabled    | 3000 | We can't handle analytics events, since you've [opted it out](analytics-integration#disabling-external-analytics-for-a-specific-customer).                                                                                                                                                                                                                                                                |
-| wrongParam           | 3001 | This error indicates that some of your parameters are not correct. <br/> If you're using the Adapty paywall builder and can't display a paywall because of this error, toggle on **Show on device** in the paywall builder.<br/> Another possible reason for this issue is that the local [fallback](fallback-paywalls) file version doesn't match the SDK version. Download a new file in the dashboard. |
+| wrongParam           | 3001 | This error indicates that some of your parameters are not correct. <br/> If you're using the old Paywall Builder and can't display a paywall because of this error, toggle on **Show on device** in that builder.<br/> Another possible reason for this issue is that the local [fallback](fallback-paywalls) file version doesn't match the SDK version. Download a new file in the dashboard. |
 | activateOnceError    | 3005 | It is not possible to call `.activate` method more than once.                                                                                                                                                                                                                                                                                                                                             |
 | profileWasChanged    | 3006 | The user profile was changed during the operation. <br/> This happens when a method is called while `Adapty.identify` is still in flight — the in-flight call lands on a profile that is about to be swapped, and the SDK rejects it. Always `await` `identify` (or use its completion handler) before any user-action call. See [Call order in iOS SDK](ios-sdk-call-order). |
 | unsupportedData      | 3007 | This error indicates that the data format is not supported by the SDK.                                                                                                                                                                                                                                                                                                                                    |
 | unidentifiedUserLogout | 3020 | It is not possible to call the `logout` method for an unidentified user.                                                                                                                                                                                                                                                                                                                                  |
 | fetchTimeoutError    | 3101 | This error indicates that the fetch operation timed out.                                                                                                                                                                                                                                                                                                                                                  |
+| operationInProgress  | 3201 | Another operation of the same kind is still running. <br/> Returned by `showStoreMessages` when a previous call is still showing [App Store messages](ios-store-messages). Wait for it to finish, then try again.                                                                                                                                                                               |
+| resolverFailure      | 3202 | The SDK couldn't find the resource the operation needs. <br/> Returned by the UIKit `showStoreMessages` method when you don't pass a window scene and no foreground-active scene exists. Pass the scene explicitly, or call the method again when the app is in the foreground.                                                                                                                 |
 | operationInterrupted | 9000 | This operation was interrupted by the system.                                                                                                                                                                                                                                                                                                                                                             |
+
+## Slow fetches right after `updateProfile`
+
+If you set custom attributes with `updateProfile` and fetch a placement in the same session, the SDK can compute the placement's segment hash from attributes that haven't finished propagating. It retries once the segment hash refreshes, so the symptom is a slower fetch rather than an error. The fetch fails only when the retry still disagrees, which means the attribute write hasn't landed.
+
+To avoid the retry, await `updateProfile` before fetching. See [Call order in iOS SDK](ios-sdk-call-order).
 
 ## Other issues
 

@@ -1,13 +1,13 @@
 ---
 title: "Adapty Geliştirici CLI'da Kimlik Doğrulama"
-description: "Adapty Geliştirici CLI ile nasıl kimlik doğrulaması yapılır."
+description: "Adapty Geliştirici CLI ile kimlik doğrulaması nasıl yapılır."
 metadataTitle: "Geliştirici CLI Kimlik Doğrulama | Adapty Dokümanları"
 keywords: ['cli', 'developer', 'authentication', 'mcp']
 ---
 
-CLI, Adapty API'sini çağırabilmek için kimlik doğrulaması gerektirir.
+CLI'ın Adapty API'sini çağırabilmesi için kimlik doğrulaması gerekir.
 
-Tek bir giriş tüm CLI'ı kapsar. [Ads Manager komutları](developer-cli-ads-manager) farklı bir servise ulaşır, ancak aynı kayıtlı token'ı kullanır — ikinci bir giriş adımı yoktur.
+Tek bir giriş tüm CLI'ı kapsar. [Ads Manager komutları](developer-cli-ads-manager) farklı bir servise ulaşır, ancak aynı kayıtlı token'ı kullanırlar — ikinci bir giriş adımı yoktur. AB sunucularındaki bir hesap için giriş yaparken bölge belirtilmesi gerekir; bkz. [AB hesabında oturum açma](#log-in-to-an-eu-account).
 
 ## Giriş yapın \{#log-in\}
 
@@ -39,25 +39,48 @@ Siz yetkilendirmeden önce kodun süresi dolarsa veya **Deny** seçeneğine tık
 adapty auth login
 ```
 
+### AB hesabına giriş yapma \{#log-in-to-an-eu-account\}
+
+[AB sunucularındaki](eu-cluster) bir hesaba giriş yapmak için CLI 0.30.0 veya daha yeni bir sürüm gereklidir.
+
+AB hesabına giriş yapmak için:
+
+1. Terminalinizde şunu çalıştırın:
+   ```bash
+   ADAPTY_REGION=eu adapty auth login
+   ```
+2. Bağlantıyı [https://app.adapty.io/eu-login](https://app.adapty.io/eu-login) üzerinden oturum açılmış bir tarayıcıda açın. Orada oturum açmadıysanız ya da bir ABD hesabıyla oturum açtıysanız, önce orada giriş yapın.
+3. Kodu onaylayın ve [Giriş Yap](#log-in) bölümündeki gibi **Authorize** düğmesine tıklayın.
+
+CLI, bölgeyi oturum açma bilgisiyle birlikte kaydeder; bu sayede sonraki komutlar `ADAPTY_REGION` olmadan da AB sunucularına gider. `adapty auth status` çıktısında `Region: eu` satırı bunu doğrular.
+
+`ADAPTY_TOKEN` ayarlayan bir scriptte `ADAPTY_REGION` değerini de `us` veya `eu` olarak ayarlayın. Aksi takdirde komut, o bilgisayarda kayıtlı oturum açma bilgisinin bölgesini kullanır; bu bölge başka bir hesaba ait olabilir.
+
+CLI, oturum dosyasının bozulduğunu bildirirse `ADAPTY_REGION` değerini hesabınızın bölgesine ayarlayarak `adapty auth login` komutunu tekrar çalıştırın. Yeni oturum açma işlemi dosyanın üzerine yazar.
+
+[Ads Manager](developer-cli-ads-manager) ve [attribution](developer-cli-attribution) komutları AB hesapları için kullanılamaz. Herhangi bir istek gönderilmeden önce bir hatayla durur; örneğin: `Apple Search Ads commands are not available for EU accounts.`
+
 ## Kimlik doğrulamayı yönetme \{#manage-authentication\}
 
-### Kimlik doğrulama durumunu kontrol etme \{#check-authentication-status\}
+### Kimlik Doğrulama Durumunu Kontrol Etme \{#check-authentication-status\}
 
-Mevcut kimlik doğrulama durumunuzu görmek için şunu çalıştırın:
+Mevcut kimlik doğrulama durumunuzu görmek için şu komutu çalıştırın:
 
 ```bash
 adapty auth status
 ```
 
-Kimlik doğrulaması yapıldığında, çıktıda e-posta adresiniz, maskelenmiş bir token öneki ve yerel yapılandırma dosyasının yolu gösterilir:
+Kimlik doğrulandığında, çıktı adınızı, maskelenmiş bir token önekini ve yerel yapılandırma dosyasının yolunu gösterir:
 
 ```
-Email: you@example.com
+User: Jane Doe
 Token: abcd1234****
 Config: ~/.config/adapty/config.json
 ```
 
-Kimlik doğrulaması yapılmadığında:
+CLI 0.9.1 ile birlikte, giriş yapıldığında adınız kaydedilir, e-posta adresi kaydedilmez. `Email:` satırı yalnızca daha eski bir sürümle kaydedilmiş oturumlarda görünür. `adapty auth status --json` komutunu okuyan scriptlerde, kullanıcıyı tanımlamak için `name` alanını kullanın.
+
+Kimlik doğrulanmamış olduğunda:
 
 ```
 Not authenticated. Run `adapty auth login`.
@@ -73,29 +96,35 @@ adapty auth whoami
 
 `adapty auth status` komutunun aksine, bu komut tokenı doğrulamak için sunucuya canlı bir istek gönderir.
 
-### Çıkış yapma \{#log-out\}
+### Oturumu kapat \{#log-out\}
 
-Yerel olarak depolanan kimlik bilgilerinizi temizlemek için şunu çalıştırın:
+Yerel olarak saklanan kimlik bilgilerinizi temizlemek için şunu çalıştırın:
 
 ```bash
 adapty auth logout
 ```
 
-Bu komut `~/.config/adapty/config.json` dosyasını temizler. Token, süresi dolana kadar sunucu tarafında geçerliliğini korur — hemen geçersiz kılmak istiyorsanız bunun yerine `adapty auth revoke` komutunu kullanın.
+Bu işlem `~/.config/adapty/config.json` dosyasını ve `adapty migrations create` ya da `adapty migrations use` tarafından kaydedilen migration'ı temizler. Token, süresi dolana kadar sunucu tarafında geçerli kalmaya devam eder — hemen geçersiz kılmanız gerekiyorsa bunun yerine `adapty auth revoke` kullanın.
 
-### Tokenınızı iptal etme \{#revoke-your-token\}
+### Tokenınızı iptal edin \{#revoke-your-token\}
 
-Tokeni sunucuda geçersiz kılmak ve yerel olarak temizlemek için şunu çalıştırın:
+Token'ı sunucuda geçersiz kılmak ve yerel olarak temizlemek için şu komutu çalıştırın:
 
 ```bash
 adapty auth revoke
 ```
 
-Bir tokeni tamamen geçersiz kılmak istediğinizde bunu kullanın — örneğin kimlik bilgilerinizin ele geçirilmiş olabileceği durumlarda. İptal ettikten sonra yeniden kimlik doğrulaması yapmak için `adapty auth login` komutunu çalıştırın.
+Token'ın kaydedilmiş bir migration'ı varsa, CLI onu da temizler; ancak bunu yalnızca sunucu iptali onayladıktan sonra yapar. Bir token'ı tamamen geçersiz kılmak istediğinizde bunu kullanın — örneğin, kimlik bilgileriniz ele geçirilmiş olabilirse. İptal ettikten sonra yeniden kimlik doğrulamak için `adapty auth login` komutunu çalıştırın.
+
+## Token ömrü \{#token-lifetime\}
+
+`adapty auth login` komutundan alınan token, giriş yaptıktan sonra 90 gün boyunca geçerlidir. Token'ı kullanmak bu süreyi uzatmaz ve CLI'ın yenileme token'ı yoktur. Token süresi dolduğunda CLI komutları 401 hatası döndürür; bu durumda tarayıcıdan tekrar giriş yapmanız gerekir.
+
+Girişi onaylayacak bir kullanıcı olmadan çalışan zamanlanmış bir iş, token'ı yenileyemez. Bu tür işler için uygulamanızın gizli API anahtarıyla kimlik doğrulayan [Export Analytics API](export-analytics-api)'yi kullanın.
 
 ## Token hataları \{#token-errors\}
 
-Bir token iptal edilirse veya geçersiz hale gelirse, CLI komutları 401 hatası döndürür. Yeniden kimlik doğrulaması yapmak için şunu çalıştırın:
+Bir token iptal edilirse, süresi dolarsa veya geçersiz hale gelirse, CLI komutları 401 hatası döndürür. Yeniden kimlik doğrulamak için şunu çalıştırın:
 
 ```bash
 adapty auth login

@@ -65,7 +65,7 @@ L'intégration entre Adapty et Adjust fonctionne de deux manières principales.
   />
   </Zoom>
 
-:::note
+  :::note
 Vous pouvez avoir des applications Adjust différentes pour iOS et Android. Dans Adapty, vous disposez donc de deux sections indépendantes pour cela. Si vous n'avez qu'une seule application Adjust, renseignez simplement les mêmes informations.
 :::
 
@@ -81,6 +81,10 @@ Vous pouvez avoir des applications Adjust différentes pour iOS et Android. Dans
   }}
 />
 </Zoom>
+
+:::warning
+Adapty envoie les [achats Stripe et Paddle](#web-purchases-stripe-and-paddle) à Adjust avec le token de l'application correspondant à la plateforme sur laquelle l'acheteur a installé votre application. Si vous publiez une application Android et vendez sur le web, renseignez le champ **App Token** Android. Sans cela, l'achat web d'un utilisateur Android échoue avec l'erreur [Missing integration credentials](handle-integration-errors#missing-integration-credentials).
+:::
 
 ### Configurer les événements et les tags \{#configure-events-and-tags\}
 
@@ -211,7 +215,7 @@ var adjustConfig = new AdjustConfig(appToken, environment);
 adjustConfig.setAttributionCallbackListener(attribution => {
   // Make sure Adapty SDK is activated at this point
   // You may want to lock this thread awaiting of `activate`
-  adapty.updateAttribution(attribution, "adjust");
+  adapty.updateExternalAttribution(attribution, "adjust");
 });
 
 // ...
@@ -256,7 +260,7 @@ try {
   if (attributionData.costCurrency != null) attribution['costCurrency'] = attributionData.costCurrency!;
   if (attributionData.fbInstallReferrer != null) attribution['fbInstallReferrer'] = attributionData.fbInstallReferrer!;
 
-  await Adapty().updateAttribution(attribution, source: "adjust");
+  await Adapty().updateExternalAttribution(attribution, provider: AdaptyExternalAttributionProvider.adjust);
 } on AdaptyError catch (adaptyError) {
   // handle the error
 } catch (e) {
@@ -307,7 +311,7 @@ public void AttributionChangedCallback(AdjustAttribution attributionData) {
     // you will probably need to install Newtonsoft.Json package, if not yet
     var attributionJsonString = Newtonsoft.Json.JsonConvert.SerializeObject(attribution);
 
-    Adapty.UpdateAttribution(attributionJsonString, "adjust", (error) => {
+    Adapty.UpdateExternalAttribution(attributionJsonString, AdaptyExternalAttributionProvider.Adjust, (error) => {
         if (error != null) {
             // handle the error
         }
@@ -318,6 +322,21 @@ public void AttributionChangedCallback(AdjustAttribution attributionData) {
 </TabItem>
 
 </Tabs>
+
+## Achats web (Stripe et Paddle) \{#web-purchases-stripe-and-paddle\}
+
+Adjust reçoit les achats [Stripe](stripe) et [Paddle](paddle) en même temps que vos achats App Store et Google Play. Un achat web se produit en dehors de votre application, il n'a donc pas de plateforme mobile propre. Adapty utilise à la place la plateforme de l'acheteur. Lorsque leur profil Adapty a été créé sur l'App Store ou Google Play, l'achat web est transmis à Adjust comme s'il provenait de ce store :
+
+| Store du profil de l'acheteur | Ce qu'Adapty envoie avec l'achat |
+|:------------------------------|:---------------------------------|
+| App Store                     | Votre **App Token** et **OAuth Token** iOS, ainsi que les identifiants `idfa` et `idfv` de l'acheteur. |
+| Google Play                   | Votre **App Token** et **OAuth Token** Android, ainsi que les identifiants `android_id` et `gps_adid` de l'acheteur. |
+
+L'achat parvient à Adjust associé au même appareil que l'installation, ce qui permet à Adjust de l'attribuer à la campagne qui a amené l'utilisateur.
+
+La page d'intégration Adjust ne comporte pas de champs distincts pour Stripe ou Paddle. Les achats web réutilisent les identifiants iOS et Android de la section [Connecter Adapty à Adjust](#connect-adapty-to-adjust).
+
+Un acheteur qui n'a jamais ouvert votre application mobile n'a pas d'identifiant appareil Adjust, et son profil a été créé sur Stripe ou Paddle. Adapty envoie son achat à Adjust avec votre **App Token** iOS, sans identifiant publicitaire. Adjust n'a alors aucun identifiant permettant de relier cet achat à une installation.
 
 ## Structure des événements \{#event-structure\}
 
@@ -365,6 +384,8 @@ Where
 | `idfv`               | String  | **iOS uniquement**. ID for Vendors.                                                                                                          |
 | `callback_params`    | String  | Chaîne JSON contenant tous les [champs d'événement](webhook-event-types-and-fields#for-most-event-types) disponibles. Seuls les champs non nuls sont inclus. |
 | `partner_params`     | String  | Identique à `callback_params`.                                                                                                               |
+
+Adjust n'accepte que des paramètres de type chaîne. Ainsi, lorsqu'un achat crédite de la [monnaie virtuelle](webhook-event-types-and-fields#virtual-currency-credits), `virtual_currency_credits` dans `callback_params` et `partner_params` est une chaîne JSON, pas un tableau. Parsez-la pour lire les crédits.
 
 ## Résolution des problèmes \{#troubleshooting\}
 

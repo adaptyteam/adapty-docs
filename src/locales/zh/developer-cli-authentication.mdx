@@ -5,9 +5,9 @@ metadataTitle: "开发者 CLI 身份验证 | Adapty 文档"
 keywords: ['cli', 'developer', 'authentication', 'mcp']
 ---
 
-CLI 需要通过身份验证才能调用 Adapty API。
+CLI 需要身份验证才能调用 Adapty API。
 
-一次登录即可覆盖整个 CLI。[Ads Manager 命令](developer-cli-ads-manager)访问的是不同的服务，但使用相同的已存储令牌——无需第二次登录。
+一次登录即可覆盖整个 CLI。[广告管理器命令](developer-cli-ads-manager)访问的是不同的服务，但使用相同的存储令牌——无需第二次登录。如果账户位于 EU 服务器，登录时需要指定地区；详见[登录 EU 账户](#log-in-to-an-eu-account)。
 
 ## 登录 \{#log-in\}
 
@@ -39,25 +39,48 @@ CLI 需要通过身份验证才能调用 Adapty API。
 adapty auth login
 ```
 
+### 登录 EU 账户 \{#log-in-to-an-eu-account\}
+
+登录 [EU 服务器](eu-cluster)上的账户需要 CLI 0.30.0 或更高版本。
+
+登录 EU 账户的步骤：
+
+1. 在终端中运行：
+   ```bash
+   ADAPTY_REGION=eu adapty auth login
+   ```
+2. 在已通过 [https://app.adapty.io/eu-login](https://app.adapty.io/eu-login) 登录的浏览器中打开该链接。如果尚未在该地址登录，或者当前登录的是 US 账户，请先在该地址完成登录。
+3. 确认验证码并点击 **Authorize**，操作方式与[登录](#log-in)相同。
+
+CLI 会将区域信息与登录凭据一起保存，因此后续命令无需设置 `ADAPTY_REGION` 即可自动连接到 EU 服务器。在 `adapty auth status` 的输出中，`Region: eu` 这一行可以确认当前区域。
+
+在使用 `ADAPTY_TOKEN` 的脚本中，同时设置 `ADAPTY_REGION` 为 `us` 或 `eu`。若不设置，命令将使用该计算机上已保存登录凭据所对应的区域，而那份凭据可能属于另一个账户。
+
+如果 CLI 报告会话文件已损坏，请在设置好 `ADAPTY_REGION` 为您账户所在区域后，重新运行 `adapty auth login`。新的登录操作会替换原有文件。
+
+[广告管理器](developer-cli-ads-manager)和[归因](developer-cli-attribution)命令不适用于欧盟账户。在发送任何请求之前，这些命令会报错并停止运行，例如：`Apple Search Ads commands are not available for EU accounts.`
+
 ## 管理身份验证 \{#manage-authentication\}
 
-### 检查身份验证状态 \{#check-authentication-status\}
+### 检查认证状态 \{#check-authentication-status\}
 
-要查看当前身份验证状态，请运行：
+要查看当前的认证状态，请运行：
 
 ```bash
 adapty auth status
 ```
 
-已通过身份验证时，输出会显示您的电子邮件、经过掩码处理的令牌前缀以及本地配置文件的路径：
+认证成功后，输出会显示你的姓名、经过掩码处理的令牌前缀，以及本地配置文件的路径：
 
 ```
-Email: you@example.com
+User: Jane Doe
 Token: abcd1234****
 Config: ~/.config/adapty/config.json
 ```
 
-未通过身份验证时：
+从 CLI 0.9.1 开始，登录时只保存姓名，不保存邮箱。`Email:` 行仅在使用早期版本保存的会话中出现。在读取 `adapty auth status --json` 的脚本中，请使用 `name` 字段来标识用户。
+
+未认证时：
 
 ```
 Not authenticated. Run `adapty auth login`.
@@ -75,27 +98,33 @@ adapty auth whoami
 
 ### 退出登录 \{#log-out\}
 
-要在本地清除已存储的凭据，请运行：
+要清除本地存储的凭据，请运行：
 
 ```bash
 adapty auth logout
 ```
 
-这将清除 `~/.config/adapty/config.json`。令牌在服务器端仍然有效，直到其过期为止——如果您需要立即使其失效，请改用 `adapty auth revoke`。
+这将清除 `~/.config/adapty/config.json` 以及由 `adapty migrations create` 或 `adapty migrations use` 保存的迁移记录。令牌在服务端仍然有效，直到其自然过期——如果需要立即使令牌失效，请改用 `adapty auth revoke`。
 
-### 撤销您的令牌 \{#revoke-your-token\}
+### 撤销令牌 \{#revoke-your-token\}
 
-要在服务器上使令牌失效并在本地将其清除，请运行：
+要在服务器端使令牌失效并清除本地令牌，请运行：
 
 ```bash
 adapty auth revoke
 ```
 
-当您希望完全使令牌失效时（例如您的凭据可能已泄露），请使用此命令。撤销后，请运行 `adapty auth login` 重新进行身份验证。
+如果该令牌保存了迁移记录，CLI 也会一并清除，但前提是服务器确认撤销成功。当你需要完全使令牌失效时（例如凭据可能已泄露），请使用此命令。撤销后，运行 `adapty auth login` 重新进行身份验证。
+
+## Token 有效期 \{#token-lifetime\}
+
+`adapty auth login` 生成的 token 自登录起有效期为 90 天。使用 token 并不会延长有效期，CLI 也没有刷新 token 的机制。Token 过期后，CLI 命令会返回 401 错误，届时需要重新在浏览器中登录。
+
+定时任务在无人审批登录的情况下无法自动续期 token。对于此类任务，请改用 [Export Analytics API](export-analytics-api)，它通过应用的 secret API key 进行认证。
 
 ## 令牌错误 \{#token-errors\}
 
-如果令牌被撤销或变为无效，CLI 命令将返回 401 错误。要重新进行身份验证，请运行：
+如果令牌被撤销、过期或失效，CLI 命令将返回 401 错误。要重新认证，请运行：
 
 ```bash
 adapty auth login

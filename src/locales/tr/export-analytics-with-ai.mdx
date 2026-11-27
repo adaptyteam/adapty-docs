@@ -1,74 +1,273 @@
 ---
-title: "Analitik verileriniz hakkında YZ'ye sorun"
-description: "Export Analytics API'yi kullanarak düz dille bir YZ kodlama ajanı aracılığıyla Adapty analizlerinizi sorgulayın."
-metadataTitle: "Analitik Verileriniz Hakkında YZ'ye Sorun | Adapty Dokümanları"
-keywords: ['yapay zeka analitik sorgula', 'adapty analitik yapay zeka', 'yapay zeka ile analitik sorgula', 'export analytics api', 'analitik yapay zeka ajanı', 'mcp', 'llm']
+title: "Uygulamanızı growth-advisor skill'i ile denetleyin"
+description: "AI ajanınızın Adapty verilerinizi, fiyatlarınızı ve onboarding'inizi piyasayla karşılaştırarak denetlemesi, geliştirdiğiniz hipotezleri AI Growth Advisor'a kaydetmesi ve A/B testlerini kurması için growth-advisor skill'ini yükleyin."
+metadataTitle: "Growth Advisor Ajan Skill'i | AI Growth Advisor | Adapty Dokümanları"
+keywords: ['analitik hakkında ai''ya sor', 'adapty analitik ai', 'ai ile analitik sorgula', 'adapty cli', 'analitik ai ajan', 'mcp', 'llm']
 ---
-Adapty analitiğiniz hakkında düz dille bir yapay zeka kodlama ajanına soru sorun — gelir, dönüşümler, elde tutma, LTV — ve sayıları sizin için çeksin. [Export Analytics API](https://adapty.io/docs/tr/export-analytics-api.md)'ye API çağrısı yapabilen bir araç yönlendirin; metriklerinizi isteğe bağlı olarak sorgulasın.
-## Ne hakkında soru sorabilirsiniz \{#what-you-can-ask-about\}
 
-Export Analytics API, Adapty kontrol paneli grafiklerinde gördüğünüz metriklerin aynısını döndürür. Her metriğin kendine ait bir işlemi vardır:
-| Metrik | Kapsadığı alan | İşlem |
-| --- | --- | --- |
-| Gelir, MRR, ARR, ARPU | Dönem, ülke veya kampanyaya göre gruplandırılmış, zaman içinde kazanılan para | [retrieveAnalyticsData](https://adapty.io/docs/tr/api-export-analytics/operations/retrieveAnalyticsData.md) |
-| Kohort tutma | Belirli bir kohorttan abonelerin ne kadar süre ödeme yaptığı | [retrieveCohortData](https://adapty.io/docs/tr/api-export-analytics/operations/retrieveCohortData.md) |
-| Dönüşüm oranları | Kaç kullanıcının bir adımdan veya kanaldan bir sonrakine geçtiği | [retrieveConversionData](https://adapty.io/docs/tr/api-export-analytics/operations/retrieveConversionData.md) |
-| Kayıp ve huni | Kullanıcıların nerede ayrıldığı ve abonelikten ne kadar hızlı çıktığı | [retrieveFunnelData](https://adapty.io/docs/tr/api-export-analytics/operations/retrieveFunnelData.md) |
-| Yaşam boyu değer (LTV) | Zaman içinde kullanıcı segmenti başına ortalama gelir | [retrieveLTVData](https://adapty.io/docs/tr/api-export-analytics/operations/retrieveLTVData.md) |
-| Elde tutma | Belirli sayıda gün sonra hâlâ aktif olan kullanıcıların oranı | [retrieveRetentionData](https://adapty.io/docs/tr/api-export-analytics/operations/retrieveRetentionData.md) |
-API referansının tam parametre ve filtre listesi için [API referansına](https://adapty.io/docs/tr/api-export-analytics.md) bakın.
+growth-advisor skill'i, kendi abonelik rakamlarınızdan "sıradaki ne test etmeliyim?" sorusunu yanıtlar. AI kodlama aracınız analizlerinizi, fiyatlarınızı, placement'larınızı, flow'larınızı ve geçmiş A/B testlerinizi okur; işinizin her bölümünü piyasayla karşılaştırarak puanlar ve risk altındaki parayı baz alarak sıralanmış kısa bir hipotez listesi döndürür. Onayladığınız hipotezler, ekibinizin görebileceği [AI Growth Advisor](autopilot) sayfasına kaydedilir. Birini seçtiğinizde skill, A/B testinin ihtiyaç duyduğu her şeyi oluşturur, testi kurar ve sonuç geldiğinde sizinle birlikte üzerine döner.
+
+:::note
+growth-advisor, onayınız olmadan hesabınızda hiçbir şeyi değiştirmez. Tüm okuma işlemleri salt okunurdur; her yazma işlemi — bir flow kopyası, bir segment, bir ürün, bir fiyat, bir A/B testi, bir placement değişikliği — sizin onayınızı bekler.
+:::
+
+## Ne sorabilirsiniz \{#what-you-can-ask\}
+
+Bir iş arkadaşına bilgi verir gibi sorun. Skill adını belirtmenize gerek yok:
+
+```
+Audit my app. What should I test next to grow revenue?
+
+Revenue dropped last month. Why?
+
+Is our annual plan too cheap in Germany?
+
+My A/B test on the onboarding paywall ended. What now?
+
+Where do users leave our onboarding?
+
+How does our onboarding compare with other apps?
+
+I have three ideas: a weekly plan, a trial on annual, and a second placement.
+Which one should I test first?
+
+Which country refunds the most, and do people who start a trial renew better?
+
+Here's our App Store link. Where are we losing money?
+
+How did this week go?
+
+What's in my backlog?
+
+Check my app every Monday and tell me if something is off.
+```
+
+Bir sayınızla ilgili soru, sayınızdan yanıt alır; herhangi bir denetim eklenmez. "Bu hafta nasıl geçti?" sorusu, bir denetim yerine [sağlık kontrolü](#health-check) alır. Henüz verisi olmayan bir uygulama, Adapty'nin State of Paywalls 2026 raporundaki piyasa medyanlarından oluşturulan bir başlangıç planı alır; her sayı tahmin olarak etiketlenir.
+
+<AgentChat title="growth-advisor" caption="Örnek bir uygulamayla örnek konuşma. Sizin sayılarınız farklı olacaktır.">
+<ChatTurn role="user">Geçen ay gelir düştü. Neden?</ChatTurn>
+<ChatTurn role="tool" summary="4 salt okunur komut çalıştırıldı">
+
+- `adapty analytics chart --chart revenue --compare-from 2026-08-01 --compare-to 2026-08-31`
+- `adapty analytics chart --chart revenue --group-by store`
+- `adapty analytics chart --chart subscriptions_new --group-by store`
+- `adapty analytics chart --chart subscriptions_expired --group-by cancellation_reason`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+**Geliriniz düştü çünkü daha az kişi satın aldığı için değil, Google Play'de daha az kişi yenilediği için.**
+
+New subscriptions held steady in September. Renewals on Google Play fell by a third, while the App Store didn't change. Most of the lost renewals are monthly subscribers whose payment failed.
+
+**Sonraki adımlar**
+
+1. Sen: Eylül başında Google Play faturalama ayarlarında herhangi bir değişiklik oldu mu?
+2. Ben: Ayrılan aylık aboneleri geri kazanmak için hipotezler önerebilirim. İster misin?
+
+</ChatTurn>
+</AgentChat>
+
 ## Başlamadan önce \{#before-you-start\}
 
-Üç şeye ihtiyacınız var:
-- **Veri içeren bir Adapty hesabı**: API, kontrol panelinizin grafiklerindeki metriklerin aynısını döndürür; bu nedenle uygulamanızın zaten analitik verileri toplaması gerekir.
-- **Gizli bir API anahtarı**: [App settings → General](https://app.adapty.io/settings/general) sayfasındaki **Secret key** alanında bulabilirsiniz. Anahtarlar uygulamaya özgüdür; her uygulama için ayrı bir anahtar kullanın. Ajanınızın sohbete yapıştırmanıza gerek kalmadan okuyabilmesi için anahtarı bir ortam değişkeninde saklayın (örneğin `ADAPTY_SECRET_KEY`).
-- **API çağrısı yapabilen bir yapay zeka aracı**: Örneğin Claude Code, Cursor veya fetch aracına sahip Claude Desktop. claude.ai veya ChatGPT gibi sıradan sohbet araçları API'yi doğrudan çağıramaz.
-<ZoomImage id="export-analytics-secret-key.webp" width="700px" alt="Adapty Uygulama ayarları Genel sayfasında Secret key alanındaki gizli API anahtarı" />
-## Aracınıza API Spesifikasyonunu Tanıtın \{#give-your-agent-the-api-spec\}
+- **Veri içeren bir Adapty hesabı**: Skill, kontrol panelinizin gösterdiği analizleri okur. Veri yoksa başlangıç planı sunar. Hesap yoksa, bunun yerine gönderdiğiniz verilerden çalışır (bkz. [Adapty hesabı olmadan](#without-an-adapty-account)).
+- **Adapty hesabınıza erişen bir yapay zeka aracı**: Skill, [Adapty CLI](developer-cli-analytics) veya [Adapty MCP sunucusu](adapty-mcp) üzerinden çalışır. CLI'yi tercih eder çünkü denetim okumalarını onun üzerinden yapar. Claude Code, Codex, Copilot CLI veya Gemini CLI gibi bir kodlama ajanı ya da CLI'nin [her konuşmada kurulum](developer-cli-cowork) gerektirdiği claude.ai kullanın. Yalnızca MCP ile skill, CLI kurulumunu teklif eder; reddederseniz okumaları MCP üzerinden yapar ve çalışmayanları bildirir.
 
-[OpenAPI spesifikasyonu](https://adapty.io/docs/tr/api-specs/export-analytics-api.yaml), her endpoint'i, kimlik doğrulama başlığını, istek gövdesini ve örnek yanıtları açıklar. Aracınız bu spesifikasyona sahip olduğunda, siz hiç kod yazmadan doğru istekleri oluşturabilir.
+## Skill'i yükleyin \{#install-the-skill\}
 
-Spesifikasyonu URL ile aracınıza tanıtın:
-- **URL'yi yapıştırın**: Aracınız URL'leri getirebiliyorsa, `https://adapty.io/docs/tr/api-specs/export-analytics-api.yaml` adresini verin ve spec'i okumasını isteyin.
-- **Bir fetch aracı kullanın**: Aracınızda URL'leri getiren bir araç varsa (örneğin, bir MCP fetch sunucusu), aynı URL'yi gösterin.
+growth-advisor, [Adapty eklentisinin](manage-adapty-with-ai) bir parçasıdır.
 
-Spec, temel URL'yi `https://api-admin.adapty.io` olarak ayarlar; dolayısıyla anahtarınız ortamda olduğunda aracınızın ihtiyacı olan her şey hazır olur.
-## Verileriniz Hakkında Soru Sorun \{#ask-about-your-data\}
+<AdaptySkillsInstall />
 
-Spec yüklenmiş ve anahtarınız bir ortam değişkeninde tanımlıyken, istediğiniz metriği düz dille anlatın.
+## Denetim nasıl çalışır \{#how-the-audit-works\}
 
-Örnek komutlar:
-```
-What was my MRR at the end of each month this year, and how does it compare to last year?
+Belirli bir soru sormadan ne yapman gerektiğini sorduğunda, skill bir denetim başlatır. Yalnızca en son değişenlere değil, son altı aydaki tüm işleyişe bakar; zira uzun süredir zayıf olan bir alan, yakın zamandaki geçici bir düşüşten daha fazla maliyet yaratır.
 
-Show my trial-to-paid conversion rate for the last 90 days, broken down by product.
+1. **Uygulamanızın nasıl para kazandığı**: Skill, gelir getiren mağazayı, ana pazarınızı, gelire göre ana ürününüzü ve her placement'ın şu anda neyi gösterdiğini bulur. Yanıt parayla açılır: uygulamanız ne kadar kazanıyor ve bu para nereden geliyor.
+2. **Daha önce ne denediniz**: Skill, geçmişteki paywall ve flow A/B testlerinizi tarihleri, kitleleri ve sonuçlarıyla listeler; ayrıca test yapılmadan yan yana çalışan paywall'ları tespit eder. Test geçmişinizi yazmanıza gerek yok; yanıt bunu doğrudan aktarır, siz yalnızca yanlış olanı düzeltirsiniz.
+3. **Bir karne**: Skill, işin her bölümünü güçlü, tipik veya zayıf olarak değerlendirir: paranın nereden geldiği, kurulumdan ödemeye uzanan huni, plan karması, yenilemeler, iadeler ve placement kurulumunuz. Huni, paywall erişimiyle başlar; yani kurulumların paywall'ı hiç görmesi oranıyla. Paywall görüntüleme → deneme ve paywall görüntüleme → ödeme geçişlerini derecelendirir. İadeler plan süresine göre ayrıştırılır. En iyi ülkelerinizin her biri kendi bölgesiyle kıyaslanır; böylece zayıf bir ülke ana bulgu olabilir. Dönüşümler, Adapty'nin State of Paywalls 2026 raporundaki plan, bölge ve kategori ızgarasına göre; yenilemeler ve iadeler ise Adapty'nin State of In-App Subscriptions 2026 raporuna göre değerlendirilir. Zayıf alanlar, aylık etkilenen gelire göre sıralanır.
+4. **Neden**: Skill, en büyük sinyali mağaza, attribution kanalı, plan süresi, ülke veya hafta bazında tek bir grup açıklayana kadar takip eder. Trafiği veya belirli bir değişikliği suçlamadan önce diğer olası nedenleri doğrular.
+5. **Ekranlar**: Bir ekran hakkında bir şey söylemeden önce skill, canlı flow'u render eder; flow söz konusuysa kullanıcıların hangi ekranda ayrıldığını bulmak için hunisini okur. Bir onboarding flow'u için ayrıca huniyi onboarding medyanlarıyla karşılaştırır (bkz. [Onboarding incelemesi](#onboarding-review)). Uygulamanızın kendi çizdiği bir paywall için ekran görüntüsü gerekir. Denetim, ihtiyaç duyduğu ekran görüntülerini **Send me screenshots** altında listeler ve her birinin hangi hipotezi çözdüğünü belirtir.
 
-Which countries drive the most revenue from my yearly subscription? Top 10.
+## Ne Alırsınız \{#what-you-get-back\}
 
-How is week-1 retention trending for subscribers who started in the last 6 months?
+Skill, kısa bir yanıt ve puan kartının ardından placement'lara göre gruplandırılmış hipotezlerin listesini test edilecekleri sıraya göre sunar. Her hipotez; uygulamanızın buna neden ihtiyaç duyduğunu, hangi sonucun beklendiğini ve bu tahminin nereden geldiğini, değişikliğin aylık dolar cinsinden ne anlam ifade ettiğini, satın alma hacminize göre A/B testinin ne kadar süreceğini ve kimin ne yapacağını açıklar. Bir hipotez, bir placement'taki herkesi veya eski aboneler gibi belirli bir [segment](segments)'i hedefleyebilir.
 
-What's the refund rate on my annual plan since launch, by month?
+Sayılarınız Adapty'nin çözdüğü bir soruna işaret ettiğinde, yanıt sonraki adımlarda ilgili özelliği en fazla bir tane olmak üzere adlandırır. Örneğin, gönüllü iptallerle birlikte düşük yenileme oranları [Retention Messaging](retention-messaging) özelliğini gündeme getirir; yüksek iade payı [Refund Saver](refund-saver) özelliğini önerir; ücretli deneme sürümlerinin organik deneme sürümlerine kıyasla çok daha düşük dönüşüm oranı ise reklam ağlarının optimize ettiği deneme olaylarını, örneğin Meta'nın [Qualified trial](ua-facebook) etkinliğini göndermeyi gündeme getirir.
 
-Compare LTV for paid-campaign users vs. organic over the last year, and export it as CSV.
-```
+Refund Saver'ın ne kadar tasarruf sağladığını sorduğunuzda, skill Refund Saver'ın koruduğu tutarı ve kazanma oranını okur. İkisini de iade tutarlarınızla karşılaştırır. Refund Saver bir uygulamada para kazandırmışsa, skill diğer uygulamalarınızı okur ve Refund Saver'ın kapalı olduğu yerlerde açmayı teklif eder. Onayınız üzerine [refund-saver skill](refund-saver-skill) değişikliği yapar.
 
-Agent, isteğinizi doğru işleme eşler, anahtarı ortam değişkeninden okur ve veriyi döndürür. Yanıtlar varsayılan olarak JSON formatındadır. Elektronik tabloya hazır bir dosya istediğinizde CSV isteyin — agent, istek gövdesinde `format` değerini `csv` olarak ayarlar.
+<AgentChat title="growth-advisor" caption="Örnek bir uygulama ile örnek konuşma. Sizin rakamlarınız ve hipotezleriniz farklı olacaktır.">
+<ChatTurn role="user">Uygulamamı denetle. Geliri artırmak için sıradaki ne test etmeliyim?</ChatTurn>
+<ChatTurn role="tool" summary="Denetim okumaları çalıştırıldı">
+
+- `adapty apps list`
+- `adapty analytics chart --chart revenue --group-by country`
+- `adapty analytics chart --chart revenue --group-by duration`
+- `adapty analytics conversion --conversion trial-paid --granularity month`
+- `adapty ab-tests list --type flow`
+- `adapty placements get <placement-id>`
+- `adapty product-prices list --product <product-id> --csv`
+- `adapty flows config get <flow-id>`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+**Uygulamanız tipik bir ABD uygulaması gibi dönüşüm sağlıyor; ucuz yıllık plan ve kaybedilen yenilemeler gelirin büyük bölümünü götürüyor.**
+
+| Bölüm | Sizin | Karşılaştırma | |
+|---|---|---|---|
+| Paywall görüntüleme → ödeme | 3.1% | 2.75% ABD medyanı | tipik |
+| Deneme → ödeme | 29% | 26.2% ABD medyanı | güçlü |
+| Yıllık fiyat | **$29.99** | ABD fotoğraf uygulamaları 10. yüzdelik | zayıf |
+| İlk yenileme, aylık | 41% | 6 ay önceki 58% | zayıf |
+
+Yıllık plan, ABD fotoğraf uygulamalarının %90'ından ucuz; dönüşüm oranınız ise medyanın üzerinde.
+
+Verilerinizden: Temmuz'da iki onboarding flow'u test ettiniz ve "Main" olanı bıraktınız.
+
+**Önerilen hipotezler**
+
+`onboarding` placement'ında:
+
+**1. Onboarding'deki $29,99'luk 'Annual' ürününü App Store'dan ABD'li kullanıcılar için $33,99'luk bir kopyayla değiştirin**
+
+- **Neden:** Yıllık planınız, ABD fotoğraf uygulamaları arasında en ucuz yüzde onluk dilimde yer alırken, paywall'ınız ortalamanın üzerinde dönüşüm sağlıyor; bu yüzden A/B testi, $33,99'ın kullanıcı başına daha fazla kazandırıp kazandırmadığını test edecek.
+- **Beklenti:** İadeler dahil kullanıcı başına gelirle ölçülen ARPU'da %15–25 artış. Adapty'nin gerçek abonelik A/B testleri kütüphanesinde Tier-1 pazarlardaki fiyat artışları genellikle kazanıyor.
+- **Süre:** Bu placement'ta haftada yaklaşık 110 satın alma ile yaklaşık 4 hafta. Yenilemeler henüz görünmeyeceğinden test, ilk yıl geliri ve iadeler üzerinden değerlendirilecek.
+- **Kim:** Ben: ürün metnini oluşturacak, App Store'a göndereceğim, flow metnini hazırlayacak ve A/B testini kuracağım. Siz: yeni ürün ID'sini onaylayacak ve flow metnini yayınlayacaksınız.
+
+**Sonraki adımlar**
+
+1. Siz: bunlardan hangilerini biriktirme listenize eklemek istediğinizi, hangilerini atlamak istediğinizi söyleyin. Bir tanesini atlarsanız nedenini belirtin, böylece ileride daha iyi öneriler sunabilirim. Biriktirme listeniz Adapty kontrol panelinde görünür ve bir dahaki seferinde oradan başlarım.
+2. Ben: 1'i ekledikten sonra, "Annual 2"yi 33,99 $'a oluşturun. 1 ile başlardım, çünkü her yeni kullanıcı bunu görür. İster misiniz?
+
+</ChatTurn>
+<ChatTurn role="user">1'i ekle ve onunla başla.</ChatTurn>
+<ChatTurn role="confirm" summary="Bir ürün kopyası oluştur">
+
+**Annual 2**'yi, "Annual"ın 33,99 $ (ABD) fiyatlı bir kopyası olarak `com.app.annual2` store ürün kimliğiyle oluşturalım mı? Store ürün kimliği kalıcıdır. Mevcut ürün ve aboneleri olduğu gibi kalır.
+
+1. Evet
+2. Hayır, önce bir şeyi değiştir
+
+</ChatTurn>
+</AgentChat>
+
+Hangi hipotezle başlayacağını sen seçersin. Emin değilsen, skill kendi tercihini ve nedenini belirtir.
+
+## Biriktirici listeniz \{#your-backlog\}
+
+Sakladığınız hipotezler, Adapty'deki uygulamanızın biriktirici listesine kaydedilir. Ekibiniz bu listeyi kontrol panelindeki [AI Growth Advisor](autopilot) sayfasında görebilir; skill ise bir sonraki görüşmenizde buradan başlar.
+
+Her hipotez listesinin ardından skill, hangilerini biriktirici listenize ekleyeceğinizi ve hangilerini atlayacağınızı sorar:
+
+- **Eklendi**: Backlog'a kaydedildi. Skill bir hipotez için kurduğu her A/B testini bununla ilişkilendirir; böylece kontrol paneli hipotez üzerindeki testin durumunu gösterir.
+- **Atlandı**: Verdiğiniz gerekçeyle kaydedilip arşivlenir; skill onu bir daha önermez. Neden atladığınızı belirtin: "bunu denedik" derseniz skill o değişikliğin bir sonraki adımını önerir. "Şimdi değil" şeklinde atlanan bir hipotez backlog'da kalır.
+
+Yanıt vermemek hiçbir şeyi kaydetmez. Skill, eski görünse bile bir hipotezi kendi başına asla arşivlemez.
+
+Henüz mevcut olmayan bir placement'a ilişkin hipotez (örneğin, bir takip teklifi), flow'u yayınlandıktan ve skill o placement'ı oluşturduktan sonra backloga eklenir.
+
+Geri döndüğünüzde, skill yeni bir şey önermeden önce backlog'u okur. Önce yapılması gerekenleri söyler: durdurulmaya hazır olan aktif bir test, sonuçsuz kapanan bir test veya flow'u ya da placement'ı silinmiş bir hipotez. Backlog'da, test aşamasında veya test edilmiş durumda olan bir hipotezi yeniden önermez. Kaydettiğiniz hipotezleri görmek için "Backlog'umda ne var?" diye sorabilirsiniz.
+
+## Sağlık kontrolü \{#health-check\}
+
+"Bu hafta nasıl geçti?" veya "Uygulamada bir sorun var mı?" gibi sorular denetim değil, sağlık kontrolü başlatır. Skill, gelir, yeni ücretli abonelikler, yeni denemeler, kurulumlar ve iadeler için son 7 günü uygulamanızın normal bir haftasıyla ya da son 28 günü önceki 28 günle karşılaştırır. Yanıt bir kararla başlar: normal bir hafta mı, yoksa başladığı gün ve şimdiye kadar neden olduğu parasal kayıpla birlikte en maliyetli değişiklik mi. Sağlık kontrolü sizi piyasayla karşılaştırmaz ve hipotez önermez. Bir değişiklik tespit edildiğinde skill nedenini bulmayı teklif eder; normal bir haftada ise sırada ne test edileceğini önerir.
+
+Haftada bir sağlık kontrolü almak için bkz. [Yinelenen kontrolleri zamanlama](growth-advisor-recurring-checks).
+
+## Onboarding incelemesi \{#onboarding-review\}
+
+"Kullanıcılar onboarding'imizin neresinde ayrılıyor?" veya "Onboarding'imiz diğer uygulamalarla nasıl karşılaştırılıyor?" diye sorduğunuzda, skill onboarding flow'unuzu [huni](flow-funnel) verilerinden inceleyerek değerlendirir. Rakamlarınızı, Adapty'nin [State of Onboarding 2026](https://adapty.io/state-of-onboarding/report/) raporundaki kategori ve ana bölge medyanlarıyla karşılaştırır:
+
+- **Paywall erişimi**: Onboarding'i başlatan ve paywall'a ulaşan kullanıcıların oranı.
+- **Denemeler ve satın almalar**: Onboarding'i başlatan kullanıcı başına.
+- **Her ekrandaki çıkış oranı**: Aynı konumdaki olağan çıkış oranıyla karşılaştırmalı. Tipik bir uygulamada ilk ekran kullanıcıların yaklaşık %10'unu, sonraki her ekran ise %2 veya daha azını kaybeder; dolayısıyla %10 kayıp veren bir soru ekranı, ilk ekran daha fazla kullanıcı kaybetse bile dikkat çeker.
+
+Düşük tamamlama oranı tek başına zayıf bir nokta sayılmaz: Sağlık ve Spor uygulamalarındaki kullanıcılar ile ABD'li kullanıcılar onboarding'i en az tamamlayanlar arasındadır, ancak en çok ödeme yapanlar da onlardır.
+
+Boşluklardan hareketle skill, hipotezler önerir:
+
+| Huninin gösterdiği | Skill'in önerdiği |
+|---|---|
+| İlk ekran beklenenden fazla kullanıcı kaybediyor | İlk ekranı reklamınızda veya mağaza sayfanızda vaat ettiğinizle örtüştürün ya da her reklam kampanyasına kendi ilk ekranını gösterin |
+| Sonraki bir ekran beklenenden fazla kullanıcı kaybediyor | O ekranı değiştirin. Uygulamanızın ileride kullandığı bir soru yeniden ifade edilir veya taşınır, kaldırılmaz |
+| Kullanıcılar paywalla ulaşıyor ama beklenenden azı satın alıyor | Paywallı, bir render'ından veya ekran görüntüsünden başlayarak gözden geçirin |
+| Cevapları hiçbir sonraki ekranın ve paywallın kullanmadığı bir quiz | Cevapları [özel nitelikler](setting-user-attributes) olarak kaydedin ve her gruba kendi paywallını gösterin |
+| Kategoriniz için olağandışı kısa bir flow ve hiç soru yok | Mevcut flow'a karşı kısa bir quiz içeren daha uzun bir flow test edin |
+
+Bir ekranda neyin değiştirileceği, o ekranın bir render'ı üzerinde çalıştırılan onboarding-teardown skill'inden gelir. Her hipotez, onboarding'i kaç kullanıcının tamamladığına göre değil, onboarding'i başlatan kullanıcı başına düşen satın alma sayısına göre değerlendirilir.
+
+Skill, bir flow'u onboarding olarak yalnızca ilk paywallından önce ekranlar bulunduğunda inceler. Doğrudan paywallında açılan bir flow, "Onboarding" olarak adlandırılmış olsa bile paywall olarak incelenir.
+
+## Fiyatlar \{#prices\}
+
+Skill, her ürünün her ülke ve mağazada ne kadara satıldığını, mağazanın uyguladığı şekilde yerel para birimiyle okur. Ardından her fiyatı, Adapty'nin State of In-App Subscriptions raporundaki fiyat endeksiyle karşılaştırır: 22 ülkede kategoriniz ve planınız için 10. ile 90. yüzdelik dilim arasındaki aralık. Diğer ülkeler için ise skill, bölgeyle ya da o ülkenin kendi geçmişiyle kıyaslama yapar.
+
+Bunun sonucunda skill, diğer hipotezlerle aynı listede şu fiyat hipotezlerini önerebilir:
+
+- **Ana planınızın temel fiyatını artırın veya düşürün** ve bunu ana pazarınıza uygulayın.
+- **Tek bir ülkedeki fiyatı artırın veya düşürün** — o ülkenin fiyatı ana pazarınızla uyumsuzsa. Tek bir pazardaki boşluk için skill, önce paywall'ın o pazarın dilinde olup olmadığını doğrular.
+- **Plan kademesini değiştirin** — yıllık fiyat haftalık veya aylığa kıyasla çok fazla ya da çok az olduğunda.
+
+Skill, yalnızca ABD, İngiltere, Almanya veya Japonya gibi 1. Kademe pazarlarda fiyat artışı önerir; Adapty'nin A/B testi kütüphanesinde aynı artış diğer pazarlarda başarısız olmuştur. Yeni fiyat, mağazanın şu an uyguladığı fiyattan başlar ve €38,99 gibi alıcıların beklediği bir fiyat noktasında sonuçlanır. Skill, rakiplerin fiyatlarını okumaz.
+
+A/B testi, canlı ürün üzerinde değil, ürünün bir kopyası üzerinde çalışır. Skill kopyayı oluşturur, mağazaya gönderir, fiyatlarını ayarlar, onu satan flow kopyasını oluşturur, bir ülke segmenti ve A/B testi kurar. Kazanan fiyat daha sonra orijinal ürüne taşınır. Mevcut aboneler, taşınmalarını istemediğiniz sürece kendi fiyatlarında kalır.
+
+Canlı bir fiyatı test etmeden değiştirmek istiyorsanız bunu isteyin. Skill mevcut fiyatları bir dosyaya kaydeder, böylece geri yükleyebilirsiniz; yeni fiyatları önizler ve her mağazanın bunları ne zaman uygulayacağını söyler.
 
 :::warning
-Gizli anahtarınızı ortam değişkeninde saklayın — sohbete yapıştırmayın ya da bir kurallar dosyasına kaydetmeyin. Anahtarlar uygulamaya özel olduğundan, sızma durumunda **Settings → General** bölümünden anahtarınızı yenileyin. Bkz. [API anahtarlarını yenileme](https://adapty.io/docs/tr/export-analytics-api-authorization.md).
+Fiyatlar yalnızca Adapty'ye bağlı bir mağaza için okunabilir. App Store'da bunun için [App Store Connect API anahtarı](app-store-connect-api-key) gereklidir; yalnızca Uygulama İçi Satın Alma anahtarı yetmez.
 :::
-## Tekrarlayan kullanım için bir kez ayarlayın \{#set-up-once-for-repeated-use\}
 
-Her oturumda tekrar ayarlama yapmamak için spec ve key'i ajanınızın yeniden kullanabileceği bir yere kaydedin:
-- **Spec linkini kaydedin**: Spec URL'sini ajanınızın kurallar veya bellek dosyasına ekleyin (örneğin bir `CLAUDE.md` ya da Cursor kurallar dosyası), böylece her oturumda otomatik yüklenir.
-- **Anahtarı ortam değişkenlerinizde saklayın**: `ADAPTY_SECRET_KEY`'i shell profilinizde veya aracın gizli deposunda tutun, böylece bir daha yapıştırmanıza gerek kalmaz.
-- **Yeniden kullanılabilir prompt'ları kaydedin veya özel bir beceri oluşturun**: Sık kullandığınız soruları kayıtlı prompt olarak tutun ya da bunları özel bir beceri veya slash komutuyla sarmalayın; böylece ajanınız raporları isteğe bağlı çalıştırır.
-## Sınırlamalar \{#limits\}
+## Hipotezden A/B testine \{#from-hypothesis-to-ab-test\}
 
-Bu kısıtlamaları aklınızda bulundurun:
+Her hipotez için skill bir A/B testi önerir ve kurulumunu gerçekleştirmeyi teklif eder. Bunu yapmadan önce, testin ihtiyaç duyduğu her şeyin mevcut olup olmadığını doğrular; eksik olanları ve bunların kim tarafından oluşturulması gerektiğini belirtir:
 
-- **Hız sınırı**: API, API anahtarı başına saniyede 2 istek yapılmasına izin verir. Bu sınırı aşmanız durumunda `429 Too Many Requests` hatası döner. Aracınıza `429` alındığında bekleyip tekrar denemesini söyleyin.
-- **Uygulamaya özel anahtarlar**: Her anahtar yalnızca bir uygulama için çalışır. Birden fazla uygulamadan veri çekmek için her biri için ilgili anahtarı sağlayın.
-- **Çıktı formatı**: Yanıtlar varsayılan olarak JSON formatındadır. CSV dışa aktarımı için istek gövdesinde `format` değerini `csv` olarak ayarlayın.
+| Testin ihtiyacı | Kim yapar |
+|---|---|
+| Değiştirilmiş bir flow: yeni tasarım, metin veya ürün seti | Skill, [flow-generator skill](flow-generator-skill) aracılığıyla flow'un bir kopyasını oluşturur; hipotez başına bir değişiklik yapılır, böylece test o değişikliğin etkisini gösterir. Kopyayı yayınlamadan önce skill, [flow-audit skill](flow-audit-skill) ile kopyayı incelemeyi teklif eder. Bir flow, yalnızca yayınlandıktan sonra teste katılabilir. |
+| Yeni bir plan süresi | Skill, ürünü oluşturur ve mağaza ürün kimliklerini ve USD fiyatını onaylamanızın ardından App Store Connect ile Google Play Console'a iletir. |
+| Bir fiyat testinin ürün kopyası | Skill kopyayı oluşturur, iletir ve fiyatlarını belirler. Yeni mağaza ürün kimliğini siz onaylarsınız. |
+| Bir deneme süresi veya teklif | App Store Connect veya Google Play Console'da siz oluşturursunuz. App Store'da deneme süresi yeni bir ürün gerektirir; Google Play'de ise mevcut plan üzerinde bir teklif olarak eklenir. Skill'e mağaza teklif kimliğini verdikten sonra, skill teklifi Adapty'deki ürüne ekler. |
+| Adapty'de zaten bulunan ürünlerden oluşan bir paywall | Skill oluşturur. |
+| Yeni tasarımlı bir paywall | [Paywall Builder](adapty-paywall-builder)'da siz yaparsınız. |
+| Bir segment | Skill, audiences skill aracılığıyla oluşturur. |
+| Yeni bir placement | Skill, geliştirici kimliğini onaylamanızın ardından oluşturur. Uygulamanızın bunu çekebilmesi için bir kod değişikliği ve yeni bir sürüm yayınlaması gerekir. |
 
-Kimlik doğrulama ve istek kurallarının tamamı için [Yetkilendirme ve istek formatı](https://adapty.io/docs/tr/export-analytics-api-authorization.md) sayfasına bakın.
+Her parçanın hazır olup olmadığını skill sizin onayınızı bekler. Sizin yapmanız gereken bir parça varsa, skill'in **Next steps** listesinde bu belirtilir; parçanın hazır olduğunu söylediğinizde skill testi kurar. Henüz var olmayan bir parçayla asla test kurmaz.
+
+Tüm parçalar hazır olduğunda, [ab-tests skill](ab-tests-skill) testi taslak olarak oluşturur. Testi başlatmadan önce kimin neyi göreceğini tam olarak gösterir. [A/B testi](ab-tests) varsayılan seçenektir ve değişikliğin ne yaptığını ölçmenin tek yoludur.
+
+Testi olmadan değişikliği görmek için bunu isteyin. Skill, değişikliği yeni bir placement'ta veya mevcut bir placement'ın bazı ya da tüm kullanıcılarına gösterebilir. Skill, mevcut bir placement'ı değiştirmeden önce geri yükleyebilmeniz için placement'ı bir dosyaya kaydeder. Ayrıca placement'ta çalışan tüm A/B testlerini isimlendirir. Değişiklik bu testi etkilemez. Backlog'da hipotez, test yapılmadan uygulanmış olarak görünür. Beklenen süre geçtikten sonra skill, değişiklikten önceki ve sonraki haftaları karşılaştırır ve işe yarayıp yaramadığını size sorar.
+
+## Bir A/B testi sona erdiğinde \{#when-an-ab-test-ends\}
+
+Skille testin sona erdiğini söyleyin. Skill testi bulur, her varyantın gelirini ve en iyi olma olasılığını gösterir, ardından hangi varyantın kazandığını sorar. Öne çıkan varyant, siz belirtmedikçe kazanan sayılmaz: varyant başına yaklaşık 200'den az satın alma varsa test henüz sonuçlanmamıştır. Test hâlâ aktifse skill, belirlediğiniz kazananla birlikte testi durdurmayı önerir ve ardından o placement için bir sonraki hipotezi önerir. Verdiğiniz sonuç hipoteze kazandı, kaybetti veya sonuçsuz olarak kaydedilir.
+
+Bir test çalışırken, skill her varyantın yaklaşık 200 satın almaya ne kadar uzakta olduğunu söyler; hangisinin önde olduğunu değil.
+
+## Adapty hesabı olmadan \{#without-an-adapty-account\}
+
+App Store veya Google Play linkini, uygulamanın kodunu ya da onboarding ve paywall ekran görüntülerini gönderin; daha fazla gelir elde etmek için ne yapmanız gerektiğini sorun. Skill, gönderdiğiniz verilerden, pazar medyanlarından ve Adapty'nin A/B testi kütüphanesinden yola çıkarak eksiksiz bir yanıt verir:
+
+- **Bir mağaza bağlantısı**: Skill, kategoriyi, uygulama içi satın alma listesindeki abonelikleri, dilleri ve yorumların ödeme hakkında ne söylediğini okur.
+- **Ekran görüntüleri**: Skill, plan sürelerini, önceden seçilmiş planı, deneme süresini ve satın alma düğmesini okur.
+- **Uygulamanın kodu**: Skill, ürün kimliklerini, paywall ve onboarding ekranlarını, her yerel dildeki metinlerini ve paywallın başka nerede açıldığını okur.
+
+Bu skill, paywall-teardown ve onboarding-teardown skill'leriyle ekranları inceler. Fiyatlar ve dönüşüm için kendi verilerinize ihtiyaç duyulur; bu yüzden son Sonraki adım, Adapty'yi uygulamaya kurmayı önerir. Kurulum tamamlandıktan sonra, bir sonraki yanıt kendi verileriniz üzerinde çalışır.
+
+## Sınırlar \{#limits\}
+
+- **Reklam harcaması yok**: Skill, kurulumları, denemeleri ve geliri attribution kanalına göre bölebilir; ancak harcama veya ROAS için bunu yapamaz. Bunlar için [adapty-attribution skill](developer-cli-attribution-skill) kullanın.
+- **Bazı A/B testleri kontrol panelinde kalır**: Skill, düzenli paywall ve flow A/B testlerinin sonuçlarını okur. Birden fazla placement'ı kapsayan testler ve onboarding testleri için testin adını verir ve sonuçlarını kontrol panelinde kendiniz okursunuz. Skill, birden fazla placement'ı kapsayan bir test de kuramaz: bunun için kontrol paneli adımlarını size verir.
+- **Bölgeye ve geniş kategoriye göre kıyaslamalar**: Pazar medyanları, tam nişinizi değil bir bölgeyi ve kategoriyi kapsar; kategoriniz Adapty verilerinizde yer almaz. Daha yakın bir eşleşme için skill'e App Store kategorinizi söyleyin. Onboarding medyanları App Store uygulamalarını kapsar ve ekrana göre düşüş oranlarının kategoriye göre ayrımı yoktur. Kendinize ait bir kıyaslamanız varsa yapıştırın: skill onu kullanır ve nereden geldiğini belirtir.
+- **Rakip fiyatları yok**: Skill, fiyatlarınızı Adapty'nin fiyat endeksiyle karşılaştırır; diğer uygulamaların ne ücret aldığıyla değil.
+- **Denemeler ve teklifler mağazada oluşturulur**: Skill, App Store Connect veya Google Play Console'da bir deneme ya da teklif oluşturamaz. Size adımları verir ve mağaza teklif kimliğini siz sağladıktan sonra teklifi Adapty'ye ekler.
+
+## Adapty'ye Geri Bildirim \{#feedback-to-adapty\}
+
+Adapty verilerinizi kullanan her yanıtın ardından skill, Adapty'ye yanıtladığı soru türü ve herhangi bir engelle karşılaşıp karşılaşmadığına dair kısa bir not gönderir. Bu not; konuşmanızdaki hiçbir sayı, isim veya kelimeyi içermez, yalnızca uygulama kimliğinizi içerir. Skill ardından tek satırda notu gönderdiğini belirtir. Konuşmanın geri kalanı için notların gönderilmesini durdurmak istiyorsanız, aracıya geri bildirim gönderme talimatı verin.
+
+Analitiği skill'i kullanmadan kendiniz sorgulamak için [CLI analitik referansına](developer-cli-analytics) bakın. Kimsenin tarayıcıdan giriş yapamayacağı bir sunucudan veya zamanlanmış bir işten analitik çekmek için gizli bir API anahtarıyla [Export Analytics API'sini](export-analytics-api) kullanın.

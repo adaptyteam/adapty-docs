@@ -1,0 +1,68 @@
+---
+title: "迁移至 Adapty React Native SDK v4.4"
+description: "迁移至 Adapty React Native SDK v4.4：替换两个备用文件，并处理 iOS 和 Android 上的新流程错误。"
+metadataTitle: "迁移至 Adapty React Native SDK v4.4 | Adapty 文档"
+---
+
+Adapty React Native SDK 4.4 更改了备用付费墙文件格式，iOS 流程需要 iOS 16，并向应用报告更多流程错误。在 4.4 版本中，`AdaptyPrice.currencyCode`、`AdaptyPrice.localizedString` 和 `AdaptySubscription.billingPlan` 在 TypeScript 中不再是可选类型。要将应用升级至 4.4，请安装最新的 `react-native-adapty` 包，并在同一构建中同时替换两个备用付费墙文件。旧版 SDK 不支持新文件格式。之后请查阅本指南中的其他变更说明。
+
+如果您仍在使用 4.0 版本，请先参阅[迁移到 v4.1](migration-to-react-native-sdk-41)，然后再按本指南操作。
+
+:::warning
+备用付费墙文件格式在 4.4 版本中发生了变化，编译器无法检测适用于 SDK 4.1–4.3 的备用文件。如果不[更新备用文件](#replace-the-fallback-files)，所有版位的备用付费墙将全部失效。
+:::
+
+## 快速参考 \{#quick-reference\}
+
+| v4.3 | v4.4 |
+|---|---|
+| 已下载适用于 4.1–4.3 的备用文件 | 新备用文件格式；请重新下载两个文件 |
+| 流程支持在 iOS 15 上打开 | 流程需要 iOS 16 |
+| `AdaptyFlowView` 在流程无法加载时保持空白 | 它会将错误报告给 `onError` 处理程序 |
+| `AdaptyPrice.currencyCode`、`AdaptyPrice.localizedString` 和 `AdaptySubscription.billingPlan` 为可选 | 它们为必填 |
+
+## 安装 \{#installation\}
+
+更新 `react-native-adapty` 包：
+
+```bash showLineNumbers
+npm install react-native-adapty@latest
+# or
+yarn add react-native-adapty@latest
+```
+
+环境要求不变：**iOS 15.0** 和 **React Native 0.75**。流程功能除外：请参阅[流程需要 iOS 16](#flows-require-ios-16)。完整配置说明请参阅[安装 Adapty SDK](sdk-installation-reactnative)。
+
+## 替换备用文件 \{#replace-the-fallback-files\}
+
+要重新下载[备用文件](react-native-use-fallback-paywalls)，请在 **[Placements](https://app.adapty.io/placements)** 中点击 **Fallbacks** > **Download iOS Fallback**。在 **Adapty SDK v4.4.0 and higher** 行中点击 **Download**，然后对 **Download Android Fallback** 执行相同操作。
+
+下载的文件名为 `ios_4_4_0_fallback.json` 和 `android_4_4_0_fallback.json`。请用它们替换 SDK 4.1–4.3 的备用文件：
+
+- **纯 React Native 项目**：将 iOS 文件添加到您的 Xcode 项目中。将 Android 文件放在 4.1–4.3 版本 Android 备用付费墙文件所在的文件夹中，具体操作请参阅[在纯 React Native 项目中使用备用付费墙](react-native-use-fallback-paywalls-pure)。
+- **Expo 项目**：将每个文件放在其对应的 4.1–4.3 版本备用文件所在的文件夹中，具体操作请参阅[在 Expo 项目中使用备用付费墙](react-native-use-fallback-paywalls-expo)。
+
+将每个文件的名称与你的应用传递给 `adapty.setFallback` 的名称保持一致，或者更新该调用中的名称。在 Expo 项目中，也请在 `fallbackFile` 选项中使用这些名称，并重新运行 `npx expo prebuild`。
+
+如果使用的是 SDK 4.1–4.3 的备用付费墙文件，`adapty.setFallback` 会抛出 `AdaptyError`。要验证新文件是否正常，请分别在 iOS 和 Android 上运行应用，确认该调用不再抛出错误。
+
+## 流程需要 iOS 16 \{#flows-require-ios-16\}
+
+从 4.4 版本开始，流程需要 iOS 16 或更高版本。在 iOS 15 上，`createFlowView` 会抛出带有 `platformNotSupported` 错误码的 `AdaptyError`，`AdaptyFlowView` 也会保持空白并返回相同的错误。其他 SDK 功能（例如购买和自定义付费墙）在 iOS 15 上仍可正常使用。
+
+当应用收到此错误时，请改为展示您自己的内容，例如[自定义付费墙](react-native-implement-paywalls-manually)。
+
+## 流程加载错误会触发 onError 处理器 \{#flow-load-errors-reach-the-onerror-handler\}
+
+当组件无法显示流程时，`AdaptyFlowView` 的 `onError` 处理器会收到一个错误。每次应用渲染新的 `AdaptyFlowView` 时，该错误只上报一次。在 4.4 版本之前，组件会保持空白状态。组件会上报以下错误：
+
+- 在 iOS 15 上：`platformNotSupported`。
+- 在 Android 上，以及在 iOS 16 及更高版本上，当流程加载失败时：`createFlowView` 针对该流程抛出的错误。例如，在 AdaptyUI 未激活时流程加载失败，或传入了该流程不存在的 `customLayoutId`。
+
+您的流程错误处理现在也会在这些情况下触发。`onError` 处理程序的返回值不会关闭嵌入式流程。要关闭它，请停止渲染该组件，并显示您自己的内容。
+
+## 价格和订阅属性现为必填项 \{#price-and-subscription-properties-are-required\}
+
+在 TypeScript 中，`AdaptyPrice.currencyCode`、`AdaptyPrice.localizedString` 和 `AdaptySubscription.billingPlan` 不再是可选属性。如果你的代码中创建了这些对象（例如测试中的 mock 对象），需要为其设置这些属性。
+
+在 4.4 版本中，每个订阅的 `billingPlan` 均为 `up_front`，除非用户购买了[承诺方案](set-up-12-month-commitment)。4.4 之前，只有 App Store 订阅才有 `billingPlan`。

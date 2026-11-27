@@ -1,0 +1,190 @@
+---
+title: "在流程中展示地图附近地点"
+description: "在流程屏幕的自定义元素中，为每位用户展示其附近地点（如合作健身中心）的地图。"
+metadataTitle: "在流程中展示地图附近地点 | iOS SDK | Adapty 文档"
+---
+
+按照本教程，在流程中嵌入一个交互式地图。地图会显示用户 2 公里范围内你设置的地点（如合作健身中心）。你的应用会通过 MapKit，在[自定义元素](flow-custom-elements)中以原生视图的形式渲染地图，并在流程屏幕上请求位置访问权限。
+
+<DocVideo id="custom-element-map-demo.mp4" width="300px" alt="完成后的流程：地图显示用户附近的健身中心，用户可以拖动地图查看其他区域并返回。" />
+
+## 开始之前 \{#before-you-start\}
+
+- 将你的应用更新至 Adapty iOS SDK 4.4 或更高版本。早期 SDK 版本会为每个自定义元素显示[备用内容](flow-custom-elements#set-fallback-content)。
+- 配置你的应用以[获取](get-pb-paywalls)并[展示](ios-present-paywalls)流程。
+- 如需向用户申请位置权限，请在应用的 `Info.plist` 文件中添加 `NSLocationWhenInUseUsageDescription` 键，并将其值设置为提示文本，例如"Find fitness centers near you."
+
+## 1. 将自定义元素添加到屏幕 \{#1-add-the-custom-element-to-the-screen\}
+
+<CustomElementMapBuilderSetup />
+
+在自定义元素内部，添加一个带有地图图片的 [**Image**](custom-media#image)。当以下情况发生时，用户会看到它作为[备用内容](flow-custom-elements#set-fallback-content)：
+
+- 用户使用的 app 版本不支持显示地图。
+- 用户在屏幕打开前拒绝了位置访问权限。
+- 用户的设备运行 iOS 16。
+
+<CustomElementMapLocationPrompt />
+
+## 2. 创建地图视图 \{#2-create-the-map-view\}
+
+为你的地点创建一个类型，并创建一个用于位置访问的模型：
+
+```swift showLineNumbers title="Swift"
+
+// A place of your app, such as a partner fitness center
+struct Place: Identifiable {
+    let id = UUID()
+    let name: String
+    let coordinate: CLLocationCoordinate2D
+}
+
+// One location manager for the resolver and the map view
+@MainActor
+final class LocationAccess: NSObject, ObservableObject, CLLocationManagerDelegate {
+    @Published private(set) var status: CLAuthorizationStatus = .notDetermined
+    var isMapOnScreen = false
+    private let manager = CLLocationManager()
+
+    var isDenied: Bool { status == .denied || status == .restricted }
+
+    override init() {
+        super.init()
+        manager.delegate = self
+        status = manager.authorizationStatus
+    }
+
+    // Shows the prompt only if the user hasn't answered it yet
+    func requestAccess() {
+        manager.requestWhenInUseAuthorization()
+    }
+
+    nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        let status = manager.authorizationStatus
+        Task { @MainActor in self.status = status }
+    }
+}
+```
+
+Create a view with a map. The view requests location access and displays a marker for each of your places within 2 km of the user:
+
+```swift showLineNumbers title="Swift"
+
+@available(iOS 17.0, *)
+struct NearbyFitnessCentersMap: View {
+    @ObservedObject var access: LocationAccess
+    let places: [Place]
+    @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
+    @State private var nearbyPlaces: [Place] = []
+
+    var body: some View {
+        ZStack {
+            if access.isDenied {
+                ContentUnavailableView(
+                    "Location access is off",
+                    systemImage: "location.slash",
+                    description: Text("To see fitness centers near you, allow location access in Settings.")
+                )
+            } else {
+                Map(position: $position) {
+                    UserAnnotation()
+                    ForEach(nearbyPlaces) { place in
+                        Marker(place.name, systemImage: "dumbbell.fill", coordinate: place.coordinate)
+                            .tint(.teal)
+                    }
+                }
+                .task {
+                    access.requestAccess()
+                    do {
+                        for try await update in CLLocationUpdate.liveUpdates() {
+                            guard let location = update.location else { continue }
+                            nearbyPlaces = places.filter { place in
+                                let placeLocation = CLLocation(
+                                    latitude: place.coordinate.latitude,
+                                    longitude: place.coordinate.longitude
+                                )
+                                return location.distance(from: placeLocation) <= 2_000 // meters
+                            }
+                            withAnimation {
+                                position = .automatic // zoom to fit the user and the places
+                            }
+                            break
+                        }
+                    } catch {
+                        // the map still shows the location of the user
+                    }
+                }
+            }
+        }
+        // Tells the resolver that the map is on the screen
+        .onAppear { access.isMapOnScreen = true }
+        .onDisappear { access.isMapOnScreen = false }
+    }
+}
+```
+
+The map view needs iOS 17 or later. On iOS 16, users see the fallback.
+
+If the user denies location access on the screen, the view replaces the map with a message about how to allow access in Settings.
+
+## 3. 将地图与自定义元素关联 \{#3-match-the-map-to-the-custom-element\}
+
+在您的[应用级解析器](ios-flow-custom-elements#set-an-app-wide-resolver)中，为 `LocationAccess` 模型和您的地点添加属性。然后为 `map` 类型和 `fitness_centers` ID 返回地图视图。高亮行显示了需要添加或修改的内容。如果您的应用尚未设置应用级[解析器](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views)，请复制完整代码：
+
+```swift showLineNumbers title="Swift" {5-6,14-21}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let locationAccess = LocationAccess()
+    let places: [Place] // your app's places, such as partner fitness centers
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "map" where id == "fitness_centers":
+            guard #available(iOS 17.0, *) else {
+                return nil // iOS 16: show the fallback
+            }
+            if locationAccess.isDenied, !locationAccess.isMapOnScreen {
+                return nil // access denied before the screen opened: show the fallback
+            }
+            return AnyView(NearbyFitnessCentersMap(access: locationAccess, places: places))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+<CustomElementMapResolverCalls />
+
+创建包含自定义组件的解析器，并将其设置为全局解析器。在应用启动时调用一次 `AdaptyUI.setCustomElementsResolver`：
+
+```swift showLineNumbers title="Swift"
+
+// your app's places, such as partner fitness centers
+@MainActor let places = [
+    Place(name: "Central Fitness", coordinate: CLLocationCoordinate2D(latitude: 52.5219, longitude: 13.4132)),
+    Place(name: "Riverside Gym", coordinate: CLLocationCoordinate2D(latitude: 52.5163, longitude: 13.3777)),
+]
+
+// keep this instance: a resolver for one flow can reuse it
+@MainActor let customElementsResolver = CustomElementsResolver(places: places)
+
+AdaptyUI.setCustomElementsResolver(customElementsResolver)
+```
+
+## 4. 在设备上测试 \{#test-on-a-device\}
+
+流程与付费墙编辑工具无法运行你的应用代码，因此画布中只会显示备用内容。要预览地图：
+
+1. [发布流程](builder-save-publish)。若要查看最新发布版本而非缓存版本，请将设备注册为[测试设备](test-devices)。
+2. 若要在地图上看到标记，请在距您位置 2 公里以内的地方添加一个地点到您的地点列表。
+3. 确保设备运行 iOS 17 或更高版本。运行包含解析器的应用构建版本，打开页面并允许位置访问。验证地图是否显示您的位置以及您添加地点的标记。
+
+要测试备用方案，请拒绝位置访问权限：在 **Settings** 应用中，前往 **Privacy & Security** > **Location Services** > *你的应用*，然后选择 **Never**。接着重新打开该页面。
+
+要了解为何显示备用方案而非地图，请按照 iOS 指南中[在设备上测试](ios-flow-custom-elements#test-on-a-device)部分的说明进行操作。

@@ -6,15 +6,13 @@ toc_max_heading_level: 4
 keywords: ['AdaptyUIFlowsEventsObserver', 'flowViewDidPerformAction', 'flowViewDidSelectProduct', 'flowViewDidStartPurchase', 'flowViewDidFinishPurchase', 'flowViewDidFailPurchase', 'flowViewDidStartRestore', 'flowViewDidFinishRestore', 'flowViewDidFailRestore', 'flowViewDidFailLoadingProducts', 'flowViewDidReceiveError', 'AdaptyUIPaywallsEventsObserver', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
 ---
 
-import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
-
 <SDKv4>
 
 :::important
-このガイドでは、購入・復元・プロダクト選択・フローのレンダリングに関するイベント処理について説明します。ボタン処理（フローを閉じる、リンクを開くなど）も別途実装する必要があります。詳細は[フローアクションの処理に関するガイド](kmp-handle-paywall-actions)をご覧ください。
+このガイドでは、購入・復元・プロダクト選択・フロー表示に関するイベント処理を説明します。ボタンのハンドリング（フローを閉じる、リンクを開くなど）も別途実装する必要があります。詳細は[フローアクションの処理に関するガイド](kmp-handle-paywall-actions)を参照してください。
 :::
 
-[Flow Builder](adapty-flow-builder) または [Paywall Builder](adapty-paywall-builder) で設定されたフローやペイウォールは、購入や復元のために追加コードは不要です。ただし、アプリが応答できるイベントが生成されます。これらのイベントには、ボタン操作（閉じるボタン、URL、プロダクト選択など）や購入関連アクションの通知が含まれます。これらのイベントへの対応方法については、以下をご覧ください。
+AdaptyがレンダリングするフローとペイウォールはAdaptyがレンダリングするフローとペイウォールは、購入の実行や復元のために追加のコードは必要ありません。ただし、アプリが対応できるイベントをいくつか生成します。これらのイベントには、ボタン操作（閉じるボタン、URL、プロダクト選択など）や、購入関連アクションに関する通知が含まれます。これらのイベントへの対応方法については、以下をご覧ください。
 
 モバイルアプリのフロースクリーンで発生するプロセスを制御・監視するには、`AdaptyUIFlowsEventsObserver` インターフェースのメソッドを実装し、`AdaptyUI.setFlowsEventsObserver()` でオブザーバーを登録してください。一部のメソッドはよく使われるシナリオを自動的に処理するデフォルト実装が用意されているため、変更したいメソッドのみオーバーライドしてください。
 
@@ -120,9 +118,12 @@ override fun flowViewDidStartPurchase(view: AdaptyUIFlowView, product: AdaptyPay
 ```
 </Details>
 
-#### 購入の成功、キャンセル、または保留 \{#successful-canceled-or-pending-purchase\}
+#### 購入の成功・キャンセル・保留 \{#successful-canceled-or-pending-purchase\}
 
-購入が完了すると、このメソッドが呼び出されます。デフォルトでは何も行われません。購入後もフローは開いたままなので、ユーザーがアクセスを取得したら `view.dismiss()` を自分で呼び出してください。
+購入が完了すると、このメソッドが呼び出されます。デフォルトでは何も処理は行われず、フローはそのまま開いた状態を維持します。購入に対する処理は次の2か所で行うことができます。
+
+- **フロー内（推奨）**: 購入成功後にフローを閉じたり、サンクスページを表示したりするには、Flow & Paywall Builderで[アウトカムアクション](respond-to-purchase-outcomes#add-actions-for-a-result)を設定してください。アプリのリリースなしに変更できます。
+- **アプリコード内**: カスタム通知など、フローでは対応できない場合に使用します。コードからフローを閉じるには、ユーザーがアクセス権を取得した後に `view.dismiss()` を呼び出してください:
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun flowViewDidFinishPurchase(
@@ -207,11 +208,9 @@ override fun flowViewDidFinishPurchase(
 ```
 </Details>
 
-購入が成功した場合は、フロー画面を閉じることをおすすめします。
-
 #### 購入失敗 \{#failed-purchase\}
 
-エラーにより購入が失敗した場合、このメソッドが呼び出されます。これには、StoreKit/Google Play Billing のエラー（支払い制限、無効なプロダクト、ネットワーク障害）、トランザクション検証の失敗、およびシステムエラーが含まれます。なお、ユーザーによるキャンセルは `flowViewDidFinishPurchase` をキャンセル結果で呼び出すため、このメソッドはトリガーされません。保留中の支払いもこのメソッドをトリガーしません。
+購入がエラーにより失敗した場合、このメソッドが呼び出されます。対象となるのは、StoreKit/Google Play Billing のエラー（支払い制限、無効なプロダクト、ネットワーク障害）、トランザクション検証の失敗、システムエラーです。なお、ユーザーによるキャンセルは `flowViewDidFinishPurchase` をキャンセル結果として呼び出すため、このメソッドはトリガーされません。保留中の支払いもこのメソッドをトリガーしません。
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun flowViewDidFailPurchase(
@@ -300,7 +299,7 @@ override fun flowViewDidFinishRestore(view: AdaptyUIFlowView, profile: AdaptyPro
 ```
 </Details>
 
-必要な `accessLevel` をユーザーが持っている場合は、画面を閉じることをおすすめします。確認方法については、[サブスクリプションのステータス](subscription-status)を参照してください。
+購入の復元後にウェルカムバック画面など追加の画面をユーザーに表示するには、Flow & ペイウォールビルダーで[アウトカムアクション](respond-to-purchase-outcomes#respond-to-a-purchase-restoration)を設定してください。フローで対応できない処理（ユーザーがアクセス権を取得した後にアプリの特定の画面を開くなど）はアプリのコードで行ってください。アクセスレベルの確認方法については、[サブスクリプションのステータス](subscription-status)のトピックを参照してください。
 
 #### 復元の失敗 \{#failed-restore\}
 
@@ -314,7 +313,7 @@ override fun flowViewDidFailRestore(view: AdaptyUIFlowView, error: AdaptyError) 
 ```
 
 <Details>
-<summary>イベントの例（クリックして展開）</summary>
+<summary>イベント例（クリックして展開）</summary>
 
 ```javascript
 {
@@ -329,7 +328,7 @@ override fun flowViewDidFailRestore(view: AdaptyUIFlowView, error: AdaptyError) 
 ```
 </Details>
 
-#### Webペイメントナビゲーションの完了 \{#web-payment-navigation-completion\}
+#### Web支払いナビゲーション完了 \{#web-payment-navigation-completion\}
 
 ユーザーが[ウェブペイウォール](web-paywall)を使用して購入プロセスを開始した場合、このメソッドが呼び出されます：
 
@@ -454,6 +453,8 @@ Kotlin Multiplatform はイベントパラメータを生の JSON 文字列と�
 
 詳細は [フロー画面ビューのトラッキング](kmp-flow-screen-views) を参照してください。
 
+フローはユーザーが入力・選択した値もレポートします。詳細は[フローからのデータ処理](kmp-flow-input)を参照してください。
+
 ### ナビゲーション \{#navigation\}
 
 #### Android のシステムバックボタン \{#android-system-back-button\}
@@ -474,16 +475,16 @@ override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAc
 }
 ```
 
-[フロー操作の処理に関するガイド](kmp-handle-paywall-actions)で、すべての操作の一覧をご確認ください。
+[フローアクションの処理に関するガイド](kmp-handle-paywall-actions)で、アクションの完全なリストを確認できます。
 
 </SDKv4>
 
 <SDKv3>
 
-[ペイウォールビルダー](adapty-paywall-builder)で設定されたペイウォールは、購入や復元を行うために追加のコードは必要ありません。ただし、アプリが応答できるいくつかのイベントが発生します。これらのイベントには、ボタン操作（閉じるボタン、URL、プロダクト選択など）や、ペイウォール上で行われた購入関連アクションの通知が含まれます。これらのイベントへの対応方法については、以下をご覧ください。
+[ペイウォールビルダー](adapty-paywall-builder)で設定されたペイウォールは、購入や復元のために追加のコードを必要としません。ただし、アプリが応答できるイベントが発生します。これらのイベントには、ボタン操作（閉じるボタン、URL、プロダクト選択など）や、ペイウォール上で行われた購入関連アクションの通知が含まれます。これらのイベントへの対応方法については、以下を参照してください。
 
 :::warning
-このガイドは**新しいペイウォールビルダーのペイウォール**専用です。
+このガイドは**旧ビルダーで作成されたペイウォール**専用です。
 :::
 
 モバイルアプリのペイウォール画面で発生するプロセスを制御・監視するには、`AdaptyUIPaywallsEventsObserver` インターフェースのメソッドを実装します。一部のメソッドには、一般的なシナリオを自動的に処理するデフォルト実装が用意されています。

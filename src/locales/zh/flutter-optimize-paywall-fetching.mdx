@@ -1,27 +1,140 @@
 ---
-title: "在 Flutter SDK 中优化付费墙加载"
-description: "可靠地获取 Adapty 付费墙：Flutter 中的时机选择、缓存策略与备用方案。"
-metadataTitle: "优化付费墙加载 | Flutter SDK | Adapty 文档"
+title: "在 Flutter SDK 中优化流程与付费墙的获取"
+description: "在 Flutter 中可靠地获取 Adapty 流程和付费墙：时机、缓存和备用方案。"
+metadataTitle: "优化流程与付费墙获取 | Flutter SDK | Adapty 文档"
 ---
 
-在 Flutter 中可靠地获取付费墙需要做到三点：快速渲染、返回针对目标受众的付费墙，以及在网络较慢时优雅降级。以下规则涵盖了实现这一目标所需的时机选择、缓存策略和备用方案。
+在 Flutter 中，可靠的流程或付费墙获取需要做到三件事：快速渲染、返回面向目标受众的实验变体，以及在网络较慢时优雅降级。以下规则涵盖了实现这一目标所需的时机、缓存和备用方案。
+
 :::tip
-以下规则假设 `Adapty().activate()` 和 `Adapty().identify()` 已完成。请参阅 [Flutter SDK 的调用顺序](flutter-sdk-call-order)。
+以下规则假设 `Adapty().activate()` 和 `Adapty().identify()` 已成功完成。详见 [Flutter SDK 调用顺序](flutter-sdk-call-order)。
 :::
 
-以下建议使用 v3 方法名称。在 SDK v4 中，`getPaywall` 已重命名为 `getFlow`，获取策略类型更名为 `AdaptyFlowFetchPolicy`——所有规则均适用，不受影响。
 ## 规则与注意事项 \{#rules-and-pitfalls\}
-| 应该这样做 | 不要这样做 | 原因 |
+
+| 推荐做法 | 避免做法 | 原因 |
 |---|---|---|
-| 只在即将展示时获取对应的版位。 | 在启动时并发预取所有版位。 | 批量预取会阻塞主线程，导致启动时出现黑屏。 |
-| 在归因数据有机会解析之后再调用 `getPaywall`——例如，在 `activate` 之后等待 1-2 秒，或等待 `didUpdateProfileStream` 触发后再调用。 | 在 `runApp` 之前的 `main()` 中调用 `getPaywall`。 | 此时归因数据尚未到位。付费墙会按默认目标受众进行解析，静默绕过市场细分和 ASA 个性化设置。 |
-| 为每个版位设置 `loadTimeout` 并配置[备用付费墙](fallback-paywalls)。 | 无限等待 `getPaywall` 返回。 | 没有超时设置，网络状况较差的用户会看到空白屏幕，直到网络恢复——或者直接关闭应用。 |
-有关 `fetchPolicy` 和 `loadTimeout` 参数的说明，请参阅[获取付费墙和产品](fetch-paywalls-and-products-flutter)；有关如何选择合适版位的信息，请参阅[版位](placements)。
-## 针对弱网环境进行优化 \{#tune-for-poor-connectivity\}
+| 获取即将展示的版位，或使用 [`preloadFlows`](#preload-placements)（SDK 4.3.0+）预热缓存。 | 在启动时并发调用多个 `getFlow`。 | 手动实现的预加载会阻塞主线程并导致黑屏。`preloadFlows` 专为此场景设计，一次性将批量请求发送到原生 SDK。 |
+| 在归因数据有机会解析后再调用 `getFlow`，例如在 `activate` 后 1–2 秒，或在 `didUpdateProfileStream` 触发后。 | 在 `main()` 中、`runApp` 之前调用 `getFlow`。 | 此时归因数据尚未到位，流程会按默认目标受众解析，悄然绕过市场细分和 ASA 个性化设置。 |
+| 保持默认的 5 秒 `loadTimeout`，或设置其他合理值，并为每个版位配置[备用付费墙](fallback-paywalls)。 | 将 `getFlow` 的 `loadTimeout` 设得极大，使其永远不触发。 | 如果超时永远不触发，网络较差的用户会看到空白屏幕，直到网络恢复——或者直接关闭应用。 |
 
-对于网络连接持续较差的市场（农村地区、交通途中、受路由问题影响的地区）：
+请参阅[获取自定义付费墙和产品](fetch-paywalls-and-products-flutter)以了解 `fetchPolicy` 和 `loadTimeout` 参数说明，并参阅[版位](placements)了解如何选择合适的版位。
 
-- 除首次请求外，所有获取操作均设置 `fetchPolicy: AdaptyPaywallFetchPolicy.returnCacheDataElseLoad`。
+## 预加载版位 \{#preload-placements\}
+
+:::info
+`preloadFlows` 和 `preloadFlowsForDefaultAudience` 从 SDK 4.3.0 版本开始支持。
+:::
+
+`preloadFlows` 会提前将流程 JSON 缓存起来。之后的使用方式与平时相同：用 `getFlow` 获取流程，用 `createFlowView` 创建其视图。
+
+`fetchPolicy` 决定后续 `getFlow` 优先从哪一层读取数据，而非是否能访问缓存：
+
+- `AdaptyFlowFetchPolicy.returnCacheDataElseLoad` 优先读取预加载的缓存副本，仅在无缓存时才请求网络。`AdaptyFlowFetchPolicy.returnCacheDataIfNotExpiredElseLoad(maxAge)` 功能相同，但仅在缓存副本未超过 `maxAge` 时使用缓存。
+- 默认策略 `AdaptyFlowFetchPolicy.reloadRevalidatingCacheData` 优先请求网络，仅在请求失败或超时时回退到预加载的缓存副本。
+
+预加载无论如何都会带来收益，只是方式不同：缓存优先策略会直接省去网络请求，而默认策略则保留请求并在请求成功后获得一份热备副本。在[测试设备](test-devices)上，`getFlow` 在任何策略下都会跳过缓存，仅当网络请求失败时才使用预加载的副本。
+
+当你知道本次会话需要哪些版位，但又不想立即展示时，可以使用此方法——例如，在 `activate` 和 `identify` 完成后，为用户尚未点击的按钮背后的流程提前加载。
+
+```dart showLineNumbers
+try {
+  await Adapty().preloadFlows(
+    placementIds: ['onboarding', 'main_paywall'],
+    loadTimeout: const Duration(seconds: 5),
+  );
+} on AdaptyError catch (adaptyError) {
+  // at least one placement failed to preload
+}
+
+// Later, when the user reaches the paywall:
+final flow = await Adapty().getFlow(
+  placementId: 'main_paywall',
+  fetchPolicy: AdaptyFlowFetchPolicy.returnCacheDataElseLoad,
+);
+```
+
+**参数：**
+
+- `placementIds`（必填）：要预加载的版位。
+- `loadTimeout`（可选）：等待目标受众流程加载的超时时长。默认为 5 秒，低于 1 秒的值会被提升至 1 秒。超时后，SDK 可以改为加载默认受众的流程。
+
+**需要了解的行为：**
+
+- 只有当所有版位都尝试失败后，调用才会报错，并以一个 `AdaptyError` 涵盖所有失败的版位。某个版位失败不会中断其他版位的加载，已成功加载的版位仍会保留在缓存中。
+- 预加载始终走网络请求：它没有自己的 `fetchPolicy`。
+- 预加载仅用于预热缓存，不返回内容——你仍需调用 `getFlow` 来展示内容。
+
+### 预加载的覆盖范围 \{#what-a-preload-covers\}
+
+一个流程分层抵达屏幕。预加载覆盖第一层，与 `getFlow` 的作用完全相同：
+
+| 层级 | 获取方式 | 预加载是否预热 |
+|---|---|---|
+| Flow JSON — 所选实验变体、产品 ID 及远程配置 | `getFlow` | 是 |
+| UI 布局 — 页面结构、样式与文本 | `createFlowView` | 否 |
+| 图片（包括替代视频元素展示的静态帧） | `createFlowView`（后台加载） | 否 |
+| 产品 | `createFlowView` 或 `getPaywallProducts` | 否 |
+| 视频文件 | iOS 上由系统播放器加载，Android 上由 ExoPlayer 在页面渲染时加载 | 否。Android 原生 SDK 最多缓存 50 MB 的已播放视频 |
+
+`createFlowView` 按以下顺序在三个位置查找布局：
+
+1. 原生 SDK 的磁盘缓存，该缓存在应用重启后仍会保留。
+2. 适用于 SDK 4.4 或更高版本的[备用文件](flutter-use-fallback-paywalls)，前提是你在最后一次发布流程后下载了该文件。
+3. 通过网络从 Adapty 获取。即使已预加载，这仍会产生一次网络往返。每当应用首次显示某个已发布版本的流程时，原生 SDK 都会发起该请求，然后将布局保存到磁盘缓存。
+
+当 `createFlowView` 的 `loadTimeout` 触发时，原生 SDK 不会回退：它会再次向 Adapty API 请求布局。`loadTimeout` 不会限制第二次请求的时间。
+
+### 跳过目标受众分组 \{#skip-audience-segmentation\}
+
+如需完全跳过目标受众分组直接预热缓存，请使用默认目标受众变体。该方式无需超时设置：
+
+```dart showLineNumbers
+await Adapty().preloadFlowsForDefaultAudience(placementIds: ['main_paywall']);
+```
+
+后续调用 `getFlowForDefaultAudience` 读取缓存副本的方式，与 `getFlow` 读取 `preloadFlows` 缓存副本的方式相同。
+
+## 从应用包中显示首屏媒体 \{#show-first-screen-media-from-the-app-bundle\}
+
+流程会从 Adapty 下载图片和视频。如果想让首屏媒体立即显示，可以改为从应用包中提供。这是复用已有媒体资源的好方法，例如原生用户引导中已有的视觉素材。
+
+1. 在 Flow & Paywall Builder 中，为图片或视频设置[自定义媒体 ID](custom-media#custom-media-id)。上传的文件将作为备用资源。
+2. 将文件添加到 Flutter 的 assets 目录，并在 `pubspec.yaml` 的 `assets` 中进行声明。
+3. 创建 flow 视图时，在 `customAssets` 中为该 ID 传入打包文件：
+
+```dart showLineNumbers
+// "welcome_video" is the custom media ID set in the Flow & Paywall Builder
+final bundledAssets = {
+  'welcome_video': AdaptyCustomAsset.localVideoAsset(
+    assetId: 'assets/videos/welcome.mp4',
+  ),
+};
+
+try {
+  final view = await AdaptyUI().createFlowView(
+    flow: flow,
+    customAssets: bundledAssets,
+  );
+} on AdaptyError catch (e) {
+  // handle the error
+}
+```
+
+内置文件会增加应用的下载体积，因此只需内置用户首屏看到的媒体资源。
+
+内置图片无需等待即可立即显示，但原生 SDK 仍会在后台下载已上传的图片。
+
+未打包的媒体资源也会立即显示：流程布局中已内置每张图片（包括视频帧）的低分辨率缩略图，在完整文件加载完成之前会先显示该缩略图。
+
+完整的 `customAssets` 参考，请参见[自定义资源](flutter-get-pb-paywalls#customize-assets)。
+
+## 针对弱网络环境进行调优 \{#tune-for-poor-connectivity\}
+
+针对网络连接持续不稳定的市场（农村地区、交通运输场景、受路由问题影响的地区）：
+
+- 在除第一次之外的所有请求中设置 `fetchPolicy: AdaptyFlowFetchPolicy.returnCacheDataElseLoad`。
 - 在 Adapty 看板中为每个版位配置[备用付费墙](fallback-paywalls)。
-- 将 `loadTimeout` 设置为 3–5 秒，并在超时触发时接受备用付费墙。
-- 不要将付费墙的显示挂起在 `getProfile()` 上。独立调用 `getPaywall`，避免因获取用户画像缓慢而阻塞 UI。
+- 在速度与定向之间合理权衡 `loadTimeout`。超时时间越短，用户越快看到备用内容；超时时间越长，定向流程就有更多时间完成加载。
+- [保持流程轻量化](flow-size)，以便布局下载更快。
+- 不要将流程显示与 `getProfile()` 耦合。独立调用 `getFlow`，避免慢速用户画像请求阻塞 UI。

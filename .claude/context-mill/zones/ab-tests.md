@@ -32,12 +32,14 @@ being varied or the placement wiring that attaches the test.
 | ab-test-types | — | marketer | 6 | tutorial |
 | ab-tests | — | marketer | 3 | tutorial |
 | maths-behind-it | — | marketer | 2 | tutorial |
-| results-and-metrics | — | marketer | 30 | tutorial |
+| results-and-metrics | — | marketer | 32 | tutorial |
 | run_stop_ab_tests | — | marketer | 5 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
 
 ## Ripple rules
+
+- **The run/stop/edit behaviour in `run_stop_ab_tests` has a terminal twin in `developer-cli-ab-tests` (agent-tooling zone), added 2026-10-23.** A change to what a start, stop or Modify does (who moves into the test, the three stop options, archive rules) moves both; the CLI page states it from `adapty-cli` source, the dashboard page from the UI. Every article in the A/B tests sidebar category except `results-and-metrics` (`ab-tests`, `ab-test-types`, `run_stop_ab_tests`, `ab-test-no-paywall-variants`, `maths-behind-it`) carries the same `:::tip` before its first heading, linking the CLI and skill pages; a new article in the category gets it too. `results-and-metrics` has none by request (2026-10-23): the CLI reads no results.
 
 ## Boundaries
 
@@ -56,7 +58,7 @@ being varied or the placement wiring that attaches the test.
 
 ## Ticket language
 
-Rows name article ids from the roster above. Corpus-wide synonyms (Flow ↔ Paywall Builder, paywall ↔
+Rows name article ids from the roster above. Corpus-wide synonyms (Flow Builder ↔ Flow & Paywall Builder, paywall ↔
 flow in v4, remote config ↔ custom JSON) live in `aliases.md` and are deliberately not repeated here.
 Note that statistics questions arrive phrased as bugs — read them as questions before believing them.
 
@@ -70,7 +72,7 @@ Note that statistics questions arrive phrased as bugs — read them as questions
 | "can't change a running test", "need to fix the weights mid-flight" | `run_stop_ab_tests`. Only drafts are editable. **Modify** duplicates the test under the same name and stops the original — so the data splits into two entries in analytics, which is usually the real cost the ticket is about. |
 | "restart the test", "undo the stop", "we stopped it by accident" | `run_stop_ab_tests`. Stopping is irreversible; there is no restart. |
 | "what do users see now that the test ended" | `run_stop_ab_tests` — three explicit choices at stop time; the "don't show any specific" option hands the placement back to audience priority. |
-| "user is stuck on the old variant", "can we reassign this user", "still seeing the test after we stopped it" | `ab-test-types`, crossplacement stickiness. The first placement the user hits fixes the assignment, it cannot be changed, and it persists 90 days *even after the test stops* — tunable in General settings as Cross-placement variation stickiness. |
+| "user is stuck on the old variant", "can we reassign this user", "still seeing the test after we stopped it" | `ab-test-types`, crossplacement stickiness. The first placement the user hits fixes the assignment, it cannot be changed, and it persists 90 days *even after the test stops* — tunable in General settings as Cross-placement variation stickiness. The period is fixed when the test stops: changing the setting afterwards doesn't release that test's users (backend code, checked 2026-11-23; `general` used to say the opposite). |
 | "test isn't reaching our users", "only new installs are in it", "some users skip the test entirely" | `ab-test-types`. Crossplacement admits **new users only** (`getPaywall` never called for them) and outranks regular tests; regular tests are the option for existing users. Users on older SDKs skip tests silently — crossplacement needs v3.5.0+, flows v4.0.0+, onboardings v3.8.0+. |
 | "same prices across onboarding and settings", "keep the variant consistent app-wide" | `ab-test-types`, crossplacement — but paywall placements only; it cannot include flow or onboarding placements. |
 | "two tests fight over one placement", "which test wins", "can we set test priority" | `ab-test-types`. Priority is assigned automatically by the order tests were added and cannot be set by hand; narrower audiences outrank All Users. |

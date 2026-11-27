@@ -6,29 +6,27 @@ customSlug: /unity-present-paywalls
 displayed_sidebar: sdkunity
 ---
 
-import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md'; 
-
 <SDKv4>
 
 <MethodPromo method="GetFlow" label="Display flows and paywalls" />
 
-フローや**ペイウォールビルダー**で作成したペイウォールは、モバイルアプリのコード上でレンダリング処理を書く必要はありません。フローやペイウォールには、表示する内容と表示方法の両方が含まれています。
+フローや旧ペイウォールビルダーで作成したペイウォールは、ユーザーに表示するためのレンダリングをアプリのコードで行う必要はありません。フローやペイウォールには、表示内容と表示方法の両方が含まれています。
 
 :::warning
 
-このガイドでは、Adaptyがレンダリングするフローと**新しいペイウォールビルダーのペイウォール**について説明します。リモートコンフィグペイウォールや[Observerモード](observer-vs-full-mode)では手順が異なります。
+このガイドは、Adapty がレンダリングするフローとペイウォールを対象としています。カスタムペイウォールや [Observer モード](observer-vs-full-mode) の場合は手順が異なります。
 
-- **リモートコンフィグペイウォール**の表示については、[リモートコンフィグで設計されたペイウォールのレンダリング](present-remote-config-paywalls-unity)を参照してください。
-- **オブザーバーモード**でのフローの表示については、[オブザーバーモードでのフローの表示](unity-present-flows-in-observer-mode)を参照してください。
+- カスタムペイウォールを表示するには、[カスタムペイウォールの表示](present-remote-config-paywalls-unity)を参照してください。
+- **Observer mode**でフローを表示するには、[Observer modeでのフローの表示](unity-present-flows-in-observer-mode)を参照してください。
 
 :::
 
-以下で使用する `view` オブジェクトの取得方法については、[フローとペイウォールの取得](unity-get-pb-paywalls)を参照してください。
+以下で使用する`view`オブジェクトの取得方法については、[フローとペイウォールの取得](unity-get-pb-paywalls)を参照してください。
 
-フローまたはペイウォールを表示するには、[`CreateFlowView`](unity-get-pb-paywalls#fetch-the-view-configuration) メソッドで作成した `view` に対して `view.Present()` メソッドを呼び出します。各 `view` は一度しか使用できません。一度閉じられた `view` は破棄されます。再度フローを表示する必要がある場合は、`CreateFlowView` をもう一度呼び出して新しい `view` インスタンスを作成してください。
+フローまたはペイウォールを表示するには、[`CreateFlowView`](unity-get-pb-paywalls#fetch-the-view-configuration) メソッドで作成した `view` に対して `view.Present()` メソッドを呼び出します。デフォルトでは、閉じた `view` は破棄されます。再度フローを表示するには、`CreateFlowView` をもう一度呼び出して新しい `view` インスタンスを作成するか、閉じる際に [`view` を保持する](#keep-the-view-to-present-it-again)ようにしてください。
 
 :::warning
-`view` を再作成せずに再利用すると、エラーが発生する場合があります。
+破棄された `view` を再利用するとエラーが発生します。
 :::
 
 ```csharp showLineNumbers title="Unity"
@@ -38,6 +36,64 @@ view.Present((error) => {
 ```
 
 <SampleApp />
+
+## ビューを保持して再表示する \{#keep-the-view-to-present-it-again\}
+
+:::info
+保持されたビューは SDK バージョン 4.3.0 以降で使用できます。
+:::
+
+`view.Dismiss()` はビューをメモリから解放します。代わりにビューを保持するには、`destroy` パラメータに `false` を渡してください：
+
+```csharp showLineNumbers title="Unity"
+view.Dismiss(false, (error) => {
+    // handle the error
+});
+```
+
+そのビューを再表示すると、ユーザーはフローが構築した状態のまま、離れた画面に戻ります。ビューは `Id` を保持しているため、同じ `view.Id` でリスナーにイベントが届き続けます。
+
+ビューを保持し続けるとメモリに残ります。不要になったら、`view.Destroy()` を呼び出してください：
+
+```csharp showLineNumbers title="Unity"
+view.Destroy((error) => {
+    // handle the error
+});
+```
+
+`Destroy()` は、ビューがまだ画面に表示されている場合は先に非表示にしてから破棄します。また、作成したがまだ表示していないビューや、iOS でユーザーが下にスワイプして閉じたページシートビューも解放できます。通常の `Dismiss()` の後に呼び出さないでください。そのビューはすでに解放されており、呼び出しは失敗します。
+
+ユーザーが **Close** ボタンをタップしたときにビューを維持するには、[`Close` アクションハンドラー](unity-handle-paywall-actions#close-flows-and-paywalls)で `destroy: false` を指定して閉じてください。`FlowViewDidPerformAction` メソッドはアプリ内のすべてのフローとペイウォールで実行されるため、再表示する予定のビューのみを保持するには `view.Id` を比較してください。ビューを作成するときにフィールドに保存しておくと、後で比較して再表示できます。
+
+```csharp showLineNumbers title="Unity"
+private AdaptyUIFlowView keptView;
+
+void CreateKeptView(AdaptyFlow flow) {
+    AdaptyUI.CreateFlowView(flow, new AdaptyUICreateFlowViewParameters(), (view, error) => {
+        if (error != null) {
+            // handle the error
+            return;
+        }
+        keptView = view;
+    });
+}
+
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Close:
+            view.Dismiss(view.Id != keptView?.Id, null);
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+保持した `view` は、フローまたはペイウォールを再表示するときや、`Destroy()` で解放するときに必要です。`keptView.Destroy()` を呼び出したら、`keptView` を `null` に設定してください。そうしないと、上記の比較が解放済みのビューと一致してしまいます。なお、[`FlowViewDidReceiveError`](unity-handling-events#rendering-and-runtime-errors) の呼び出しを含め、`view.Dismiss()` を呼び出すとビューが解放されます。ビューエラーが発生した場合は、`CreateFlowView` で新しいビューを作成してください。
 
 ## ダイアログを表示する \{#show-dialog\}
 
@@ -63,9 +119,9 @@ AdaptyUI.ShowDialog(view, dialog, (action, error) => {
 });
 ```
 
-## iOSのプレゼンテーションスタイルを設定する \{#configure-ios-presentation-style\}
+## iOSの表示スタイルを設定する \{#configure-ios-presentation-style\}
 
-`Present()`メソッドに`iosPresentationStyle`パラメーターを渡すことで、iOS上でのフローまたはペイウォールの表示スタイルを設定できます。パラメーターには`AdaptyUIIOSPresentationStyle.FullScreen`（デフォルト）または`AdaptyUIIOSPresentationStyle.PageSheet`を指定できます。
+`Present()`メソッドに`iosPresentationStyle`パラメータを渡すことで、iOSでのフローまたはペイウォールの表示スタイルを設定できます。このパラメータには`AdaptyUIIOSPresentationStyle.FullScreen`（デフォルト）または`AdaptyUIIOSPresentationStyle.PageSheet`を指定できます。
 
 ```csharp showLineNumbers title="Unity"
 view.Present(AdaptyUIIOSPresentationStyle.PageSheet, (error) => {
@@ -73,25 +129,27 @@ view.Present(AdaptyUIIOSPresentationStyle.PageSheet, (error) => {
 });
 ```
 
+ユーザーはページシートを下にスワイプして閉じることができます。`Dismiss()` を呼び出さない場合、ビューはメモリに残ります。再度表示するか、SDK 4.3.0 以降では [`Destroy()`](#keep-the-view-to-present-it-again) で解放できます。
+
 </SDKv4>
 
 <SDKv3>
 
-ペイウォールビルダーを使用してペイウォールをカスタマイズした場合、ユーザーに表示するためにモバイルアプリのコードでレンダリングする必要はありません。このようなペイウォールには、表示する内容と表示方法の両方が含まれています。
+ペイウォールビルダーを使ってペイウォールをカスタマイズした場合、ユーザーに表示するためのレンダリングコードをアプリ側で書く必要はありません。このようなペイウォールには、表示する内容と表示方法の両方が含まれています。
 
 :::warning
 
-このガイドは **新しいペイウォールビルダー** を対象としており、Adapty SDK 3.3.0 以降が必要です。
+このガイドは**旧ペイウォールビルダー**を対象としており、Adapty SDK 3.3.0 以降が必要です。
 
-リモートコンフィグを使用したペイウォールの表示については、[リモートコンフィグで設計されたペイウォールのレンダリング](present-remote-config-paywalls)を参照してください。
+カスタムペイウォールを表示する場合は、[カスタムペイウォールを表示する](present-remote-config-paywalls-unity)を参照してください。
 
 :::
 
-ペイウォールを表示するには、[`CreatePaywallView`](unity-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) メソッドで作成した `view` に対して `view.Present()` メソッドを呼び出します。各 `view` は一度しか使用できません。再度ペイウォールを表示する必要がある場合は、`CreatePaywallView` をもう一度呼び出して新しい `view` インスタンスを作成してください。
+ペイウォールを表示するには、[`CreatePaywallView`](unity-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) メソッドで作成した `view` に対して `view.Present()` メソッドを呼び出します。各 `view` は一度しか使用できません。ペイウォールを再表示する必要がある場合は、`CreatePaywallView` をもう一度呼び出して新しい `view` インスタンスを作成してください。
 
 :::warning
 
-`view` を再作成せずに再利用すると、`AdaptyUIError.viewAlreadyPresented` エラーが発生する場合があります。
+同じ `view` を再作成せずに再利用すると、`AdaptyUIError.viewAlreadyPresented` エラーが発生する可能性があります。
 :::
 
 ```csharp showLineNumbers title="Unity"

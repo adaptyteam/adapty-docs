@@ -1,0 +1,61 @@
+---
+title: "Kotlin Multiplatform SDKで初回起動時にAA向けペイウォールを表示する"
+description: "AdaptyProfile.appliedAttributionSourcesを使用して、Kotlin MultiplatformでApple Adsのアトリビューションを待ってからペイウォールをリクエストする方法。"
+metadataTitle: "初回起動時にAA向けペイウォールを表示する | Kotlin Multiplatform SDK | Adapty ドキュメント"
+---
+
+この記事はアプリのiOSビルドに適用されます。Apple Adsのアトリビューションはいです。
+
+Apple Ads (AA) のアトリビューションは `Adapty.activate()` の後に非同期で届きます。早い段階で `getFlow` を呼び出すと、アトリビューションがまだ反映されていないことが多く、Adapty はデフォルトのオーディエンスに対してプレースメントを解決してしまいます。その結果、AA セグメント向けのペイウォールがバイパスされます。`AdaptyProfile.appliedAttributionSources` を使うと、AA アトリビューションがプロファイルに適用されたタイミングをアプリ側で検知できるため、AA セグメントが正しく解決されるまでペイウォールのリクエストを待機させることができます。
+
+:::important
+このプロパティはApple Adsのみを報告します。他のプロバイダーからのアトリビューションはユーザープロファイルで確認でき、セグメントフィルターでも利用可能ですが、ここではまだ表示されません。
+:::
+
+## 始める前に \{#before-you-start\}
+
+必要なもの：
+- Adapty Kotlin Multiplatform SDK **4.0** 以降。
+- Adapty でアプリの Apple Ads を設定済みであること。[Apple Ads](apple-search-ads) を参照してください。
+
+:::note
+例では SDK 4.0 の API 名を使用しています。SDK 3.x では、`getPaywall`/`getPaywallForDefaultAudience` を使ってペイウォールを取得し、`AdaptyPaywall` が返されます。[Adapty Kotlin Multiplatform SDK を v4 に移行する](migration-to-kmp-sdk-v4) を参照してください。
+:::
+
+## 仕組み \{#how-it-works\}
+
+`Adapty.activate()` を呼び出すと、SDK はバックグラウンドで Apple Ads のアトリビューションを Apple にリクエストし、その結果を Adapty のバックエンドに転送します。AA がプロファイルのアクティブなアトリビューションソースになると、SDK は更新された `AdaptyProfile` を `OnProfileUpdatedListener` に届けます。この時点で、`appliedAttributionSources` リストに `"apple_search_ads"` が含まれています。
+
+リストが空の場合、以下のいずれかを意味します。
+
+- このプロファイルに対する Apple Ads アトリビューションがまだ処理されていない。
+- アトリビューションがまったく届いていない。
+- 別のプロバイダーからアトリビューションが届いているが、このリストには反映されない。
+
+リストが空でも、`getFlow` の呼び出しは安全です — Adapty は現在のプロファイルの状態に一致するオーディエンスに対してリクエストを解決します（通常はデフォルトのオーディエンス）。
+
+:::important
+この待機は**初回起動時のみ**適用されます。Apple Ads のアトリビューションが一度記録されると、プロファイルに永続的に保存されます。それ以降の起動では、キャッシュされたプロファイルにすでに `appliedAttributionSources` に `"apple_search_ads"` が含まれているため、リスナーはその値ですぐに発火し、`getFlow` は遅延なく Apple Ads セグメント向けのペイウォールを返します。
+:::
+
+## 実装 \{#implementation\}
+
+初回起動時は、プロファイルの `"apple_search_ads"` を監視し、ハードタイムアウトを設定してください。Apple Ads のアトリビューションが届かない場合でも、該当ユーザーにはペイウォールを表示する必要があります。
+
+1. **SDKを有効化する。** [Kotlin Multiplatform SDKのインストールと設定](sdk-installation-kotlin-multiplatform)を参照してください。
+2. **`Adapty.setOnProfileUpdatedListener`でプロファイルの更新を購読する。** リスナーをまだ設定していない場合は、[サブスクリプションの更新をリッスンする](kmp-check-subscription-status#listen-to-subscription-updates)を参照してください。
+3. **`appliedAttributionSources`に`"apple_search_ads"`が現れるのを監視する。** 表示されたらペイウォールをリクエストしてください — AdaptyはAAセグメント対応のバリアントを返します。
+
+```kotlin
+Adapty.setOnProfileUpdatedListener { profile ->
+    if ("apple_search_ads" in profile.appliedAttributionSources) {
+        // load the paywall via Adapty.getFlow(placementId)
+    }
+}
+```
+
+4. **サブスクリプションと並行して3〜5秒のタイマーを開始します。** タイマーが`"apple_search_ads"`より先に発火した場合は、代わりに`getFlowForDefaultAudience`でデフォルトオーディエンスのペイウォールをリクエストしてください。このメソッドはセグメント分類を待たずにペイウォールを返します。
+
+どちらのパスが先に発火しても、そちらでペイウォールを読み込み、もう一方のパスはスキップしてください。ペイウォールが2回取得されないよう、単一の状態フラグ（例: `hasLoadedPaywall`）で重複排除してください。ネットワークリクエストが失敗してもユーザーが詰まらないよう、そのプレースメントに[フォールバックペイウォール](kmp-use-fallback-paywalls)を設定してください。
+
+`setOnProfileUpdatedListener` は1つのリスナーのみ受け付けます。アプリがすでに他の目的（例：[サブスクリプション更新のリッスン](kmp-check-subscription-status#listen-to-subscription-updates)）でこのリスナーを使用している場合は、2つ目のリスナーを登録するのではなく、既存のリスナーにチェックを追加してください。

@@ -6,15 +6,13 @@ toc_max_heading_level: 4
 keywords: ['AdaptyUIFlowsEventsObserver', 'flowViewDidPerformAction', 'flowViewDidSelectProduct', 'flowViewDidStartPurchase', 'flowViewDidFinishPurchase', 'flowViewDidFailPurchase', 'flowViewDidStartRestore', 'flowViewDidFinishRestore', 'flowViewDidFailRestore', 'flowViewDidFailLoadingProducts', 'flowViewDidReceiveError', 'AdaptyUIPaywallsEventsObserver', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
 ---
 
-import SampleApp from '@site/src/locales/fr/reusable/SampleApp.md';
-
 <SDKv4>
 
 :::important
-Ce guide couvre la gestion des événements liés aux achats, aux restaurations, à la sélection de produits et au rendu des flows. Vous devez également implémenter la gestion des boutons (fermeture du flow, ouverture de liens, etc.). Consultez notre [guide sur la gestion des actions de flow](kmp-handle-paywall-actions) pour plus de détails.
+Ce guide couvre la gestion des événements pour les achats, les restaurations, la sélection de produits et le rendu des flows. Vous devez également implémenter la gestion des boutons (fermeture du flow, ouverture de liens, etc.). Consultez notre [guide sur la gestion des actions de flow](kmp-handle-paywall-actions) pour plus de détails.
 :::
 
-Les flows et les paywalls configurés avec le [Flow Builder](adapty-flow-builder) ou le [Paywall Builder](adapty-paywall-builder) n'ont pas besoin de code supplémentaire pour effectuer ou restaurer des achats. Ils génèrent cependant des événements auxquels votre application peut réagir. Ces événements comprennent les appuis sur des boutons (boutons de fermeture, URLs, sélections de produits, etc.) ainsi que des notifications sur les actions liées aux achats. Découvrez ci-dessous comment répondre à ces événements.
+Les flows et les paywalls rendus par Adapty n'ont pas besoin de code supplémentaire pour effectuer et restaurer des achats. Cependant, ils génèrent certains événements auxquels votre application peut réagir. Ces événements incluent les appuis sur des boutons (boutons de fermeture, URLs, sélections de produits, etc.) ainsi que des notifications sur les actions liées aux achats. Découvrez comment répondre à ces événements ci-dessous.
 
 Pour contrôler ou surveiller les processus qui se produisent sur l'écran du flow dans votre application mobile, implémentez les méthodes de l'interface `AdaptyUIFlowsEventsObserver` et enregistrez votre observer avec `AdaptyUI.setFlowsEventsObserver()`. Certaines méthodes disposent d'implémentations par défaut qui gèrent automatiquement les scénarios courants — ne surchargez donc que les méthodes que vous souhaitez modifier :
 
@@ -122,7 +120,10 @@ En [mode Observateur](kmp-present-flows-in-observer-mode), les achats démarrés
 
 #### Achat réussi, annulé ou en attente \{#successful-canceled-or-pending-purchase\}
 
-Cette méthode est appelée lorsqu'un achat se termine. Par défaut, elle ne fait rien — le flow reste ouvert après l'achat jusqu'à ce que vous le fermiez, alors appelez `view.dismiss()` vous-même dès que l'utilisateur obtient l'accès :
+Si un achat se termine, cette méthode est appelée. Par défaut, elle ne fait rien et le flow reste ouvert. Vous pouvez réagir à l'achat à deux endroits :
+
+- **Dans le flow (recommandé)** : Pour fermer le flow ou afficher un écran de remerciement après un achat réussi, configurez les [actions de résultat](respond-to-purchase-outcomes#add-actions-for-a-result) dans le Flow & Paywall Builder. Vous pouvez les modifier sans publier de nouvelle version de l'app.
+- **Dans le code de l'app** : Pour ce que le flow ne peut pas faire, comme une notification personnalisée. Pour fermer le flow depuis le code, appelez `view.dismiss()` une fois que l'utilisateur a accès :
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun flowViewDidFinishPurchase(
@@ -207,11 +208,9 @@ override fun flowViewDidFinishPurchase(
 ```
 </Details>
 
-Nous recommandons de fermer l'écran du flow en cas d'achat réussi.
-
 #### Échec d'achat \{#failed-purchase\}
 
-Cette méthode est invoquée lorsqu'un achat échoue en raison d'une erreur. Cela inclut les erreurs StoreKit/Google Play Billing (restrictions de paiement, produits invalides, échecs réseau), les échecs de vérification des transactions et les erreurs système. Notez que les annulations de l'utilisateur déclenchent `flowViewDidFinishPurchase` avec un résultat annulé à la place, et les paiements en attente ne déclenchent pas cette méthode.
+Si un achat échoue en raison d'une erreur, cette méthode sera invoquée. Cela inclut les erreurs StoreKit/Google Play Billing (restrictions de paiement, produits invalides, échecs réseau), les échecs de vérification de transaction et les erreurs système. Notez que les annulations par l'utilisateur déclenchent `flowViewDidFinishPurchase` avec un résultat annulé à la place, et les paiements en attente ne déclenchent pas cette méthode.
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun flowViewDidFailPurchase(
@@ -300,9 +299,9 @@ override fun flowViewDidFinishRestore(view: AdaptyUIFlowView, profile: AdaptyPro
 ```
 </Details>
 
-Nous recommandons de fermer l'écran si l'utilisateur possède le `accessLevel` requis. Consultez la rubrique [Statut de l'abonnement](subscription-status) pour savoir comment le vérifier.
+Pour afficher d'autres écrans après une restauration d'achat, comme un écran de bienvenue, configurez des [actions de résultat](respond-to-purchase-outcomes#respond-to-a-purchase-restoration) dans le Flow & Paywall Builder. Utilisez le code de l'application pour ce que le flow ne peut pas faire, comme ouvrir un écran de votre application une fois que l'utilisateur a accès. Consultez la rubrique [Statut d'abonnement](subscription-status) pour savoir comment vérifier le niveau d'accès.
 
-#### Échec de la restauration \{#failed-restore\}
+#### Restauration échouée \{#failed-restore\}
 
 Si `Adapty.restorePurchases()` échoue, cette méthode sera invoquée :
 
@@ -331,7 +330,7 @@ override fun flowViewDidFailRestore(view: AdaptyUIFlowView, error: AdaptyError) 
 
 #### Fin de navigation de paiement web \{#web-payment-navigation-completion\}
 
-Si un utilisateur lance le processus d'achat via un [paywall web](web-paywall), cette méthode sera invoquée :
+Si un utilisateur démarre le processus d'achat via un [paywall web](web-paywall), cette méthode sera invoquée :
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun flowViewDidFinishWebPaymentNavigation(
@@ -348,7 +347,7 @@ override fun flowViewDidFinishWebPaymentNavigation(
 ```
 
 <Details>
-<summary>Exemples d'événements (Cliquer pour développer)</summary>
+<summary>Exemples d'événements (cliquez pour développer)</summary>
 
 ```javascript
 // Successful web payment navigation
@@ -454,6 +453,8 @@ Kotlin Multiplatform vous transmet les paramètres d'événement sous forme de c
 
 Consultez [Suivre les vues d'écran de flow](kmp-flow-screen-views) pour savoir quoi en faire.
 
+Un flow rapporte également les valeurs saisies et sélectionnées par les utilisateurs. Consultez [Traiter les données des flows](kmp-flow-input) pour les lire.
+
 ### Navigation \{#navigation\}
 
 #### Bouton retour système Android \{#android-system-back-button\}
@@ -480,10 +481,10 @@ Consultez le [guide de gestion des actions de flow](kmp-handle-paywall-actions) 
 
 <SDKv3>
 
-Les paywalls configurés avec le [Paywall Builder](adapty-paywall-builder) n'ont pas besoin de code supplémentaire pour effectuer et restaurer des achats. Cependant, ils génèrent certains événements auxquels votre application peut réagir. Ces événements incluent les pressions sur des boutons (boutons de fermeture, URL, sélections de produits, etc.) ainsi que des notifications sur les actions liées aux achats effectuées sur le paywall. Découvrez comment répondre à ces événements ci-dessous.
+Les paywalls configurés avec le [Paywall Builder](adapty-paywall-builder) n'ont pas besoin de code supplémentaire pour effectuer et restaurer des achats. Cependant, ils génèrent certains événements auxquels votre application peut répondre. Ces événements incluent les appuis sur des boutons (boutons de fermeture, URL, sélections de produits, etc.) ainsi que des notifications sur les actions liées aux achats effectuées sur le paywall. Découvrez comment répondre à ces événements ci-dessous.
 
 :::warning
-Ce guide concerne uniquement les paywalls du **nouveau Paywall Builder**.
+Ce guide est destiné **uniquement aux paywalls créés dans l'ancien builder**.
 :::
 
 Pour contrôler ou surveiller les processus se déroulant sur l'écran du paywall dans votre application mobile, implémentez les méthodes de l'interface `AdaptyUIPaywallsEventsObserver`. Certaines méthodes ont des implémentations par défaut qui gèrent automatiquement les scénarios courants.

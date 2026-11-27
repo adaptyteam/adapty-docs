@@ -1,0 +1,47 @@
+---
+no_index: true
+---
+
+Le callback transmet deux événements. Filtrez sur `name` pour n'afficher que les événements `flow_user_input`. Le payload JSON de la réponse ressemble à ceci :
+
+```json
+{
+  "name": "flow_user_input",
+  "instanceId": "scr_registration",
+  "isBackendEvent": false,
+  "isCustomerEvent": true,
+  "element_id": "email",
+  "element_type": "email_input",
+  "value": "jane@example.com"
+}
+```
+
+| Paramètre         | Description |
+|:------------------|:------------|
+| `name`            | `flow_user_input` pour les événements de saisie, `flow_screen_showed` pour les vues d'écran. |
+| `instanceId`      | L'ID de l'écran de l'input. Les IDs d'éléments sont uniques au sein d'un écran, pas dans tout le flow. Si votre flow comporte des inputs sur plusieurs écrans, associez `instanceId` à `element_id` lors du filtrage des événements. |
+| `element_id`      | L'**Element ID** de l'[input](builder-inputs-and-forms), ou le **Group ID** du [groupe sélectionnable](flow-selectable-elements). |
+| `element_type`    | Le type d'élément qui a envoyé l'événement. Il détermine lequel des paramètres ci-dessous contient la valeur saisie. |
+| `value`           | **Champs texte, sélecteurs et bascules uniquement.** La valeur saisie : une chaîne pour les champs texte, un entier pour les sélecteurs de date et d'heure, un nombre pouvant avoir des décimales pour les sélecteurs numériques, un booléen pour les bascules. |
+| `item_ids`        | **Groupes sélectionnables à choix unique et à choix multiple uniquement.** Les **Element IDs** des options sélectionnées, dans l'ordre où les options apparaissent dans le builder. Une entrée pour un groupe à choix unique ; un nombre quelconque pour un groupe à choix multiple. |
+| `item_titles`     | **Groupes sélectionnables à choix unique et à choix multiple uniquement.** Les titres des options listées dans `item_ids`, dans le même ordre. Jamais vide : une option sans titre renvoie son ID à la place. |
+| `isCustomerEvent` | Indicateur utilitaire, toujours `true` pour cet événement. Il marque les événements que le SDK transmet à votre callback. Utile si un seul handler transfère tous les événements de flow vers votre analytics et que vous conditionnez sur cet indicateur plutôt que sur `name`. |
+| `isBackendEvent`  | Indicateur utilitaire, toujours `false` pour cet événement. Il marque les événements qu'Adapty enregistre également pour ses propres analytics. `false` confirme que ce que les utilisateurs saisissent n'est transmis qu'à votre application et nulle part ailleurs — Adapty ne le reçoit ni ne le stocke. |
+
+Ce que chaque élément rapporte :
+
+| Dans le builder | `element_type` | Paramètre qui stocke la valeur | Ce qu'il contient |
+|:----------------|:---------------|:-------------------------------|:------------------|
+| Input **Text**, **Number**, **Phone number** | `text_input`, `number_input`, `phone_input` | `value` | La chaîne brute saisie par l'utilisateur. Les nombres arrivent sous forme de chaînes, pas de types numériques. |
+| Input **E-mail** | `email_input` | `value` | La chaîne brute saisie par l'utilisateur, même si elle n'a pas passé la validation de format du builder. Validez-la de votre côté avant de l'utiliser. |
+| Input **Password** | aucun | aucun | N'envoie aucun événement. |
+| Input **Date** | `date_picker` | `value` | Timestamp Unix en millisecondes, sous forme d'entier, à minuit heure locale de la date sélectionnée. |
+| Input **Time** | `time_picker` | `value` | Timestamp Unix en millisecondes, sous forme d'entier, arrondi à la minute inférieure. |
+| Input **Date & Time** | `date_picker` et `time_picker` | `value` | Deux éléments, un sélecteur de date et un sélecteur d'heure. Chacun envoie son propre événement. |
+| Input basculé sur **Date & Time** dans le menu déroulant **Type** | `date_time_picker` | `value` | Timestamp Unix en millisecondes, sous forme d'entier, arrondi à la minute inférieure. |
+| **Number picker** | `wheel_range_picker` | `value` | Le nombre sélectionné par l'utilisateur, ou la valeur par défaut s'il n'a jamais tourné la molette. Il peut avoir des décimales, comme `70.5`. Contrairement à la valeur d'un input **Number**, il arrive comme type numérique, pas comme chaîne. |
+| Groupe **Single choice** | `single_choice` | `item_ids`, `item_titles` | Deux tableaux. `item_ids` : un tableau avec l'Element ID de l'option sélectionnée. `item_titles` : un tableau avec le titre de cette option. |
+| Groupe **Multi-choice** | `multi_choice` | `item_ids`, `item_titles` | Deux tableaux. `item_ids` : les Element IDs de chaque option sélectionnée, dans l'ordre où les options apparaissent dans le builder. `item_titles` : leurs titres, dans le même ordre. Les deux tableaux sont vides quand rien n'est sélectionné. |
+| Groupe **Toggle** | `toggle` | `value` | Un booléen. |
+
+Pour brancher sur une réponse, comparez `item_ids`, pas `item_titles`. Un titre est dérivé : l'**Element Title** de l'option si vous en avez défini un, sinon son texte dans votre locale par défaut, sinon son Element ID. Un utilisateur ayant consulté le flow dans une autre langue a vu un texte différent.

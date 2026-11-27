@@ -1,26 +1,84 @@
 ---
-title: "Flutter SDKでオブザーバーモードのトランザクションを報告する"
-description: "Adaptyオブザーバーモードで購入トランザクションを報告し、ユーザーインサイトと収益トラッキングをFlutter SDKで行います。"
-metadataTitle: "Flutter SDKでオブザーバーモードのトランザクションを報告する | Adapty ドキュメント"
+title: "Flutter SDKのオブザーバーモードでトランザクションを報告する"
+description: "Flutter SDKのAdaptyオブザーバーモードで購入トランザクションを報告し、ユーザーインサイトと収益追跡を行います。"
+metadataTitle: "Flutter SDKのオブザーバーモードでのトランザクション報告 | Adapty ドキュメント"
 ---
 
-<Tabs groupId="sdk-version" queryString> 
-<TabItem value="current" label="Adapty SDK v3.4+（最新版）" default>
-Observer モードでは、Adapty SDK は既存の購入システムを通じて行われた購入を単独で追跡することができません。アプリストアからのトランザクションをご自身で報告する必要があります。アナリティクスのエラーを防ぐため、アプリをリリースする**前**にこの設定を必ず行ってください。
+<SDKv4>
 
-Adapty がトランザクションを認識できるよう、`reportTransaction` を使用して各トランザクションを明示的に報告してください。
+オブザーバーモードでは、Adapty SDKは既存の購入システムで行われた購入を単独で追跡できません。アプリストアからトランザクションを報告する必要があります。アナリティクスのエラーを避けるため、アプリをリリースする**前**にこの設定を完了させることが重要です。
+
+`reportTransaction`を使用して、Adaptyが認識できるよう各トランザクションを明示的に報告してください。
 
 :::warning
-**トランザクションのレポートを省略しないでください！**
-`reportTransaction` を呼び出さないと、Adapty はトランザクションを認識できず、アナリティクスにも表示されず、インテグレーションにも送信されません。
+
+**トランザクションの報告をスキップしないでください！**
+`reportTransaction`を呼び出さないと、Adaptyはトランザクションを認識できず、アナリティクスに表示されず、インテグレーションにも送信されません。
 
 :::
 
-Adapty のフローやペイウォールを使用している場合は、トランザクションをレポートする際に `variationId` を含めてください。これにより、購入がそのトリガーとなったフローまたはペイウォールに紐付けられ、正確なアナリティクスが確保されます。
+Adapty のフローおよびペイウォールを使用する場合は、トランザクションを報告する際に `variationId` を含めてください。これにより、購入がそれをトリガーしたフローまたはペイウォールに紐付けられ、正確なアナリティクスが保証されます。
+
+:::warning
+- Android では、Adapty Flutter SDK 4.4.0 以降を使用してください。それより古いバージョンでは `variationId` が Adapty に送信されない場合があり、購入がフローに紐付けられません。
+- ユーザーが購入した `AdaptyPaywallProduct` の `paywallVariationId` を渡してください。`AdaptyFlow.variationId` ではありません。フロー自体のバリエーション ID では、購入がフローに紐付けられません。
+:::
 
 ```dart showLineNumbers
 try {
-    // transaction.finish() を呼び出すたびに
+    // transaction.finish()を呼び出すたびに
+    await Adapty().reportTransaction(
+        transactionId: "YOUR_TRANSACTION_ID",
+        variationId: "PAYWALL_VARIATION_ID", // optional
+    );
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+    // handle the error
+}
+```
+
+パラメータ:
+
+| パラメーター     | 必須/任意 | 説明                                                  |
+| ------------- | -------- | ------------------------------------------------------------ |
+| transactionId | 必須 | <ul><li> iOS の場合: トランザクションの識別子。</li><li> Android の場合: 購入の文字列識別子 `purchase.getOrderId`。ここで purchase は billing library の [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) クラスのインスタンスです。</li></ul> |
+| variationId   | 任意 | バリアントの文字列識別子。ユーザーが購入した `AdaptyPaywallProduct` の `paywallVariationId` を渡してください。これは、このプロダクトを含む [AdaptyFlowPaywall](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyFlowPaywall-class.html) の `variationId` と同じ値です。 |
+| appleJwsTransaction | 任意 | iOS のみ、SDK 4.3.0 以降。署名済みの StoreKit 2 トランザクション: 検証結果の `jwsRepresentation`。`transactionId` と同じトランザクションのものを指定します。SDK はそのまま Adapty に送信します。Android ではこのパラメーターは無視されます。 |
+
+iOSでは、購入システムからStoreKit 2のトランザクションを受け取った場合、そのJWS表現を`appleJwsTransaction`に渡してください：
+
+```dart showLineNumbers
+await Adapty().reportTransaction(
+    transactionId: "YOUR_TRANSACTION_ID",
+    variationId: "PAYWALL_VARIATION_ID", // optional
+    appleJwsTransaction: jwsRepresentation, // iOS only, optional
+);
+```
+
+</SDKv4>
+
+<SDKv3>
+
+<Tabs groupId="sdk-version" queryString> 
+
+<TabItem value="current" label="Adapty SDK 3.4+" default> 
+Observer modeでは、Adapty SDKは既存の購入システムで行われた購入を単独で追跡できません。アプリストアからトランザクションを報告する必要があります。アナリティクスのエラーを避けるために、アプリをリリースする**前**にこの設定を行うことが重要です。
+
+`reportTransaction`を使用して、AdaptyがトランザクションをAdaptyに認識させるために各トランザクションを明示的に報告します。
+
+:::warning
+
+**トランザクションの報告をスキップしないでください！**
+`reportTransaction`を呼び出さないと、Adatyはトランザクションを認識できず、アナリティクスに表示されず、インテグレーションにも送信されません。
+
+:::
+
+Adapty のフローやペイウォールを使用している場合は、トランザクションを報告する際に `variationId` を含めてください。これにより、購入がそれを起動したフローまたはペイウォールに紐付けられ、正確なアナリティクスが保証されます。
+
+```dart showLineNumbers
+try {
+    // every time when calling transaction.finish()
     await Adapty().reportTransaction(
         transactionId: "YOUR_TRANSACTION_ID",
         variationId: "PAYWALL_VARIATION_ID", // optional
@@ -34,19 +92,20 @@ try {
 
 パラメーター:
 
-| パラメーター   | 必須/任意 | 説明                                                         |
+| パラメーター   | 必須/任意 | 説明                                                  |
 | ------------- | -------- | ------------------------------------------------------------ |
-| transactionId | 必須 | <ul><li> iOS の場合: トランザクションの識別子。</li><li> Android の場合: 購入の文字列識別子 `purchase.getOrderId`。ここで purchase は、billing ライブラリの [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) クラスのインスタンスです。</li></ul> |
-| variationId   | 任意 | バリアントの文字列識別子。[AdaptyPaywall](https://pub.dev/documentation/adapty_flutter/3.17.2/adapty_flutter/AdaptyPaywall-class.html) オブジェクトの `variationId` プロパティを使用して取得できます。 |
+| transactionId | 必須 | <ul><li> iOS の場合: トランザクションの識別子。</li><li> Android の場合: 購入のString識別子 `purchase.getOrderId`。ここで購入は billing library の [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) クラスのインスタンスです。</li></ul> |
+| variationId   | 任意 | バリアントのString識別子。[AdaptyPaywall](https://pub.dev/documentation/adapty_flutter/3.17.2/adapty_flutter/AdaptyPaywall-class.html) オブジェクトの `variationId` プロパティを使用して取得できます。 |
 
 </TabItem>
 <TabItem value="old" label="Adapty SDK 3.3.x (legacy)" default> 
 
-オブザーバーモードでは、Adapty SDKは既存の購入システムで行われた購入を自動的に追跡することができません。アプリストアのトランザクションを報告するか、復元する必要があります。アナリティクスのエラーを避けるために、アプリをリリースする**前**にこの設定を完了することが重要です。
+Observerモードでは、Adapty SDKは既存の購入システムを通じて行われた購入を単独で追跡することができません。アプリストアからのトランザクションを報告するか、復元する必要があります。アナリティクスのエラーを避けるため、アプリをリリースする**前に**この設定を行うことが重要です。
 
-両方のプラットフォームで `reportTransaction` を使用して各トランザクションを明示的に報告し、AndroidではAdaptyがそれを認識できるよう追加の手順として `restorePurchases` を使用してください。
+両方のプラットフォームで`reportTransaction`を使用して各トランザクションを明示的に報告し、AndroidではAdaptyがトランザクションを認識できるよう追加の手順として`restorePurchases`を使用してください。
 
 :::warning
+
 **トランザクションの報告と購入の復元を省略しないでください！**
 これらのメソッドを呼び出さないと、Adapty はトランザクションを認識できず、アナリティクスに表示されず、インテグレーションにも送信されません。
 
@@ -100,6 +159,7 @@ try {
 <TabItem value="kotlin" label="Android and Android-based cross-platforms" default> 
 
 **トランザクションのレポート**
+
 `restorePurchases` を使用してオブザーバーモードで Adapty にトランザクションを報告する方法は、[モバイルコードでの購入の復元](flutter-restore-purchase) ページをご覧ください。
 
 :::warning
@@ -127,4 +187,6 @@ try {
 ```
 
 </TabItem> 
-</Tabs>
+</Tabs> 
+
+</SDKv3>

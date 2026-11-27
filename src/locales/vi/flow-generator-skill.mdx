@@ -1,0 +1,252 @@
+---
+title: "Agent skill để làm việc với flows"
+description: "Cài đặt skill flow-generator để AI tool của bạn có thể tạo, dịch và tái cấu trúc các Adapty flow thông qua Adapty CLI hoặc MCP server."
+metadataTitle: "Flow Generator Agent Skill | Flows & paywalls | Tài liệu Adapty"
+---
+
+Skill [flow-generator](https://github.com/adaptyteam/adapty-skills) giúp công cụ AI của bạn xây dựng và chỉnh sửa các flow. Chỉ cần mô tả những gì bạn muốn tạo hoặc thay đổi bằng ngôn ngữ tự nhiên, công cụ sẽ đọc cấu hình builder của flow thông qua [Adapty CLI](developer-cli-quickstart) hoặc [Adapty MCP server](adapty-mcp), viết lại nó, hiển thị bản xem trước, và lưu bản nháp sau khi bạn phê duyệt.
+
+Một skill là tập hợp các hướng dẫn mà AI tool của bạn tải theo yêu cầu. Skill này bao gồm các phần trong cấu hình flow dễ bị sai: những chỉnh sửa nào sẽ dừng quá trình publish, những tham chiếu nào bị hỏng khi bạn xóa một màn hình, và những gì bản xem trước được render có thể và không thể chứng minh.
+
+:::important
+Skill flow-generator đang ở giai đoạn thử nghiệm và lưu các thay đổi trực tiếp vào flow trong dashboard của bạn. Hãy chạy nó trên một bản nháp hoặc bản sao trước, và xem xét kỹ mọi thay đổi trong Flow & Paywall Builder trước khi publish.
+:::
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+- **Một công cụ AI có plugin Adapty**: Một coding agent như Claude Code, Codex, Copilot CLI, hoặc Gemini CLI, hay claude.ai. Skill này ưu tiên sử dụng Adapty CLI. Nếu chỉ có MCP server, nó sẽ đề nghị cài đặt CLI; nếu bạn từ chối, nó sẽ tiếp tục qua MCP và liệt kê từng bước xác minh cục bộ không được chạy.
+- **Sản phẩm trong danh mục Adapty của bạn**: Trước khi thiết kế một màn hình bán hàng, skill sẽ liệt kê các sản phẩm của bạn và hỏi xem sản phẩm nào sẽ xuất hiện trên đó. Nếu không có sản phẩm nào phù hợp, nó có thể tạo một sản phẩm mới từ store product ID mà bạn cung cấp, và sẽ hỏi trước.
+
+## Bạn có thể làm gì với nó \{#what-you-can-do-with-it\}
+
+### Tạo một flow từ đầu \{#author-a-flow-from-scratch\}
+
+- **Từ mô tả**: "Một paywall cho ứng dụng fitness của tôi, hai gói, gói năm được chọn sẵn." Skill tự chọn bố cục, xây dựng từ các pattern đã được kiểm chứng — tabs, card gói, toggle, đếm ngược, thanh tiến trình, bottom sheet — và dùng các sản phẩm bạn đã chọn từ catalog.
+- **Từ ảnh chụp màn hình hoặc thiết kế**: Đưa cho nó một bản tham chiếu và nó sẽ khớp layout, màu sắc, typography, và phong cách icon, sau đó cho bạn biết mọi điểm khác biệt mà nó không thể thu hẹp. Bản tham chiếu có thể là paywall của đối thủ, một màn hình của chính bạn, hoặc một frame từ công cụ thiết kế. Nếu AI tool của bạn được kết nối với công cụ thiết kế đó qua MCP, nó đọc frame trực tiếp — không cần ai xuất ảnh chụp màn hình hay mô tả lại thiết kế bằng lời.
+- **Được chấm điểm theo tiêu chí chuyển đổi**: Khi bạn không cung cấp thiết kế, skill chạy thư viện `paywall-teardown` của Adapty trên màn hình vừa xây và sửa những điểm xếp hạng cao nhất, trước khi bạn nhìn thấy kết quả. Bạn nhận được một màn hình được xây dựng theo các pattern bán hàng hiệu quả trong danh mục của mình, không phải một layout chung chung.
+
+### Thay đổi flow hiện có \{#change-a-flow-you-already-have\}
+
+- **Bản địa hóa sang thị trường mới**: Thêm một ngôn ngữ và điền vào tất cả các trường có thể bản địa hóa — tiêu đề, nhãn nút, chú thích gói, slot ảnh và placeholder đầu vào. Đây là cách nhanh nhất để đưa một paywall đang hoạt động sang mười ngôn ngữ.
+- **Viết lại nội dung trên tất cả ngôn ngữ cùng lúc**: Thay đổi cách diễn đạt mà không chạm vào cấu trúc, và chỉnh sửa xung quanh các biến giá thay vì đi qua chúng, để giá vẫn hiển thị đúng.
+- **Cấu trúc lại flow**: Thêm, xóa và sắp xếp lại các màn hình, sau đó sửa chữa phần điều hướng bị hỏng do thay đổi và báo cáo các màn hình không thể truy cập.
+- **Thêm quiz và phân nhánh**: Xây dựng các nhóm có thể chọn, ID tùy chọn và các hành động có điều kiện để dẫn mỗi câu trả lời đến màn hình riêng — bước cá nhân hóa biến onboarding thành một lượt truy cập paywall có định hướng.
+- **Tạo các biến thể cho một bài test**: Nhân bản phiên bản đang chạy của một flow đang hoạt động sang một flow mới, sau đó áp dụng thay đổi bạn muốn test. Các màn hình, theme, font, ngôn ngữ, sản phẩm và Remote Config đều được chuyển theo, nên biến thể chỉ khác ở đúng nơi bạn muốn.
+- **Thay đổi giao diện theo mùa hoặc chiến dịch**: Lấy màu từ ảnh tham chiếu và áp dụng theme mới cho toàn bộ flow, thay vì chỉnh lại từng màn hình một.
+- **Quay lại phiên bản trước**: Tìm một phiên bản cũ hơn trong [lịch sử phiên bản](flow-version-history) của flow và khôi phục nó thành bản nháp hoặc sao chép sang một flow mới. Skill sau đó tiếp tục chỉnh sửa từ phiên bản đó.
+
+## Kết quả tạo ra \{#what-it-produces\}
+
+### Một paywall với dòng thời gian các gói \{#a-paywall-with-a-plan-timeline\}
+
+<ZoomImage id="flow-generator-timeline-paywall.webp" width="320px" alt="A generated finance paywall: a three-step numbered timeline connected by a green rail, then a selected Annual plan card showing a per-month equivalent beside its yearly price, an unselected Monthly card, and a Continue button" />
+
+Dòng thời gian có đánh số trên hai thẻ gói đăng ký. Được hiển thị trên thiết bị thực, nên cửa hàng đã xử lý giá — bao gồm cả giá theo tháng mà Adapty tính toán cho gói hàng năm.
+
+### Một paywall từ một câu lệnh
+
+<ZoomImage id="flow-generator-paywall.webp" width="320px" alt="Một paywall fitness tối màu được tạo tự động: tiêu đề, ba dòng lợi ích có icon, thẻ Yearly được chọn với nhãn Best value, thẻ Monthly chưa được chọn, và nút Start training" />
+
+Yêu cầu chỉ là "thêm màn hình paywall" — không có tham chiếu, không có flow nguồn. `$0.00` là giá trị xem trước tạm thời, và nhãn hiển thị **Best value** vì không có thông tin giảm giá nào được cung cấp.
+
+### Flow ba màn hình \{#a-three-screen-flow\}
+
+<ZoomImage id="flow-generator-flow-strip.webp" width="700px" alt="Ba màn hình được tạo ra đặt cạnh nhau: một bài quiz về mục tiêu tập luyện với lựa chọn thứ hai được chọn, một kế hoạch tám tuần chia thành ba giai đoạn, và màn hình ưu đãi với đồng hồ đếm ngược phía trên thẻ Yearly" />
+
+Quiz, kế hoạch, ưu đãi — với điều hướng được kết nối giữa các màn hình. Đồng hồ đếm ngược hiển thị, nhưng chỉ trên thiết bị thật mới kiểm chứng được nó hoạt động đúng không.
+
+## Cài đặt skill \{#install-the-skill\}
+
+Skill này là một phần của [Adapty plugin](manage-adapty-with-ai).
+
+<AdaptySkillsInstall />
+
+Sau đó mô tả những gì bạn muốn bằng ngôn ngữ thông thường. Hầu hết các yêu cầu thuộc một trong các dạng sau:
+
+- **Mô tả flow**: Ứng dụng làm gì, màn hình bán gì, plan nào được chọn sẵn.
+- **Chỉ vào một thiết kế**: Một ảnh chụp màn hình, một trong các màn hình của bạn, hoặc một frame trong công cụ thiết kế.
+- **Yêu cầu chỉnh sửa cụ thể**: Nêu tên flow và thay đổi cần làm — một ngôn ngữ mới, copy khác, thêm màn hình, hoặc một nhánh dựa trên câu trả lời quiz.
+- **Trả lời câu hỏi của nó**: Nó sẽ hỏi sản phẩm nào cần đặt trên màn hình, và bất kỳ con số thực nào nó từ chối tự bịa ra.
+
+## Cách hoạt động \{#how-it-works\}
+
+Mọi thứ skill xây dựng đều hội tụ vào một file cục bộ. Không có gì được đưa lên dashboard cho đến bước cuối cùng.
+
+1. **Thiết lập và xác thực**. Skill cài đặt hoặc cập nhật [Adapty CLI](developer-cli-quickstart) nếu cần, sau đó xác minh thông tin đăng nhập Adapty của bạn và đọc app ID. Nếu bạn chưa đăng nhập, nó sẽ mở trình duyệt để đăng nhập và chờ bạn hoàn tất.
+
+2. **Chọn hoặc tạo flow**. Khi chỉnh sửa, skill sẽ tải config của flow và báo cáo những gì tìm thấy — màn hình, ngôn ngữ, sản phẩm và sơ đồ điều hướng — để phát hiện flow sai trước khi thay đổi bất kỳ thứ gì. Trước khi chỉnh sửa, skill giữ một bản sao của config đã tải làm bản dự phòng. [Lịch sử phiên bản](flow-version-history) lưu mọi phiên bản đã xuất bản, nhưng không lưu các trạng thái trước đó của bản nháp, vì vậy với bản nháp chưa từng được xuất bản, bản sao chính là cách duy nhất để khôi phục. Với công việc mới, skill tạo một flow mới thay vì tạo đè lên flow đã có nội dung.
+
+3. **Xác thực config**. Lệnh này chạy hai bước xác thực cục bộ và một bước xác thực với Adapty. Bước cục bộ kiểm tra xem các tham chiếu nội bộ có còn nhất quán không và các thuộc tính có đúng định dạng không. `adapty flows config validate` sau đó chạy cùng dịch vụ kiểm soát việc xuất bản, vì vậy kết quả xanh có nghĩa là config có thể xuất bản được. Cả ba bước đều không lưu bất kỳ thứ gì.
+
+4. **Xem trước và lặp lại**. Skill sẽ render từng màn hình đã thay đổi thành ảnh chụp màn hình và kiểm tra. Khi bạn cung cấp ảnh tham chiếu, nó sẽ so sánh kết quả render với file đó theo từng thành phần — màu sắc, kiểu chữ, phong cách icon, tỷ lệ — rồi thu hẹp các điểm khác biệt mà nó có thể xử lý. Bất kỳ điều gì trông không đúng sẽ đưa skill quay lại bước 3, tốn một lần chụp màn hình thay vì một lần lưu.
+
+5. **Phê duyệt và lưu**. Việc ghi đè một cấu hình đã tồn tại cần có sự xác nhận rõ ràng từ bạn. Công cụ sẽ hiển thị bản xem trước trước và sau khi chỉnh sửa cho từng màn hình bị tác động, liệt kê các thay đổi không có giao diện trực quan, mở một màn hình trực tiếp trong trình duyệt của bạn, và đặt tên cho file sao lưu. Sau đó mới ghi vào.
+
+## Sau khi chạy \{#after-the-run\}
+
+Skill sẽ lưu lại một bản nháp cho bạn. Để đưa nó đến tay người dùng:
+
+1. **Mở flow trong Flow & Paywall Builder.** Nếu bạn đã mở flow trong một tab trình duyệt, hãy tải lại trang — Flow & Paywall Builder không tự nhận các thay đổi được ghi qua CLI.
+2. **Xem lại những gì đã thay đổi.** Adapty đánh dấu flow đã được **Published** trước khi lưu là **Dirty**, và mọi thành viên trong nhóm đều thấy trạng thái đó. Người dùng của bạn vẫn thấy phiên bản đã xuất bản lần cuối.
+3. **Xem trước trên thiết bị thực.** [Xem trước flow](paywall-device-compatibility-preview) hướng dẫn quy trình dùng mã QR qua ứng dụng Adapty trên di động. Hãy kiểm tra những gì skill báo cáo là chưa được xác minh — phân nhánh, toggle, và bất kỳ ngôn ngữ nào khác ngoài ngôn ngữ mà nó đã hiển thị.
+4. **Xuất bản.** Nhấp vào **Publish to Live** ở góc trên bên phải của Flow & Paywall Builder, hoặc chạy [`adapty flows publish`](developer-cli-flows#adapty-flows-publish) từ terminal. Một flow chưa được đưa vào [placement](create-placement) sẽ không đến tay ai, và flow ở trạng thái Draft không thể thêm vào placement — vì vậy hãy xuất bản trước. Xem [Lưu & xuất bản flow](builder-save-publish).
+
+Nếu kết quả không đúng, hãy yêu cầu skill khôi phục lại. Skill sẽ liệt kê các phiên bản của flow, khôi phục phiên bản bạn chọn thành bản nháp, rồi hiển thị kết quả. Việc khôi phục sẽ thay thế bản nháp hiện tại, vì vậy trước khi thay thế, skill sẽ hỏi bạn và đề nghị sao chép bản nháp đó thành một flow mới. Với bản nháp chưa từng được xuất bản, lịch sử không có trạng thái nào trước đó, vì vậy hãy yêu cầu skill ghi lại bản sao lưu của nó. Bạn cũng có thể tự sửa flow trong Flow & Paywall Builder. Dù bằng cách nào, bản nháp đã lưu cũng không ảnh hưởng gì đến người dùng của bạn.
+
+Lịch sử phiên bản cũng giúp hoàn tác một lần publish bị lỗi. Hãy yêu cầu skill quay lại phiên bản đang chạy trước đó: nó sẽ khôi phục phiên bản đó thành bản nháp, và bạn publish bản nháp khi sẵn sàng.
+
+## Ví dụ về prompt \{#example-prompts\}
+
+Skill đã mang theo các lệnh, định dạng cấu hình và các bước xác minh của riêng nó, vì vậy một prompt không cần phải liệt kê tất cả những thứ đó. Chỉ cần nói flow nào và kết quả mong muốn sau khi hoàn thành là gì.
+
+#### Dịch một paywall \{#translate-a-paywall\}
+
+```
+Add Brazilian Portuguese to my "Summer 2026" paywall. Translate every
+localizable field, not just the headline, and tell me what you couldn't.
+```
+
+#### Xây dựng từ một thiết kế \{#build-from-a-design\}
+
+```
+Build a new paywall flow from the "Winter promo" frame in our Figma file.
+Show me my products first and let me pick which ones go on it.
+```
+
+#### Thêm một quiz có phân nhánh \{#add-a-quiz-that-branches\}
+
+```
+Add a quiz screen before my paywall: "What's your main goal?" with three
+options, each routing to its own benefit screen, then on to the paywall.
+```
+
+#### Viết lại nội dung \{#rewrite-copy\}
+
+```
+Rewrite the headline and CTA on my onboarding to be shorter and more direct.
+Keep the price variables working, and apply it to every locale.
+```
+
+#### Tạo biến thể test \{#spin-up-a-test-variant\}
+
+```
+Copy my "Main paywall" into a new flow and make the monthly plan the
+preselected one. Leave the original alone.
+```
+
+#### Thay đổi giao diện cho chiến dịch \{#re-skin-for-a-campaign\}
+
+```
+Re-theme my paywall flow to match the colors in ./design/spring.png.
+Copy and layout stay as they are.
+```
+
+#### Thêm một màn hình \{#add-a-screen\}
+
+```
+Add a social proof screen between the quiz and the paywall in my activation
+flow — star rating and two testimonials. Ask me for the real numbers.
+```
+
+## Cung cấp hình ảnh và video cho skill
+
+Skill sẽ tải lên hình ảnh hoặc video từ máy tính của bạn và gắn URL trả về vào flow, giúp bạn không phải tự thêm media trong Flow & Paywall Builder. Skill cần **đường dẫn file**, không phải ảnh: khi bạn dán hoặc đính kèm ảnh vào chat, công cụ AI chỉ nhận được pixel chứ không có file thực, nên không có gì để tải lên.
+
+Hãy đặt các tài nguyên vào một thư mục trên máy tính, rồi trỏ công cụ vào đó:
+
+```
+The hero images are in ./design/paywall/. Use hero-calm.png on the first
+screen and the three icons in ./design/paywall/icons/ for the benefit rows.
+```
+
+Định dạng và giới hạn kích thước khớp với tính năng tải lên thủ công trong Flow & Paywall Builder — xem [Hình ảnh, video và icon](custom-media). SVG là ngoại lệ duy nhất: không thể tải lên, nên skill sẽ vẽ các glyph đơn màu trực tiếp dưới dạng inline.
+
+Trước khi tải lên file PNG hoặc JPEG có dung lượng trên 1 MB, skill sẽ chuyển đổi file sang định dạng WebP. Khi phản hồi tải lên có [cảnh báo ảnh quá lớn](developer-cli-flows#adapty-flows-media-upload), skill sẽ nêu tên ảnh và dung lượng của nó, đồng thời đề xuất thu nhỏ lại — mỗi bước chỉ thực hiện sau khi bạn đồng ý. Dung lượng ảnh không bao giờ chặn việc lưu hoặc xuất bản flow.
+
+Trước mỗi lần lưu và mỗi lần xuất bản, skill sẽ đo kích thước của flow cùng hình ảnh và video trong đó. Nếu có gì đó [quá nặng](flow-size), skill sẽ chỉ ra cụ thể và đề xuất cách khắc phục.
+
+Skill tải video lên bằng lệnh [`adapty flows media upload-video`](developer-cli-flows#adapty-flows-media-upload-video). Video phải là file MP4 hoặc WebM, dài tối đa 30 giây, dung lượng tối đa 50 MB, chiều rộng và chiều cao tối thiểu 640 pixel. GIF không được hỗ trợ, và skill không chuyển đổi ảnh động sang video. Khi skill chạy chỉ qua MCP server, nó chưa thể tải video lên: skill sẽ đặt một phần tử video với placeholder trống, và bạn tự tải clip lên trong Flow & Paywall Builder.
+
+Mỗi lần tải lên sẽ thêm một asset riêng vào thư viện media của bạn, và không có lệnh CLI nào xóa chúng, nên mỗi lần chạy lại build sẽ để lại các bản sao thừa.
+
+Nếu bạn đặt tên file mà công cụ không tìm thấy, nó sẽ hỏi lại thay vì tự thay thế bằng file trông có vẻ giống. Một file sai sẽ tạo ra màn hình hiển thị đúng nhưng có hình ảnh sai, và không có gì trong quy trình làm việc phát hiện ra điều đó.
+
+## Cung cấp font chữ của bạn \{#give-it-your-fonts\}
+
+Skill sẽ tải [font chữ tùy chỉnh](using-custom-fonts-in-flow-builder) của bạn lên ứng dụng bằng lệnh [`adapty fonts upload`](developer-cli-flows#adapty-fonts-upload) và sử dụng nó trong flow. Hãy cung cấp các file `.ttf` hoặc `.otf`, mỗi file cho một độ đậm và kiểu chữ, hoặc một file variable font:
+
+```
+The brand font is in ./design/fonts/: BrandSans-Regular.otf and BrandSans-Bold.otf.
+Use it for the headings and the buttons.
+```
+
+Sau đó skill sẽ:
+
+1. Tải lên các file. Nếu Adapty đề xuất thay thế các face trùng lặp, skill sẽ liệt kê tên các face đó và hỏi bạn có muốn thay thế hay bỏ qua file đó không. Sau khi thay thế, skill hiển thị các face nào đã thay đổi. Nếu Adapty phản hồi với danh sách mới các face trùng lặp, skill sẽ hỏi lại về danh sách đó. Nếu một face trong danh sách không còn tồn tại hoặc Adapty thông báo không có face nào trùng lặp, skill sẽ thử tải lên lại mà không thay thế và báo cáo kết quả. Nếu có nhiều family trùng tên với file, skill hỏi bạn muốn dùng family nào. Nếu phản hồi tải lên bị mất, skill xác minh những face nào Adapty đã lưu trước khi thử lại. Nếu family đã có đầy đủ tất cả các style trong một file font variable, skill sẽ hỏi về từng face trước khi thay thế file. Adapty không giữ lại các file cũ.
+2. Xác minh weight, style, và tên font iOS và Android của từng face. Vì không có file font nào chứa tên font Android, skill sẽ hỏi bạn tên mà app của bạn đang dùng.
+3. Đặt font cho các text style và element theo font family và weight. Trên thiết bị, flow sẽ dùng face có weight và style tương ứng. Nếu family không có face phù hợp, nó sẽ dùng weight gần nhất trong cùng style, rồi trong bất kỳ style nào, và ưu tiên face nhẹ hơn khi hai face có độ gần bằng nhau.
+4. Khi bạn yêu cầu publish flow, skill sẽ publish và chờ cho đến khi flow được publish xong.
+
+:::warning
+Adapty không gửi các file font đã tải lên đến thiết bị của người dùng. Để hiển thị font trong ứng dụng, hãy [thêm cùng các file font đó vào bundle của ứng dụng](using-custom-fonts-in-flow-builder#add-the-font-files-to-your-apps-bundle).
+:::
+
+Nếu ứng dụng đã có font family phù hợp, skill sẽ sử dụng nó và không tải lên gì cả. Nếu font family chưa có và bạn không có file font, skill sẽ dùng font thay thế và thông báo cho bạn biết đó là font nào. Khi skill chạy chỉ qua MCP server, nó chưa thể tải font lên: hãy tải font trong Flow & Paywall Builder, sau đó cho skill biết tên font family của nó.
+
+## Mang theo agent của bạn
+
+Adapty cũng có [AI Editor](flow-ai-editor) bên trong Flow & Paywall Builder. Điểm khác biệt không phải là cái nào có nhiều tính năng hơn — mà là công việc diễn ra trong môi trường của ai.
+
+AI Editor là agent của Adapty, hoạt động trên màn hình bạn đang mở. Còn skill này là sắp xếp ngược lại: agent của bạn, model của bạn, công cụ của bạn, và Adapty chỉ là một trong những công cụ mà nó biết cách vận hành. Mọi thứ mà AI tool của bạn đã có thể tiếp cận đều đi kèm với nó — repo của bạn, file thiết kế của bạn, MCP server của bạn, prompt và context của chính bạn.
+
+| | AI Editor | flow-generator skill |
+|---|---|---|
+| Của ai | Của Adapty, trên trình duyệt | Của bạn: một coding agent hoặc claude.ai |
+| Có thể thấy gì | Màn hình bạn đang mở, cộng với hình ảnh bạn đính kèm | Bất cứ thứ gì AI tool của bạn có thể truy cập |
+| Phạm vi một prompt | Một màn hình | Toàn bộ flow — màn hình, điều hướng, locale |
+| Bản địa hóa | Không hỗ trợ | Thêm locale và điền mọi trường có thể bản địa hóa |
+| Hoàn tác | Một cú nhấp cho mỗi prompt | Một bản sao lưu của flow, lịch sử phiên bản, và sự phê duyệt của bạn trước mỗi lần lưu |
+| Thiết lập | Không cần | Plugin Adapty, cộng với Adapty CLI hoặc MCP server |
+
+Dùng AI Editor khi bạn đang ở trong builder và muốn tạo lại style cho màn hình hiện tại. Dùng skill khi bạn muốn thực hiện công việc flow mà không cần rời khỏi môi trường của mình.
+
+## Những gì skill này sẽ không làm \{#what-the-skill-wont-do\}
+
+Skill này coi các flow của bạn là nội dung đang hoạt động, vì một flow đã được xuất bản đang phục vụ người dùng thực.
+
+- **Quyền xuất bản vẫn là của bạn**: Skill lưu các thay đổi dưới dạng bản nháp. Nó chỉ xuất bản một flow khi bạn yêu cầu. Để xuất bản mà không cần skill, hãy dùng Flow & Paywall Builder hoặc [`adapty flows publish`](developer-cli-flows#adapty-flows-publish).
+- **Ghi đè cần sự chấp thuận của bạn**: Một lần lưu sẽ thay thế toàn bộ cấu hình, không có ghi một phần và không có tính năng hoàn tác cho bản nháp. Thông báo chấp thuận sẽ nêu tên flow, ID của nó, trạng thái, và file sao lưu mà skill đã tạo trước khi chỉnh sửa.
+- **Khôi phục vẫn là bản nháp**: Skill khôi phục phiên bản cũ hơn dưới dạng bản nháp và không bao giờ xuất bản nó. Trước khi thay thế một bản nháp, nó sẽ hỏi bạn.
+- **Các thay đổi chưa lưu vẫn là của bạn**: Trước khi skill mở hoặc khôi phục một phiên bản khác, nó sẽ hỏi bạn có muốn lưu những thay đổi chưa được lưu, loại bỏ chúng, hay ở lại phiên bản hiện tại.
+- **Chỉnh sửa đồng thời sẽ làm thất bại thao tác ghi**: Mỗi lần ghi sau lần đầu tiên sẽ gửi timestamp `updated_at` của cấu hình trở lại Adapty. Nếu một thành viên trong nhóm đã lưu flow trong thời gian đó, Adapty sẽ từ chối thao tác ghi thay vì ghi đè lên công việc của họ.
+- **Xóa một flow vẫn là thao tác trên dashboard**: CLI không có lệnh xóa, vì vậy một flow mà skill đã tạo cho bạn sẽ tồn tại cho đến khi bạn xóa nó khỏi dashboard.
+- **Số liệu thực tế và tài sản đến từ bạn**: Đánh giá, số lượt nhận xét, phần trăm giảm giá và giá cửa hàng không bao giờ được bịa ra. Khi một mẫu yêu cầu thông tin mà bạn chưa cung cấp, skill sẽ hỏi bạn hoặc bỏ qua phần tử đó, và sẽ cho biết nó đã làm gì.
+
+:::note
+Đọc, xác thực và xem trước không tốn phí và không thay đổi bất cứ điều gì. Lưu cấu hình là hành động duy nhất tác động đến dashboard của bạn, và nó cần sự phê duyệt của bạn.
+:::
+
+## Giới hạn \{#limitations\}
+
+#### Chạy mất thời gian \{#runs-take-time\}
+
+Skill xác thực và render lại sau mỗi thay đổi — đó là lý do giữ cho config bị lỗi không xuất hiện trên dashboard của bạn — và điều đó khiến mỗi lần chạy chậm hơn so với một câu trả lời chat thông thường. Một chỉnh sửa nhỏ sẽ hoàn thành trong vài phút. Việc tạo một flow nhiều màn hình có phân nhánh mất **10 đến 40 phút**. Hãy khởi động rồi quay lại sau, đừng ngồi chờ.
+
+#### Preview chỉ render một màn hình, trong một trạng thái \{#the-preview-renders-one-screen-in-one-state\}
+
+Trang xem trước của skill chỉ hiển thị một màn hình duy nhất và không chạy qua toàn bộ flow. Nó không thể hiển thị bất kỳ điều nào sau đây. Hãy kiểm tra từng mục trên thiết bị thật — [Xem trước flow](paywall-device-compatibility-preview) hướng dẫn cách thực hiện:
+
+- **Điều hướng và phân nhánh**: Nút có hành động điều hướng sẽ giữ nguyên vị trí trong preview, vì vậy các route có điều kiện không thể kích hoạt. Mỗi màn hình là một render riêng biệt.
+- **Toggle và lựa chọn nhiều tùy chọn**: Hàng toggle và hàng lựa chọn nhiều tùy chọn hiển thị ở trạng thái tắt theo giá trị mặc định của chúng. Hàng lựa chọn đơn và thẻ sản phẩm sẽ hiển thị đúng trạng thái được chọn.
+- **Bất kỳ ngôn ngữ nào ngoài ngôn ngữ đang hiển thị**: Preview bỏ qua ngôn ngữ mặc định của flow và thứ tự danh sách ngôn ngữ, vì vậy không thể kiểm tra bản dịch trực quan. Hãy chuyển ngôn ngữ trong Flow & Paywall Builder và tìm các đoạn văn bản bị tràn ra ngoài container.
+- **Bất kỳ thứ gì được xử lý ở runtime**: Giá thực tế, đơn vị tiền tệ của cửa hàng và đầu vào từ người dùng. Biến giá sẽ hiển thị dưới dạng token chữ, thường dài hơn giá thực và có thể đẩy văn bản xuống dưới nút cố định — hiện tượng chồng lấp này sẽ biến mất khi giá được xử lý.
+- **Kích thước màn hình mà trang không biết**: Bố cục phụ thuộc vào chiều cao viewport cần được kiểm tra trên điện thoại màn hình nhỏ mới xác nhận được.
+
+## Tiếp theo là gì \{#whats-next\}
+
+- [flow-audit skill](flow-audit-skill) — kiểm tra chỉ đọc xem bản nháp mà skill này để lại có sẵn sàng để xuất bản chưa.
+- [paywall-compliance skill](paywall-compliance-skill) — kiểm tra flow theo quy tắc của App Store và Google Play trước khi bạn gửi.
+- [Lưu & xuất bản flow](builder-save-publish) — hoàn thiện bản nháp mà skill để lại.
+- [Các vấn đề thường gặp](flow-common-issues) — những gì ngăn flow không được xuất bản.
+- [Thêm ngôn ngữ trong Adapty Flow & Paywall Builder](add-paywall-locale-in-adapty-paywall-builder) — sử dụng giao diện builder để đơn giản hóa quá trình dịch thuật.
+- [Quản lý Adapty bằng AI agents và công cụ lập trình](manage-adapty-with-ai) — các skill Adapty khác và công cụ AI.

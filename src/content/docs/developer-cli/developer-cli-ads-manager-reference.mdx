@@ -1,6 +1,6 @@
 ---
 title: "Ads Manager commands for the Adapty Developer CLI"
-description: "Reference for every adapty asa command — campaigns, ad groups, keywords, ads, automations, and metrics."
+description: "Reference for every adapty asa command — campaigns, ad groups, keywords, ads, segments, automations, metrics, and change history."
 metadataTitle: "Ads Manager CLI Commands | Adapty Docs"
 ---
 
@@ -37,7 +37,7 @@ All commands that change your account accept these flags:
 | `--yes`, `-y` | Apply without asking for confirmation. Required when the output is piped or `--json` is used |
 | `--idempotency-key` | Fixed key for this write. A repeat with the same key and body within 24 hours returns the stored result instead of applying the change again |
 
-Ads Manager commands take no `--app` flag. The scope is the company that your token belongs to. `--app` exists on some `list` commands as a filter only.
+Ads Manager commands take no `--app` flag. The scope is the company that your token belongs to. `--app` exists on some `list` commands as a filter only. The [segments](#segments) commands are the exception: there, `--app` is the Adapty app that the segment belongs to.
 
 ## List filters \{#list-filters\}
 
@@ -106,6 +106,8 @@ Each row carries two identifiers, and they are not interchangeable:
 
 `--org` exists only on `campaigns create`. No list command accepts it.
 
+Each row also carries a `payment_model`. When it is `LOC`, the organization bills by line of credit, and every campaign in it needs the [`--invoice-*` flags](#adapty-asa-campaigns-create).
+
 Accepts [pagination flags](#global-flags).
 
 ### adapty asa apps list
@@ -165,13 +167,22 @@ adapty asa campaigns create --org <campaign-group-id> --name "Winter push" --ada
 | `--country` | Yes | Country or region code. Repeat for several: `--country US --country CA` |
 | `--daily-budget` | Yes | Daily budget as a plain amount, for example `50` or `12.50` |
 | `--budget` | No | Lifetime budget |
-| `--target-cpa` | No | Target cost per acquisition |
-| `--currency` | No | Currency code for the amounts in this call. Default: `USD` |
+| `--target-cpa` | No | Target cost per acquisition. Must be lower than `--daily-budget` |
+| `--currency` | No | Currency code for the amounts in this call. Default: the currency of the campaign group. A different currency is rejected |
 | `--bidding-strategy` | No | `MANUAL_CPT` or `MAX_CONVERSIONS`. Apple defaults to `MANUAL_CPT` |
 | `--ad-channel-type` | No | `SEARCH` or `DISPLAY`. Default: `SEARCH` |
 | `--billing-event` | No | `TAPS` or `IMPRESSIONS`. Default: `TAPS` |
 | `--supply-source` | No | Supply source, repeatable. Default: `APPSTORE_SEARCH_RESULTS` |
 | `--status` | No | Initial status: `ENABLED` or `PAUSED` |
+| `--invoice-advertiser` | Line of credit | Invoicing Options: advertiser name |
+| `--invoice-order-number` | Line of credit | Invoicing Options: order number |
+| `--invoice-contact-name` | Line of credit | Invoicing Options: buyer contact name |
+| `--invoice-contact-email` | Line of credit | Invoicing Options: buyer contact email |
+| `--invoice-billing-email` | Line of credit | Invoicing Options: billing contact email |
+
+An organization whose `payment_model` is `LOC` bills by line of credit, and Apple requires Invoicing Options on each of its campaigns. Pass all five `--invoice-*` flags in one call — a partial set is rejected before the request is sent. See [Set Invoicing Options for a line of credit](developer-cli-ads-manager#invoicing-options).
+
+The response carries `serving_status` and `serving_state_reasons`. A campaign can be created and still not serve: a `MAX_CONVERSIONS` campaign waits for an [automated ad group](#adapty-asa-ad-groups-create), and a line-of-credit campaign waits for its Invoicing Options. In both cases the command prints the reason and the command that resolves it.
 
 ### adapty asa campaigns update
 
@@ -194,9 +205,16 @@ adapty asa campaigns update <campaign-id> --daily-budget 80 --status PAUSED
 | `--budget` | New lifetime budget |
 | `--target-cpa` | New target cost per acquisition |
 | `--bidding-strategy` | `MANUAL_CPT` or `MAX_CONVERSIONS` |
-| `--currency` | Currency code for the amounts in this call. Default: `USD` |
+| `--currency` | Currency code for the amounts in this call. Default: the currency of the campaign group. A different currency is rejected |
+| `--invoice-advertiser` | Invoicing Options: advertiser name |
+| `--invoice-order-number` | Invoicing Options: order number |
+| `--invoice-contact-name` | Invoicing Options: buyer contact name |
+| `--invoice-contact-email` | Invoicing Options: buyer contact email |
+| `--invoice-billing-email` | Invoicing Options: billing contact email |
 
 At least one flag is required.
+
+The five `--invoice-*` flags go together and replace the stored Invoicing Options as a set, so pass all five even to change one of them. A partial set is rejected before the request is sent.
 
 ### adapty asa campaigns bulk-create
 
@@ -318,14 +336,17 @@ adapty asa ad-groups create --campaign <campaign-id> --name "Brand terms" --defa
 |---|---|---|
 | `--campaign` | Yes | Campaign ID (UUID) |
 | `--name` | Yes | Ad group name |
-| `--default-bid` | Yes | Default bid as a plain amount, for example `1.20` |
+| `--default-bid` | Unless `--automated` | Default bid as a plain amount, for example `1.20` |
 | `--cpa-goal` | No | Cost per acquisition goal |
 | `--pricing-model` | No | `CPC` or `CPM`. Apple requires one on every ad group. Default: `CPC` |
 | `--start-time` | No | Schedule start (`YYYY-MM-DD`). Defaults to today |
 | `--end-time` | No | Schedule end (`YYYY-MM-DD`) |
 | `--automated-keywords` / `--no-automated-keywords` | No | Let Apple add keywords automatically |
-| `--currency` | No | Currency code for the amounts in this call. Default: `USD` |
+| `--automated` | No | Create the automated ad group that a `MAX_CONVERSIONS` campaign needs |
+| `--currency` | No | Currency code for the amounts in this call. Default: the currency of the campaign group. A different currency is rejected |
 | `--status` | No | Initial status: `ENABLED` or `PAUSED` |
+
+`--automated` opts the ad group into automated keywords, so it cannot be combined with `--automated-keywords`. Apple schedules an automated ad group itself and keeps it enabled, so `--start-time` and `--status PAUSED` are rejected — pause the campaign instead. See [Create a Max Conversions campaign](developer-cli-ads-manager#max-conversions).
 
 ### adapty asa ad-groups update
 
@@ -348,7 +369,7 @@ adapty asa ad-groups update <ad-group-id> --default-bid 1.50 --status PAUSED
 | `--start-time` | Schedule start (`YYYY-MM-DD`) |
 | `--end-time` | Schedule end (`YYYY-MM-DD`) |
 | `--automated-keywords` / `--no-automated-keywords` | Let Apple add keywords automatically |
-| `--currency` | Currency code for the amounts in this call. Default: `USD` |
+| `--currency` | Currency code for the amounts in this call. Default: the currency of the campaign group. A different currency is rejected |
 
 At least one flag is required. The parent campaign is resolved on the server and is never passed.
 
@@ -364,7 +385,62 @@ List targeting keywords. Returns metadata only — read performance numbers with
 adapty asa keywords list --ad-group <ad-group-id> --status ACTIVE
 ```
 
+| Flag | Description |
+|---|---|
+| `--live-only` | Only keywords that can serve: `ACTIVE`, in an `ENABLED` ad group and an `ENABLED` campaign, with nothing deleted |
+
 Accepts [pagination flags](#global-flags) and the `--campaign-group`, `--app`, `--campaign`, `--ad-group`, `--search`, and `--status` [list filters](#list-filters). Filter by `--ad-group` — without a filter, this is the widest read in the topic.
+
+### adapty asa keywords duplicates
+
+Find the keywords of one app that are repeated across ad groups and campaigns: the same text, country, and level.
+
+```bash
+adapty asa keywords duplicates --app <app-id> --country US --country DE
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID). See [`apps list`](#adapty-asa-apps-list) |
+| `--country` | No | Two-letter ISO country code. Repeat for several. Scans only these countries |
+| `--ignore-match-type` | No | Group by country and text only, merging match types |
+
+Each group lists its instances with their campaign, ad group, match type, and bid. The command returns at most 500 groups. When the list is capped, `truncated` is `true` and the command prints a warning.
+
+### adapty asa keywords recommend
+
+Get a ready-made keyword pool for one of your apps. These are the same pools that Ads Manager uses when you set up a campaign in the dashboard.
+
+```bash
+adapty asa keywords recommend --adam-id <adam-id> --type generic --country US
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--adam-id` | Yes | Apple App Store ID (`adam_id`) of your app, from [`asa apps list`](#adapty-asa-apps-list) |
+| `--type` | Yes | `brand`, `generic`, or `competitor` |
+| `--country` | No | Two-letter ISO country code. Repeat for several. Default: every country in the pool |
+
+The `--type` flag selects the pool:
+
+| Type | Keywords |
+|---|---|
+| `brand` | Your app's brand terms, their spelling variants, and organic terms that contain the brand. The output also lists the brand terms themselves |
+| `generic` | Non-brand terms that your app and its top organic competitors rank for, with every known brand term removed. `relevance_tier: top_organic` marks the terms where your app already ranks in the organic top 10 |
+| `competitor` | The brand terms of each competitor selected for the app, one pool per competitor. Empty until you select competitors |
+
+Each keyword comes with its country, popularity, score, and median organic rank. The keywords have no bids or match types. Choose those yourself, then add the keywords with [`asa keywords add`](#adapty-asa-keywords-add).
+
+Check the pool `status` before you use its keywords:
+
+| Status | Meaning |
+|---|---|
+| `ready` | The pool is built |
+| `building` | The pool is still being built. Retry in about a minute |
+| `empty` | The pool is built and has no keywords |
+| `failed` | The build failed. Retry later |
+
+The first `brand` or `generic` call for an app builds the pool during the request and can take tens of seconds. The command has a budget of 10 calls per minute per company, and only one `brand` or `generic` build runs at a time per company. A second build during that time returns `429 cli_analytics_busy` with `Retry-After: 5`.
 
 ### adapty asa keywords add
 
@@ -387,7 +463,7 @@ adapty asa keywords add --ad-group <ad-group-id> --from-file keywords.txt
 | `--from-file` | No | File with one keyword per line. Combined with any `--text` values |
 | `--bid` | No | Bid per keyword as a plain amount |
 | `--match-type` | No | `BROAD` or `EXACT`. Default: `BROAD` |
-| `--currency` | No | Currency code for the amounts in this call. Default: `USD` |
+| `--currency` | No | Currency code for the amounts in this call. Default: the currency of the campaign group. A different currency is rejected |
 | `--status` | No | `ACTIVE` or `PAUSED`. Default: `ACTIVE` |
 
 One invalid ID fails the whole batch before Apple is called. Apple can still reject individual keywords, and each rejection is reported with its reason.
@@ -410,7 +486,7 @@ adapty asa keywords update <keyword-id> <keyword-id> --bid 2.00 --status PAUSED
 | `--status` | `ACTIVE` or `PAUSED` |
 | `--match-type` | `BROAD` or `EXACT` |
 | `--text` | New keyword text. Only meaningful for a single keyword |
-| `--currency` | Currency code for the amounts in this call. Default: `USD` |
+| `--currency` | Currency code for the amounts in this call. Default: the currency of your campaign groups. Required when your campaign groups use different currencies |
 
 One change is applied to every ID passed.
 
@@ -469,8 +545,20 @@ adapty asa search-terms list --ad-group <ad-group-id> --date-from 2026-07-01 --d
 |---|---|---|
 | `--date-from` | Today | Start of the reporting period (`YYYY-MM-DD`) |
 | `--date-to` | Today | End of the reporting period (`YYYY-MM-DD`) |
+| `--overlap-only` | Off | Only Search Match and Max Conversions terms that match a live `EXACT` keyword of the same app, in a campaign that covers the term's country, and are not blocked by a negative keyword |
 
 Accepts [pagination flags](#global-flags) and the `--campaign-group`, `--app`, `--campaign`, `--ad-group`, and `--search` [list filters](#list-filters).
+
+Besides its performance metrics, each search term row carries Apple's insights for the term:
+
+| Field | Value |
+|---|---|
+| `impression_share_all`, `impression_share_first` | Impression share in any ad position, or in the first ad position |
+| `impression_midpoint_all`, `impression_midpoint_first` | Impression share as a single percentage |
+| `rank_all`, `rank_first` | Your app's rank against other apps for the term, in any ad position or in the first one |
+| `search_popularity` | Search popularity from 1 to 5 |
+
+Each field is `null` when Apple has no data for the term. See [Insights](adapty-ads-manager-metrics#insights) for how Apple defines these values.
 
 This command shares an analytics pool with [`asa metrics`](#metrics). See [Errors](#errors).
 
@@ -572,9 +660,95 @@ adapty asa product-pages sync --adam-id 123456
 
 The refresh is queued rather than performed immediately, and the command confirms with `Sync queued.` If the same refresh is already in flight, it reports `Already running; nothing new was queued.` instead.
 
+## Segments \{#segments\}
+
+These commands create Adapty [segments](segments) from Apple Ads campaigns, ad groups, or keywords, the same way as **Create segment from…** in [Ads Manager](ads-manager-create-segments). Use the segments as audiences in placements and A/B tests to show users from a specific campaign a different paywall.
+
+Each segment has one attribution filter over the Apple IDs of the entities you choose. The CLI looks up those IDs, so you pass the UUIDs printed by the `list` commands.
+
+Unlike other `adapty asa` commands, these take `--app`: the ID of the Adapty app that the segment belongs to, from [`adapty apps list`](developer-cli-apps#adapty-apps-list). They don't accept `--idempotency-key`. For segments with other filters, such as country or install date, use [`adapty segments create`](developer-cli-placements#adapty-segments-create).
+
+### adapty asa segments create
+
+Create a segment from campaigns, ad groups, or keywords.
+
+```bash
+adapty asa segments create --app <app-id> --campaign <campaign-id>
+adapty asa segments create --app <app-id> --ad-group <ad-group-id> --keyword <keyword-id> --keyword <other-keyword-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | Adapty app ID (UUID) |
+| `--campaign` | One entity type | Campaign ID (UUID). Repeatable |
+| `--ad-group` | One entity type | Ad group ID (UUID). Repeatable. With `--keyword`, pass exactly one: the ad group that contains the keywords |
+| `--keyword` | One entity type | Keyword ID (UUID). Repeatable. Requires one `--ad-group` |
+| `--title` | No | Segment title. Defaults to the Ads Manager format, for example `[ASA] Campaign: <name>` |
+| `--description` | No | Segment description. Defaults to the Ads Manager format |
+
+Build each segment from one entity type. Passing both `--campaign` and `--ad-group`, or `--campaign` with `--keyword`, fails with exit code `2` before any request is sent. Several entities of one type produce one segment that matches users from any of them.
+
+Keep the default title unless you need another one. Ads Manager recognizes its segments by the `[ASA]` prefix, and [`asa segments list`](#adapty-asa-segments-list) lists only the segments with this prefix.
+
+The response contains the whole segment, including `id` and `filters`. `profile_count` starts at `0`, and Adapty recalculates it after the segment is created.
+
+### adapty asa segments update
+
+Replace the campaigns, ad groups, or keywords of an existing segment.
+
+```bash
+adapty asa segments update <segment-id> --app <app-id> --campaign <campaign-id> --campaign <other-campaign-id>
+```
+
+| Argument | Description |
+|---|---|
+| `segment-id` | Segment ID (UUID), from `asa segments list` or `adapty segments list` |
+
+Takes the same flags as [`asa segments create`](#adapty-asa-segments-create). The segment's filter is replaced with the entities you pass. The title and description stay as they are unless you pass `--title` or `--description`.
+
+### adapty asa segments list
+
+List the segments created from Apple Ads entities — those whose title starts with `[ASA]`.
+
+```bash
+adapty asa segments list --app <app-id> --campaign <campaign-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | Adapty app ID (UUID) |
+| `--campaign` | No | Keep only the segments built from this campaign (UUID) |
+| `--ad-group` | No | Keep only the segments built from this ad group (UUID) |
+
+Pass `--campaign` or `--ad-group`, not both. To avoid creating a second segment for the same campaign, run this command before `asa segments create`: an empty result means the campaign has no segment yet.
+
+The command reads the first 100 segments of the app.
+
 ## Automations \{#automations\}
 
-The CLI stores the rule JSON you give it — it does not build rules. See [Automations](ads-manager-automations) for what each rule type does, and [Run automation rules](developer-cli-ads-manager#run-automation-rules) for how to produce a rule file.
+The CLI stores the rule JSON you give it, with one exception: the settings of an **Add as keyword** action come from flags. See [Automations](ads-manager-automations) for what each rule type does, and [Run automation rules](developer-cli-ads-manager#run-automation-rules) for how to produce a rule file.
+
+### Add-as-keyword action flags \{#add-keyword-flags\}
+
+`automations create` and `automations update` share a set of flags that set `actions[0].params` for an `add-as-keyword-to` action — **Add as keyword** in a [search terms rule](ads-manager-automations-search-terms), **Add as keyword to…** in a [keyword rule](ads-manager-automations-keyword-rules). Passing any of them replaces the whole `params` object, so this action needs no hand-written JSON.
+
+| Flag | JSON field | Description |
+|---|---|---|
+| `--target-ad-group` | `targets.internal_ids` | Ad group that receives the keyword (UUID), repeatable. A rule with no target ad group does nothing |
+| `--match-type` | `match_type` | `BROAD` or `EXACT` |
+| `--cpt-bid-type` | `cpt_bid.type` | Where the bid of the new keyword comes from: `ad_group_default_bid`, `set_to`, `search_term_current_cpt`, or `keyword_current_bid` |
+| `--cpt-bid` | `cpt_bid.value` | With `set_to`, the bid itself. With `search_term_current_cpt` or `keyword_current_bid`, a percentage markup on the bid being copied. Not accepted with `ad_group_default_bid` |
+| `--negate` | `negate` | Also add the search term as a negative keyword, in its own `ad-group` or its own `campaign`. `--no-negate` leaves none behind. Search terms rules only |
+| `--skip-enable-duplicates` | `skip_enable_duplicate_keywords` | Skip a keyword that already exists in the target ad group instead of enabling it. Search terms rules only |
+| `--pause-original` | `pause_in_original_ad_group` | Pause the source keyword in its own ad group. Keyword rules only |
+
+`--cpt-bid-type` and `--match-type` have no default, so both are required when the rule file contains no `params` of its own.
+
+Four of these flags depend on the rule's `operate_with` field: `--negate`, `--no-negate`, and `--skip-enable-duplicates` belong to a `search-term` rule, `--pause-original` to a `targeting-keyword` one. A flag from the other set fails with exit code `2` and a list of the flags that do apply.
+
+:::warning
+Take this action's `params` from the flags, never from a rule that carries a different action. The API resolves `params` by shape rather than by a named variant, so a key belonging to another action makes it choose that action and drop the rest — answering `200` and storing a rule that adds keywords to no ad group at all.
+:::
 
 ### adapty asa automations list
 
@@ -611,7 +785,13 @@ adapty asa automations create --file rule.json
 | `--file` | JSON file with the rule body, or `-` to read from standard input |
 | `--run-now` | Queue the first run right after the rule is stored |
 
-`--file` is required.
+`--file` is required, and the file must contain exactly one action: the API keeps one action and one condition per rule.
+
+Also accepts the [add-as-keyword action flags](#add-keyword-flags), which fill in or override `actions[0].params`:
+
+```bash
+adapty asa automations create --file rule.json --target-ad-group <ad-group-id> --match-type EXACT --cpt-bid-type search_term_current_cpt --negate ad-group
+```
 
 ### adapty asa automations update
 
@@ -633,6 +813,10 @@ adapty asa automations update <automation-id> --stop
 | `--file` | JSON file with the parts to change, or `-` to read from standard input |
 
 `--start` and `--stop` are mutually exclusive. A file passed here must not contain `internal_id`.
+
+Also accepts the [add-as-keyword action flags](#add-keyword-flags). Passing one makes the call a read-modify-write: the CLI reads the rule, rebuilds `actions[0].params`, and sends the whole `actions` list back, because the API replaces `actions` instead of merging into it. An edit made in the dashboard between the read and the write is overwritten.
+
+An update with an action flag also repairs a rule whose stored `params` carry the shape of another action. The params are rebuilt from scratch, so only the stored keys that fit `add-as-keyword-to` are kept and everything else has to come from a flag.
 
 ### adapty asa automations run
 
@@ -681,14 +865,17 @@ adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31
 | `--entity` | Yes | What to report on: `campaign`, `ad-group`, `keyword`, or `ad` |
 | `--date-from` | Yes | Start of the period (`YYYY-MM-DD`) |
 | `--date-to` | Yes | End of the period (`YYYY-MM-DD`) |
-| `--metric` | No | Metric name, repeatable. Omit for every metric |
+| `--metric` | Yes | Metric name, repeatable |
+| `--app` | No | Report only on these apps. Repeatable |
+| `--campaign` | No | Report only on these campaigns. Repeatable |
+| `--ad-group` | No | Report only on these ad groups. Repeatable |
 | `--group-by` | No | Break the rows down by `country`, `day`, `week`, `month`, `quarter`, or `year`. Repeatable |
 | `--by-days` | No | Renewal window in days for cohort metrics, repeatable. Maximum 16 per call. Omit for the dashboard defaults |
 | `--order-by` | No | Metric or field to sort by |
 | `--order-by-day` | No | Rank by a cohort metric at this renewal window. Must be one of the `--by-days` values |
 | `--order` | No | `asc` or `desc`. Default: `desc` |
 
-Accepts [pagination flags](#global-flags). This command takes no [list filters](#list-filters) — narrow the report by entity level and period, then match the rows against the IDs from a scoped `list` command.
+Accepts [pagination flags](#global-flags). Of the [list filters](#list-filters) it takes only `--app`, `--campaign`, and `--ad-group`; there is no `--search` and no `--status`. Narrow the report on anything else by matching the rows against the IDs from a scoped `list` command.
 
 Each row is one entity, aggregated on the server and sorted by `--order-by`. A top-N question is therefore a single call — set `--order-by` and `--page-size N` rather than paging through the results and adding them up:
 
@@ -698,13 +885,36 @@ adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31
 
 `--metric` takes the metric names that Ads Manager tracks, in dashboard nomenclature — for example `spend`, `taps`, or `gross_roas`. See [Metrics](adapty-ads-manager-metrics) for the full list and how each one is calculated. A name that does not exist fails with the valid names listed in the error.
 
-The length of the reporting period is capped by the coarsest `--group-by` value. To report on a longer period, coarsen the grouping rather than splitting the request into several calls:
+With `--entity keyword`, `--metric` also accepts the keyword-only metrics. Apple reports impression share and rank both for any ad position and for the first ad position, so each comes in two versions: `_all` and `_first`. See [Insights](adapty-ads-manager-metrics#insights) for how Apple defines them.
 
-| Coarsest `--group-by` | Maximum period |
+| Metric | Value |
 |---|---|
-| `day`, or no period grouping | 90 days |
+| `impression_midpoint_all`, `impression_midpoint_first` | Impression share over the reporting period, in percent |
+| `rank_all`, `rank_first` | Your app's rank against other apps for the keyword. The latest value, regardless of `--date-from` and `--date-to` |
+| `search_popularity` | Search popularity from 1 to 5 |
+
+A keyword with no report data returns `0` for these metrics. Since CLI 0.9.2, these names replace `rank` and `impression_midpoint`.
+
+Every metric you name is computed across the whole entity level before the page is cut, so ask for the columns you read rather than the whole catalog. `subscribers` and `paid_subscribers` count unique profiles per entity, which costs around seventeen times a plain spend-and-installs call, and so do `arppu` and `arpas`, which are derived from them. At any `--entity`, those four names need `--campaign` or `--ad-group` to narrow the call:
+
+```bash
+adapty asa metrics --entity keyword --date-from 2026-07-01 --date-to 2026-07-31 --metric arpas --campaign <campaign-id>
+```
+
+Without one of those two filters the call fails with `422 cli_metric_scope_too_wide`. Scoping is the cheapest way to speed up any metrics call, because cost follows the number of entities aggregated rather than the size of the page.
+
+The length of the reporting period is capped by the finest `--group-by` value. To report on a longer period, coarsen the grouping rather than splitting the request into several calls:
+
+| Finest `--group-by` | Maximum period |
+|---|---|
+| `day` | 28 days |
+| No period grouping | 90 days |
 | `week` | 180 days |
 | `month` and coarser | 365 days |
+
+Day grain therefore covers four weeks at most. For a longer period ask at `week` grain, which fits half a year into one call.
+
+Each page is capped at 5000 breakdown rows as well, a row being one entity × country × period. A page over the cap fails with `422 cli_response_too_large`. Coarsen the grouping, narrow the date window, or lower `--page-size`; when the call groups by `day`, the error names the page size that fits, so retry with that number rather than one you work out yourself. `metrics overview` returns no per-entity breakdown, so this cap never applies to it.
 
 There is no `ltv` metric. Lifetime value is a cohort metric read at a renewal window, so `--by-days` is how you ask for the day-7 or day-90 value:
 
@@ -733,7 +943,7 @@ adapty asa metrics overview --entity campaign --date-from 2026-07-01 --date-to 2
 
 This command returns the totals for the whole entity level plus a per-period series, so it answers "how much did I spend or earn overall" in one call. It has no ordering flags and no pagination.
 
-On this command, `--metric` accepts cohort roots only — `revenue`, `roas`, and `arpu` — not their `gross_`, `proceeds_`, or `net_` variants.
+On this command, `--metric` accepts cohort roots only — `revenue`, `roas`, and `arpu` — not their `gross_`, `proceeds_`, or `net_` variants. It doesn't accept the [keyword-only metrics](#adapty-asa-metrics) either.
 
 The length of the reporting period is capped by `--period-unit`:
 
@@ -763,17 +973,75 @@ The command prints three blocks: the totals for the analysis, the top apps by pe
 
 The first call for a set of apps can take tens of seconds while the data is prepared. Later calls for the same apps return faster.
 
+## Change history \{#change-history\}
+
+Change history comes live from the Apple Ads API. Adapty does not store it, and Apple keeps it for 6 months. It covers every change in the organization, including changes made in Apple Ads directly, by Apple Support, or by other API tools.
+
+### adapty asa change-history list
+
+List the changes made in one Apple Ads organization, newest first.
+
+```bash
+adapty asa change-history list --campaign-group <campaign-group-id> --date-from 2026-10-01 --entity-type Campaign --event-type UPDATE
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--campaign-group` | Yes | Organization to read (UUID from [`orgs list`](#adapty-asa-orgs-list)). One organization per call. To read several, run the command for each one |
+| `--date-from` | No | Start of the period (`YYYY-MM-DD`). Default: 7 days ago |
+| `--date-to` | No | End of the period (`YYYY-MM-DD`). Default: today. The period can span at most 14 days |
+| `--entity-type` | No | `Campaign`, `AdGroup`, `Keyword`, `NegativeKeyword`, `Ad`, `Creative`, `LocationGroup`, `Org`, or `AdAccount`. Repeatable. Default: every type except `Org` and `AdAccount`. `Org` and `AdAccount` can't be combined with the other types |
+| `--event-type` | No | `CREATE`, `UPDATE`, or `DELETE`. Repeatable |
+| `--user-type` | No | Who made the change: `CUSTOMER` (in Apple Ads), `CUSTOMER_API` (through the Apple Ads API), or `APPLE_SUPPORT`. Repeatable |
+| `--campaign`, `--ad-group`, `--entity-id` | No | Apple's numeric IDs of the campaign, the ad group, or the changed entity. Repeatable |
+| `--user` | No | Apple user ID of the person who made the change. Repeatable |
+| `--txn` | No | Apple transaction ID. Repeatable |
+| `--fields` | No | Expand each change into one row per changed field, with its old and new values |
+
+:::important
+Unlike the [list filters](#list-filters) of other commands, `--campaign`, `--ad-group`, and `--entity-id` take Apple's numeric IDs, as printed in the change history rows — not UUIDs. Likewise, `modified_by` in each row is an Apple user ID, not an email.
+:::
+
+Each row is one transaction: who made it (`modified_by`, `user_type`), when (`event_time`), and the entities it changed. Every entity carries a `detail_id` for [`change-history get`](#adapty-asa-change-history-get).
+
+With `--fields`, the page size defaults to 10, and a larger `--page-size` is refused. A page that would need more than 20 lookups fails: narrow the filters, or drop `--fields` and read single changes with `change-history get`.
+
+Accepts [pagination flags](#global-flags). `--page` × `--page-size` can't exceed 1000.
+
+### adapty asa change-history get
+
+Show the field-level changes of one entity in one transaction.
+
+```bash
+adapty asa change-history get Campaign.444555666.TXN_ID --campaign-group <campaign-group-id>
+```
+
+| Argument | Description |
+|---|---|
+| `detail-id` | `detail_id` from [`change-history list`](#adapty-asa-change-history-list), in the form `EntityType.entityId.txnId` |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--campaign-group` | Yes | Organization the change belongs to. Take it from `campaign_group_id` in the list row |
+
+The response lists each changed field with its `old_values` and `new_values`, plus the entity's metadata in `entity_metadata`. A `detail_id` that Apple has no record of returns `404`.
+
 ## Errors \{#errors\}
 
 | Status | Code | Meaning |
 |---|---|---|
 | `402` | `ads_manager_subscription_required` | The company has no active Ads Manager subscription |
+| `403` | `cli_ad_account_unreadable` | `change-history` can't read the organization: the Apple Ads token is revoked, the organization is no longer linked, or Apple denied access |
 | `404` | — | The entity does not exist, or it belongs to another company |
 | `409` | `cli_idempotency_in_progress` | A write with the same idempotency key is still running |
 | `422` | `cli_idempotency_key_reuse` | The same idempotency key was used with a different request body |
-| `429` | `cli_analytics_busy` | The analytics pool is busy. The wait is in the `Retry-After` header |
+| `422` | `cli_metric_scope_too_wide` | A profile-counting metric was requested without `--campaign` or `--ad-group` |
+| `422` | `cli_response_too_large` | A `metrics` page would exceed 5000 breakdown rows |
+| `429` | `cli_analytics_busy` | The analytics pool is busy, or another keyword pool build for the company is still running. The wait is in the `Retry-After` header |
 | `429` | `cli_cooldown_active` | Too many rejected requests put the token into a cool-down |
+| `429` | `cli_upstream_rate_limited` | Apple rate-limited a `change-history` request. The wait from Apple is in the `Retry-After` header |
+| `504` | `cli_read_timeout` | A `change-history` request took longer than 50 seconds. Narrow the period or the filters |
 
-Metrics and the search terms list share one analytics budget per company: 5 calls per minute, and at most 2 in any 10 seconds. A burst of 20 rejected requests within 5 minutes starts an escalating cool-down of 5 minutes, then 30 minutes, then 3 hours. Retrying during the pause does not extend it, but the fix is to correct the failing request rather than repeat it.
+Metrics and the search terms list share one analytics budget per company: 5 calls per minute, and at most 2 in any 10 seconds. `change-history` has its own budget: 30 calls per minute, at most 5 in any 10 seconds, and one request at a time per company. A burst of 20 rejected requests within 5 minutes starts an escalating cool-down of 5 minutes, then 30 minutes, then 3 hours. Retrying during the pause does not extend it, but the fix is to correct the failing request rather than repeat it.
 
 The CLI handles short waits for you. On a `429` that is not a cool-down, if `Retry-After` is 60 seconds or less, the command waits for that long and retries once, reporting the wait on standard error.

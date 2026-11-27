@@ -1,0 +1,182 @@
+---
+title: "Refund Saverコマンド"
+description: "Refund Saverのオン/オフ切り替え、各ストアの返金設定とプロファイルごとの設定、各ストアのキー検証、返金リクエストと節約額の読み取りを行うAdapty CLIコマンド。"
+metadataTitle: "Refund Saver CLIコマンド | Adapty ドキュメント"
+---
+
+1つのアプリの[Refund Saver](refund-saver)をターミナルから管理します：有効/無効の切り替え、各ストアの返金設定、特定プロファイルへの上書き設定、各ストアが Refund Saver に必要なキーを持っているかの確認、Refund Saver が処理・節約した内容の確認が可能です。これらのコマンドには CLI バージョン 0.31.0 以降が必要です。
+
+CLI をまだ設定していない場合は、[クイックスタートガイド](developer-cli-quickstart)のステップ 1 と 2 に従ってください。バージョンを確認するには、`adapty --version` を実行します。
+
+Refund Saver アドオンがアカウントで有効になっていない場合、Adapty は `on` を拒否します。アドオンの管理は、アカウント設定の [**Subscription & Billing**](account#subscription--billing) タブで行います（CLI では行いません）。
+
+すべてのコマンドは `--app`（`adapty apps list` で確認できるアプリ ID（UUID））を受け取り、`--json` で API の応答を出力します。
+
+`on`、`off`、`update`、`profile update` はアプリをすぐに変更します。確認を求めず、`--yes` も不要です。
+
+## adapty refund-saver get
+
+アプリの Refund Saver が有効かどうか、および各ストアの返金設定を表示します。
+
+```bash
+adapty refund-saver get --app <app-id>
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+
+`--json` を使用すると、いずれかのストアで Refund Saver が有効な場合に `enabled` が `true` になります。`stores` には各ストアの返金設定と、App Store 向けの `refund_saver_needs_consent`（`true` は **Opt-in** 同意ポリシーを意味します）が含まれます。
+
+## adapty refund-saver on
+
+両方のストアで、アプリの Refund Saver をオンにします。
+
+```bash
+adapty refund-saver on --app <app-id>
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+
+このコマンドは、アプリの状態と Refund Saver アドオンに関する注記（`--json` では `billing_note`）を出力します。両方のストアですでに Refund Saver がオンになっている場合、コマンドは何も変更せず、同じ状態と注記を出力します。
+
+Adapty が Refund Saver のオンを拒否した場合、コマンドはコード 4 で終了し、何も変更しません。理由を確認するには、`--json` の `error.code` を参照してください：
+
+| `error.code` | 対処方法 |
+|---|---|
+| `refund_saver_addon_inactive` | このアカウントでは Refund Saver アドオンが有効になっていません。**Subscription & Billing** タブで有効化してから、コマンドを再実行してください。 |
+| `refund_saver_apple_credentials_invalid` | このアカウントの Apple 認証情報が無効です。**App settings** で修正してから、コマンドを再実行してください。 |
+| `refund_saver_addon_unavailable` | このアカウントでは Refund Saver を有効にできません。再試行せず、Adapty サポートにお問い合わせください。 |
+
+## adapty refund-saver off
+
+アプリのRefund Saverを両ストアで無効にします。
+
+```bash
+adapty refund-saver off --app <app-id>
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリID（UUID） |
+
+Refund Saverを無効にしても、Refund Saverアドオンはキャンセルされません。キャンセルするには、アカウント設定の **Subscription & Billing** タブを使用してください。
+
+## adapty refund-saver update
+
+各ストアの[払い戻し設定](refund-saver#set-a-default-refund-preference)と[デフォルトの同意ポリシー](refund-saver#set-the-default-consent-policy)を変更します。指定しない設定は現在の値が維持されます。`--app` 以外に少なくとも1つのフラグを指定してください。このコマンドは Refund Saver の有効・無効を切り替えません。切り替えには `adapty refund-saver on` または `adapty refund-saver off` を使用してください。
+
+```bash
+adapty refund-saver update --app <app-id> --app-store-preference always_prorated
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリID（UUID） |
+| `--app-store-preference` | いいえ | App Store の返金リクエストに対する返金設定: `no_preference`、`always_decline`、`always_refund`、`decline_first_grant_next`、または `always_prorated` |
+| `--play-store-preference` | いいえ | Google Play の返金リクエストに対する返金設定: `no_preference`、`always_decline`、`always_refund`、または `decline_first_grant_next`。Google Play には `always_prorated` はありません。 |
+| `--needs-consent` / `--no-needs-consent` | いいえ | Refund Saver が App Store ユーザーのデータをユーザーの同意後にのみ送信するかどうか。`--needs-consent` は **オプトイン** の同意ポリシーで、アプリが[そのユーザーの同意を送信する](refund-saver#update-a-users-consent)まで、Adapty は Apple にそのユーザーのデータを送信しません。`--no-needs-consent` は **オプトアウト** で、デフォルト値です。 |
+
+このコマンドは、両方のストアの設定を出力します。
+
+## adapty refund-saver readiness
+
+各ストアが Refund Saver に必要なキーを持っているかどうかを表示します。
+
+```bash
+adapty refund-saver readiness --app <app-id>
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+
+App Store には **Bundle ID** と [In-App Purchase キー](generate-in-app-purchase-key)（Issuer ID、Key ID、秘密鍵（`.p8` ファイル））が必要で、**App settings** > **iOS SDK** で設定します。Google Play には **Package name** と **Service account key file** が必要で、**App settings** > **Android SDK** で設定します。`--json` オプションを使うと、これらの値が設定されている場合に `app_store` と `play_store` が `true` になります。このコマンドはストアがそれらの値を受け付けるか、またはストアからの通知が Adapty に届くかどうかは検証しません。`--json` なしの場合、準備が整っていない各ストアの未設定項目をコマンドが表示します。
+
+## adapty refund-saver profile get
+
+1つのプロファイルのRefund Saver設定（カスタム設定と同意）を表示します。
+
+```bash
+adapty refund-saver profile get --app <app-id> <profile-id>
+```
+
+| 引数またはフラグ | 必須 | 説明 |
+|---|---|---|
+| `<profile-id>` | はい | Adaptyのプロファイル ID（UUID）。カスタマーユーザー IDではありません |
+| `--app` | はい | アプリ ID（UUID） |
+
+`--json` を指定した場合、未設定の `custom_preference` および `consent` は `null` になります。アプリに存在しないプロファイル IDを指定した場合、コマンドはコード 4 で終了し、`error.code` は `profile_not_found` になります。
+
+## adapty refund-saver profile update
+
+1つのプロファイルのRefund Saverの設定を変更します。渡さなかった設定は現在の値が保持されます。`--app` 以外に少なくとも1つのフラグを指定してください。
+
+```bash
+adapty refund-saver profile update --app <app-id> <profile-id> --custom-preference decline
+```
+
+| 引数またはフラグ | 必須 | 説明 |
+|---|---|---|
+| `<profile-id>` | はい | Adapty プロファイル ID（UUID）。カスタマーユーザー ID ではありません |
+| `--app` | はい | アプリ ID（UUID） |
+| `--custom-preference` | いいえ | このプロファイルの返金優先設定（両ストア共通）: `grant`、`decline`、`grant_prorated`、または `no_preference`。`grant` と `decline` はストアの優先設定より優先されます。`grant_prorated` は App Store に適用され、Google Play には優先設定なしとなります。`no_preference` はプロファイルをストアの優先設定に戻します。 |
+| `--consent` / `--no-consent` | いいえ | ユーザーが Refund Saver によるデータの Apple への送信に同意するかどうか。これはユーザーのプロファイルにある **Allow data sharing** 設定です。`--consent` はいずれの同意ポリシーでもデータを送信します。`--no-consent` は一切送信しません。一度設定すると、未設定の状態に戻すことはできません。Google Play では同意は不要です。 |
+
+プロファイルごとの設定と同意は、Adapty ダッシュボードの[特定ユーザーへの返金設定](refund-saver#set-refund-behavior-for-a-specific-user-in-the-dashboard)、およびアプリが [Adapty SDK](refund-saver#manage-refund-saver-from-your-app-code) を通じて送信する値と同じです。最後に書き込まれた値が優先されるため、アプリからの後続の呼び出しによってここで設定した値が上書きされます。
+
+## adapty refund-saver requests
+
+指定した期間内に Refund Saver が処理した返金リクエストを、新しい順に一覧表示します。
+
+```bash
+adapty refund-saver requests --app <app-id> --date-from 2026-10-01 --date-to 2026-10-31 --store app_store
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+| `--date-from` | はい | 期間の開始日（当日を含む）（`YYYY-MM-DD`、UTC） |
+| `--date-to` | はい | 期間の終了日（当日を含む）（`YYYY-MM-DD`、UTC） |
+| `--store` | いいえ | 指定したストアのリクエストのみ：`app_store` または `play_store` |
+| `--page` | いいえ | ページ番号。デフォルト：1 |
+| `--page-size` | いいえ | 1ページあたりのリクエスト数（最大100件）。デフォルト：20 |
+
+各リクエストは、Refund Saver が処理した UTC 日付でカウントされます。開始日より終了日が前の範囲を指定した場合、エラーにはならず空のリストが返されます。最終ページを超えたページを指定した場合も、空のリストが返されます。
+
+`--json` を使用すると、各リクエストには `status`、`store_transaction_id`、`store_product_id`、`profile_id`、`customer_user_id`、`country_name`、`amount_usd`、`refund_reason`、`received_at`、`updated_at` が含まれます。`status` は `consumption_request_handled`（回答済み、未決済）、`refunded`、または `refund_declined` のいずれかです。`amount_usd` は金額が不明な場合に `0` になります。出力には `meta.pagination` も含まれ、件数、ページ番号、総ページ数が示されます。
+
+## adapty refund-saver metrics
+
+指定した期間に Refund Saver が節約した金額を表示します。
+
+```bash
+adapty refund-saver metrics --app <app-id> --date-from 2026-10-01 --date-to 2026-10-31 --store play_store
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+| `--date-from` | はい | 期間の開始日（含む）（`YYYY-MM-DD`、UTC） |
+| `--date-to` | はい | 期間の終了日（含む）（`YYYY-MM-DD`、UTC） |
+| `--store` | いいえ | 指定したストアのリクエストのみ表示：`app_store` または `play_store` |
+
+`--json` を使用すると、出力には `saved_amount_usd` と `saved_count`（ストアが却下した返金）、`requested_amount_usd` と `requested_count`（Refund Saver が応答したすべてのリクエスト）、`win_rate`（ストアが判断済みのリクエストのうち却下された割合）が含まれます。金額は米ドルの整数です。`win_rate` は小数点以下1桁のパーセントをテキスト形式で表します。Adapty は Google Play の結果を遅れて受け取るため、直近の期間のデータは実際より少なく表示されることがあります。これらは [Refund Saver](refund-saver#track-savings-from-refund-requests) セクションの数値です。
+
+## 編集権限 \{#edit-rights\}
+
+`on`、`off`、`update`、`profile update` を実行するには、アプリを所有する会社の編集権限が必要です。アプリの閲覧のみ可能なアカウントでは `edit_rights_required` が返され、終了コードは 3 となり、何も変更されません。再試行する前に、会社のオーナーまたは管理者に編集権限の付与を依頼してください。別の会社のアプリの場合は `permission_denied` が返され、こちらも終了コードは 3 です。
+
+## 終了コード \{#exit-codes\}
+
+| 終了コード | 意味 |
+|---|---|
+| `0` | 成功 |
+| `2` | リクエスト送信前の無効な入力: UUID 形式でないアプリまたはプロファイル ID、`YYYY-MM-DD` 形式でない日付、不明なプリファレンスまたはストア、設定なしの `update` または `profile update` |
+| `3` | トークンなし、トークンがアクセスできないアプリ、または編集権限なし |
+| `4` | API がリクエストを拒否しました。`--json` の `error.code` に理由が記載されています。 |
+| `5` | CLI が Adapty に到達できませんでした。接続を確認して再試行してください。 |
+
+AI ツールにこれらのコマンドを実行させるには、[Refund Saver のエージェントスキル](refund-saver-skill)を参照してください。

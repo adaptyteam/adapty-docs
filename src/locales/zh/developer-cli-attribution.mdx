@@ -1,0 +1,188 @@
+---
+title: "从 CLI 查询归因数据"
+description: "从终端读取 Adapty 归因报告：按渠道、广告系列、广告、国家和日期查看消耗、安装量、收入、ROAS、同期群和趋势预测。"
+metadataTitle: "开发者 CLI 中的归因数据 | Adapty 文档"
+---
+
+Adapty CLI 可通过 `adapty attribution` 命令在终端中读取 [Adapty 归因](adapty-user-acquisition) 数据，返回的数据与[归因看板](ua-analytics)完全一致：支出、安装量、收入、ROAS、同期群数据和趋势预测，支持按渠道、广告系列、广告组、广告、关键词、国家、商店或日期分组。
+
+无论是让 AI 智能体实时获取用户获取数据、将报告拉入脚本，还是临时查询某个指标而不想在看板中新建视图，都可以直接使用该命令。
+
+:::tip
+如果您想让 AI 编程工具帮您回答"上个月哪个渠道的投资回报最好？"这类问题，请安装 [Attribution 技能](developer-cli-attribution-skill)。它知道该运行哪些命令以及如何解读结果。
+:::
+
+每个 `attribution` 命令都是只读的。您运行的任何操作都不会更改推广活动、跟踪链接或集成配置。
+
+## 开始之前 \{#before-you-start\}
+
+`attribution` 主题使用与 CLI 其他部分相同的安装和登录方式。如果尚未完成设置，请参考[快速入门指南](developer-cli-quickstart)的第 1 步和第 2 步。该主题需要 CLI 0.8.8 或更高版本。运行 `adapty --version` 可查看当前版本。
+
+还需满足以下两个条件：
+
+- **归因访问权限**：没有此权限，`report` 和 `values` 会返回 `402 attribution_access_required` 错误。重新登录不会改变这一情况。`metrics` 和 `dimensions` 无需访问权限即可使用，因此 `metrics` 调用成功只能证明你已登录，并不代表你拥有相应的访问权限。
+- **在归因中配置的应用**：`report` 和 `values` 需要通过 `adapty apps list` 获取应用的 UUID。如果某个应用未在归因中配置，或者你的 Adapty 用户无权读取该应用，则会返回 `404 attribution_app_not_found` 错误。
+
+## 构建报告 \{#build-a-report\}
+
+每份报告都按相同顺序构建：从目录中选择名称，查找筛选条件的值，然后运行报告。
+
+1. **列出数据图表**。每个数据图表都包含其单位，对于比率类图表，还包含其除数对应的数据图表：
+
+   ```bash
+   adapty attribution metrics
+   ```
+
+   部分名称是模板，例如 `d{N}_roas`。请自行填入天数：`d7_roas`、`d30_roas`。带前导零的格式（如 `d07_roas`）不被接受。
+
+2. **列出维度**，即可用于分组或筛选的字段：
+
+   ```bash
+   adapty attribution dimensions
+   ```
+
+`--group-by` 接受 `date`、`campaign`、`adset`、`ad`、`keyword`、`channel`、`country` 和 `store`。按广告系列、广告组和广告进行筛选时，使用 ID，而非名称。
+
+3. **查找筛选条件的值**。不筛选时可跳过此步骤。对于广告系列，此命令会返回该时间段内每个广告系列的 ID、名称和渠道：
+
+   ```bash
+   adapty attribution values --app <app-id> --date-from 2026-08-01 --date-to 2026-08-31 --dimension campaign
+   ```
+
+4. **运行报告**：
+
+```bash
+   adapty attribution report --app <app-id> --date-from 2026-08-01 --date-to 2026-08-31 \
+     --metrics spend,installs,cpi,roas,d7_roas --group-by campaign --sort roas:desc
+   ```
+
+报告会为每个 `--group-by` 维度组合返回一行数据，另外还包含 `totals`（汇总行）。请从 `totals` 中读取汇总数据，而不是手动累加各行：比率和唯一计数在行间不能直接相加。
+
+### 示例 \{#examples\}
+
+按周汇总单个广告系列中两个国家的趋势数据：
+
+```bash
+adapty attribution report --app <app-id> --date-from 2026-07-01 --date-to 2026-08-31 \
+  --metrics spend,installs,cost_per_trial,d7_roas --group-by date,channel --granularity week \
+  --filter campaign=<campaign-id> --filter country=US,GB
+```
+
+按广告系列查看试用质量，基于扣除商店佣金后的收入：
+
+```bash
+adapty attribution report --app <app-id> --date-from 2026-07-01 --date-to 2026-08-15 \
+  --metrics spend,count_trial_started,d14_count_trial_converted,cost_per_trial,d30_roas \
+  --group-by campaign --revenue-basis proceeds
+```
+
+按安装日期预测回收周期：
+
+```bash
+adapty attribution report --app <app-id> --date-from 2026-09-01 --date-to 2026-09-29 \
+  --metrics spend,d7_revenue,d90_predict_roas,d365_predict_roas --group-by date,campaign --granularity day
+```
+
+如需在脚本或 Agent 中获取原始响应，可在任意命令后添加 `--json`。
+
+## 读取结果 \{#read-the-results\}
+
+- **货币**：金额单位为美元。收入按 `--revenue-basis` 计算：`gross`（默认值，也是看板的默认值）、`proceeds`（扣除平台佣金后）或 `net`（扣除佣金和税款后）。响应中的 `meta.query` 会注明当前使用的计算基准。
+- **百分比**：ROAS 和各类比率采用 0–100 的数值范围。`roas` 为 150 表示 150%，即 1.5 倍。
+- **空值**：空值表示无法计算，而非零。当除数不存在时比率为空，当模型对该日期没有数据时趋势预测为空，归因中没有消耗数据的渠道其所有基于消耗的指标均为空。`--json` 输出中这些值为 `null`；表格视图显示为 `—`。
+- **同期群指标**：同期群指标仅统计该同期群迄今为止的行为。上周安装用户的 `d30_roas` 目前只涵盖一周的收入，且会持续增长。比较不同推广活动时，请选择该周期内所有同期群都已达到的天数节点进行对比。
+- **日期**：日期以应用所在报告时区的天为单位。没有时区参数，时区信息显示在 `report` 和 `values` 命令 `--json` 输出的 `meta.query.timezone` 字段中。
+
+### Apple Search Ads 广告费用 \{#apple-search-ads-spend\}
+
+归因从 Meta、TikTok 和 Google Ads 收集广告费用。Apple Search Ads 行包含安装量和收入数据，但广告费用、CPI、ROAS 以及其他所有基于费用的数据图表均为空。接入 Apple Ads 并不会将该费用添加到归因中：Apple Search Ads 的广告费用和 ROAS 数据位于 [Ads Manager](developer-cli-ads-manager) 的 `adapty asa metrics` 下。
+
+不要将 Ads Manager 的数据添加到归因行或合计中。Ads Manager 以你的广告系列组所用货币进行报告，且安装量的归因方式也有所不同。
+
+## 限制 \{#limits\}
+
+最精细的日期分组决定了报告可覆盖的最长时间范围：
+
+| 分组 | 最长时间范围 |
+|---|---|
+| `--granularity day` | 31 天 |
+| `--granularity week` | 180 天 |
+| `--granularity month`、`quarter` 或 `year` | 366 天 |
+| 无 `date` 分组 | 92 天 |
+
+如需覆盖更长的时间范围，请使用更粗粒度的 `--granularity`。例如，一年的数据只需以 `--granularity month` 生成一份报告即可。
+
+报告还有以下限制：
+
+- 最多 10,000 行。如需更多数据，请粗化日期粒度、去掉 `keyword` 或 `ad` 分组，或添加过滤条件。
+- 最多 25 个数据图表，单个过滤条件最多 100 个值。
+- 趋势预测数据图表（`d{N}_predict_…`）需要 `--group-by date --granularity day`，且最多另加 2 个分组，预测周期最多 4 个，每个最长 365 天。
+
+`adapty attribution metrics --json` 会在 `data.limits` 中返回上述限制。
+
+请依次运行报告，不要并行执行：该服务同一时间每家公司只能运行少量查询。
+
+## 错误 \{#errors\}
+
+服务拒绝的请求退出码为 4。CLI 在发送前拒绝的输入（例如格式错误的日期，或在没有 `--group-by date` 的情况下使用 `--granularity`）退出码为 2。使用 `--json` 时，错误信息会包含服务返回的 `error_code`。
+
+| 代码 | HTTP | 处理方式 |
+|---|---|---|
+| `auth_required` | 401 | 使用 `adapty auth login` 重新登录。 |
+| `attribution_access_required` | 402 | 您的公司没有归因访问权限，重新登录无法解决此问题。 |
+| `attribution_app_not_found` | 404 | 通过 `adapty apps list` 查找应用 ID，该命令仅列出您有权读取的应用。 |
+| `attribution_unknown_metric` | 422 | 根据 `adapty attribution metrics` 修正数据图表名称。错误信息会列出每个无效项，且报告中的其他内容均不会执行。 |
+| `attribution_validation_error` | 422 | 修正错误信息中指出的维度、筛选条件、排序字段或日期。同一维度的所有值请放入一个 `--filter` 中。 |
+| `attribution_query_too_large` | 422 | 按照错误信息的提示缩减报告范围。请参阅[限制](#limits)。 |
+| `attribution_busy` | 429 | 您公司当前运行的查询过多。请等待 `retry_after_seconds` 秒后重新执行报告。 |
+| `attribution_upstream_unavailable`、`attribution_query_unavailable` | 503 | 等待 `retry_after_seconds` 秒后重试。如果 `attribution_query_unavailable` 持续出现，请缩小报告范围。 |
+
+CLI 不会自动重试 `report` 或 `values` 命令，因此一旦报告失败，需要手动重新运行才能恢复。
+
+## 命令参考 \{#command-reference\}
+
+### `attribution metrics` \{#attribution-metrics\}
+
+列出报告接受的所有数据图表，包括其单位、描述、比率所除的数据图表，以及报告限制。除 `--json` 外不接受任何标志。
+
+### `attribution dimensions`
+
+列出 `--group-by` 和 `--filter` 所接受的内容、每个维度是按 ID 还是按值过滤，以及 `date` 的粒度。除 `--json` 外不接受其他标志。
+
+### `attribution values`
+
+列出某个应用在特定时间段内某个维度所对应的所有值。这些值正是 `report --filter` 所接受的参数。
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用的 UUID，可通过 `adapty apps list` 获取。 |
+| `--date-from` | 是 | 时间段的起始日期（含），格式为 `YYYY-MM-DD`，使用应用所在时区。 |
+| `--date-to` | 是 | 时间段的结束日期（含），不能早于 `--date-from`。 |
+| `--dimension` | 是 | 来自 `adapty attribution dimensions` 的可筛选维度。 |
+| `--revenue-basis` | 否 | `gross`、`proceeds` 或 `net`。 |
+
+对于 `campaign`、`adset` 和 `ad`，每个值都包含 ID、名称和渠道。ID 为空的值表示自然流量或应用商店引荐流量，任何过滤器都无法选中此类流量。
+
+### `attribution report`
+
+运行报告：按维度分组显示一段时间内的数据图表。
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用的 UUID，来自 `adapty apps list`。 |
+| `--date-from` | 是 | 周期的第一天（含），格式为 `YYYY-MM-DD`，使用应用所在时区。 |
+| `--date-to` | 是 | 周期的最后一天（含）。 |
+| `--metrics` | 是 | 来自 `adapty attribution metrics` 的数据图表名称，以逗号分隔或重复指定，最多 25 个。 |
+| `--group-by` | 是 | `date`、`campaign`、`adset`、`ad`、`keyword`、`channel`、`country` 或 `store`，以逗号分隔或重复指定。 |
+| `--granularity` | 与 `--group-by date` 配合使用 | `day`、`week`、`month`、`quarter` 或 `year`。按 `date` 分组时必填，其他情况下不可使用。 |
+| `--filter` | 否 | `dimension=value[,value]`。多个值之间为"或"关系；不同维度的过滤条件同时生效。每个维度只能使用一个 `--filter`。如需在值中包含逗号，请使用 `\,`。 |
+| `--revenue-basis` | 否 | `gross`（默认）、`proceeds` 或 `net`。 |
+| `--sort` | 否 | `field:asc` 或 `field:desc`，其中字段为所请求的数据图表或 `--group-by` 维度。省略方向时默认升序排列，空值排在最后。 |
+
+按 `campaign`、`adset` 或 `ad` 分组的行会携带该实体的 ID、名称和渠道。营销活动的名称是该活动在统计周期内最后使用的名称，因此跨周期比较时请通过 ID 进行匹配。`date` 值为对应时间桶的第一天。
+
+## 接下来做什么 \{#whats-next\}
+
+- [使用 AI 编程工具分析归因](developer-cli-attribution-skill) — 自动执行上述命令的技能。
+- [数据图表](ua-metrics) — 看板中每个数据图表的含义。
+- [趋势预测](ua-predicted-metrics) — 预测收入的建模方式。

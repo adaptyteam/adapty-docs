@@ -1,27 +1,140 @@
 ---
-title: "Flutter SDKでのペイウォール取得を最適化する"
-description: "Adaptyのペイウォールを確実に取得する：Flutterにおけるタイミングとキャッシュとフォールバックパターンの解説。"
-metadataTitle: "ペイウォール取得の最適化 | Flutter SDK | Adapty ドキュメント"
+title: "Flutter SDKでのフローとペイウォールの取得を最適化する"
+description: "Adaptyのフローとペイウォールを確実に取得する：FlutterのタイミングとキャッシングとフォールバックパターN。"
+metadataTitle: "フローとペイウォールの取得を最適化する | Flutter SDK | Adapty ドキュメント"
 ---
 
-Flutter でのペイウォール取得を信頼性の高いものにするには、3つのことを実現する必要があります：高速な表示、オーディエンスにターゲティングされたペイウォールの返却、そしてネットワークが遅い場合のグレースフルなフォールバックです。以下のルールでは、これを実現するためのタイミング、キャッシュ、フォールバックパターンについて説明します。
+Flutter でフローやペイウォールを確実に取得するには、次の3つが必要です：高速なレンダリング、オーディエンス対象のバリアントの返却、そしてネットワークが遅い場合のグレースフルなフォールバック。以下のルールでは、それを実現するためのタイミング・キャッシング・フォールバックパターンについて説明します。
+
 :::tip
-以下のルールは、`Adapty().activate()` および `Adapty().identify()` がすでに完了していることを前提としています。詳しくは [Flutter SDK の呼び出し順序](flutter-sdk-call-order) をご覧ください。
+このルールは、`Adapty().activate()` と `Adapty().identify()` がすでに完了していることを前提としています。詳細は [Flutter SDK の呼び出し順序](flutter-sdk-call-order) を参照してください。
 :::
 
-以下のアドバイスは v3 のメソッド名を使用しています。SDK v4 では、`getPaywall` が `getFlow` に、フェッチポリシーの型が `AdaptyFlowFetchPolicy` にそれぞれ名称変更されていますが、すべてのルールはそのまま適用されます。
 ## ルールと注意点 \{#rules-and-pitfalls\}
-| すること | しないこと | 理由 |
+
+| これをやる | これはやらない | 理由 |
 |---|---|---|
-| これから表示するプレースメントをフェッチする。                                                                                  | 起動時にすべてのプレースメントを並列でプリフェッチする。        | 一括プリフェッチはメインスレッドをブロックし、処理が集中する間にブラックスクリーンが発生する。                                  |
-| アトリビューションが解決する時間を確保してから `getPaywall` をフェッチする（たとえば `activate` から 1〜2 秒後、または `didUpdateProfileStream` が発火した後）。 | `runApp` の前の `main()` で `getPaywall` を呼び出す。         | アトリビューションがまだ確定していないため、ペイウォールはデフォルトのオーディエンスで解決され、セグメントや ASA パーソナライゼーションが無効になる。 |
-| `loadTimeout` を設定し、すべてのプレースメントに[フォールバックペイウォール](fallback-paywalls)を設定する。                             | `getPaywall` を無期限に待機する。                     | タイムアウトを設定しないと、通信環境が悪いユーザーはネットワークが解決するまで空白画面を見続けるか、アプリを閉じてしまう。     |
-プレースメントの選び方については[プレースメント](placements)を、`fetchPolicy`および`loadTimeout`パラメータの詳細については[ペイウォールとプロダクトの取得](fetch-paywalls-and-products-flutter)を参照してください。
+| 表示しようとしているプレースメントを取得するか、[`preloadFlows`](#preload-placements)（SDK 4.3.0+）でキャッシュをウォームアップする。 | 起動時に独自の並行`getFlow`呼び出しを展開する。 | 自前のプリフェッチバーストはメインスレッドをブロックし、ブラックスクリーンを引き起こす。`preloadFlows`はこの用途向けに設計されており、バッチをネイティブSDKに一度の呼び出しで送信する。 |
+| アトリビューションが解決される機会を持った後に`getFlow`を取得する — たとえば、`activate`の1〜2秒後、または`didUpdateProfileStream`が発火した後。 | `runApp`の前に`main()`で`getFlow`を呼び出す。 | アトリビューションがまだ確定していない。フローはデフォルトのオーディエンスに対して解決され、セグメントやASAのパーソナライゼーションが暗黙的にバイパスされる。 |
+| デフォルトの`loadTimeout`（5秒）をそのまま使用するか別の値を設定し、すべてのプレースメントに[フォールバックペイウォール](fallback-paywalls)を設定する。 | タイムアウトが発火しないほど大きな`loadTimeout`を`getFlow`に渡す。 | タイムアウトが発火しない場合、接続状態の悪いユーザーはネットワークが解決されるまで空白の画面を見ることになるか、アプリを閉じてしまう。 |
+
+カスタムペイウォールとプロダクトの取得方法については [カスタムペイウォールとプロダクトの取得](fetch-paywalls-and-products-flutter) を、適切なプレースメントの選び方については [プレースメント](placements) を参照してください。
+
+## プレースメントをプリロードする \{#preload-placements\}
+
+:::info
+`preloadFlows` および `preloadFlowsForDefaultAudience` は SDK バージョン 4.3.0 以降で利用できます。
+:::
+
+`preloadFlows` はフローの JSON を事前にキャッシュします。その後は通常通り使用できます：フローの取得には `getFlow`、ビューの作成には `createFlowView` を使用します。
+
+`fetchPolicy` は、後続の `getFlow` がどのレイヤーを最初に読み込むかを制御するものであり、キャッシュにアクセスできるかどうかを制御するものではありません：
+
+- `AdaptyFlowFetchPolicy.returnCacheDataElseLoad` はキャッシュ済みのコピーを最初に読み込み、キャッシュがない場合のみネットワークにアクセスします。`AdaptyFlowFetchPolicy.returnCacheDataIfNotExpiredElseLoad(maxAge)` は、コピーが `maxAge` より新しい間は同じ動作をします。
+- デフォルトの `AdaptyFlowFetchPolicy.reloadRevalidatingCacheData` は最初にネットワークにアクセスし、リクエストが失敗またはタイムアウトした場合にキャッシュ済みのコピーにフォールバックします。
+
+プリロードはどのポリシーでも効果がありますが、動作は異なります。キャッシュファーストポリシーではリクエスト自体がなくなり、デフォルトポリシーではリクエストは残りつつウォームコピーがフォールバックとして使われます。[テストデバイス](test-devices)では、`getFlow` はどのポリシーでもキャッシュをスキップし、ネットワークリクエストが失敗した場合のみプリロード済みコピーを使用します。
+
+セッションで必要になるプレースメントがわかっているが、まだ表示したくない場合に使用してください。たとえば、`activate` と `identify` が完了した直後に、ユーザーがまだタップしていないボタンの背後にあるフローを準備しておく場合などです。
+
+```dart showLineNumbers
+try {
+  await Adapty().preloadFlows(
+    placementIds: ['onboarding', 'main_paywall'],
+    loadTimeout: const Duration(seconds: 5),
+  );
+} on AdaptyError catch (adaptyError) {
+  // at least one placement failed to preload
+}
+
+// Later, when the user reaches the paywall:
+final flow = await Adapty().getFlow(
+  placementId: 'main_paywall',
+  fetchPolicy: AdaptyFlowFetchPolicy.returnCacheDataElseLoad,
+);
+```
+
+**パラメーター:**
+
+- `placementIds`（必須）：プリロードするプレースメント。
+- `loadTimeout`（任意）：オーディエンスターゲティングされたフローのプリロード待機時間。デフォルトは5秒で、1秒未満の値は1秒に引き上げられます。タイムアウトに達した場合、SDKはデフォルトオーディエンスのフローを代わりに読み込むことがあります。
+
+**知っておくべき動作：**
+
+- すべてのプレースメントの試行が完了してから、失敗したすべてのプレースメントをまとめた1つの `AdaptyError` でコールが失敗します。1つのプレースメントの失敗が他のプレースメントの処理を停止させることはなく、ロードに成功したプレースメントはキャッシュに残ります。
+- プリロードは常にネットワークにアクセスします。独自の `fetchPolicy` はありません。
+- プリロードはキャッシュを温めるだけです。コンテンツを返すわけではないため、表示するには引き続き `getFlow` を呼び出す必要があります。
+
+### プリロードの対象範囲 \{#what-a-preload-covers\}
+
+フローは段階的に画面に表示されます。プリロードは最初の段階をカバーします。これは `getFlow` が行う処理と同じです。
+
+| レイヤー | 取得元 | プリロードによるウォーミング |
+|---|---|---|
+| フロー JSON — 選択されたバリアント、プロダクト ID、リモートコンフィグ | `getFlow` | あり |
+| UI レイアウト — 画面の構造、スタイリング、テキスト | `createFlowView` | なし |
+| 画像（動画要素の代わりに表示されるスチルフレームを含む） | `createFlowView`（バックグラウンド） | なし |
+| プロダクト | `createFlowView` または `getPaywallProducts` | なし |
+| 動画ファイル | iOS ではシステムプレーヤー、Android では ExoPlayer（画面レンダリング時） | なし。Android では、ネイティブ SDK が再生済み動画を最大 50 MB までキャッシュ |
+
+`createFlowView` は、以下の順番で3つの場所からレイアウトを検索します：
+
+1. ネイティブ SDK のディスクキャッシュ（アプリの再起動後も保持されます）。
+2. SDK 4.4 以降向けの[フォールバックファイル](flutter-use-fallback-paywalls)（フローを最後に公開した後にダウンロードしたものが対象）。
+3. ネットワーク経由の Adapty。プリロード後であっても、ラウンドトリップが発生します。アプリが各公開済みバージョンのフローを初めて表示するとき、ネイティブ SDK がこのリクエストを行い、レイアウトをディスクキャッシュに保存します。
+
+`createFlowView`の`loadTimeout`が発火しても、ネイティブSDKはフォールバックしません。AdaptyのAPIに対してレイアウトを再リクエストします。`loadTimeout`はその2回目のリクエストには適用されません。
+
+### オーディエンスのセグメンテーションをスキップする \{#skip-audience-segmentation\}
+
+オーディエンスのセグメンテーションを一切待たずにキャッシュをウォームアップするには、デフォルトオーディエンスのバリアントを使用します。タイムアウトは不要です：
+
+```dart showLineNumbers
+await Adapty().preloadFlowsForDefaultAudience(placementIds: ['main_paywall']);
+```
+
+その後 `getFlowForDefaultAudience` を呼び出すと、`getFlow` が `preloadFlows` のコピーを読み取るのと同じ方法で、キャッシュされたコピーを読み取ります。
+
+## アプリバンドルから最初の画面のメディアを表示する \{#show-first-screen-media-from-the-app-bundle\}
+
+フローは画像や動画を Adapty からダウンロードします。最初の画面のメディアを即座に表示するには、アプリバンドルから直接提供してください。これは、既存のネイティブオンボーディングのビジュアルなど、すでに同梱しているメディアを再利用するのに便利な方法です。
+
+1. Flow & Paywall Builderで、画像または動画に[カスタムメディアID](custom-media#custom-media-id)を設定します。そこでアップロードしたファイルはフォールバックとして使用されます。
+2. ファイルをFlutterのアセットに追加し、`pubspec.yaml`の`assets`に記載します。
+3. フロービューを作成する際に、`customAssets`でそのIDに対応するバンドルファイルを渡します。
+
+```dart showLineNumbers
+// "welcome_video" is the custom media ID set in the Flow & Paywall Builder
+final bundledAssets = {
+  'welcome_video': AdaptyCustomAsset.localVideoAsset(
+    assetId: 'assets/videos/welcome.mp4',
+  ),
+};
+
+try {
+  final view = await AdaptyUI().createFlowView(
+    flow: flow,
+    customAssets: bundledAssets,
+  );
+} on AdaptyError catch (e) {
+  // handle the error
+}
+```
+
+バンドルされたファイルはアプリのダウンロードサイズを増加させるため、ユーザーが最初に目にするメディアのみをバンドルしてください。
+
+バンドルされた画像は待ち時間なしで表示されますが、ネイティブ SDK はバックグラウンドでアップロードされた画像を引き続きダウンロードします。
+
+バンドルされていないメディアも即座に表示されます。フローのレイアウトには各画像の低解像度コピー（動画のスチルフレームを含む）が含まれており、フルファイルが読み込まれるまでの間、それが表示されます。
+
+`customAssets` の完全なリファレンスについては、[アセットのカスタマイズ](flutter-get-pb-paywalls#customize-assets)を参照してください。
+
 ## 接続状況が悪い環境向けのチューニング \{#tune-for-poor-connectivity\}
 
-接続状況が慢性的に悪い市場（農村部、移動中、ルーティングの問題がある地域）向けには:
+接続状況が常に悪い市場（地方、交通機関内、ルーティング障害の影響を受ける地域など）向けの設定：
 
-- 最初の取得以外のすべての取得で `fetchPolicy: AdaptyPaywallFetchPolicy.returnCacheDataElseLoad` を設定する。
-- Adapty ダッシュボードですべてのプレースメントに[フォールバックペイウォール](fallback-paywalls)を設定する。
-- `loadTimeout` を3〜5秒に設定し、タイムアウトが発火した場合はフォールバックを受け入れる。
-- `getProfile()` にペイウォールの表示を依存させない。`getPaywall` を独立して呼び出すことで、プロファイルの取得が遅くてもUIをブロックしないようにする。
+- `fetchPolicy: AdaptyFlowFetchPolicy.returnCacheDataElseLoad` を、最初のフェッチ以外すべてに設定する。
+- Adapty ダッシュボードのすべてのプレースメントに[フォールバックペイウォール](fallback-paywalls)を設定する。
+- `loadTimeout` をスピードとターゲティングのバランスを考慮して設定する。タイムアウトを短くするとユーザーにはより早くフォールバックが表示される。長くするとターゲティングされたフローが読み込まれる時間が増える。
+- [フローを軽量に保つ](flow-size)ことで、レイアウトのダウンロードが速くなる。
+- `getProfile()` の完了を待ってフローを表示しない。`getFlow` は独立して呼び出し、プロファイルの取得が遅くてもUIがブロックされないようにする。

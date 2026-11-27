@@ -27,6 +27,10 @@ If the input is too vague to determine what changed, who it affects, or where it
 
 > **Rule:** Each phase invokes a sub-skill via the Skill tool. Never substitute your own knowledge for an invoked skill — trust the skill's output and build on it.
 
+### Before Phase 1: build the docs map
+
+Run `npm run mill:map`. The map is gitignored, so it is missing on a fresh clone and stale after a pull — and every phase below searches it through `context-mill`, where a missing map finds nothing and reads as "no article covers this". The sub-skills also build it when invoked on their own; building once here keeps every phase on the same map. Use `mill:map`, not `mill`: plain `mill` re-renders the roster blocks in the committed briefs and leaves unrelated diffs in the article PR.
+
 ### Phase 1: Plan — `writing-planner`
 
 **REQUIRED SUB-SKILL:** Use the Skill tool to invoke `writing-planner`.
@@ -83,7 +87,7 @@ The product-manager will evaluate:
 ### Phase 4: Feedback — Iterate with the User
 
 Present the draft and ask for feedback. The user may:
-- **Approve** → Done. Commit or finalize as appropriate.
+- **Approve** → Done. Before you commit, run the editor's newer-commits check again (Self-Review, step 11), and fix any fact whose source changed. Then commit or finalize as appropriate. Brief changes from Phase 4.5 go into their own commit at the same time — see that phase.
 - **Request changes** → Apply changes and re-present. If changes are substantial (new sections, restructured content), re-run the product-manager review on the changed sections.
 - **Disagree with a skill's recommendation** → See "Skill Evolution" below.
 
@@ -93,13 +97,39 @@ Repeat this phase until the user approves.
 
 Once the draft is approved, close the loop on the context the task started from. **REQUIRED SUB-SKILL:** invoke `context-mill` and follow **Mode 4 — Autolog**.
 
-The point is not to append prose to a brief. It is that whoever wrote this article has just been in the SDK repo, the backend module or the spec, and that is the cheapest moment there will ever be to test what the brief claims. Report a **diff**: what the source says that the brief doesn't, **what the brief says that turned out wrong** — lead with that, it is the highest-value output — and what could not be verified.
+Whoever wrote this article has just been in the SDK repo, the backend module or the spec, and that is the cheapest moment there will ever be to test what the brief claims. Write the findings into the brief, then report the same **diff**: **what the brief said that turned out wrong** — lead with that, it is the highest-value output — what the source says that the brief doesn't, and what could not be verified.
 
-Two rules the sub-skill states and that you must not soften: edit the brief only where command output settles it, dated; and never run `mill:reviewed`, because that is the owner saying "I read this and it is right", not a side effect of shipping an article.
+Three rules the sub-skill states and that you must not soften: every finding goes into the brief dated and with its evidence named, and unconfirmed ones go in as unconfirmed rather than waiting for the owner's call; the `.claude/context-mill/` changes get their own commit, made when the article is committed, never before and never left behind; and never run `mill:reviewed`, because that is the owner saying "I read this and it is right", not a side effect of shipping an article.
 
 Skip only if the whole task ran on the user's prose and no source was opened.
 
+### Phase 4.6: The shipped-skill half
+
+Run this only if the plan's `## Affected skills` section named something. If it said *None*, the
+task is done — do not go looking for work in the other repository.
+
+**Order is fixed, and Phase 4.5 must already be done.** Crossing repositories moves the session's
+project settings, so the target repo's own `CLAUDE.md` loads — which is what makes the edit safe —
+but the mill and the docs `CLAUDE.md` unload with it. Autolog first, cross second. Crossing back is
+another move, not free.
+
+1. Cross into the skills repository. Its location is the `path:` of `sdk-integration-skill` in
+   `.claude/context-mill/sources.md`, with any `sources.local.md` override applied.
+2. **Check the branch on arrival.** That repository is routinely mid-way through unrelated work.
+   Branch from `main`; never write into whatever happens to be checked out.
+3. Make the edit. Follow that repository's `CLAUDE.md` — it is long, it is the authority there, and
+   its conventions (evidence bars, calibration, "do not write guidance for a trap the baseline
+   already closed") are not optional.
+4. **REQUIRED SUB-SKILL:** for anything beyond a one-line factual correction, use the Skill tool to
+   invoke `superpowers:writing-skills`.
+5. Run both gates before handing back: `node scripts/lint-symbols.mjs` and
+   `node scripts/lint-links.mjs`. Exit 0, or report why not.
+6. Report what changed in the skill, in the reply. **Do not write a handoff file** — the work
+   happens in one session, and a file is another artefact to go stale.
+
 ### Phase 5: Skill Evolution (When Needed)
+
+**This is about the docs skills that run this workflow — `writing-planner`, `editor`, `product-manager`, `context-mill` — not the shipped Adapty skills of Phase 4.6.**
 
 If user feedback at any phase contradicts a skill's instructions, evaluate whether the feedback represents:
 
@@ -142,4 +172,4 @@ If the writing-planner assesses a "small update" but the user's feedback keeps e
 For tasks affecting multiple articles, the writing-planner will produce a multi-article plan with execution order. Follow that order. Draft each article separately through Phases 2-4, completing one before starting the next (unless the user prefers parallel drafting).
 
 ### Code snippets
-When the plan or draft calls for code snippets, use the Skill tool to invoke `snippet-master`. **REQUIRED SUB-SKILL:** `snippet-master` handles SDK code across all 7 platforms (iOS, Android, React Native, Flutter, Unity, Kotlin Multiplatform, Capacitor) — don't write snippets yourself.
+When the plan or draft calls for code snippets, use the Skill tool to invoke `snippet-master`. **REQUIRED SUB-SKILL:** `snippet-master` handles SDK code across all 7 platforms (iOS, Android, React Native, Flutter, Unity, Kotlin Multiplatform, Capacitor) — don't write snippets yourself. Present a draft with a new or changed code block only after `snippet-master` has compiled it, and name any block it couldn't compile.

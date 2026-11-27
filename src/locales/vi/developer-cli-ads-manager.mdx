@@ -29,11 +29,11 @@ Một lệnh duy nhất báo cáo cả hai:
 adapty asa whoami
 ```
 
-### Điểm khác biệt so với phần còn lại của CLI \{#differences-from-the-rest-of-the-cli\}
+### Sự khác biệt so với phần còn lại của CLI
 
-- **Không có flag `--app`**: Phạm vi là công ty mà token của bạn thuộc về. `--app` chỉ tồn tại trên một số lệnh `list` với vai trò bộ lọc.
-- **Thao tác ghi tác động trực tiếp đến Apple**: Mỗi lệnh thay đổi tài khoản của bạn sẽ in ra nội dung request và yêu cầu xác nhận trước khi gửi. Không có bước staging.
-- **Đọc thì rẻ, ghi thì không**: Chạy lệnh `list` và `--dry-run` thoải mái. Còn lại hãy xem như không thể hoàn tác.
+- **Không có flag `--app`**: Phạm vi là công ty mà token của bạn thuộc về. `--app` chỉ xuất hiện ở một số lệnh `list` như một bộ lọc. Các lệnh `asa segments` là ngoại lệ: chúng ghi vào một app Adapty, nên `--app` chỉ định app đó.
+- **Thao tác ghi đến thẳng Apple**: Mỗi lệnh thay đổi tài khoản của bạn sẽ in ra request body và yêu cầu xác nhận trước khi gửi. Không có bước staging nào.
+- **Đọc thì rẻ, ghi thì không**: Dùng lệnh `list` và `--dry-run` thoải mái. Còn lại hãy xem như không thể hoàn tác.
 
 Để bỏ qua lời nhắc xác nhận trong một script, hãy truyền `--yes`. Khi dùng `--json` hoặc trong một pipe, lệnh ghi sẽ từ chối thay vì chờ câu trả lời không bao giờ đến, vì vậy `--yes` là bắt buộc trong trường hợp đó.
 
@@ -51,6 +51,16 @@ Hãy giới hạn phạm vi mỗi lần đọc bằng bộ lọc. Bộ lọc thu
 
 Các danh sách này chỉ trả về metadata. Số liệu hiệu suất đến từ [`asa metrics`](#query-metrics-from-agents-and-scripts).
 
+## Nhận gợi ý từ khóa \{#get-keyword-recommendations\}
+
+Để bắt đầu danh sách từ khóa mà không cần nghiên cứu, hãy lấy một tập hợp từ khóa có sẵn cho ứng dụng của bạn. Truyền `adam_id` của ứng dụng từ `adapty asa apps list` và loại tập hợp — `brand`, `generic`, hoặc `competitor`:
+
+```bash
+adapty asa keywords recommend --adam-id <adam-id> --type generic --country US
+```
+
+Pool không có bids hay match types. Hãy tự chọn những thông số đó, rồi thêm keywords theo hướng dẫn tại [Thêm keywords hàng loạt](#add-keywords-in-bulk). Nếu output hiển thị `status: building`, hãy thử lại sau khoảng một phút. Xem [Lệnh Ads Manager](developer-cli-ads-manager-reference#adapty-asa-keywords-recommend) để biết các loại pool và giới hạn.
+
 ## Thêm từ khóa hàng loạt \{#add-keywords-in-bulk\}
 
 Thêm từng từ khóa một là lý do chính để rời khỏi dashboard. Đặt mỗi từ khóa trên một dòng trong tệp văn bản:
@@ -65,15 +75,82 @@ Có hai loại lỗi có thể xảy ra, và chúng hoạt động khác nhau. M
 
 Bắt đầu với một vài keyword và kiểm tra kết quả trước khi gửi cả file.
 
+## Tạo chiến dịch Max Conversions \{#max-conversions\}
+
+Một chiến dịch đặt giá thầu với `MAX_CONVERSIONS` chỉ hoạt động khi có một nhóm quảng cáo tự động, vì vậy hãy tạo cả hai cùng lúc:
+
+```bash
+adapty asa campaigns create --org <campaign-group-id> --name "Max Conv" --adam-id 123456 --country US --daily-budget 50 --bidding-strategy MAX_CONVERSIONS
+adapty asa ad-groups create --campaign <campaign-id> --name "Automated Max Conv" --automated
+```
+
+Cho đến khi nhóm quảng cáo đó tồn tại, chiến dịch báo cáo `serving_status: NOT_RUNNING` với `AUTOMATED_KEYWORDS_REQUIRED_AD_GROUP_MISSING` trong `serving_state_reasons`, và `campaigns create` sẽ in ra cả lý do lẫn lệnh để giải quyết vấn đề đó.
+
+`--automated` là thứ đáp ứng yêu cầu — một nhóm quảng cáo thông thường với `--automated-keywords` thì không đủ. Apple tự lên lịch và chạy nhóm quảng cáo tự động, vì vậy nó không cần `--start-time`, `--default-bid` là tùy chọn, và nó luôn ở trạng thái bật: để dừng chi tiêu, hãy tạm dừng chiến dịch.
+
+Trên chiến dịch, hãy giữ `--target-cpa` thấp hơn `--daily-budget`.
+
+## Đặt tùy chọn lập hóa đơn cho hạn mức tín dụng \{#invoicing-options\}
+
+Apple yêu cầu Invoicing Options trên mọi chiến dịch trong một tổ chức thanh toán theo hạn mức tín dụng. `adapty asa orgs list` báo cáo `payment_model` của từng tổ chức — `LOC` có nghĩa là năm cờ `--invoice-*` sẽ được áp dụng:
+
+```bash
+adapty asa campaigns create --org <campaign-group-id> --name "LOC push" --adam-id 123456 --country US --daily-budget 50 --invoice-advertiser "Acme Inc" --invoice-order-number PO-42 --invoice-contact-name "Jane Doe" --invoice-contact-email jane@acme.com --invoice-billing-email billing@acme.com
+```
+
+Pass all five in one call — a partial set is rejected before the request reaches Apple. Without them, the campaign is created but reports `serving_status: NOT_RUNNING` with `MISSING_BO_OR_INVOICING_FIELDS`.
+
+Truyền đủ cả năm tham số trong một lần gọi — nếu thiếu bất kỳ tham số nào, yêu cầu sẽ bị từ chối trước khi đến Apple. Nếu không có chúng, campaign được tạo nhưng sẽ báo `serving_status: NOT_RUNNING` với lỗi `MISSING_BO_OR_INVOICING_FIELDS`.
+
+Năm flag tương tự trên lệnh `adapty asa campaigns update` sẽ đặt Invoicing Options cho một campaign đã tồn tại. Chúng thay thế toàn bộ tập hợp đã lưu, vì vậy hãy truyền đủ cả năm kể cả khi chỉ muốn thay đổi một trong số đó.
+
+## Tạo cấu trúc campaign trong một thao tác \{#create-a-campaign-structure-in-one-operation\}
+
+`campaigns bulk-create` thay thế cho script lặp qua `campaigns create` và `ad-groups create`. Lệnh này gửi toàn bộ cấu trúc campaign — bao gồm các campaign cùng ad group, từ khóa, từ khóa phủ định và quảng cáo — trong một thao tác duy nhất:
+
+```bash
+adapty asa campaigns bulk-create --file structure.json
+```
+
+Đầu vào là mô tả JSON của cấu trúc — xem [định dạng cấu trúc](developer-cli-ads-manager-reference#adapty-asa-campaigns-bulk-create) để biết các trường. JSON là lựa chọn tự nhiên cho AI agent: nó tạo ra cấu trúc và truyền vào:
+
+```bash
+cat structure.json | adapty asa campaigns bulk-create --file -
+```
+
+Một [mẫu bulk của Apple Ads](https://ads.apple.com/app-store/help/campaigns/0089-make-edits-in-bulk) gốc cũng được chấp nhận làm đầu vào — server sẽ chuyển đổi `Campaign_And_Adgroup_Template.xlsx` hoặc [keywords `.csv`](https://ads.apple.com/app-store/help/keywords/0014-add-and-manage-keywords) thành một cấu trúc. `--org-id` nhận giá trị số `org_id` từ `adapty asa orgs list`. Để xem trước kết quả chuyển đổi trước khi tạo bất cứ thứ gì, thêm `--preview`:
+
+```bash
+adapty asa campaigns bulk-create --from-file Campaign_And_Adgroup_Template.xlsx --org-id 1234567 --preview
+```
+
+Các vấn đề chuyển đổi sẽ được báo cáo kèm theo sheet, hàng và cột tương ứng. Khi cấu trúc hiển thị trông đúng, hãy bỏ `--preview` để gửi.
+
+Kết quả `--preview` cũng là cách nhanh nhất để lấy file cấu trúc ban đầu: lưu lại, chỉnh sửa và gửi bằng `--file` — tương tự như cách [`automations get`](#run-automation-rules) cung cấp template cho rule.
+
+Toàn bộ cấu trúc được xác thực trước khi tạo bất cứ thứ gì, và nếu bị từ chối, danh sách sẽ liệt kê mọi node không hợp lệ. Sau khi được chấp nhận, các đối tượng sẽ được tạo trên server trong khi lệnh báo cáo tiến trình. Kết quả cuối cùng là `success`, `partial`, hoặc `failed` — kết quả `partial` liệt kê từng đối tượng chưa được tạo, kèm theo lỗi từ Apple.
+
+Đối với cấu trúc lớn, truyền `--no-wait` để nhận ngay operation ID và xem tiến trình sau:
+
+```bash
+adapty asa campaigns bulk-status <operation-id>
+```
+
 ## Truy vấn chỉ số từ agent và script \{#query-metrics-from-agents-and-scripts\}
 
-`asa metrics` báo cáo ở bất kỳ cấp độ nào của tài khoản trong một khoảng thời gian. Thêm `--json` để AI agent hoặc script có thể đọc kết quả trực tiếp:
+`asa metrics` báo cáo ở bất kỳ cấp độ nào trong tài khoản theo khoảng thời gian. Thêm `--json` để AI agent hoặc script có thể sử dụng kết quả trực tiếp:
 
 ```bash
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric spend --metric roas --json
 ```
 
-`--metric` nhận các tên mà Ads Manager theo dõi. Xem [Chỉ số](adapty-ads-manager-metrics) để có danh sách đầy đủ.
+`--metric` là tham số bắt buộc và có thể dùng nhiều lần, nhận tên các chỉ số mà Ads Manager theo dõi. Xem [Chỉ số](adapty-ads-manager-metrics) để biết danh sách đầy đủ. Mỗi chỉ số bạn chỉ định đều được tính toán trên toàn bộ cấp thực thể trước khi phân trang, vì vậy hãy chỉ yêu cầu các cột bạn thực sự cần thay vì toàn bộ danh mục.
+
+`--app`, `--campaign`, và `--ad-group` thu hẹp phạm vi báo cáo, và đây là cách rẻ nhất để tăng tốc độ gọi API, vì chi phí phụ thuộc vào số lượng thực thể được tổng hợp chứ không phải kích thước trang. Bốn chỉ số đếm hồ sơ người dùng duy nhất theo từng thực thể — `subscribers`, `paid_subscribers`, `arppu`, và `arpas` — và những chỉ số này yêu cầu bộ lọc campaign hoặc ad group ở bất kỳ cấp thực thể nào:
+
+```bash
+adapty asa metrics --entity keyword --date-from 2026-07-01 --date-to 2026-07-31 --metric arpas --campaign <campaign-id> --json
+```
 
 Các chỉ số cohort hoạt động khác với phần còn lại. Không có chỉ số `ltv`, vì giá trị vòng đời được đọc theo cửa sổ gia hạn chứ không phải theo ngày. Hãy truyền cửa sổ thay thế:
 
@@ -89,7 +166,9 @@ Mỗi hàng là một entity, đã được tổng hợp và sắp xếp sẵn t
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --order-by spend --page-size 5
 ```
 
-Metrics và danh sách search terms dùng chung một ngân sách analytics theo công ty: 5 lần gọi mỗi phút, tối đa 2 lần trong mỗi 10 giây. Hãy đặt câu hỏi cụ thể một lần thay vì liên tục polling. Khoảng thời gian báo cáo cũng bị giới hạn tùy theo cách bạn nhóm dữ liệu — 90 ngày theo ngày, 180 ngày theo tuần, 365 ngày theo tháng — vì vậy hãy mở rộng báo cáo bằng cách thưa hơn `--group-by`, không phải bằng cách tách thành nhiều lần gọi hơn.
+Metrics và danh sách từ khóa tìm kiếm dùng chung một ngân sách analytics theo công ty: tối đa 5 lần gọi mỗi phút và không quá 2 lần trong bất kỳ 10 giây nào. Hãy đặt câu hỏi cụ thể một lần thay vì polling liên tục.
+
+Hai giới hạn áp dụng cho một báo cáo. Khoảng thời gian báo cáo bị giới hạn bởi mức độ chi tiết của nhóm — 28 ngày với `--group-by day`, 90 ngày khi không có nhóm theo khoảng thời gian, 180 ngày theo tuần, 365 ngày theo tháng — và mỗi trang bị giới hạn ở 5000 hàng phân tích, tính một hàng cho mỗi thực thể × quốc gia × khoảng thời gian. Vì vậy, hãy mở rộng báo cáo bằng cách giảm độ chi tiết của `--group-by`, không phải bằng cách chia thành nhiều lần gọi hơn.
 
 ## Kiểm tra từ khóa của đối thủ cạnh tranh \{#check-competitor-keywords\}
 
@@ -103,29 +182,83 @@ Khoảng thời gian và quốc gia được cố định trên máy chủ — t
 
 Sử dụng công cụ này để tự động lấy dữ liệu từ khóa của đối thủ và đưa vào báo cáo theo lịch định kỳ. Để lọc kết quả, so sánh các quốc gia với nhau, hoặc thêm trực tiếp các từ khóa tìm được vào chiến dịch, hãy dùng [Market Intelligence](ads-manager-market-intelligence) trên dashboard.
 
+## Tạo phân khúc cho từng chiến dịch \{#create-a-segment-for-each-campaign\}
+
+Để hiển thị paywall riêng cho người dùng đến từ một chiến dịch cụ thể, hãy tạo một [phân khúc](segments) cho chiến dịch đó và sử dụng nó làm [đối tượng](audience) trong một placement. Trước tiên, kiểm tra xem chiến dịch đã có phân khúc chưa:
+
+```bash
+adapty asa segments list --app <app-id> --campaign <campaign-id>
+```
+
+Nếu kết quả trống, hãy tạo phân khúc:
+
+```bash
+adapty asa segments create --app <app-id> --campaign <campaign-id> --yes
+```
+
+`--app` là ID ứng dụng Adapty lấy từ `adapty apps list`. CLI đặt tên phân khúc là `[ASA] Campaign: <name>`, giống như Ads Manager, để Ads Manager nhận dạng phân khúc đó là của mình. Để tạo một phân khúc từ nhóm quảng cáo hoặc từ khóa, xem [Phân khúc](developer-cli-ads-manager-reference#segments) trong tài liệu tham khảo lệnh.
+
+## Tìm người đã thay đổi chiến dịch của bạn \{#find-who-changed-your-campaigns\}
+
+Để biết ai đã tạm dừng một chiến dịch hoặc thay đổi giá thầu, và khi nào, hãy đọc lịch sử thay đổi của tổ chức. Dữ liệu này được lấy trực tiếp từ Apple, vì vậy nó cũng bao gồm các thay đổi được thực hiện trực tiếp trong Apple Ads hoặc bởi các công cụ khác:
+
+```bash
+adapty asa change-history list --campaign-group <campaign-group-id> --entity-type Campaign --event-type UPDATE
+```
+
+Để xem giá trị cũ và mới của mỗi trường đã thay đổi, thêm `--fields`. Để xem chi tiết một thay đổi, truyền `detail_id` của nó vào `change-history get`:
+
+```bash
+adapty asa change-history get <detail-id> --campaign-group <campaign-group-id>
+```
+
+Mỗi lần gọi sẽ đọc một tổ chức và tối đa 14 ngày, trong khoảng thời gian 6 tháng mà Apple lưu giữ. Các bộ lọc `--campaign` và `--ad-group` của lệnh này nhận ID số của Apple, không phải UUID. Xem [Lịch sử thay đổi](developer-cli-ads-manager-reference#change-history) để biết tất cả các flag.
+
+Để xem các thay đổi tương tự trên Adapty Dashboard, hãy sử dụng [trang Change History](ads-manager-change-history).
+
 ## Chạy automation rules \{#run-automation-rules\}
 
-CLI không tạo [automation rules](ads-manager-automations) — nó chỉ lưu trữ JSON bạn cung cấp. Cách nhanh nhất để có file rule hợp lệ là tạo một rule trong dashboard, rồi đọc lại:
+CLI lưu trữ JSON bạn cung cấp, vì vậy cách nhanh nhất để có được file [automation rule](ads-manager-automations) hợp lệ là tạo một rule trong dashboard, sau đó đọc lại:
 
 ```bash
 adapty asa automations get <automation-id> --json > rule.json
 ```
 
-Chỉnh sửa file đó và dùng làm mẫu để tạo rule mới:
+Chỉnh sửa file đó và dùng làm template cho các rule mới:
 
 ```bash
 adapty asa automations create --file rule.json
 ```
 
-Khi bạn truyền file vào `automations update`, hãy xóa trường `internal_id` trước — lệnh cập nhật sẽ bị từ chối nếu trường này có mặt.
+A rule file contains exactly one condition and exactly one action, which is what the API keeps per rule. When you pass a file to `automations update`, remove the `internal_id` field first — the update is rejected if it is present.
 
-Kiểm tra một quy tắc trước khi để nó thay đổi giá thầu:
+### Tạo hành động Add as keyword từ các flag \{#build-an-add-as-keyword-action-from-flags\}
+
+Một hành động là ngoại lệ so với JSON viết tay. **Add as keyword**, dùng để đưa một từ khóa tìm kiếm lên hoặc sao chép từ khóa vào một nhóm quảng cáo khác, lấy nhóm quảng cáo đích, giá thầu và kiểu khớp từ các flag:
+
+```bash
+adapty asa automations create --file rule.json --target-ad-group <ad-group-id> --match-type EXACT --cpt-bid-type search_term_current_cpt --negate ad-group
+```
+
+:::warning
+Lấy `params` của action này từ các flag, không bao giờ lấy từ một rule chứa action khác. API phân giải `params` theo hình dạng (shape) thay vì theo tên biến thể, vì vậy một key thuộc action khác sẽ khiến nó chọn action đó và bỏ qua phần còn lại — trả về `200` và lưu một rule không thêm keyword vào ad group nào cả.
+:::
+
+Các flag tương tự trên `automations update` sẽ sửa một rule đã được lưu với shape sai. CLI đọc rule đó, xây dựng lại action từ đầu, rồi ghi lại, chỉ giữ những cài đặt đã lưu phù hợp với action **Add as keyword**:
+
+```bash
+adapty asa automations update <automation-id> --target-ad-group <ad-group-id> --match-type EXACT --cpt-bid-type search_term_current_cpt
+```
+
+Bất kỳ quy tắc nào bị thiếu đều phải được bổ sung thông qua một flag. Xem [Lệnh Ads Manager](developer-cli-ads-manager-reference#add-keyword-flags) để biết toàn bộ danh sách.
+
+Kiểm tra một quy tắc trước khi cho phép nó thay đổi giá thầu:
 
 ```bash
 adapty asa automations run <automation-id> --dry-run
 ```
 
-Dry run sẽ đánh giá các điều kiện và ghi lại những gì quy tắc sẽ thực hiện mà không tác động đến Apple Ads. Các lần chạy được xếp vào hàng đợi thay vì thực hiện ngay lập tức, vì vậy lệnh sẽ in ra một run ID và kết quả sẽ xuất hiện trong `adapty asa automations runs`.
+Một lần chạy thử (dry run) sẽ đánh giá các điều kiện và ghi log những gì rule sẽ thực hiện mà không tác động đến Apple Ads. Các lần chạy được xếp vào hàng đợi thay vì thực hiện ngay lập tức, vì vậy lệnh sẽ in ra một run ID và kết quả sẽ xuất hiện trong `adapty asa automations runs`.
 
 ## Chạy lại script an toàn \{#re-run-scripts-safely\}
 

@@ -1,0 +1,809 @@
+---
+title: "Commandes Flows"
+description: "Commandes CLI Adapty permettant de créer des flows, lire et écrire leurs configurations de builder, les valider et les prévisualiser, téléverser des médias et des polices personnalisées, les publier, lister et restaurer leurs versions, les dupliquer, et lire leurs métriques et entonnoir d'écrans."
+metadataTitle: "Commandes CLI pour les Flows | Documentation Adapty"
+---
+
+Les [flows](adapty-flow-builder) sont les paywalls et onboardings que vous créez dans le Flow & Paywall Builder. La CLI gère l'enregistrement du flow, sa configuration de builder, sa publication et l'[historique des versions](flow-version-history). Une configuration de builder est un large document JSON que le Flow & Paywall Builder produit normalement, et la CLI n'en génère pas. Pour créer ou modifier une configuration depuis le terminal, utilisez le [skill flow-generator](flow-generator-skill), qui pilote ces commandes pour vous. Avant la publication, le [skill flow-audit](flow-audit-skill) vérifie si le flow est prêt pour la production. Les [commandes `fonts`](#custom-fonts) permettent d'envoyer et de gérer les polices personnalisées utilisées par les flows, et nécessitent la version 0.33.0 ou ultérieure de la CLI. Les commandes `flows metrics` lisent les chiffres de la page des [métriques de flow](flow-metrics) et nécessitent la version 0.15.0 ou ultérieure de la CLI. Les commandes `flows funnel` lisent le [funnel du flow](flow-funnel) et nécessitent la version 0.19.0 ou ultérieure de la CLI. Les commandes sont listées ici à titre de référence.
+
+## adapty flows list \{#adapty-flows-list\}
+
+Lister tous les flows d'une application.
+
+```bash
+adapty flows list --app <app-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+Accepte les [flags de pagination](developer-cli-reference#global-flags).
+
+## adapty flows get \{#adapty-flows-get\}
+
+Obtenir les détails d'un flow spécifique.
+
+```bash
+adapty flows get --app <app-id> <flow-id>
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | ID du flow (UUID) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'app (UUID) |
+
+La réponse contient `id`, `name`, `status`, `published_flow_version_id` et `updated_at`. `published_flow_version_id` est l'ID de la version en production, ou `null` si le flow n'a jamais été publié. Le statut est l'un des suivants :
+
+| Statut | Signification |
+|---|---|
+| `draft` | Le flow n'a jamais été publié |
+| `published` | La version actuelle est en ligne |
+| `dirty` | Le flow a déjà été publié, et la version actuelle comporte des modifications non publiées. Les utilisateurs continuent de voir la dernière version publiée |
+| `publishing` | La publication est en cours |
+| `publication_failed` | La dernière publication a échoué. Corrigez la configuration et publiez à nouveau |
+| `archived` | Le flow est archivé |
+
+## adapty flows create
+
+Créer un flow. Le nouveau flow a un nom et pas de configuration. Pour ajouter une configuration, utilisez [`flows config update`](#adapty-flows-config-update).
+
+```bash
+adapty flows create --app <app-id> --name "Onboarding"
+```
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'app (UUID) |
+| `--name` | Oui | Nom du flow |
+
+## adapty flows update
+
+Renommer un flow.
+
+```bash
+adapty flows update --app <app-id> <flow-id> --name "Onboarding v2"
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | Identifiant du flow (UUID) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | Identifiant de l'app (UUID) |
+| `--name` | Oui | Nouveau nom du flow |
+
+## adapty flows publish
+
+Publiez la version actuelle d'un flow auprès de vos utilisateurs.
+
+```bash
+adapty flows publish --app <app-id> <flow-id>
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | ID du flow (UUID) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'app (UUID) |
+| `--yes`, `-y` | Non | Publier sans demander de confirmation. Requis lorsque la sortie est redirigée ou que `--json` est utilisé |
+
+Comme la publication modifie ce que voient vos utilisateurs, la commande affiche le nom du flow et demande une confirmation. Toute réponse autre que `y` annule la commande avec le code de sortie 1. Avec `--json` ou dans un pipe, la commande refuse avec le code de sortie 2 plutôt que d'attendre une réponse ; passez donc `--yes` dans les scripts et les sessions d'agent.
+
+Dans la version CLI 0.33.0 ou ultérieure, lorsque la configuration utilise une [police personnalisée](#custom-fonts), la commande lit les polices actuelles de l'application. Si la copie dans la configuration est obsolète, la commande enregistre la configuration avec les polices actuelles, puis la publie. L'enregistrement conserve les Remote Configs et échoue si quelqu'un a modifié la configuration après la lecture par la commande. Si l'enregistrement réussit et que la publication démarre, la sortie lisible par l'humain inclut `Fonts refreshed`.
+
+La commande s'arrête avant toute écriture si elle ne peut pas lire les polices. Elle se termine avec le code 2 si un nom de famille de polices dans la configuration correspond à plusieurs familles. Pour résoudre le conflit, renommez une famille ou utilisez l'ID de famille dans la configuration.
+
+La réponse de configuration doit contenir un objet `config` et un entier `updated_at`, même si aucune sauvegarde n'est nécessaire. Si la commande doit sauvegarder la configuration, la réponse doit également contenir une liste `remote_configs`. Si ces conditions ne sont pas remplies, la commande s'arrête avant toute écriture avec le code de sortie 4 et `malformed_response`.
+
+Un échec ou une incertitude lors de la sauvegarde arrête la commande avant l'envoi de la requête de publication. Si le CLI ne peut pas lire la réponse de sauvegarde ou si la connexion échoue pendant la sauvegarde, il est possible que la sauvegarde ait quand même été effectuée. Lisez la configuration enregistrée avec [`flows config get`](#adapty-flows-config-get) avant de publier à nouveau. Si la publication échoue après une sauvegarde réussie, la configuration sauvegardée est conservée.
+
+La publication est asynchrone : la réponse indique `status: publishing`, et le flow n'est pas encore actif. Interrogez [`flows get`](#adapty-flows-get) jusqu'à ce que le statut passe à `published` ou `publication_failed`. En cas de `publication_failed`, [`flows config get`](#adapty-flows-config-get) indique la raison de l'échec.
+
+La publication échoue avec une erreur HTTP 400 lorsque le flow n'a pas de configuration, lorsque la configuration n'est pas publiable, ou lorsque la version actuelle est déjà en ligne. Pour vérifier une configuration avant de la publier, utilisez [`flows config validate`](#adapty-flows-config-validate). Si le flow n'existe pas, la commande se termine avec le code 4. Avant la version 0.33.0 de la CLI, elle se terminait avec le code 1.
+
+## adapty flows config get
+
+Lit la configuration du builder d'un flow.
+
+```bash
+adapty flows config get --app <app-id> <flow-id>
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | ID du flow (UUID) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'app (UUID) |
+
+La réponse contient `config`, `remote_configs`, `status` et `updated_at`. `updated_at` est un horodatage en millisecondes de la dernière modification de la configuration. Passez-le à [`flows config update`](#adapty-flows-config-update) via `--expected-updated-at` pour éviter d'écraser une modification concurrente. Un flow dont la configuration n'a jamais été écrite renvoie une erreur 404.
+
+Après une tentative de publication, la réponse contient également trois champs décrivant le résultat. Lisez-les lorsque [`flows get`](#adapty-flows-get) indique `publication_failed` :
+
+| Champ | Description |
+|---|---|
+| `publication_status` | État d'avancement de la publication de cette version du flow : `transforming`, `transformed`, `uploading`, `uploaded`, `published`, ou `failed` |
+| `transform_error` | L'erreur brute de transformation — soit un payload JSON listant les problèmes, soit une chaîne récapitulative |
+| `publication_error` | Un message lisible en cas d'échec de publication |
+
+## adapty flows config update
+
+Écrit la configuration du builder d'un flow et ses Remote Configs.
+
+```bash
+adapty flows config get --app <app-id> <flow-id> --json > flow.json
+adapty flows config update --app <app-id> <flow-id> --file flow.json
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | Identifiant du flow (UUID) |
+
+| Indicateur | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'app (UUID) |
+| `--file` | À la place de `--config`, `--config-file` et `--remote-configs` | Chemin vers un fichier JSON contenant `config` et `remote_configs`, ou `-` pour lire depuis stdin. La sortie de `flows config get --json` fonctionne telle quelle. Les autres clés sont ignorées |
+| `--config` | Sans `--file` : l'un de `--config` et `--config-file` | Configuration du builder en tant que chaîne JSON |
+| `--config-file` | Sans `--file` : l'un de `--config` et `--config-file` | Chemin vers un fichier JSON contenant la configuration du builder, ou `-` pour lire depuis stdin |
+| `--remote-configs` | Sans `--file` | Tableau JSON d'entrées `{locale, data}`, où `data` est le Remote Config sous forme de chaîne. `[]` supprime tous les Remote Configs |
+| `--expected-updated-at` | Non | La valeur `updated_at` issue d'un précédent `flows config get`. Si la configuration a changé après cette lecture, la commande échoue au lieu d'écraser la modification. Omettez ce paramètre pour écraser sans condition |
+
+Une écriture remplace la config et la liste complète des Remote Configs. Pour conserver les Remote Configs existants, envoyez les `remote_configs` issus de `flows config get --json`. Sans `--file`, la commande exige à la fois la config et `--remote-configs` : si l'un des deux est absent, elle se termine avec le code 2 sans envoyer de requête. Le flag `--file` et l'option `--remote-configs` requièrent la version 0.20.0 ou ultérieure de la CLI.
+
+Pour écrire la première config d'un nouveau flow, passez une liste vide de Remote Configs :
+
+```bash
+adapty flows config update --app <app-id> <flow-id> --config-file config.json --remote-configs '[]'
+```
+
+La sauvegarde de la config crée un brouillon et ne publie pas le flow. Sur un flow déjà publié, l'écriture crée une nouvelle version : le statut du flow passe à `dirty`, et les utilisateurs continuent de voir la version publiée jusqu'à ce que vous exécutiez [`flows publish`](#adapty-flows-publish).
+
+## adapty flows config validate
+
+Vérifie si une configuration de builder est publiable, sans la sauvegarder.
+
+```bash
+adapty flows config validate --app <app-id> <flow-id> --config-file config.json
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | ID du flow (UUID) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'app (UUID) |
+| `--config` | L'un des deux | Configuration du builder sous forme de chaîne JSON |
+| `--config-file` | L'un des deux | Chemin vers un fichier JSON contenant la configuration du builder, ou `-` pour lire depuis stdin |
+
+La réponse contient `valid` et une liste de `issues`. Lorsque la config n'est pas publiable, la commande quitte avec le code 1, ce qui permet aux scripts de s'en servir comme condition.
+
+## adapty flows config preview \{#adapty-flows-config-preview\}
+
+Affiche un fichier de configuration local dans le navigateur. Cette commande n'effectue aucun appel API et n'accepte pas l'option `--app`.
+
+```bash
+adapty flows config preview ./config.json --screen <screen-id> --device iphone-14 --orientation portrait
+```
+
+| Argument | Description |
+|---|---|
+| `config-file` | Chemin vers un fichier JSON de configuration du builder local |
+
+| Option | Défaut | Description |
+|---|---|---|
+| `--screen` | Premier écran du flow | ID de l'écran à afficher |
+| `--device` | `iphone-14` | Cadre de l'appareil à utiliser pour le rendu |
+| `--orientation` | `portrait` | `portrait` ou `landscape` |
+
+Dans un terminal, la commande ouvre la prévisualisation dans votre navigateur. Avec `--json` ou dans un pipeline, elle affiche l'URL à la place. L'URL contient toute la configuration et peut être très longue : redirigez-la vers un outil de capture d'écran plutôt que de l'afficher. Les configurations de plus de 32 Ko environ s'affichent lentement.
+
+## adapty flows media upload
+
+Téléversez une image à utiliser dans une configuration de flow.
+
+```bash
+adapty flows media upload --app <app-id> ./hero.png
+```
+
+| Argument | Description |
+|---|---|
+| `file` | Chemin vers le fichier image |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'application (UUID) |
+
+Formats acceptés : PNG, JPEG, WebP et SVG. Le serveur refuse tout fichier de plus de 20 Mio avec l'erreur `media_file_too_large` et le message "File size must not exceed 20 MiB." La réponse contient l'`id`, le `name` et l'`url` CDN de l'image pour la référencer depuis la config. La réponse contient également `size`, le poids en octets du fichier envoyé, ainsi qu'une liste `warnings`. Pour uploader une vidéo, utilisez [`flows media upload-video`](#adapty-flows-media-upload-video).
+
+Une image de plus de 1 Mo est téléversée avec un avertissement dans la réponse. L'avertissement a pour titre `Large image — <size>` et le message "Large images slow the first load. Upload a smaller file." Après les données de l'image, la commande affiche la taille de l'image, par exemple `Size: 1.5 MB`, puis les éventuels avertissements. La commande se termine avec succès. Avec `--json`, la commande affiche la réponse complète, `size` et `warnings` inclus.
+
+La ligne d'avertissement, `Warning: <title>. <message>`, est envoyée vers stderr. Avec `--json`, la commande n'affiche pas cette ligne, donc un script qui lit stdout ne récupère l'avertissement que depuis `warnings` dans la réponse JSON.
+
+## adapty flows media upload-video
+
+Téléversez une vidéo à utiliser dans une configuration de flow.
+
+```bash
+adapty flows media upload-video --app <app-id> ./intro.mp4
+```
+
+| Argument | Description |
+|---|---|
+| `file` | Chemin vers le fichier vidéo |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'application (UUID) |
+
+Formats acceptés : MP4 et WebM. La vidéo doit durer au maximum 30 secondes, peser au maximum 50 Mo, et sa largeur ainsi que sa hauteur doivent être chacune d'au moins 640 pixels. Le format GIF n'est pas pris en charge, et la commande ne convertit pas une image animée en vidéo.
+
+La réponse contient l'URL de la vidéo (une playlist HLS), l'URL de l'image de prévisualisation, ainsi que la `width` et la `height` de la vidéo. Dans la config, un élément vidéo les prend en charge via `videoUrl`, `previewUrl`, `width` et `height`.
+
+## Polices personnalisées \{#custom-fonts\}
+
+Les commandes `adapty fonts` permettent de télécharger et de gérer les [polices personnalisées](using-custom-fonts-in-flow-builder) d'une application. Tous les flows de l'application utilisent les mêmes polices, identiques à celles que vous téléchargez dans le Flow & Paywall Builder. Une famille de polices comprend une ou plusieurs déclinaisons. Une déclinaison correspond à une graisse et un style d'un fichier `.ttf` ou `.otf`. Les commandes `fonts` nécessitent la version CLI 0.33.0 ou ultérieure. Pour connaître votre version, exécutez `adapty --version`.
+
+:::warning
+Adapty n'envoie pas les fichiers de polices sur les appareils des utilisateurs. Pour afficher une police personnalisée dans votre application, [ajoutez les mêmes fichiers de polices au bundle de votre application](using-custom-fonts-in-flow-builder#add-the-font-files-to-your-apps-bundle), avec les noms de polices iOS et Android que les variantes ont dans Adapty.
+:::
+
+Pour utiliser une police personnalisée dans une configuration de flow, définissez la police par famille et graisse. Sur un élément texte, la police se trouve dans `props.font` : `"font": {"family": {"type": "user", "id": "<font-family-id>"}, "weight": "bold"}`. Sur un style de texte dans `theme.typography`, `family` et `weight` sont des clés des `settings` du style, sans objet `font` autour d'eux. La famille peut aussi être désignée par son nom de famille. L'italique se définit sur un span de texte enrichi. Lors de la publication du flow, Adapty utilise la face correspondant à cette graisse et ce style. Si la famille ne possède pas cette face, Adapty utilise la face dont la graisse est la plus proche dans le même style, puis dans n'importe quel style. Quand deux faces sont à égale distance, la plus légère l'emporte.
+
+Une commande qui modifie une famille de polices utilisée par des flows liste ces flows dans `flows_to_publish`. Publiez chacun d'eux avec [`flows publish`](#adapty-flows-publish) pour envoyer la modification à vos utilisateurs. `flows_to_publish` est `null` dans deux cas, et la commande affiche un avertissement. Avec `--json`, `flows_to_publish_error` indique la raison et la prochaine étape :
+
+- **Le téléversement s'est arrêté sur un fichier**, le dernier ou le seul fichier inclus : Adapty a peut-être enregistré ce fichier, donc les familles modifiées ne sont pas connues. Exécutez [`fonts list`](#adapty-fonts-list) pour les trouver, puis [`fonts usage`](#adapty-fonts-usage) pour chacune d'elles.
+- **Seule la lecture des flows a échoué** : Chaque fichier a son résultat. Exécutez [`fonts usage`](#adapty-fonts-usage) pour chaque famille modifiée par la commande.
+
+## adapty fonts list
+
+Listez les familles de polices personnalisées d'une application, avec leurs variantes.
+
+```bash
+adapty fonts list --app <app-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+Pour chaque graisse, la réponse contient le poids, l'italique, les noms de police iOS et Android, la graisse par défaut de la famille, et le format de fichier. `metadata_status` indique si le poids et l'italique de la graisse sont connus : `detected` et `confirmed` signifient qu'ils le sont ; `needs_review` et `legacy_unconfirmed` signifient qu'ils ne le sont pas. Pour les définir, utilisez [`fonts faces update`](#adapty-fonts-faces-update).
+
+## adapty fonts get
+
+Récupère une famille de polices avec ses variantes.
+
+```bash
+adapty fonts get --app <app-id> <font-family-id>
+```
+
+| Argument | Description |
+|---|---|
+| `font-family-id` | ID de famille de polices (UUID) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID d'application (UUID) |
+
+## adapty fonts upload \{#adapty-fonts-upload\}
+
+Importez des fichiers de polices. Adapty compare le nom de famille stocké dans chaque fichier avec les noms de famille de polices de l'application, sans tenir compte de la casse. Si une famille correspond, le fichier la rejoint. Si aucune ne correspond, Adapty crée une nouvelle famille.
+
+Si deux familles ou plus correspondent, comme `Brand` et `brand`, la CLI signale `refused` avec `font_family_name_ambiguous`. Cela s'applique avec ou sans `--choice`. Avec `--json`, le tableau `families` inclut `family_id` et `family_name` pour chaque correspondance. Utilisez [`fonts add`](#adapty-fonts-add) avec un ID de famille pour ajouter le fichier à cette famille. Ou utilisez [`fonts rename`](#adapty-fonts-rename) jusqu'à ce qu'une seule famille corresponde. Puis rechargez le fichier.
+
+```bash
+adapty fonts upload --app <app-id> ./Brand-Regular.otf ./Brand-Bold.otf ./Brand-Italic.otf
+```
+
+| Argument | Description |
+|---|---|
+| `file` | Chemin vers un fichier `.ttf` ou `.otf`. Pour télécharger plusieurs fichiers, listez-les chacun |
+
+| Flag | Obligatoire | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'application (UUID) |
+| `--choice` | Non | Utilisez `replace` pour remplacer les faces en conflit, ou `keep` pour conserver les faces existantes telles quelles. La commande peut toujours envoyer de nouvelles faces |
+| `--replace-face-id` | Non | Avec `--choice replace` et un seul fichier : remplace exactement ces faces, celles qu'un refus a listées. Donnez les IDs de faces sous forme de liste séparée par des virgules, ou répétez le flag. Adapty refuse le remplacement si ces faces ne correspondent plus aux conflits |
+
+Un fichier de police statique crée une face. Un fichier de police variable crée une face pour chaque style nommé dans le fichier. Les autres formats, tels que WOFF et WOFF2, ne sont pas pris en charge. La commande lit tous les fichiers avant d'en envoyer le premier : si elle ne peut pas lire un fichier, elle s'arrête avec le code de sortie 2 et n'envoie rien.
+
+La commande envoie un fichier par requête. Après le dernier fichier, elle affiche le résultat de chaque fichier. Avec `--json`, les résultats se trouvent dans `files` :
+
+| Résultat | Signification |
+|---|---|
+| `created` | Le fichier a créé une nouvelle famille de polices |
+| `added` | Les styles du fichier ont rejoint une famille existante |
+| `partly_added` | Certains styles du fichier ont rejoint la famille. `kept_faces` liste les styles que la famille possédait déjà |
+| `replaced` | Le fichier a remplacé le fichier des styles en conflit, après `--choice replace`. `replaced_faces` les liste |
+| `kept` | `--choice keep` a ignoré le fichier car il était en conflit avec un style déjà stocké |
+| `refused` | Adapty a refusé le fichier. `error_code` et `message` indiquent pourquoi |
+| `failed` | Une erreur réseau ou d'authentification, ou une réponse illisible par la CLI, a interrompu l'envoi à ce fichier. Après une erreur réseau ou une réponse illisible, Adapty a peut-être stocké le fichier : exécutez [`fonts list`](#adapty-fonts-list) avant de le renvoyer |
+| `not_sent` | Le fichier n'a pas été envoyé, car l'envoi s'est interrompu à un fichier précédent |
+
+Un fichier de police statique entre en conflit avec une graisse dans deux cas : une graisse de la famille que le fichier rejoint possède le même poids et la même italique, ou bien une graisse de l'application possède le même nom de police iOS. Pour les résultats d'un fichier de police variable, consultez la liste après ce paragraphe. Deux familles différentes peuvent chacune avoir une graisse Regular. Adapty peut refuser un fichier en conflit en renvoyant `conflicts` et `choices` dans le rapport. Lorsque `next_step` propose un remplacement, exécutez la commande affichée pour ce fichier avec `--choice replace` et `--replace-face-id`. La commande envoie une seule requête d'upload et remplace exactement les graisses listées. Une police variable peut également ajouter de nouvelles graisses. Pour ignorer entièrement le fichier, ne relancez pas la commande. La commande `--choice keep` affichée peut enregistrer de nouvelles graisses si les conflits changent.
+
+- Si les faces listées existent toujours et que l'ensemble des collisions change, Adapty peut refuser avec HTTP 409 et les `conflicts` actuels. Vérifiez cette liste avant de décider d'exécuter la nouvelle commande de remplacement.
+- Si une face listée a disparu, Adapty refuse avec `font_face_not_found` (HTTP 404). Si rien ne rentre en collision, Adapty peut refuser avec HTTP 400. Aucune de ces réponses ne remplace des faces. Pour uploader le fichier sans remplacer aucune face, exécutez la même commande pour ce fichier sans `--choice` ni `--replace-face-id` et consultez le nouveau résultat.
+
+:::warning
+Avec `--choice replace` seul, le CLI envoie d'abord le fichier sans choix. En cas de collision, il renvoie le fichier pour remplacer les faces trouvées lors de cette exécution, qui peuvent différer des faces du refus précédent. Si la première requête ne détecte aucune collision, le fichier peut être envoyé en tant que nouvelles faces. Consultez `replaced_faces` pour voir quelles faces la commande a remplacées. Adapty ne conserve pas les anciens fichiers. Pour remplacer uniquement certaines des faces listées, utilisez [`fonts faces replace`](#adapty-fonts-faces-replace) pour chacune d'elles.
+:::
+
+Un fichier de police variable donne l'un de ces résultats :
+
+- **Tous ses styles sont nouveaux dans la famille** : `created` ou `added`, comme un fichier statique.
+- **Certains de ses styles sont déjà dans la famille** : `partly_added`. Les nouveaux styles rejoignent la famille, et `kept_faces` liste les styles que la famille possédait déjà.
+- **Tous ses styles sont déjà dans la famille** : `refused`, sans choix. Pour changer le fichier d'une face, utilisez [`fonts faces replace`](#adapty-fonts-faces-replace).
+- **Un nouveau style possède un nom de police iOS qu'une autre face de l'application possède déjà** : `refused`, avec des choix, comme toute collision.
+
+Un face sans nom de police iOS ou Android après l'upload est sauvegardé, et `warnings` le signale. Définissez le nom avec [`fonts faces update`](#adapty-fonts-faces-update).
+
+| Code de sortie | Cause | Que faire |
+|---|---|---|
+| `0` | Chaque fichier a été stocké ou ignoré | — |
+| `2` | La CLI n'a pas pu lire un fichier. Ou `--replace-face-id` a spécifié un UUID invalide, n'avait pas `--choice replace`, ou a été utilisé avec plus d'un fichier. Aucun fichier n'a été envoyé | Corrigez le chemin ou les options, puis relancez toute la commande |
+| `3` | Adapty a refusé la session CLI, ou le compte n'a pas accès à l'application. Les fichiers suivant ce fichier n'ont pas été envoyés | En cas de session refusée, reconnectez-vous. En cas d'absence d'accès, vérifiez l'ID de l'application, ou connectez-vous avec un compte ayant accès à l'application. Uploadez ensuite les fichiers qui n'ont pas été stockés |
+| `4` | Adapty a refusé au moins un fichier, et les autres fichiers ont été envoyés. Ou la CLI n'a pas pu lire une réponse, et l'envoi s'est arrêté à ce fichier. Ou chaque fichier a son résultat (stocké ou ignoré), mais la réponse concernant les flows qui utilisent les familles modifiées était malformée : `flows_to_publish` est `null` | Lisez le résultat de chaque fichier refusé. Pour un fichier `failed`, exécutez [`fonts list`](#adapty-fonts-list) avant de le renvoyer. Si seule la lecture des flows a échoué, exécutez [`fonts usage`](#adapty-fonts-usage) pour chaque famille que la commande a modifiée |
+| `5` | Une erreur réseau. Les fichiers suivant ce fichier n'ont pas été envoyés | Exécutez [`fonts list`](#adapty-fonts-list) pour vérifier si le fichier `failed` a été stocké, puis uploadez les fichiers qui n'ont pas été stockés |
+
+## adapty fonts add
+
+Ajoutez les variantes de fichiers de polices à une famille de polices de votre choix, quelle que soit la famille que les fichiers indiquent.
+
+```bash
+adapty fonts add --app <app-id> <font-family-id> ./Brand-Bold.otf
+```
+
+| Argument | Description |
+|---|---|
+| `font-family-id` | ID de la famille de polices (UUID) |
+| `file` | Chemin vers un fichier `.ttf` ou `.otf`. Pour ajouter plusieurs fichiers, listez-les chacun |
+
+| Paramètre | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'application (UUID) |
+| `--choice` | Non | Utilisez `replace` pour remplacer les faces en conflit, ou `keep` pour conserver les faces existantes. La commande peut toujours ajouter de nouvelles faces |
+| `--replace-face-id` | Non | Avec `--choice replace` et un seul fichier : remplace exactement ces faces, celles qu'un refus a listées, comme dans [`fonts upload`](#adapty-fonts-upload) |
+
+Les règles de collision, les résultats et les codes de sortie sont identiques à ceux de [`fonts upload`](#adapty-fonts-upload). Avec `--choice keep`, un fichier variable ajoute quand même ses nouveaux styles si ses seuls chevauchements concernent des combinaisons poids/italique que la famille possède déjà.
+
+## adapty fonts rename
+
+Renomme une famille de polices. Les fichiers et les faces de la famille ne changent pas.
+
+```bash
+adapty fonts rename --app <app-id> <font-family-id> "Brand Sans"
+```
+
+| Argument | Description |
+|---|---|
+| `font-family-id` | ID de la famille de polices (UUID) |
+| `name` | Le nouveau nom de la famille |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'app (UUID) |
+
+Une autre famille de l'app ne peut pas avoir le même nom. Un nom qui ne diffère que par la casse est autorisé.
+
+## Utilisation des polices Adapty \{#adapty-fonts-usage\}
+
+Liste les flows et paywalls qui utilisent une famille de polices.
+
+```bash
+adapty fonts usage --app <app-id> <font-family-id>
+```
+
+| Argument | Description |
+|---|---|
+| `font-family-id` | ID de la famille de polices (UUID) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'application (UUID) |
+
+La réponse liste les flows, brouillons inclus, ainsi que les paywalls qui utilisent la famille. Pour chaque police, elle liste les paywalls qui utilisent cette police, ou `null` quand Adapty ne peut pas distinguer les polices entre elles. Un flow n'est listé que lorsque sa configuration fait référence à la famille par son identifiant. Un flow qui désigne la famille uniquement par son nom n'est pas listé.
+
+## adapty fonts faces update
+
+Modifiez le poids et l'italique d'une face, ou son nom de police iOS ou Android.
+
+```bash
+adapty fonts faces update --app <app-id> <font-face-id> --ios-name BrandSans-Bold --android-name brand_sans_bold
+```
+
+| Argument | Description |
+|---|---|
+| `font-face-id` | ID de la face de police (UUID), tel qu'affiché par [`fonts list`](#adapty-fonts-list) |
+
+| Indicateur | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'application (UUID) |
+| `--weight` | Non | Graisse de la police, par exemple `400` pour regular ou `700` pour bold. À utiliser avec `--italic` |
+| `--italic` | Non | `true` pour italique, `false` pour droit. À utiliser avec `--weight` |
+| `--ios-name` | Non | Nom de la police iOS : le nom PostScript stocké dans le fichier de police. Aucune autre variante de l'application ne peut l'utiliser |
+| `--android-name` | Non | Nom de la police Android : le nom du fichier dans `res/font/` sans l'extension. Il commence par une lettre minuscule et ne contient que des lettres minuscules, des chiffres et des underscores |
+
+Une fois le poids et l'italique définis, le `metadata_status` de la police devient `confirmed`. Le nom de la police Android change sur toutes les déclinaisons du même fichier. Les paywalls qui utilisent un nom modifié reçoivent automatiquement le nouveau nom.
+
+## adapty fonts faces default \{#adapty-fonts-faces-default\}
+
+Définit une police comme police par défaut de sa famille. La police qui était par défaut ne l'est plus.
+
+```bash
+adapty fonts faces default --app <app-id> <font-face-id>
+```
+
+| Argument | Description |
+|---|---|
+| `font-face-id` | ID de la police (UUID) |
+
+| Drapeau | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'application (UUID) |
+
+## adapty fonts faces move
+
+Déplace une fonte vers une autre famille de polices. Le fichier de la fonte ne change pas.
+
+```bash
+adapty fonts faces move --app <app-id> <font-face-id> --to <font-family-id>
+```
+
+| Argument | Description |
+|---|---|
+| `font-face-id` | ID de la fonte (UUID) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'application (UUID) |
+| `--to` | Oui | ID (UUID) de la famille vers laquelle déplacer la fonte |
+
+La fonte par défaut d'une famille ne peut pas être déplacée. Une fonte dont le grammage et l'italique sont connus ne peut pas être déplacée dans une famille qui possède déjà une fonte avec le même grammage et le même italique.
+
+## adapty fonts faces replace
+
+Téléversez un nouveau fichier pour une fonte.
+
+```bash
+adapty fonts faces replace --app <app-id> <font-face-id> ./Brand-Bold.otf
+```
+
+| Argument | Description |
+|---|---|
+| `font-face-id` | ID de la fonte (UUID) |
+| `file` | Chemin vers le nouveau fichier `.ttf` ou `.otf` |
+
+| Paramètre | Obligatoire | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'application (UUID) |
+| `--weight` | Non | Graisse de la police. À utiliser avec `--italic` |
+| `--italic` | Non | `true` ou `false`. À utiliser avec `--weight` |
+| `--yes` | Non | Remplace le fichier sans demander de confirmation. Obligatoire avec `--json`, dans un pipe, ou sans terminal |
+
+L'identifiant de la police, sa marque par défaut et le nom de police Android sont conservés. Le nom de police iOS provient du nouveau fichier. Adapty ne conserve pas l'ancien fichier, et il est impossible de le restaurer. C'est pourquoi la commande demande une confirmation. Avec `--json`, dans un pipe, ou sans terminal, la commande requiert `--yes` : sans cette option, la commande s'arrête avec le code de sortie 6 (`confirm_required`) et n'effectue aucune modification. Pour utiliser un fichier de police variable pour une face dont la graisse et l'italique ne sont pas connus, passez `--weight` et `--italic`.
+
+Si le style a déjà un grammage et une mise en italique définis, le nouveau fichier doit correspondre aux deux. Adapty refuse également le fichier si un autre style de la même famille a les mêmes paramètres de grammage et d'italique, ou si un autre style de l'application utilise déjà le nom de police iOS du nouveau fichier. Dans chaque cas, le style conserve son ancien fichier. Si le nom de police iOS est déjà utilisé, importez un fichier avec un nom PostScript différent ou remplacez le fichier du style qui utilise ce nom.
+
+## adapty flows versions list
+
+Liste les versions d'un flow, de la plus récente à la plus ancienne. Ce sont les versions de l'[historique des versions](flow-version-history) dans le Flow & Paywall Builder.
+
+```bash
+adapty flows versions list --app <app-id> <flow-id>
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | ID du flow (UUID) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'application (UUID) |
+| `--search` | Non | Affiche uniquement les versions dont le titre contient ce texte. La casse n'a pas d'importance, et une partie du mot suffit : `friday` trouve **Black Friday** |
+
+Chaque ligne affiche le titre, l'état, la date et l'ID d'une version. Le titre correspond au nom de la version, ou **Version N** si la version n'a pas de nom. L'état est l'un des suivants :
+
+| État | Signification |
+|---|---|
+| `draft` | La version que vous modifiez. Un flow a un seul brouillon, ou aucun. Pendant la publication du brouillon, sa ligne se termine par `Publishing…` ; en cas d'échec, elle se termine par `Publish failed` |
+| `live` | La version visible par vos utilisateurs |
+| `previous` | Une version antérieure. Elle était live auparavant, ou une version plus récente l'a remplacée avant qu'elle soit publiée |
+
+La date d'une version `live` ou `previous` correspond au début de sa publication. Pour le brouillon et pour une version `previous` qui n'a jamais été publiée, c'est la date de création de la version.
+
+Pour un flow qui n'a jamais été publié, la commande affiche `History will appear after the first publish.` et la ligne de brouillon en dessous. L'[historique des versions](flow-version-history) dans le tableau de bord ne montre aucune ligne pour ce type de flow. Lorsqu'aucune version ne correspond à `--search`, la commande affiche `No versions match the search.`
+
+La commande liste toujours toutes les versions et n'accepte aucun flag de pagination.
+
+Avec `--json`, la commande affiche `{data, meta}` tel quel depuis Adapty, avec les lignes dans `data`. Chaque ligne contient `flow_version_id`, `version`, `name`, `title`, `state`, `is_current`, `publication_status`, `published_at`, `created_at`, `updated_at` et `last_edited_by`. `updated_at` est un horodatage en millisecondes de la dernière modification du contenu de la version : passez la valeur `updated_at` du brouillon à [`flows versions restore`](#adapty-flows-versions-restore) via `--expected-updated-at`. `last_edited_by` indique l'utilisateur qui a modifié la version en dernier, ou vaut `null` si Adapty ne connaît pas l'utilisateur.
+
+## adapty flows versions get
+
+Lire une version d'un flow. La lecture d'une version ne change rien : le brouillon et la version en production restent tels quels.
+
+La commande affiche le titre, l'ID, le numéro, l'état et la date de la version, l'utilisateur qui l'a modifiée en dernier, ainsi que son lien **Test on device**. Le contenu complet de la version — sa configuration builder avec chaque layout, ses Remote Configs et ses paywalls — se trouve dans la sortie de `--json`, et dans le fichier de `--output`.
+
+```bash
+adapty flows versions get --app <app-id> <flow-id> <version-id> --output version.json
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | ID du flow (UUID) |
+| `version-id` | ID de version (UUID), depuis [`flows versions list`](#adapty-flows-versions-list) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'application (UUID) |
+| `--output` | Non | Écrit le contenu complet de la version dans ce fichier en JSON |
+| `--yes`, `-y` | Non | Remplace un fichier `--output` existant sans demander de confirmation. Requis avec `--json` ou dans un pipe lorsque le fichier existe |
+
+Si le CLI ne peut pas écrire le fichier `--output`, par exemple parce que son dossier n'existe pas, la commande affiche `Could not write <path> (<errno>).` et se termine avec le code 1.
+
+## adapty flows versions preview
+
+Affiche le lien **Test on device** d'une version. Ouvrez le lien sur votre appareil de test pour voir la version dans [l'application mobile Adapty](paywall-device-compatibility-preview#preview-on-devices). N'importe quelle version fonctionne : le brouillon, la version live ou une version antérieure.
+
+```bash
+adapty flows versions preview --app <app-id> <flow-id> <version-id>
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | Identifiant du flow (UUID) |
+| `version-id` | Identifiant de la version (UUID) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | Identifiant de l'application (UUID) |
+
+## adapty flows versions rename
+
+Renommez une version. Vous pouvez renommer la version brouillon, la version live et les versions antérieures.
+
+```bash
+adapty flows versions rename --app <app-id> <flow-id> <version-id> --name "Black Friday"
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | ID du flow (UUID) |
+| `version-id` | ID de la version (UUID) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'application (UUID) |
+| `--name` | Oui | Nouveau nom de la version. Passez `--name ""` pour supprimer le nom et que la version affiche à nouveau **Version N**. Un nom composé uniquement d'espaces le supprime également |
+
+La commande affiche l'ID de version et le nouveau titre. Adapty supprime les espaces en début et fin de nom. Deux versions peuvent avoir le même nom. Un renommage ne modifie ni le contenu ni le champ `updated_at` de la version, il n'entre donc pas en conflit avec une sauvegarde ultérieure du brouillon.
+
+## adapty flows versions restore
+
+Restaurer une version en tant que brouillon du même flow. C'est l'option **Duplicate as draft** dans l'[historique des versions](flow-version-history#restore-an-earlier-version). La version restaurée n'est pas visible par vos utilisateurs tant que vous ne la [publiez pas](#adapty-flows-publish).
+
+:::tip
+Une restauration remplace le brouillon en cours. Pour le conserver, dupliquez-le d'abord dans un nouveau flow avec [`flows duplicate`](#adapty-flows-duplicate).
+:::
+
+```bash
+adapty flows versions restore --app <app-id> <flow-id> <version-id>
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | Identifiant du flow (UUID) |
+| `version-id` | Identifiant de version (UUID) d'une version `live` ou `previous` |
+
+| Flag | Obligatoire | Description |
+|---|---|---|
+| `--app` | Oui | Identifiant de l'app (UUID) |
+| `--expected-updated-at` | Avec `--yes`, quand le flow a un brouillon | La valeur `updated_at` du brouillon, récupérée via [`flows versions list --json`](#adapty-flows-versions-list). Si le brouillon a été modifié après cette lecture, la commande échoue au lieu de remplacer la modification |
+| `--yes`, `-y` | Non | Remplacer le brouillon sans demander de confirmation. Obligatoire avec `--json` ou dans un pipe quand le flow a un brouillon |
+
+La commande lit d'abord les versions du flow :
+
+- **Le flow n'a pas de brouillon** : La commande ne demande rien. Adapty crée un nouveau brouillon avec le numéro de version suivant, sans nom, et avec tout le contenu de la version. La version en ligne et la version que vous restaurez restent telles quelles.
+- **Le flow a un brouillon** : La commande demande `Replace the draft '<draft>' (last change <time> by <user>) with '<version>'? To keep the draft, duplicate it to a new flow first.`, puis `Apply? [y/N]`. Si vous répondez `y`, le brouillon conserve son ID, son numéro et son nom, et reçoit le contenu de la version. Aucune version n'est ajoutée. Toute autre réponse quitte avec le code 1 et n'envoie rien.
+
+Avec `--json`, dans un pipe, ou sans terminal, la commande ne peut pas poser de question. Quand le flow a un brouillon, elle n'envoie rien et quitte avec le code 6, sauf si vous passez `--yes`. Son message pose la question et ajoute `To replace it, re-run with --yes --expected-updated-at <ms> (the draft's updated_at).`, avec le `updated_at` du brouillon à la place de `<ms>`. Avec `--yes`, passez aussi `--expected-updated-at` : sans ça, la commande quitte avec le code 6 et n'envoie rien. Dans un terminal sans `--expected-updated-at`, la commande prend le `updated_at` du brouillon qu'elle vous affiche dans la question.
+
+Après une restauration, la commande affiche `Restored '<version>' as the draft '<draft>' (<draft-id>). Nothing is published.`
+
+Adapty refuse la restauration et ne modifie rien dans ces cas. La commande affiche le message d'Adapty, indique la marche à suivre pour certains d'entre eux, puis se termine avec le code 4 :
+
+| Message | Que faire |
+|---|---|
+| `This flow version is already the current draft.` | Choisissez une autre version. |
+| `Flow version does not exist.` | L'ID de version n'est pas dans la liste des versions de ce flow. Récupérez l'ID depuis [`flows versions list`](#adapty-flows-versions-list). |
+| `Flow version is already being published.` | Attendez la fin de la publication, puis relancez la restauration. |
+| `This flow version uses deleted products: …` | Choisissez une version qui n'utilise pas ces produits. |
+| `This flow configuration was already updated by …` | Un membre de votre équipe a modifié le brouillon après que vous l'avez lu. Listez à nouveau les versions et réessayez. |
+| `Flow is deleted.` | Le flow est archivé. [Restaurez-le depuis l'archive](archive-flows#restore-a-flow) dans le tableau de bord d'abord. |
+
+## adapty flows duplicate \{#adapty-flows-duplicate\}
+
+Copiez un flow, ou l'une de ses versions, dans un nouveau flow. Il s'agit de **Duplicate flow** sous le bouton d'actions du flow dans la barre supérieure du Flow & Paywall Builder (voir [Copier des flows](copy-flows)), et de **Duplicate as new flow** dans l'[historique des versions](flow-version-history#restore-an-earlier-version).
+
+```bash
+adapty flows duplicate --app <app-id> <flow-id> --version <version-id>
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | ID du flow (UUID) |
+
+| Flag | Obligatoire | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'application (UUID) |
+| `--version` | Non | ID de version (UUID) à copier, depuis [`flows versions list`](#adapty-flows-versions-list). N'importe quelle version convient, y compris le brouillon. Sans cette option, la commande copie le brouillon, ou la version en production si le flow n'a pas de brouillon |
+
+La commande affiche `New flow '<name>' (<flow-id>), not published.` Le nouveau flow porte le nom du flow source suivi de `_copy`. Il n'est pas publié et contient un seul brouillon avec le contenu de la version. Le flow source, son brouillon et son historique restent inchangés. Vous pouvez dupliquer un flow pendant sa publication.
+
+Adapty refuse de copier une version qui utilise un produit supprimé, ainsi que de copier un flow archivé. Les messages sont identiques à ceux de [`flows versions restore`](#adapty-flows-versions-restore).
+
+## adapty flows metrics list \{#adapty-flows-metrics-list\}
+
+Affiche les métriques sur toute la durée de vie de plusieurs flows, une ligne par flow. Ce sont les données du tableau des flows dans le tableau de bord.
+
+```bash
+adapty flows metrics list --app <app-id> --ids <flow-id>,<flow-id>
+```
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'app (UUID) |
+| `--ids` | Oui | IDs des flows (UUIDs). Séparez-les avec des virgules ou répétez le flag |
+| `--csv` | Non | Affiche le CSV : une ligne par flow, avec l'ID du flow et les 27 métriques. Incompatible avec `--json` |
+
+Chaque ligne affiche l'ID du flow avec ses vues, achats, essais et revenus. `--json` et `--csv` incluent les 27 métriques de la page [métriques de flow](flow-metrics#metrics-definitions), comme `unique_profiles_views`, `net_revenue` et `conversion_rate_purchases`. Une métrique sans données vaut `0`, jamais `null`. Pour chaque flow qui n'a jamais été publié, la commande affiche `<flow-id>: No data: the flow was never published.` sous le tableau. `--json` ajoute `note: "never_published"` à la ligne de ce flow, et avec `--csv` les notes sont envoyées vers stderr, afin que le CSV reste propre.
+
+## adapty flows metrics values \{#adapty-flows-metrics-values\}
+
+Liste les clés et valeurs de filtre d'un flow : ce que [`flows metrics get --filter`](#filter-the-metrics) accepte.
+
+```bash
+adapty flows metrics values --app <app-id> <flow-id>
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | ID du flow (UUID) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'app (UUID) |
+
+Chaque ligne affiche un libellé et, entre parenthèses, la valeur à passer. Les valeurs sont imbriquées de la même façon que les filtres du tableau de bord :
+
+```text
+Country (country)
+  Americas (Americas)
+    United States (US)
+  Europe (Europe)
+    Germany (DE)
+Store (store)
+  App Store (app_store)
+  Google Play (play_store)
+```
+
+La valeur en tête de chaque groupe est la clé de filtre, et les valeurs les plus imbriquées sont celles qu'accepte cette clé. Dans l'exemple, `--filter country=US` conserve les États-Unis, et `--filter store=play_store` conserve Google Play.
+
+## adapty flows metrics get \{#adapty-flows-metrics-get\}
+
+Affiche les métriques d'un flow pour une période donnée, sous forme d'arborescence comme sur la page [métriques de flow](flow-metrics).
+
+```bash
+adapty flows metrics get --app <app-id> <flow-id> --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date --based-on placement
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | ID du flow (UUID) |
+
+| Indicateur | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'app (UUID) |
+| `--based-on` | Oui | Ce sur quoi se base le premier niveau de l'arborescence : `placement` ou `audience`. Il s'agit des vues par placement et par audience de la page [métriques de flow](flow-metrics#view-options-for-metrics-data) |
+| `--date-type` | Oui | La date à laquelle la période s'applique : `purchase_date`, ou `profile_install_date` pour [filtrer par date d'installation](flow-metrics#filter-metrics-by-install-date) |
+| `--date-from` | Non | Premier jour de la période, inclus (`YYYY-MM-DD`). À utiliser avec `--date-to` |
+| `--date-to` | Non | Dernier jour de la période, inclus (`YYYY-MM-DD`). À utiliser avec `--date-from` |
+| `--granularity` | Non | Découpe la période en points : `day`, `week`, `month`, `quarter`, ou `year` |
+| `--filter` | Non | Ne conserve que les données correspondant à ces valeurs de clé de filtre. Répétable. Voir [Filtrer les métriques](#filter-the-metrics) |
+| `--timezone` | Non | Fuseau horaire IANA des points de la période, par exemple `Europe/Berlin`. Sans cela, Adapty utilise le fuseau horaire de l'app |
+| `--depth` | Non | Nombre de niveaux de l'arborescence à afficher sous `Total`. Par défaut : `1` |
+| `--csv` | Non | Affiche le CSV : une ligne par nœud de l'arborescence complète. Incompatible avec `--json` |
+
+Pour un flow qui n'a jamais été publié, la commande affiche la note `No data: the flow was never published.` au-dessus des chiffres, et `--json` ajoute `note: "never_published"`. Avec `--csv`, la note est envoyée sur stderr, ce qui garde le CSV propre.
+
+Pour obtenir les revenus d'un flow, exécutez `adapty analytics chart --app <app-id> --chart revenue --date-from <YYYY-MM-DD> --date-to <YYYY-MM-DD> --filter flow_id=<flow-id>`. Voir [Commandes Analytics](developer-cli-analytics).
+
+La CLI quitte avec le code 2 et n'envoie aucune requête lorsque `--based-on` ou `--date-type` est absent, ou lorsqu'une seule borne de la période est fournie. Adapty valide les valeurs de `--based-on`, `--date-type` et `--granularity` : une valeur incorrecte entraîne une sortie avec le code 4, et l'erreur liste les valeurs acceptées.
+
+### Lire le résultat
+
+La commande affiche une ligne `Total`, puis le premier niveau de l'arborescence en dessous. Chaque ligne indique les vues, les achats, les essais et le revenu. Avec `--granularity`, les points de la période apparaissent directement sous leur nœud :
+
+```text
+Total           views 19  purchases 7  trials 4  revenue 241.93
+  Onboarding    views 10  purchases 7  trials 0  revenue 241.93
+    2026-09-01  views  0  purchases 0  trials 0  revenue   0.00
+    2026-10-01  views 10  purchases 0  trials 0  revenue 241.93
+  Settings      views  0  purchases 0  trials 0  revenue   0.00
+```
+
+Les niveaux de l'arborescence correspondent aux niveaux du tableau de bord : placement, audience, test A/B, variante de flow, écran et produit. Avec `--based-on audience`, le niveau placement est omis. Pour afficher plus de niveaux, utilisez `--depth`, par exemple `--depth 3`.
+
+Pour l'arborescence complète avec les 27 métriques, utilisez l'un de ces flags :
+
+- `--json` affiche la réponse du serveur sans modification.
+- `--csv` affiche une ligne par nœud, points de période inclus. Les colonnes sont `path` (les titres de `Total` jusqu'au nœud, séparés par ` > `), `level`, `title`, puis les métriques.
+
+### Filtrer les métriques \{#filter-the-metrics\}
+
+Écrivez chaque `--filter` sous la forme `key=value`, avec les clés et valeurs listées par [`flows metrics values`](#adapty-flows-metrics-values). Pour conserver plusieurs valeurs, séparez-les par des virgules ou répétez le flag avec la même clé. Les filtres avec des clés différentes se combinent, les données doivent donc correspondre à tous :
+
+```bash
+adapty flows metrics get --app <app-id> <flow-id> --date-from 2026-09-01 --date-to 2026-10-21 \
+  --date-type purchase_date --based-on placement --filter country=US,DE --filter store=app_store
+```
+
+Le CLI envoie chaque valeur exactement telle qu'elle est écrite. Pour inclure une virgule dans une valeur, utilisez `\,`. Une valeur vide est aussi une valeur : `attribution_channel=` conserve la donnée sans canal, que `flows metrics values` affiche comme **No Data**.
+
+## adapty flows funnel values
+
+Liste les clés et valeurs de filtre d'un funnel de flow : ce que [`flows funnel get --filter`](#adapty-flows-funnel-get) accepte.
+
+```bash
+adapty flows funnel values --app <app-id> <flow-id>
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | ID du flow (UUID) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'app (UUID) |
+
+La sortie a la même forme que [`flows metrics values`](#adapty-flows-metrics-values).
+
+## adapty flows funnel get \{#adapty-flows-funnel-get\}
+
+Affiche l'écran sur lequel les utilisateurs quittent un flow : le funnel d'une version de flow, étape par étape et écran par écran, comme dans l'onglet [Funnel](flow-funnel) du flow.
+
+```bash
+adapty flows funnel get --app <app-id> <flow-id> --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | Identifiant du flow (UUID) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'application (UUID) |
+| `--date-from` | Oui | Premier jour de la période, inclus (`YYYY-MM-DD`), dans le fuseau horaire `--timezone` ou celui de l'application |
+| `--date-to` | Oui | Dernier jour de la période, inclus (`YYYY-MM-DD`), dans le fuseau horaire `--timezone` ou celui de l'application |
+| `--date-type` | Oui | Date à laquelle la période s'applique : `purchase_date` ou `profile_install_date` |
+| `--flow-version-id` | Non | ID de version du flow (UUID) à lire. Sans ce paramètre, la CLI lit la version publiée |
+| `--filter` | Non | Ne conserver que les utilisateurs ayant ces valeurs pour une clé de filtre, au format `key=value`. Répétable. Les clés et valeurs proviennent de [`flows funnel values`](#adapty-flows-funnel-values) et fonctionnent comme dans [Filtrer les métriques](#filter-the-metrics) |
+| `--timezone` | Non | Fuseau horaire IANA des jours, par exemple `Europe/Berlin`. Sans ce paramètre, Adapty utilise le fuseau horaire de l'application |
+| `--csv` | Non | Affiche le fichier CSV que le tableau de bord télécharge, avec la ligne de total en premier. Incompatible avec `--json` |
+
+La commande affiche la version du flow, la période, une ligne récapitulative et un tableau. Le récapitulatif indique combien d'utilisateurs ont commencé le flow, combien l'ont terminé, le taux d'abandon et le revenu. Le tableau contient une ligne par étape, avec les colonnes `Step`, `Type`, `Reached`, `Completed`, `Drop rate` et `Revenue`. Une étape comportant plusieurs écrans génère aussi une ligne par écran. Une valeur qui ne s'applique pas, comme le revenu d'un écran d'onboarding, est affichée sous la forme `—`.
+
+When no users entered the flow in the period, the table lists the screens of the version with zeros. For every field of the answer, use `--json`.
+
+## Et maintenant ? \{#whats-next\}
+
+- [Référence des commandes](developer-cli-reference) — tous les sujets CLI, les options globales et les options de pagination.
+- [Historique des versions de flow](flow-version-history) — les mêmes versions dans le Flow & Paywall Builder.

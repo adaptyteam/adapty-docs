@@ -1,41 +1,44 @@
 ---
 title: "Mostrar flows y paywalls - React Native"
-description: "Presenta flows y paywalls a los usuarios en tu app de React Native con Adapty."
-metadataTitle: "Mostrar Flows y Paywalls en React Native | Documentación de Adapty"
+description: "Presenta flows y paywalls a los usuarios en tu app React Native con Adapty."
+metadataTitle: "Mostrar flows y paywalls en React Native | Documentación de Adapty"
 
 ---
-
-import SampleApp from '@site/src/locales/es/reusable/SampleApp.md';
 
 <SDKv4>
 
 <MethodPromo method="getFlow" label="Display flows and paywalls" />
-Si has creado un flow o paywall en el Flow Builder, no tienes que preocuparte por renderizarlo en el código de tu app para mostrárselo al usuario. El flow incluye tanto qué mostrar como cómo mostrarlo.
 
-Antes de empezar, asegúrate de que:
+Si has creado un flow o un paywall en el antiguo Paywall Builder, no necesitas preocuparte por renderizarlo en el código de tu aplicación móvil para mostrárselo al usuario. Un flow de este tipo contiene tanto lo que debe mostrarse dentro de él como la forma en que debe mostrarse.
 
-1. Has [creado un flow o paywall](create-paywall).
+Antes de comenzar, asegúrate de que:
+
+1. Has creado un [flow](paywall-builder-templates) o un [paywall](create-paywall).
 2. Lo has añadido a un [placement](placements).
 3. Has [obtenido el flow y preparado la vista](react-native-get-pb-paywalls).
 
 :::warning
-Esta guía es solo para **flows y paywalls creados con Paywall Builder**, que requieren SDK v4.0 o posterior. El proceso para presentar flows es diferente para los paywalls de Remote Config.
 
-- Para presentar **paywalls de Remote Config**, consulta [Renderizar un paywall diseñado con Remote Config](present-remote-config-paywalls).
+Esta guía es solo para **flows y paywalls renderizados por Adapty**, que requieren SDK v4.0 o posterior. El proceso para presentar flows es diferente para los paywalls personalizados.
+
+- Para presentar paywalls personalizados, consulta [Presentar paywalls personalizados](present-remote-config-paywalls-react-native).
 
 :::
 
 El SDK de Adapty para React Native ofrece dos formas de presentar flows y paywalls:
 
-- **Componente React**: Un componente embebido que te permite integrarlo en la arquitectura y el sistema de navegación de tu app.
+- **Componente React**: Un componente integrado que puedes incorporar a la arquitectura y al sistema de navegación de tu app.
 
 - **Presentación modal**
+
 ## Componente React \{#react-component\}
 
 Para insertar un flow dentro de tu árbol de componentes existente, usa el componente `AdaptyFlowView` directamente en la jerarquía de componentes React Native. El componente embebido te permite integrarlo en la arquitectura y el sistema de navegación de tu app.
+
 :::tip
 El componente `AdaptyFlowView` crea su vista cuando se renderiza, lo que ocurre cuando se cargan la configuración y las imágenes. Para precargarlos, llama a [`createFlowView`](react-native-get-pb-paywalls#fetch-the-view-configuration) para el mismo flow en un momento anterior de tu app. El componente reutilizará los datos en caché y se renderizará sin esperar descargas.
 :::
+
 ```typescript showLineNumbers title="React Native (TSX)"
 
 function MyFlow({ flow }) {
@@ -83,13 +86,16 @@ function MyFlow({ flow }) {
 }
 ```
 
+El controlador `onError` de `AdaptyFlowView` recibe un error cuando el componente no puede mostrar el flow. Esto ocurre cuando el flow no se puede cargar o cuando el dispositivo usa iOS 15, que no es compatible con flows. Deja de renderizar el componente y muestra tu propio contenido.
+
 ## Presentación modal \{#modal-presentation\}
 
-Para mostrar un flow como una pantalla independiente, usa el método `view.present()` sobre el `view` creado por el método [`createFlowView`](react-native-get-pb-paywalls#fetch-the-view-configuration). Cada `view` solo puede usarse una vez. Si necesitas mostrar el flow de nuevo, llama a `createFlowView` otra vez para crear una nueva instancia de `view`.
+Para mostrar un flow como pantalla independiente, usa el método `view.present()` sobre el `view` creado por el método [`createFlowView`](react-native-get-pb-paywalls#fetch-the-view-configuration). Si necesitas mostrar el flow de nuevo, llama a `createFlowView` otra vez para crear una nueva instancia de `view`, o [conserva la vista cerrada](#keep-a-closed-flow-for-later) para mostrarla más adelante.
 
 :::warning
-Reutilizar el mismo `view` sin recrearlo está prohibido. Esto resultará en un error `AdaptyUIError.viewAlreadyPresented`.
+Después de llamar a `view.dismiss()` con las opciones predeterminadas, la vista se libera y volver a llamar a `present()` sobre ella falla. Llamar a `present()` mientras ya hay un flow en pantalla también falla. En ambos casos, se obtiene un `AdaptyError` con código `3001` (`wrongParam`), y su mensaje indica la causa: `AdaptyUIError.viewNotFound` o `AdaptyUIError.viewAlreadyPresented`.
 :::
+
 ```typescript showLineNumbers title="React Native (TSX)"
 
 const view = await createFlowView(flow);
@@ -107,6 +113,7 @@ try {
 :::important
 Llamar a `setEventHandlers` varias veces sobrescribirá los handlers que proporciones, reemplazando tanto los predeterminados como los previamente establecidos para esos eventos específicos.
 :::
+
 ### Configurar el estilo de presentación en iOS \{#configure-ios-presentation-style\}
 
 Configura cómo se presenta el flow en iOS pasando el parámetro `iosPresentationStyle` al método `present()`. El parámetro acepta los valores `'full_screen'` (predeterminado) o `'page_sheet'`.
@@ -118,15 +125,60 @@ try {
   // handle the error
 }
 ```
-## Usar temporizadores definidos por el desarrollador \{#use-developer-defined-timer\}
 
-Para usar temporizadores definidos por el desarrollador en tu app, utiliza el `timerId`; en este ejemplo, `CUSTOM_TIMER_NY`, el **Timer ID** del temporizador definido por el desarrollador que configuraste en el Adapty Dashboard. Esto garantiza que tu app actualice el temporizador dinámicamente con el valor correcto, como `13d 09h 03m 34s` (calculado como la fecha de finalización del temporizador, por ejemplo, Año Nuevo, menos la hora actual).
+### Mantener un flow cerrado para usarlo más tarde \{#keep-a-closed-flow-for-later\}
+
+:::info
+La opción `destroy` y el método `destroy()` están disponibles a partir de la versión 4.3.0 del SDK.
+:::
+
+Por defecto, `view.dismiss()` cierra el flow y destruye su vista nativa, por lo que `view` no se puede mostrar de nuevo. Para volver a mostrar el mismo flow más adelante, pasa `destroy: false`. La siguiente llamada a `present()` abre el flow en la pantalla donde el usuario lo cerró, con el estado en que lo dejó, y los manejadores de eventos permanecen configurados:
+
+```typescript showLineNumbers
+// Close the flow and keep its native view in memory
+await view.dismiss({ destroy: false });
+
+// Later: open the flow again on the same screen
+await view.present();
+```
+
+La vista nativa permanece en memoria hasta que la liberes. Cuando ya no necesites el flow, llama a `destroy()`:
+
+```typescript showLineNumbers
+await view.dismiss({ destroy: false });
+// ...
+await view.destroy();
+```
+
+Llama a `destroy()` solo para una vista que hayas cerrado con `destroy: false`. Un `dismiss()` normal libera la vista por sí solo.
+
+Un controlador de eventos que devuelve `true` cierra el flow con un `dismiss()` normal, lo que destruye la vista nativa aunque la hayas conservado antes. Los controladores predeterminados `onCloseButtonPress` y `onError` devuelven `true`. Para conservar el flow cuando el usuario lo cierra, ciérralo tú mismo y devuelve `false`:
+
+```typescript showLineNumbers
+view.setEventHandlers({
+  onCloseButtonPress() {
+    view.dismiss({ destroy: false }).catch(error => {
+      // handle the error
+    });
+    return false;
+  },
+});
+```
+
+## Usar un temporizador definido por el desarrollador \{#use-developer-defined-timer\}
+
+Utiliza esta sección para un temporizador con el comportamiento **Developer defined** en el Flow & Paywall Builder. En el builder, cada temporizador de este tipo tiene un **Timer ID** (consulta [Deja que tu app establezca la fecha de fin](flow-timer#let-your-app-set-the-end-date)), y tu app establece la fecha de fin para él. Usa exactamente el mismo Timer ID en tu código que en el builder, carácter por carácter, incluidas mayúsculas, minúsculas y espacios. Si los IDs no coinciden, el temporizador no recibirá ninguna fecha de fin desde tu app.
+
+Para establecer las fechas de finalización, pasa el parámetro `customTimers`: un objeto que mapea cada ID de temporizador a una `Date`, la fecha de finalización del temporizador.
+
 <Tabs>
 <TabItem value="component" label="React component">
 ```typescript showLineNumbers title="React Native (TSX)"
-const flowParams = {
-  customTimers: { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
-};
+const flowParams = useMemo(() => ({
+  customTimers: {
+    CUSTOM_TIMER_NY: new Date(new Date().getFullYear() + 1, 0, 1), // next New Year's Day
+  },
+}), []);
 
 <AdaptyFlowView
   flow={flow}
@@ -137,16 +189,29 @@ const flowParams = {
 </TabItem>
 <TabItem value="modal" label="Modal presentation">
 ```typescript showLineNumbers title="React Native (TSX)"
-const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
 
-const view = await createFlowView(flow, { customTimers });
+const customTimers = {
+  CUSTOM_TIMER_NY: new Date(new Date().getFullYear() + 1, 0, 1), // next New Year's Day
+};
+
+try {
+  const view = await createFlowView(flow, { customTimers });
+  await view.present();
+} catch (error) {
+  // handle the error
+}
 ```
 </TabItem>
 </Tabs>
-En este ejemplo, `CUSTOM_TIMER_NY` es el **Timer ID** del temporizador definido por el desarrollador que configuraste en el Adapty Dashboard. El `timerResolver` garantiza que tu app actualice dinámicamente el temporizador con el valor correcto, como `13d 09h 03m 34s` (calculado como la hora de fin del temporizador, por ejemplo Año Nuevo, menos la hora actual).
+
+En este ejemplo, `CUSTOM_TIMER_NY` es el Timer ID de un temporizador **definido por el desarrollador** en el builder. El temporizador muestra el tiempo restante hasta el próximo Año Nuevo, por ejemplo `13d 09h 03m 34s`.
+
+El SDK lee `customTimers` una sola vez, cuando crea la vista, por lo que una fecha que calcules, como 6 horas a partir de ahora, empieza a contar desde ese momento. Si la fecha ya pasó, el temporizador muestra cero de inmediato y se ejecuta su trigger **On timer end**. Si `customTimers` no tiene ninguna clave para un Timer ID, el temporizador cuenta regresivamente una hora desde que se abre la pantalla.
+
 ## Mostrar diálogo \{#show-dialog\}
 
 Usa este método en lugar de los diálogos de alerta nativos cuando hay un flow view activo en Android. En Android, las alertas normales de RN aparecen detrás del flow view, lo que las hace invisibles para los usuarios. Este método garantiza que el diálogo se muestre correctamente sobre el flow en todas las plataformas.
+
 ```typescript showLineNumbers title="React Native (TSX)"
 try {
   const action = await view.showDialog({
@@ -166,9 +231,14 @@ try {
 }
 ```
 
+## Enviar mensajes a un flow \{#send-messages-to-a-flow\}
+
+El método `sendAppMessage` de una vista de flow envía un mensaje al flow como objeto JSON. Este método está reservado para futuras capacidades del Flow & Paywall Builder. Los flows ignoran estos mensajes, por lo que no es necesario llamar al método.
+
 ## Reemplazar una suscripción por otra \{#replace-one-subscription-with-another\}
 
 Cuando un usuario intenta comprar una nueva suscripción mientras tiene otra activa en Android, puedes controlar cómo debe gestionarse esa nueva compra pasando parámetros de actualización de suscripción al crear la vista del flow. Para reemplazar la suscripción actual por la nueva, usa `productPurchaseParams` en `createFlowView` con los parámetros `oldSubVendorProductId` y `prorationMode`.
+
 ```typescript showLineNumbers title="React Native (TSX)"
 
 const productPurchaseParams = flow.paywalls
@@ -202,17 +272,19 @@ Antes de empezar, asegúrate de que:
 3. Has [obtenido el paywall y preparado la vista](react-native-get-pb-paywalls).
 
 :::warning
-Esta guía es exclusivamente para **paywalls creados con el nuevo Paywall Builder**, que requieren SDK v3.0 o posterior. El proceso para presentar paywalls varía según la versión del Paywall Builder utilizada y los paywalls de Remote Config.
 
-- Para presentar **paywalls de Remote Config**, consulta [Renderizar paywall diseñado con Remote Config](present-remote-config-paywalls).
+Esta guía cubre únicamente los paywalls creados con el antiguo Paywall Builder para **Adapty SDK 3.x**. Requieren SDK v3.0 o posterior. La presentación de un paywall creado para SDK 2.x o anterior, o de un paywall personalizado, funciona de forma diferente.
+
+- Para presentar paywalls personalizados, consulta [Presentar paywalls personalizados](present-remote-config-paywalls-react-native).
 
 :::
 
 El SDK de Adapty para React Native ofrece dos formas de presentar paywalls:
 
-- **Componente React**: Un componente embebido que puedes integrar en la arquitectura y el sistema de navegación de tu app.
+- **Componente React**: Un componente integrado que puedes incorporar a la arquitectura y el sistema de navegación de tu app.
 
 - **Presentación modal**
+
 ## Componente React \{#react-component\}
 
 :::note
@@ -220,9 +292,11 @@ El enfoque de **React component** requiere la versión 3.14.0 o posterior del SD
 :::
 
 Para incrustar un paywall dentro de tu árbol de componentes existente, usa el componente `AdaptyPaywallView` directamente en la jerarquía de componentes de React Native. El componente embebido te permite integrarlo en la arquitectura y el sistema de navegación de tu app.
+
 :::note
 En Android, si el paywall no se extiende detrás de la barra de estado, puede aparecer una superposición visual en su parte superior. Te recomendamos desactivarla para tus paywalls. Consulta [Superposición visual en la parte superior del paywall (Android)](#visual-overlay-at-the-top-of-the-paywall-android).
 :::
+
 ```typescript showLineNumbers title="React Native (TSX)"
 
 function MyPaywall({ paywall }) {
@@ -276,6 +350,7 @@ Para mostrar un paywall como pantalla independiente, usa el método `view.presen
 :::warning
 Reutilizar el mismo `view` sin recrearlo no está permitido. Producirá un error `AdaptyUIError.viewAlreadyPresented`.
 :::
+
 ```typescript showLineNumbers title="React Native (TSX)"
 
 const view = await createPaywallView(paywall);
@@ -293,6 +368,7 @@ try {
 :::important
 Llamar a `setEventHandlers` varias veces sobreescribirá los handlers que hayas definido, reemplazando tanto los predeterminados como los previamente configurados para esos eventos específicos.
 :::
+
 ### Configurar el estilo de presentación en iOS \{#configure-ios-presentation-style\}
 
 Configura cómo se presenta el paywall en iOS pasando el parámetro `iosPresentationStyle` al método `present()`. El parámetro acepta los valores `'full_screen'` (predeterminado) o `'page_sheet'`.
@@ -304,9 +380,11 @@ try {
   // handle the error
 }
 ```
+
 ## Usar temporizadores definidos por el desarrollador \{#use-developer-defined-timer\}
 
-Para usar temporizadores definidos por el desarrollador en tu app, utiliza el `timerId`; en este ejemplo, `CUSTOM_TIMER_NY` es el **Timer ID** del temporizador definido por el desarrollador que configuraste en el Adapty dashboard. Esto garantiza que tu app actualice el temporizador dinámicamente con el valor correcto, como `13d 09h 03m 34s` (calculado como la hora de finalización del temporizador, por ejemplo, Año Nuevo, menos la hora actual).
+Para usar temporizadores definidos por el desarrollador en tu app, utiliza el `timerId`; en este ejemplo, `CUSTOM_TIMER_NY`, el **Timer ID** del temporizador definido por el desarrollador que configuraste en el Adapty Dashboard. Esto garantiza que tu app actualice el temporizador dinámicamente con el valor correcto, como `13d 09h 03m 34s` (calculado como la fecha de finalización del temporizador, por ejemplo, Año Nuevo, menos la hora actual).
+
 <Tabs>
 <TabItem value="component" label="React component">
 ```typescript showLineNumbers title="React Native (TSX)"
@@ -329,10 +407,12 @@ const view = await createPaywallView(paywall, { customTimers });
 ```
 </TabItem>
 </Tabs>
-En este ejemplo, `CUSTOM_TIMER_NY` es el **Timer ID** del temporizador definido por el desarrollador que configuraste en el Adapty dashboard. El `timerResolver` garantiza que tu app actualice dinámicamente el temporizador con el valor correcto, como `13d 09h 03m 34s` (calculado como el tiempo de finalización del temporizador, por ejemplo el Año Nuevo, menos la hora actual).
+En este ejemplo, `CUSTOM_TIMER_NY` es el **Timer ID** del temporizador definido por el desarrollador que configuraste en el Adapty Dashboard. El `timerResolver` garantiza que tu app actualice dinámicamente el temporizador con el valor correcto, como `13d 09h 03m 34s` (calculado como la hora de fin del temporizador, por ejemplo Año Nuevo, menos la hora actual).
+
 ## Mostrar diálogo \{#show-dialog\}
 
 Usa este método en lugar de los diálogos de alerta nativos cuando se muestra una vista de paywall en Android. En Android, las alertas nativas de RN aparecen detrás de la vista del paywall, lo que las hace invisibles para los usuarios. Este método garantiza que el diálogo se muestre correctamente por encima del paywall en todas las plataformas.
+
 ```typescript showLineNumbers title="React Native (TSX)"
 try {
   const action = await view.showDialog({
@@ -355,6 +435,7 @@ try {
 ## Reemplazar una suscripción por otra \{#replace-one-subscription-with-another\}
 
 Cuando un usuario intenta comprar una nueva suscripción mientras tiene otra activa en Android, puedes controlar cómo se gestiona esa nueva compra pasando parámetros de actualización de suscripción al crear la vista del paywall. Para reemplazar la suscripción actual por la nueva, usa `productPurchaseParams` en `createPaywallView` con los parámetros `oldSubVendorProductId` y `prorationMode`.
+
 ```typescript showLineNumbers title="React Native (TSX)"
 
 const productPurchaseParams = paywall.productIdentifiers.map((productId) => {
@@ -374,6 +455,7 @@ const view = await createPaywallView(paywall, { productPurchaseParams });
 ```
 
 ## Solución de problemas \{#troubleshooting\}
+
 ### Superposición visual en la parte superior del paywall (Android) \{#visual-overlay-at-the-top-of-the-paywall-android\}
 
 :::note
@@ -381,6 +463,7 @@ Esta configuración es compatible a partir del SDK de React Native 3.15.5 y solo
 
 Si utilizas un flujo de trabajo gestionado por Expo, no puedes añadir este recurso de Android directamente. Para aplicar esta configuración, debes crear un plugin de configuración personalizado de Expo que añada el recurso de Android correspondiente y registrarlo en app.config.js. Esto es necesario porque Expo gestiona el proyecto nativo de Android por ti.
 :::
+
 Si `AdaptyPaywallView` no se extiende detrás de la barra de estado, puede aparecer una superposición visual en su parte superior. Para eliminarla, añade el siguiente recurso booleano a tu app:
 
 1. Ve a `android/app/src/main/res/values`. Si no existe el archivo `bools.xml`, créalo.

@@ -9,21 +9,25 @@ keywords: ['кнопка пейвола', 'кнопка', 'действия кн
 <SDKv4>
 
 Если вы создаёте флоу или пейволы с помощью конструктора Adapty, важно правильно настроить кнопки:
+
 1. Добавьте [кнопку в Builder](paywall-buttons) и назначьте ей существующее действие или создайте пользовательский идентификатор действия.
 2. Напишите код в приложении для обработки каждого назначенного действия.
 
 В этом гайде показано, как обрабатывать пользовательские и встроенные действия в коде.
+
 :::warning
 **Закрытие экрана и открытие URL обрабатываются автоматически** стандартной реализацией `flowViewDidPerformAction`, а SDK самостоятельно обрабатывает покупки и восстановления. Все остальные действия кнопок, такие как вход в систему или открытие другого флоу, требуют реализации соответствующей логики в коде приложения. Обратите внимание, что реагирование на *завершённые* покупки и восстановления происходит в обязательных коллбэках наблюдателя — см. [Обработка событий флоу и пейвола](flutter-handling-events).
 :::
+
 ## Закрытие флоу и пейволов \{#close-flows-and-paywalls\}
 
-Чтобы добавить кнопку закрытия флоу или пейвола, в билдере добавьте кнопку и назначьте ей действие **Close**. Код писать не нужно: стандартная реализация `flowViewDidPerformAction` автоматически закрывает экран при получении `CloseAction`.
+Чтобы добавить кнопку закрытия флоу или пейвола, добавьте кнопку в билдере и назначьте ей действие **Close**. Код не требуется: стандартная реализация `flowViewDidPerformAction` закрывает вью при получении `CloseAction` и освобождает её из памяти. Чтобы показать то же вью позже, [сохраните его при закрытии пользователем](flutter-present-paywalls#dismiss-the-flow-or-paywall).
 
 :::info
 Системная кнопка **Back** на Android больше не закрывает экран по умолчанию. Она передаётся в `flowViewDidPerformAction` как `AndroidSystemBackAction` — обработайте её самостоятельно, если хотите, чтобы кнопка «Назад» закрывала флоу или пейвол.
 :::
-Переопределите `flowViewDidPerformAction`, если вам нужна кастомная логика — например, чтобы закрывать экран также по системной кнопке «Назад» на Android, как в v3:
+
+Переопределите `flowViewDidPerformAction`, если вам нужно особое поведение — например, чтобы системная кнопка «Назад» на Android также закрывала экран, как в v3:
 
 ```dart
 void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
@@ -40,9 +44,11 @@ void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
     }
 }
 ```
+
 :::warning
 Переопределение `flowViewDidPerformAction` полностью заменяет реализацию по умолчанию — сохраните обработку `CloseAction` и `OpenUrlAction`, если хотите сохранить стандартное поведение закрытия и открытия URL.
 :::
+
 ## Открытие URL из флоу и пейволов \{#open-urls-from-flows-and-paywalls\}
 
 :::tip
@@ -50,9 +56,11 @@ void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
 :::
 
 Чтобы добавить кнопку, открывающую ссылку (например, **Terms of use** или **Privacy policy**), добавьте кнопку в конструкторе, назначьте ей действие **Open URL** и укажите нужный URL.
+
 Никакой дополнительной реализации не требуется: стандартная реализация `flowViewDidPerformAction` открывает URL нативно через `AdaptyUI().openUrl`, учитывая настройку внутреннего или внешнего браузера из дашборда.
 
 Стандартного поведения достаточно в большинстве случаев. Если вы всё же хотите открывать URL самостоятельно, переопределите обработчик:
+
 ```dart
 void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
     switch (action) {
@@ -86,6 +94,7 @@ void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
     }
 }
 ```
+
 ## Обработка пользовательских действий \{#handle-custom-actions\}
 
 Чтобы добавить кнопку с произвольным действием:
@@ -94,6 +103,7 @@ void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
 2. В коде приложения реализуйте обработчик для этого ID действия.
 
 Например, если у вас есть другой набор предложений по подпискам или разовые покупки, можно добавить кнопку, которая откроет другой флоу или пейвол:
+
 ```dart
 void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
    switch (action) {
@@ -106,19 +116,27 @@ void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
 }
 ```
 
+Поле `arguments` в `CustomAction` зарезервировано для будущих возможностей Flow & Paywall Builder. На данный момент оно равно `null`, так что читать его не нужно.
+
+## Обработка запросов на разрешения \{#handle-permission-requests\}
+
+Флоу может запрашивать у пользователей разрешение на отправку push-уведомлений с помощью действия **Request permission**. SDK Adapty не передаёт это действие в `flowViewDidPerformAction` и не показывает системный диалог самостоятельно. Ваше приложение обрабатывает запрос через `AdaptyUISystemRequestsHandler`, который нужно зарегистрировать с помощью `AdaptyUI().setSystemRequestsHandler()` до отображения флоу. Без этого обработчика пользователь не увидит диалог, а флоу останется на экране, отправившем запрос, — и на iOS, и на Android. Чтобы настроить обработчик, см. [Обработка запросов разрешений во флоу](flutter-handle-permissions).
+
 </SDKv4>
 
 <SDKv3>
 
-Если вы создаёте пейволы с помощью Adapty Paywall Builder, важно правильно настроить кнопки:
+Если вы создаёте пейволы с помощью Paywall Builder, важно правильно настроить кнопки:
 
-1. Добавьте [кнопку в Paywall Builder](paywall-buttons) и назначьте ей существующее действие или создайте пользовательский ID действия.
+1. В старом Paywall Builder добавьте кнопку и назначьте ей одно из готовых действий или произвольный ID действия.
 2. Напишите код в приложении для обработки каждого назначенного действия.
-В этом гайде показано, как обрабатывать пользовательские и встроенные действия в вашем коде.
+
+В этом гайде показано, как обрабатывать произвольные и готовые действия в коде.
 
 :::warning
-**Только покупки и восстановления обрабатываются автоматически.** Все остальные действия кнопок, например закрытие пейволов или открытие ссылок, требуют реализации соответствующей обработки в коде приложения.
+**Покупки и восстановления обрабатываются автоматически.** Все остальные действия кнопок — например, закрытие пейволов или открытие ссылок — требуют реализации соответствующей логики в коде приложения.
 :::
+
 ## Закрытие пейвола \{#close-paywalls\}
 
 Чтобы добавить кнопку закрытия пейвола:
@@ -129,6 +147,7 @@ void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
 :::info
 В Flutter SDK действия `CloseAction` и `AndroidSystemBackAction` по умолчанию закрывают пейвол. Однако при необходимости вы можете переопределить это поведение в коде. Например, закрытие одного пейвола может запускать открытие другого.
 :::
+
 ```dart
 void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
     switch (action) {
@@ -152,6 +171,7 @@ void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action
 
 1. В Paywall Builder добавьте кнопку, назначьте ей действие **Open URL** и введите URL, который нужно открыть.
 2. В коде вашего приложения реализуйте обработчик действия `openUrl`, который открывает полученный URL в браузере.
+
 ```dart
 // You have to install url_launcher plugin in order to handle urls:
 // https://pub.dev/packages/url_launcher
@@ -186,6 +206,7 @@ void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action
     }
 }
 ```
+
 ## Обработка пользовательских действий \{#handle-custom-actions\}
 
 Чтобы добавить кнопку, обрабатывающую любые другие действия:
@@ -194,6 +215,7 @@ void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action
 2. В коде приложения реализуйте обработчик для созданного идентификатора действия.
 
 Например, если у вас есть другой набор предложений подписок или разовых покупок, можно добавить кнопку, которая будет открывать другой пейвол:
+
 ```dart
 void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
    switch (action) {

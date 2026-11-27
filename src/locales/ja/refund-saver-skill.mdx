@@ -1,0 +1,136 @@
+---
+title: "Refund Saverのエージェントスキル"
+description: "refund-saverスキルをインストールして、AIツールでAdapty Refund Saverを有効化し、各ストアおよび特定ユーザーの返金設定を行い、Refund Saverが有効にならない理由やリクエストに応答しない原因を調べましょう。"
+metadataTitle: "Refund Saver エージェントスキル | Adapty ドキュメント"
+---
+
+[Refund Saver](refund-saver)は、App StoreのRefundリクエストとGoogle Playのチャージバックレビューを代わりに処理し、不正なリクエストをストアに却下してもらう機能です。refund-saverスキルは、AIツールからRefund Saverを実行します。エージェントは、Refund Saverが必要とするキーを持つストアを読み取り、Refund Saverを有効化します。各ストアのRefund設定、App Storeの同意ポリシー、および特定ユーザーの設定を行います。Refund Saverが有効にならない場合やリクエストに応答しない場合、エージェントは原因を特定します。このスキルは、[`adapty refund-saver` CLIコマンド](developer-cli-refund-saver)または[Adapty MCPサーバー](adapty-mcp)を通じて動作します。
+
+:::note
+スキルがRefund Saverをオンまたはオフにしたり、設定や同意の内容を変更したりする前に、その変更が何をするのかをわかりやすい言葉で説明します。変更が実行されるのは、あなたが承認した後のみです。
+:::
+
+## 質問できること \{#what-you-can-ask\}
+
+同僚に依頼するような感覚で聞いてください。スキル名を指定する必要はありません：
+
+```
+Turn on Refund Saver for my app.
+
+Is Refund Saver on, and is anything missing?
+
+Ask the App Store for a prorated refund instead of declining.
+
+Grant every refund request from the user with profile ID <profile-id>.
+
+Refund Saver won't turn on. Why?
+
+Refund Saver is on, but it answers no requests.
+
+Turn on Refund Saver for all my apps.
+```
+
+<AgentChat title="refund-saver" caption="サンプルアプリとの会話例。実際のアプリや設定とは異なります。">
+<ChatTurn role="user">アプリの Refund Saver を有効にしてください。</ChatTurn>
+<ChatTurn role="tool" summary="現在の状態とストアのキーを確認">
+
+- `adapty refund-saver get`
+- `adapty refund-saver readiness`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+Refund Saver はオフになっています。App Store には Refund Saver に必要なキーが設定されています。Google Play には設定されていません。**App settings** > **Android SDK** でパッケージ名とサービスアカウントキーファイルを追加してください。設定が完了するまで、Refund Saver は Google Play のリクエストに応答しません。
+
+ストアからの通知を受信できません。App Store Server Notifications V2とGoogle Playのリアルタイムデベロッパー通知がAdaptyに届いているか確認してください。これらがない場合、Refund Saverはそのストアからのリクエストに対応できません。
+
+現在の同意ポリシーはオプトアウトです。Adaptyは、同意が記録されていないユーザーの消費データをAppleに送信します。アプリがユーザーに同意を求めている場合は、Refund Saverが有効になった後でオプトインに切り替えます。
+
+</ChatTurn>
+<ChatTurn role="confirm" summary="Refund Saverを有効にする">
+
+アプリのRefund Saverを有効にします。
+
+- App Store: 最初の払い戻しリクエストを拒否し、次のリクエストを承認します。同意ポリシー: オプトアウト。同意の記録がないユーザーの消費データを Apple に送信します。
+- Google Play: 最初のチャージバック審査を拒否し、次のリクエストを承認します。キーが追加されるまで回答はありません。
+- **プライバシーポリシーに、払い戻しリクエストのために消費データを Apple と共有することを明記する必要があります。**
+
+有効にしますか？
+
+1. はい
+2. いいえ
+
+</ChatTurn>
+</AgentChat>
+
+## 始める前に \{#before-you-start\}
+
+- **Refund Saver アドオン**: Refund Saver アドオンがアカウントで有効になっていない場合、Adapty は Refund Saver の有効化を拒否します。アカウント設定の [**Subscription & Billing**](account#subscription--billing) タブでアドオンを有効にしてください。
+- **ストアの接続**: 販売しているストアを Adapty に接続する必要があります。[App Store](app-store-connection-configuration) または [Google Play](google-play-store-connection-configuration) を接続してください。
+- **ストア通知**: ストアは各返金リクエストを通知として Adapty に送信します。[App Store Server Notifications V2](enable-app-store-server-notifications) と [Google Play リアルタイム デベロッパー通知](enable-real-time-developer-notifications-rtdn) を設定してください。
+- **App Store のプライバシーポリシーとユーザー同意**: オプトインのプロンプトまたはオプトアウトの利用規約のいずれかでユーザーの同意を取得する方法を選択し、消費データを Apple と共有することをプライバシーポリシーに記載してください。詳しくは [ユーザーの同意を取得する](refund-saver#obtain-user-consent) を参照してください。
+- **Adapty アカウントに接続された AI ツール**: このスキルは [Adapty MCP サーバー](adapty-mcp) または [Adapty CLI](developer-cli) を通じて動作します。Claude Code と Codex では、プラグインが MCP サーバーを追加するため、サインインするだけで使用できます。いずれも設定されていない場合、スキルはどちらを使用するか確認し、セットアップします。
+
+## スキルをインストールする \{#install-the-skill\}
+
+refund-saver スキルは [Adapty プラグイン](manage-adapty-with-ai)の一部です。
+
+<AdaptySkillsInstall />
+
+## スキルがリファンドセーバーをセットアップする方法 \{#how-the-skill-sets-up-refund-saver\}
+
+1. **状態を確認する**: このスキルは、アプリで Refund Saver が有効かどうか、および各ストアが Refund Saver に必要なキーを持っているかどうかを確認します。App Store の場合は[アプリ内購入キー](generate-in-app-purchase-key)、Google Play の場合はサービスアカウントキーです。キーが設定されていないストアについては、**App settings** > **iOS SDK** または **Android SDK** で何を追加すべきかをスキルが案内します。
+2. **確認できない項目を明示する**: ストア通知、プライバシーポリシー、アプリでの同意取得方法は、コマンドでは確認できません。スキルはストア通知が Adapty に届いているかどうかを確認するよう求め、プライバシーポリシーと同意に関する[ストアごとの前提条件](refund-saver#store-specific-prerequisites)へのリンクを案内します。
+3. **Refund Saver を有効化する**: 販売しているストアのうち少なくとも1つにキーが設定されている場合、スキルは確認を求めた上で、両方のストアの Refund Saver を有効化します。Refund Saver アドオンに関する Adapty の注意事項も表示されます。キーが設定されていないストアは、キーを追加するまで対応されません。どのストアも準備できていない場合は、何も有効化されず、追加すべき内容が案内されます。
+4. **設定した環境設定を適用する**: ほとんどのアプリでは、スキルはデフォルトの返金設定である **Decline first refund request, grant all next** を推奨します。ストアの設定変更、同意ポリシーの変更、または特定ユーザーの設定変更は、それぞれ個別に確認が必要です。
+
+Refund Saverは、[Refund Saver](https://app.adapty.io/refund-saver)セクションに回答済みリクエストが表示されたとき、またはスキルがリクエストに応じてリストアップしたときに機能します。Adaptyは次の返金リクエストが届いたときに最初のリクエストに回答しますが、購入数が少ないアプリでは数週間かかることがあります。
+
+コンセントポリシーは、同意の記録がないユーザーのデータをRefund SaverがAppleに送信するかどうかを決定します。アプリの同意プロンプトに合わせてポリシーを設定してください。スキルはアプリの同意プロンプトを確認できないため、どのポリシーが適切かを確認します。各オプションの詳細については、[デフォルトのコンセントポリシーを設定する](refund-saver#set-the-default-consent-policy)を参照してください。
+
+1人のユーザーの設定を変更するには、アプリの顧客ユーザーIDではなく、**Adapty プロファイル ID** をスキルに渡してください。これはダッシュボードのユーザーの[プロファイル](profiles-crm)で確認できます。また、Refund Saverが回答した返金リクエストからスキルが読み取ることもできます。
+
+複数のアプリでRefund Saverをオンにするには、まとめて依頼してください。スキルは各アプリを読み取り、変更するすべてのアプリ名を記載した確認画面を1つ表示します。
+
+## スキルが各変更前に確認すること \{#what-the-skill-asks-before-each-change\}
+
+確認に答えるのはあなた自身の回答のみが有効です。スキルが変更内容を表示する前の「進めて」という一般的な指示は無効です。「いいえ」と答えた場合、スキルは何も変更しません。
+
+| 変更 | スキルが表示する内容 |
+|---|---|
+| Refund Saverをオンにする | これ以降、AdaptyはこのアプリのApp Storeの返金リクエストおよびGoogle Playのチャージバック審査に、各ストアの設定に従って回答します。スキルはApp Storeの同意ポリシーを表示します。**Opt-out**の場合、Adaptyは同意の記録がないユーザーの消費データもAppleに送信します。いずれのポリシーでも、返金リクエストのためにAppleと消費データを共有することをプライバシーポリシーに明記する必要があります。 |
+| Refund Saverをオフにする | AdaptyはこのアプリのApp Storeの返金リクエストおよびGoogle Playのチャージバック審査への回答を停止します。Refund Saverアドオンは、**Subscription & Billing**タブでキャンセルするまで有効のままです。 |
+| ストアの設定または同意ポリシーを変更する | 現在の値と新しい値。新しい値は、そのストアからの新規リクエストすべてに適用されます。 |
+| 特定ユーザーの設定を変更する | そのユーザーの現在と新しい設定または同意。ユーザーへの付与または拒否は、両方のストアでストアの設定よりも優先されます。 |
+
+スケジュール実行やスクリプトでは、誰も応答できないため、スキルは読み取りのみを行います。変更が必要な場合は、その内容と実行すべきコマンドを報告します。
+
+## Refund Saverが期待どおりに動作しない場合 \{#when-refund-saver-doesnt-work-as-expected\}
+
+- **AdaptyがRefund Saverをオンにすることを拒否する**: スキルはAdaptyが返す理由と、誰が対応すべきかを通知します：
+  - Refund Saverアドオンがアカウントで有効化されていません。**Subscription & Billing**タブで有効化してください。
+  - アカウントのApple認証情報が機能していません。**App settings**で修正してください。
+  - Refund Saverをアカウントで有効にできません。Adaptyサポートにお問い合わせください。
+
+  - 修正後は、スキルに再試行するよう指示してください。自動的に再試行はされません。
+- **Adapty がすべての変更を拒否する**: Adapty アカウントでアプリを閲覧できますが、所属するカンパニーに編集権限がありません。カンパニーのオーナーまたは管理者に編集権限を付与してもらってください。
+- **Refund Saver が有効なのにリクエストに応答しない**: スキルは Refund Saver が応答したリクエストと各ストアのキーを読み取り、考えられる原因を挙げます：
+  - ストアにキーが設定されていないか、ストアがキーを受け付けていない。**App settings** で確認してください。
+  - ストアの通知が Adapty に届いていない。
+  - 同意ポリシーが **Opt-in** になっており、アプリがユーザーの同意を Adapty に送信していない。その場合、Adapty は Apple に消費データを送信しません。
+  - Google Play では、Refund Saver はチャージバックのみに応答します。通常の返金リクエストは Adapty の関与なしに Google が判断します。詳しくは[ストアごとの違い](refund-saver#how-the-stores-differ)をご覧ください。
+  - 購入数が少ないアプリでは、数週間にわたって返金リクエストが発生しないこともあります。
+- **Google Play の結果が遅れて表示される**: Google はチャージバックを却下した際に Adapty へ通知しないため、Adapty は審査が完了するまで注文ステータスをポーリングします。Google Play の結果は、App Store と比べてリクエスト一覧や節約額への反映が遅くなります。
+
+## 他のスキルとの連携 \{#with-other-skills\}
+
+- **Refund Saverの効果を確認する**: [growth-advisorスキル](export-analytics-with-ai)は、Refund Saverが維持した金額とその勝率を読み取り、返金額と比較します。返金額が高くRefund Saverがオフになっている場合、Refund Saverをオンにするよう提案します。あるアプリでRefund Saverが節約効果をあげている場合、他のアプリも確認し、オフになっているアプリでRefund Saverをオンにするよう提案します。承諾すると、変更はrefund-saverスキルに引き渡されます。
+- **Adapty SDKを統合する**: [adapty-integrationスキル](adapty-sdk-integration-skill)が完了すると、Refund Saverのセットアップを提案します。
+
+## 制限事項 \{#limits\}
+
+- **アドオンの変更不可**: スキルはRefund Saverアドオンの有効化・キャンセルを行えません。アカウント設定の **Subscription & Billing** タブで行ってください。
+- **アプリコードの生成不可**: スキルは、ユーザーの設定や同意をAdaptyに送信するアプリコードを記述しません。このコードを追加するには、[アプリコードからRefund Saverを管理する](refund-saver#manage-refund-saver-from-your-app-code)を参照してください。
+- **返金節約額の予測不可**: 各リクエストの判断はストアが行うため、スキルはRefund Saverがどれだけ返金を防ぐかを予測しません。
+
+スキルを使わずに自分でコマンドを実行する場合は、[Refund Saver コマンド](developer-cli-refund-saver)を参照してください。

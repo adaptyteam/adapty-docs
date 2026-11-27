@@ -1,0 +1,132 @@
+---
+title: "Retention Messaging için Agent Skill"
+description: "Retention-messaging skillini yükleyerek AI aracınızın Adapty'de Apple Retention Messaging kurmasını, abonelerin iptal ederken gördüğü mesajları oluşturmasını/düzenlemesini ve her mesajın performansını okumasını sağlayın."
+metadataTitle: "Retention Messaging Agent Skill | Adapty Dokümanları"
+---
+
+[Apple Retention Messaging](retention-messaging), abone iptal etmeden hemen önce Apple'ın **Cancel Subscription** ekranında mesajınızı veya bir teklifinizi abonelerinize gösterir; böylece daha az abone kaybedersiniz. Retention-messaging skill'i bunu AI aracınızdan kurar ve yönetir. Agent'ınız uygulamanızın kurulum durumunu okur ve kalan her adımda sizi yönlendirir: Adapty'nin URL'sini Apple'da ayarlar, Apple'ın performans testini çalıştırır ve sizi production'a taşır. Ardından ihtiyaç duyduğunuz her dilde varsayılan ve promosyon mesajlarınızı yazar, bunları aktive ve deaktive eder ve her mesajın kaç aboneyi tuttuğunu okur. Bu işlem [`adapty retention-messaging` CLI komutları](developer-cli-retention-messaging) veya [Adapty MCP sunucusu](adapty-mcp) aracılığıyla çalışır.
+
+:::note
+Apple bir mesajı onayladıktan sonra, kapsadığı ürünleri iptal eden aboneler bu mesajı görür. Skill, Adapty'nin URL'sini Apple'da ayarlamadan ya da bir mesaj oluşturmadan, düzenlemeden, etkinleştirmeden veya devre dışı bırakmadan önce yapılacak değişikliği size açık bir şekilde anlatır. Değişikliği yalnızca onayınızın ardından uygular.
+:::
+
+## Neler isteyebilirsiniz \{#what-you-can-ask\}
+
+Bir meslektaşınıza brifing verir gibi sorun. Skill adını belirtmenize gerek yok:
+
+```
+Set up retention messaging for my app.
+
+Is retention messaging on, and what is missing?
+
+Create a retention message for my Annual plan in English and German.
+
+Show my 50% off promotional offer to monthly subscribers who cancel.
+
+Offer monthly subscribers who cancel a switch to the Annual plan.
+
+Add a German translation to my retention message.
+
+How are my retention messages doing?
+
+Deactivate the Black Friday message.
+```
+
+<AgentChat title="retention-messaging" caption="Örnek bir uygulama ile örnek konuşma. Ürünleriniz ve mesajlarınız farklılık gösterecektir.">
+<ChatTurn role="user">Yıllık planım için İngilizce ve Almanca bir retention mesajı oluştur.</ChatTurn>
+<ChatTurn role="tool" summary="Kurulum ve mesajları oku">
+
+- `adapty retention-messaging setup-status`
+- `adapty retention-messaging products suggest --mode production --type default`
+- `adapty retention-messaging messages list --mode production`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+Production hazır ve Yıllık plan için henüz varsayılan bir mesaj yok. İşte oluşturacağım mesaj.
+
+</ChatTurn>
+<ChatTurn role="confirm" summary="Elde tutma mesajını oluştur">
+
+Production ortamında "Annual: stay" adında varsayılan bir mesaj oluştur.
+
+- Ürünler: Annual. Diller: İngilizce, Almanca. Görsel yok.
+- İngilizce: "Before you go" / "Keep your plan and your saved progress."
+- Almanca: "Bevor du gehst" / "Behalte deinen Plan und deinen Fortschritt."
+- Apple şu an inceliyor. **Onaylandıktan sonra Yıllık planı iptal eden aboneler bunu görür.**
+
+Oluşturulsun mu?
+
+1. Evet
+2. Hayır
+
+</ChatTurn>
+</AgentChat>
+
+## Başlamadan önce \{#before-you-start\}
+
+- **Apple'ın uygulamanızı onaylaması**: Apple, Retention Messaging API erişimini yalnızca onayladığı uygulamalara verir ve inceleme süreci bir aya kadar sürebilir. Talebi Apple'a kendiniz gönderirsiniz. Uygulamanızın henüz erişimi yoksa skill, [Apple'ın talep formuna](retention-messaging-setup#request-access-from-apple) girmeniz için Adapty URL'sini verir.
+- **Adapty'de App Store kurulumu**: Uygulamanızın, In-App Purchase anahtarı dahil eksiksiz bir [App Store kurulumuna](app-store-connection-configuration) ihtiyacı vardır. Promosyon mesajları için **App Store promotional offers** bölümüne de anahtarı ekleyin; plan değişikliği sunmak istiyorsanız [App Store Connect API anahtarını](app-store-connect-api-key) da ekleyin.
+- **Adapty'de ürünler**: Mesajlarınızın kapsayacağı en az bir [ürün](create-product) gereklidir.
+- **Adapty hesabınıza bağlı bir yapay zeka aracı**: Skill, [Adapty MCP sunucusu](adapty-mcp) veya [Adapty CLI](developer-cli) üzerinden çalışır. Claude Code ve Codex'te eklenti MCP sunucusunu ekler; sadece oturum açmanız yeterlidir. Her ikisi de mevcut olduğunda skill, CLI'yı kullanır (bkz. [Sınırlamalar](#limits)). CLI'yı seçtiğinizde skill onu kurar veya günceller. claude.ai, ChatGPT veya yapay zeka aracınızın mobil uygulamasında skill yalnızca MCP sunucusunu kullanır ve bağlamanızı ister. Bilgisayarınızda ikisi de yoksa skill hangisini kurmak istediğinizi sorar. CLI'ınız Retention Messaging komutlarını çalıştıramadığında skill, bağlıysa MCP sunucusuna geçer; aksi takdirde sizi [kontrol panelinde Retention Messaging kurulumuna](retention-messaging-setup) yönlendirir.
+
+## Skill'i yükleyin \{#install-the-skill\}
+
+Retention-messaging skill'i, [Adapty eklentisinin](manage-adapty-with-ai) bir parçasıdır.
+
+<AdaptySkillsInstall />
+
+## Skill'in Retention Messaging'i Nasıl Kurduğu \{#how-the-skill-sets-up-retention-messaging\}
+
+Apple'ın iki ortamı vardır: sandbox ve production. Tek bir Adapty URL'si her ikisine de hizmet eder, ancak Apple her ortam için bu URL'yi ayrı ayrı saklar. Her ortamın kendi mesajları vardır.
+
+Skill önce uygulamanızın kurulum durumunu okur, ardından bir sonraki adımı önerir:
+
+1. **App Store anahtarları veya sunucu bildirimleri eksik**: Skill sizi kontrol panelindeki App Store kurulumuna yönlendirir.
+2. **Apple uygulamayı henüz onaylamamış**: Skill, Apple'ın istek formuna girmeniz gereken Adapty URL'sini verir.
+3. **Apple henüz Adapty'e sandbox istekleri göndermiyor**: Skill, Apple'da sandbox için Adapty'nin URL'sini ayarlamayı teklif eder.
+4. **Performans testi geçilmedi**: [Apple'ın performans testine](retention-messaging-setup#pass-the-performance-test) hazırlanmak için, testten hemen önce en uzun süreli ürününüzü bir [sandbox hesabıyla](test-purchases-in-sandbox) ya da TestFlight üzerinden satın alın ve aboneliği aktif tutun. Ardından skill testi başlatır. Aboneler testi görmez, bu yüzden bu adım için onay gerekmez. Test bir saate kadar sürebilir. Test sürerken skill durumu tekrar okur ve yeni bir test başlatmaz.
+5. **Test geçildi**: Skill, Apple'da üretim için Adapty'nin URL'sini ayarlamayı, ardından ilk varsayılan mesajınızı oluşturmayı teklif eder.
+
+## Skill'in mesajları nasıl yazdığı \{#how-the-skill-writes-messages\}
+
+- **Önce varsayılan mesaj**: Bir promosyon mesajının aynı üründe bir varsayılan mesajı olması gerekir. Skill önce varsayılan mesajı, ardından promosyon mesajlarını oluşturur.
+- **Yalnızca mesaj için uygun ürünler**: Skill, aynı ortamda aynı türden başka bir mesaj tarafından zaten kapsanan bir ürünü önermez. Promosyon mesajı için, varsayılan mesajı bulunmayan bir ürünü de önermez.
+- **Yalnızca mevcut teklifler ve planlar**: Bir promosyon mesajı her ürünü bir promosyon teklifine veya aynı abonelik grubundaki başka bir plana geçişe bağlar. Skill yalnızca App Store Connect ve Adapty'de zaten var olan teklifleri ve planları önerir.
+- **İstediğiniz her dil**: Skill İngilizce metni ve her çeviriyi Apple'ın sınırları dahilinde yazar. Apple bir dili onaylayana kadar, o dili kullanan aboneler İngilizce metni görür.
+- **Düzenlemeler yalnızca belirttiğinizi değiştirir**: Diğer tüm metinler, diller, ürünler ve görseller olduğu gibi kalır. Skill bir dili, madde işaretini, ürünü veya görseli yalnızca siz istediğinizde kaldırır.
+
+Her mesaj alanının ne anlama geldiğini öğrenmek için bkz. [Elde tutma mesajı oluşturma](retention-messaging-create).
+
+## Beceri her değişiklikten önce ne sorar \{#what-the-skill-asks-before-each-change\}
+
+Yalnızca becerinin sorusuna verdiğiniz yanıt geçerlidir. Beceri değişikliği göstermeden önce söylediğiniz genel bir "devam et" ifadesi geçerli sayılmaz. Hayır derseniz, beceri hiçbir şeyi değiştirmez.
+
+| Değişiklik | Skill size ne söyler |
+|---|---|
+| Apple'da Adapty URL'sini ayarla | Seçtiğiniz ortam için Apple, **Cancel Subscription** ekranından gelen istekleri Adapty'ye yönlendirir. O ortamın istekleri şu an başka bir sunucuya gönderiliyorsa, skill diğer sunucunun artık bu istekleri almayacağını uyarır ve ikinci bir onay ister. |
+| Mesaj oluştur | Apple mesajı şu an inceler. Apple onayladıktan sonra, ilgili ürünleri iptal eden aboneler mesajı görür. Sandbox ortamında yalnızca sandbox test kullanıcıları görür. |
+| Mesaj düzenle | Ad değişikliği dahil her düzenleme, mesajı yeniden Apple'ın incelemesine gönderir. Apple onayladıktan sonra, aktif olmayan bir mesaj tekrar gösterilmeye başlar. Skill'in okuma ve yazma işlemleri arasında kontrol panelinde yapılan bir değişiklik kaybolabilir. |
+| Mesajı etkinleştir veya devre dışı bırak | Etkinleştirmenin ardından Apple onayladığında mesajı gösterir. Apple'ın zaten onayladığı diller yeniden beklemiyor. Devre dışı bırakmanın ardından Apple mesajı göstermeyi durdurur. Mesajı daha önce görmüş aboneler etkilenmez. |
+
+MCP sunucusu üzerinden yapılan iki okuma da her konuşmada bir kez, birer onay bekler. İlk kurulum durumu okuması, Apple'ın performans testi sonucunu kaydedebilir. İlk mesaj okuması, Apple'dan her mesajın incelemesini sorar ve onaylanan bir mesajın abonelere gösterilmeye başlanmasını sağlayabilir. CLI üzerinden bu okumalar aynı etkiye sahiptir ve onay gerektirmez.
+
+Skill bir mesaj oluşturduktan sonra Adapty yanıt vermezse, skill mesajı yeniden oluşturmaz. Mesaj listesini ada göre arar, her eşleşmeyi gösterir ve hangisinin, varsa, sizin mesajınız olduğunu sorar.
+
+## Skill mesaj performansını nasıl okur \{#how-the-skill-reads-message-performance\}
+
+Mesajlarınızın nasıl gittiğini sorun; skill, production mesaj listesini **Shown**, **Retained users**, **Saved users**, **Retention rate**, **Save rate** ve **Saved revenue** sütunlarıyla birlikte okur. Her rakam, mesajın tüm ömrünü kapsar. Sandbox mesajları dahil edilmez. **Retained users**, her abonnenin bir sonraki fatura tarihinden sonra dolmaya başlar. Her sayının ne anlama geldiğini öğrenmek için bkz. [Mesaj performansını takip etme](retention-messaging-analytics).
+
+## Diğer skill'lerle \{#with-other-skills\}
+
+- **Retention Mesajlaşmasını kullanıp kullanmayacağınıza karar verin**: [growth-advisor skill](export-analytics-with-ai), App Store iptalleri abonelik sonlarınıza yol açtığında Retention Mesajlaşma durumunuzu ve üretim mesajlarınızı okur. Onayınız üzerine, kurulumu ve mesajları retention-messaging skill'e iletir.
+- **Bir ürüne promosyon teklifi ekleyin**: İndirim sunan bir promosyon mesajı, hem App Store Connect'te hem de Adapty'de mevcut olan bir promosyon teklifi gerektirir. Adapty'deki bir ürüne mevcut bir mağaza teklifini eklemek için, aracınıza teklif kimliğini verin; örneğin: "Yıllık ürünüme `annual_50_off` App Store teklifini ekle." growth-advisor skill, onayınızın ardından değişikliği yapar.
+
+## Sınırlar \{#limits\}
+
+- **Silme yok**: Bir retention mesajını silemezsiniz. Silmek istediğinizde, skill onu devre dışı bırakmayı teklif eder.
+- **Görsel ve madde işaretleri için CLI gerekli**: MCP sunucusu üzerinden skill, varsayılan bir mesaja başlık görseli veya madde işareti ekleyemez; her ikisi de dosya yükleme gerektirir. Bunlar için CLI komutunu veya kontrol paneli adımını verir.
+- **Başlık konumu sabittir**: Skill varsayılan bir mesaj oluştururken **Title position** bilgisini belirtin. Bunu daha sonra ne skill üzerinden ne de kontrol panelinde değiştirebilirsiniz.
+- **Gözetimsiz değişiklik yok**: Zamanlanmış bir çalıştırmada veya bir komut dosyasında, yanıt verecek kimse olmadığında skill yalnızca okuma yapar. Bir değişiklik için, değişikliğin ne yapacağını ve sizin çalıştırmanız gereken komutu raporlar.
+
+Skill kullanmadan komutları kendiniz çalıştırmak için bkz. [CLI'dan Tutma Mesajlarını Yönetme](developer-cli-retention-messaging).
