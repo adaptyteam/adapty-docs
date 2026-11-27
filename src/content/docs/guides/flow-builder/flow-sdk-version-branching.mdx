@@ -1,100 +1,117 @@
 ---
 title: "Support new and old Adapty SDKs with a single flow"
-description: "Show screens and elements by Adapty SDK version: users whose app build supports a new flow feature see it, and everyone else sees compatible content."
+description: "Show screens and elements by Adapty SDK version: users with the version that a new flow feature needs see the feature, and users with an earlier version see a backward-compatible screen or element."
 metadataTitle: "Support new and old Adapty SDKs with a single flow | Flows & paywalls | Adapty Docs"
 ---
 
-Flows need Adapty SDK 4.0 or later, but some flow features need a later Adapty SDK version. The article of each feature states the version it needs. For example, [custom elements](flow-custom-elements) show their native view only with Adapty SDK 4.4 or later. Your users don't all update the app at once, so different users run builds with different Adapty SDK versions.
+Flows need Adapty SDK 4.0 or later, but some flow features need a later Adapty SDK version. For each feature, the docs state the version it needs and what users with an earlier version see. For example, the `prod_billing_price` variable shows the monthly payment of a [12-month commitment plan](set-up-12-month-commitment) with Adapty iOS SDK 4.3.1 or later. With Adapty iOS SDK 4.3.0, it shows the yearly total.
 
-To give each user content that their app build can display, use the **SDK version** (`sdk.version`) condition in one flow:
+Your users don't all update the app at once, so some of them run app builds with an earlier Adapty SDK version. To decide what these users see in place of a new feature, add an SDK version condition to the flow. The condition compares the Adapty SDK version of the app build with the version that you enter:
 
-- **Screens**: Send users with a later Adapty SDK to the main screen, and everyone else to a compatible copy of it.
-- **Elements**: Show the new element to users with a later Adapty SDK, and a compatible element to everyone else.
+- **Screens**: Send users with that version or later to the main screen, which has the new feature. Send everyone else to the backward-compatible screen, a copy of the main screen without the feature.
+- **Elements**: Show the main element, which has the new feature, to users with that version or later. Show the backward-compatible element to everyone else.
 
 Your metrics and A/B tests stay intact. You don't need to [copy the flow](copy-flows) or split your user traffic across multiple flows with [audiences](audience).
 
 ## How the SDK version condition works
 
-The SDK version is a system variable. You select it on the **System** tab of a condition, as `sdk.version`, in two places:
+In the Flow & Paywall Builder, `sdk.version` is a system variable that holds the Adapty SDK version of the app build that displays the flow. The Adapty SDK reports this version, so your app code doesn't pass it. An SDK version condition compares `sdk.version` with the version that you enter. You can use `sdk.version` in two kinds of conditions:
 
-- A [conditional action](onboarding-actions#conditional-actions), to send users to a screen.
-- A [visibility condition](onboarding-element-visibility), to show or hide an element.
+- The rules of a [conditional action](onboarding-actions#conditional-actions), to send users to a screen.
+- The [visibility condition](onboarding-element-visibility) of an element, to show or hide the element.
 
-The SDK version has two comparisons:
+In both, click the **Variable** field, open the **System** tab, and select `sdk.version`. Conditional text and the conditions of element states don't offer `sdk.version`. To show a different text by Adapty SDK version, put two text elements on the screen, and [show each of them by Adapty SDK version](#show-an-element-by-adapty-sdk-version).
 
-| Comparison | Description in the builder | Use it for |
+An SDK version condition offers two comparisons:
+
+| Comparison | Matches an app build with | Use it for |
 |---|---|---|
-| **This version and above** (≥) | The main element. Shown when the SDK supports it. | The screen or element with the new feature |
-| **Below this version** (&lt;) | The fallback. Shown instead when the SDK doesn't support it. | The compatible screen or element |
+| **This version and above** (≥) | The version in the condition, or a later version | The main screen or element, which has the new feature |
+| **Below this version** (&lt;) | A version earlier than the version in the condition | The backward-compatible screen or element, without the new feature |
 
-In the value field, select a version from the list, or enter a version as `major.minor` or `major.minor.patch`, such as `4.3.2`. The list shows Adapty SDK minor versions, newest first. The newest version in the list is marked **Latest**. A version without a patch number counts as patch 0, so `4.4` is `4.4.0`. An empty value makes the rule incomplete, which [blocks previewing and publishing](flow-common-issues#a-flow-wont-preview-or-publish). If the value isn't a version, such as `4.x`, the builder marks the field. When you publish such a flow, the publication fails, and the builder shows the error at the condition. Correct the value and publish again. Until then, the last published version of the flow stays in your app.
+If the flow can't read the Adapty SDK version of the app build, it treats the version as earlier than any version in a condition. So **Below this version** matches, and **This version and above** doesn't.
 
-The flow compares versions number by number: major, then minor, then patch. So `4.10.0` is above `4.9.0`.
+## Choose the version to enter
 
-On the device, the flow reads the version of the native Adapty SDK for iOS or Android in the app build:
+Enter the Adapty SDK version that the new feature needs. Use the `major.minor` format, such as `4.4`:
 
-- **iOS**: The version of the Adapty iOS SDK.
-- **Android**: The version of the core library `io.adapty:android-sdk`, not the version of the BOM `io.adapty:adapty-bom`. The two versions can differ. For example, BOM 4.4.2 includes `android-sdk` 4.4.0, and BOM 4.3.3 includes `android-sdk` 4.3.2. To find the `android-sdk` version of your build, open the dependency list of the BOM version that you use, or run `./gradlew app:dependencies` and find `io.adapty:android-sdk` in the output.
-- **React Native, Flutter, Unity, Kotlin Multiplatform, and Capacitor**: The version of the native Adapty SDK that the cross-platform SDK includes, as above. This version can differ from the version of the cross-platform SDK. For example, React Native SDK 4.4.1 reports `android-sdk` 4.4.0 on Android, and the version of the included Adapty iOS SDK on iOS.
+- **The feature needs a patch release, such as 4.3.1**: Enter the next minor version, `4.4`. The version `4.3` counts as `4.3.0`, so it also matches app builds without the feature.
+- **The feature needs a different version on each platform or SDK**: Enter the highest version, rounded up as for a patch release. For example, for iOS SDK 4.2.0, Android SDK 4.3.0, and React Native SDK 4.3.0, enter `4.3`.
 
-So in conditions, enter the native Adapty SDK version that the feature needs, not the version of the BOM or of the cross-platform SDK. The Adapty iOS SDK and the core library `android-sdk` don't always release the same patch versions, so a threshold with a patch number can match on one platform and not on the other. For example, an Android app on BOM 4.4.2 reports `android-sdk` 4.4.0, so it doesn't match **This version and above** `4.4.1`. To cover both platforms, use a threshold without a patch number, such as `4.4`.
+With these rules, no app build with an Adapty SDK earlier than the feature needs matches **This version and above**. Some users whose Adapty SDK supports the feature see the backward-compatible screen or element until they update the app.
 
-If the flow can't get the Adapty SDK version, it counts the version as the oldest. So **Below this version** matches, and **This version and above** doesn't match. Users then see the compatible screen or element.
+The condition reads the version of the native Adapty SDK in the app build: the Adapty iOS SDK on iOS, and the core library `io.adapty:android-sdk` on Android. Apps on React Native, Flutter, Unity, Kotlin Multiplatform, and Capacitor report the native Adapty SDK that the cross-platform SDK includes. The patch number of this native SDK can differ from the patch number of the cross-platform SDK, and on Android from the patch number of the BOM `io.adapty:adapty-bom`.
+
+In the value field, select a version from the list, or enter one as `major.minor` or `major.minor.patch`. The list shows the Adapty SDK versions that flow features need, newest first, and marks the newest of them **Latest**.
+
+If the value field is empty or doesn't hold a version, such as `4.x`, the builder shows an error under the condition. The **Show element if** button of a visibility condition, or the card of a conditional action, also gets a red border. The builder doesn't stop you from publishing the flow, but the publication fails with the **Invalid SDK version condition** error. To open the element with the condition, in the error notification, click **Details**, and then click the link. Until you correct the version and publish again, users get the last published version of the flow, if there is one.
 
 ## Show a screen by Adapty SDK version
 
-A conditional action runs when users interact with a screen, so it can't select the first screen of the flow. Send users to the main or the compatible screen from a screen that all users see first, such as a welcome screen.
+The flow always opens on its first screen, so you can't show a backward-compatible screen in place of the first screen. Put a conditional action on a screen that all users see before the main screen, such as a welcome screen. If the new feature is on the first screen of the flow, [show an element by Adapty SDK version](#show-an-element-by-adapty-sdk-version) instead.
 
-1. Set up the main screen, with the new feature. To connect the screens of the main route, use [**Navigate to Screen**](onboarding-navigation-branching#static-navigation), not [**Navigate next**](onboarding-actions#navigate-next). With **Navigate to Screen**, the navigation doesn't depend on the order of the screens in the flow.
-2. Make a compatible copy of the main screen: duplicate the main screen, and remove the new feature from the copy. To tell the two screens apart in navigation and in [flow metrics](flow-metrics), give them distinct names. On the copy, set the **Destination** of each **Navigate to Screen** action to the screens of the compatible route.
-3. On the screen before the main screen, select the element that moves users forward, such as the **Continue** button.
-4. In the **Interactions** panel, set its action to **Conditional Action**.
-5. In the **if** block, click the **Variable** field, open the **System** tab, and select `sdk.version`. Select **This version and above**, and enter the minimum Adapty SDK version of the new feature, such as `4.4`.
-6. In the **then** block, add **Navigate to Screen** with the main screen.
-7. In the **else** block, add **Navigate to Screen** with the compatible screen.
+1. Set up the main screen, with the new feature.
+2. To create the backward-compatible screen, duplicate the main screen, and remove the new feature from the copy. The backward-compatible copy will keep the actions of the main screen, but not the element with a higher version requirement. To tell the two screens apart in navigation and in [flow metrics](flow-metrics), give them distinct names.
+3. On the main screen, replace each [**Navigate Next**](onboarding-actions#navigate-next) action with [**Navigate to Screen**](onboarding-navigation-branching#static-navigation), and select specific screens for **Destination**. The copy will appear right after the main screen, so **Navigate Next** on the main screen would open the backward-compatible copy.
+4. On the screen before the main screen, select the element that moves users forward, such as the **Continue** button.
+5. In the **Interactions** panel, set its action to **Conditional Action**.
+6. In the **if** block, click the **Variable** field, open the **System** tab, and select `sdk.version`. Keep **≥** (**This version and above**), and enter the version from [Choose the version to enter](#choose-the-version-to-enter), such as `4.4`.
+7. In the **then** block, add **Navigate to Screen** with the main screen.
+8. In the **else** block, add **Navigate to Screen** with the backward-compatible screen.
 
 :::note
 flow-condition-sdk-version.webp
 :::
 
-Use **This version and above** with the main screen in **then**, and the compatible screen in **else**. This way, the compatible screen also covers users whose Adapty SDK version the flow can't get.
+If several elements lead to the main screen, such as a **Continue** button and the options of a quiz, set up the conditional action on each of them.
+
+If the screens after the main screen also have the new feature, make a backward-compatible copy of each of them. On each backward-compatible copy except the last, set the **Destination** of **Navigate to Screen** to the next backward-compatible copy.
+
+If users with an earlier version don't need the main screen, don't make a backward-compatible screen. In the **else** block, add **Navigate to Screen** with the screen after the main screen.
+
+A backward-compatible screen adds to the [size of the flow](flow-size), and later edits to the main screen don't reach it. To change only part of a screen, [show an element by Adapty SDK version](#show-an-element-by-adapty-sdk-version) instead.
 
 ## Show an element by Adapty SDK version
 
-To replace one element instead of a whole screen, put a pair of elements on the screen: the new element and a compatible element. Give both elements the same version.
+To replace one element instead of a whole screen, put two elements on the screen: the main element, with the new feature, and the backward-compatible element, without it. Enter the same version in the conditions of both elements, so that each user sees one of the two.
 
-1. Select the new element. In the **Visibility** section of the right panel, select **Conditional**.
-2. Click the **Variable** field, open the **System** tab, and select `sdk.version`. Select **This version and above**, and enter the minimum Adapty SDK version of the new element, such as `4.4`.
-3. Select the compatible element. In the **Visibility** section, select **Conditional**.
-4. Click the **Variable** field, open the **System** tab, and select `sdk.version`. Select **Below this version**, and enter the same version as in step 2.
+1. Select the main element. In the **Visibility** section of the right panel, select **Conditional**.
+2. Click the **Variable** field, open the **System** tab, and select `sdk.version`. Keep **≥** (**This version and above**), and enter the version from [Choose the version to enter](#choose-the-version-to-enter), such as `4.4`.
+3. Select the backward-compatible element. In the **Visibility** section, select **Conditional**.
+4. Click the **Variable** field, open the **System** tab, and select `sdk.version`. Click **≥**, select **Below this version**, and enter the same version as in step 2.
+
+If users with an earlier version don't need a backward-compatible element, do only steps 1 and 2.
 
 :::note
 flow-visibility-sdk-version.webp
 :::
 
-With the same version in both conditions, each user sees exactly one element of the pair, unless a **Show** or **Hide** action changes one of them.
+A **Show element** or **Hide element** action on the main element or the backward-compatible element overrides the SDK version condition of that element.
 
-You can also add the SDK version to a condition group with other conditions, such as `system.platform`. The element then shows when the whole group matches.
+You can combine the SDK version condition with other conditions, such as the [platform of the device](onboarding-element-visibility#show-an-element-on-one-platform-only). The selector above the conditions requires all of them to match, or any one of them. If you add a condition to the main element, give the backward-compatible element the opposite condition, so that each user still sees one of the two. For example, to show the main element only on iOS:
 
-## Test both versions
+- **Main element**: Set the selector to **all**, and add `sdk.version` **This version and above** `4.4` and `system.platform` `=` **iOS**.
+- **Backward-compatible element**: Set the selector to **any**, and add `sdk.version` **Below this version** `4.4` and `system.platform` `=` **Android**.
 
-The canvas and the [preview in the Adapty dashboard](paywall-device-compatibility-preview#preview-in-the-adapty-dashboard) evaluate a visibility condition on `sdk.version` as for the **Latest** version in the value list, with any patch number. They don't run conditional actions.
+:::note
+A [custom element](flow-custom-elements) needs no SDK version condition: with an Adapty SDK earlier than 4.4, it shows its [fallback content](flow-custom-elements#set-fallback-content). A visibility condition on a custom element also hides the fallback content, so users with an earlier version would see neither the native view nor the fallback content. To change what these users see, edit the fallback content.
+:::
 
-To see each branch and each element of the pair, [publish the flow](builder-save-publish#publish-a-flow). Then open it in a build of your app with an Adapty SDK version below the version in the conditions, and in a build with that version or later. In the [preview in the Adapty mobile app](paywall-device-compatibility-preview#preview-on-devices), you can't select the Adapty SDK version that the flow compares.
+## Test the SDK version condition
+
+The canvas displays elements as if the app build had the **Latest** version from the value list. To select a hidden element, click it in the **Layers** panel. The canvas doesn't run conditional actions.
+
+When you publish a flow, the users of every placement that serves it get the new version on their next request to that placement. To test the condition before real users get it:
+
+1. Add the flow to a [placement](create-placement) that your test build requests and your released app doesn't. If the flow already serves a placement of your released app, test a [copy of the flow](copy-flows) instead.
+2. Register the device as a [test device](test-devices), so that it gets the latest published version of the flow instead of a cached one.
+3. [Publish the flow](builder-save-publish#publish-a-flow), and open it in a build with the version in the conditions or later. The build should show the main screen or element.
+4. To see the backward-compatible screen or element in the same build, change the version in the conditions to a version above the Adapty SDK version of the build, such as `9.0`. Then publish the flow, and open it again.
+5. Enter the original version in the conditions again, and publish the flow.
+
+The [preview in the Adapty mobile app](paywall-device-compatibility-preview#preview-on-devices) doesn't read the Adapty SDK version of your app, so it can show a different screen or element than your app shows.
 
 ## Limitations
 
-- **Hidden elements are still in the flow**: A visibility condition decides only what users see. An app build with an earlier Adapty SDK still loads every element of the flow, hidden elements too. So a condition can't make an earlier Adapty SDK read an element that it doesn't support. The same applies to screens: a conditional action decides only where users go, and the app build still loads the main screen too. A new element that has its own fallback, such as a [custom element](flow-custom-elements#set-fallback-content), shows its fallback on earlier versions.
-- **A condition on a custom element also hides its fallback**: The custom element and its fallback content are one element on the screen. A visibility condition on the custom element applies to both:
-
-  | Condition on the custom element | Adapty SDK in the app build | Users see |
-  |---|---|---|
-  | None | 4.3.2 | The fallback content |
-  | **This version and above** `4.4` | 4.3.2 | Neither the native view nor the fallback content |
-  | **This version and above** `4.4` | 4.4.0 or later | The custom element, as with no condition |
-
-  The hidden custom element doesn't cause an error in an earlier Adapty SDK. The custom element has its own version check: an Adapty SDK earlier than 4.4 reads only its fallback content. The visibility condition then hides that fallback content too.
-
-  To show compatible content to users with an earlier Adapty SDK, use the fallback of the custom element.
-- **A custom variable with the ID `sdk.version`**: If the flow already has a custom variable with the ID `sdk.version`, conditions on `sdk.version` read that custom variable. The **System** tab of that flow doesn't offer the SDK version.
-- **First frame on iOS with Adapty SDK 4.0 and 4.1**: In these versions, a screen can draw its first frame before the flow applies the visibility conditions. So on the first screen of the flow, an element that a visibility condition hides can appear for one frame when the screen opens.
+- **The condition can't tell which framework the app uses**: An SDK version condition compares only the version of the native Adapty SDK. Some features also depend on the framework of the app. For example, on Android, elements outside the sheet of a [hero screen](flow-hero-screen) respond to taps only in native Android and React Native apps. A Flutter app with the same native Adapty SDK version matches **This version and above** too. Before you add a condition for a feature, see which apps its docs list.
+- **A hidden element can appear for one frame on iOS with Adapty SDK 4.0 and 4.1**: In apps with these versions, an element that a visibility condition hides can appear for one frame when its screen opens. So users with these versions can see the main element for one frame. To keep the main element from these users, [show a screen by Adapty SDK version](#show-a-screen-by-adapty-sdk-version) instead.
