@@ -1,0 +1,95 @@
+---
+title: "Skill d'agent pour les monnaies virtuelles"
+description: "Installez le skill de monnaies virtuelles pour que votre outil IA lise et modifie vos monnaies virtuelles Adapty et leurs produits associés, et explique pourquoi un utilisateur a un certain solde."
+metadataTitle: "Skill d'agent pour les monnaies virtuelles | Documentation Adapty"
+---
+
+Les [monnaies virtuelles](virtual-currencies) accordent des crédits à vos utilisateurs lorsqu'ils achètent un produit ou renouvellent un abonnement. Le skill virtual-currencies les gère depuis votre outil d'IA. Votre agent liste vos monnaies, affiche combien de crédits chaque produit lié accorde, crée une monnaie, et ajoute, modifie ou supprime ses produits liés. Il lit également les transactions de crédits et les soldes d'un utilisateur, pour pouvoir vous expliquer pourquoi cet utilisateur a tel solde. Il fonctionne via les [commandes CLI `adapty virtual-currencies`](developer-cli-virtual-currencies) ou le [serveur Adapty MCP](adapty-mcp).
+
+:::note
+Le skill vous demande confirmation avant chaque modification. Il vous indique ce qui va changer : chaque produit lié avec ses crédits avant et après, ou la nouvelle devise avec ses produits. La modification n'est effectuée qu'après votre accord. Les nouveaux montants s'appliquent à partir du prochain achat ou renouvellement : les abonnés actuels bénéficient du nouveau montant lors de leur prochain renouvellement.
+:::
+
+## Ce que vous pouvez demander
+
+Formulez votre demande comme si vous briefiez un collègue. Inutile de nommer le skill :
+
+```
+Which virtual currencies does my app have?
+
+How many gems does the Starter pack give?
+
+Give the Starter pack 50 gems.
+
+Create a currency "Gems" and give 100 gems for each Gem pack purchase.
+
+Stop giving gems for the Weekly subscription.
+
+Why does user 4512 have 40 coins?
+
+A player's 400 coins disappeared after they reinstalled the app. Why?
+```
+
+<AgentChat title="virtual-currencies" caption="Exemple de conversation avec une application exemple. Vos produits et devises seront différents.">
+<ChatTurn role="user">Donne 50 gemmes au pack Starter.</ChatTurn>
+<ChatTurn role="tool" summary="Lire la devise">
+
+- `adapty virtual-currencies list`
+- `adapty virtual-currencies get <gems-id>`
+
+</ChatTurn>
+<ChatTurn role="confirm" summary="Modifier les gemmes du pack Starter">
+
+Modifier le nombre de gemmes crédités par le pack Starter.
+
+- Starter pack : 30 → 50 gemmes pour chaque achat.
+- Les 3 autres produits de Gemmes restent inchangés.
+- **Le nouveau montant s'applique à partir du prochain achat. Les achats précédents conservent leurs gemmes.**
+
+Modifier ?
+
+1. Oui
+2. Non
+
+</ChatTurn>
+</AgentChat>
+
+## Avant de commencer \{#before-you-start\}
+
+- **Produits dans Adapty** : une devise accorde des crédits via ses [produits](create-product) liés dans Adapty.
+- **Un outil IA connecté à votre compte Adapty** : le skill fonctionne via le [serveur MCP Adapty](adapty-mcp) ou l'[Adapty CLI](developer-cli). Dans Claude Code et Codex, le plugin ajoute le serveur MCP, vous n'avez qu'à vous connecter. Le skill détecte lequel des deux votre outil IA possède et l'utilise. Si vous avez les deux, il utilise le serveur MCP. Si vous n'en avez aucun, le skill vous demande lequel configurer.
+
+## Installer le skill \{#install-the-skill\}
+
+Le skill virtual-currencies fait partie du [plugin Adapty](manage-adapty-with-ai).
+
+<AdaptySkillsInstall />
+
+## Ce que le skill vous demande avant chaque modification \{#what-the-skill-asks-before-each-change\}
+
+Le skill lit la valeur actuelle juste avant chaque modification et vous affiche les changements prévus. Seule votre réponse à la question du skill compte. Un « allez-y » général donné avant que le skill affiche la modification ne suffit pas. Si vous refusez, le skill ne modifie rien.
+
+| Changement | Ce que le skill vous indique |
+|---|---|
+| Créer une devise | Le code, le nom et les produits liés. Vous ne pouvez pas supprimer une devise ni modifier son code, et une application peut avoir jusqu'à 20 devises. Un solde appartient à un profil utilisateur : si vos utilisateurs ne se connectent pas, ils perdent leurs crédits lors d'une réinstallation de l'application ou d'un changement d'appareil. |
+| Ajouter ou modifier des produits liés | Chaque produit modifié : nouveau, ou ses crédits avant et après, pour chaque achat ou chaque période d'abonnement. Les abonnés actuels reçoivent le nouveau montant à leur prochain renouvellement. Les autres produits liés restent inchangés. |
+| Supprimer un produit lié | Le produit avec ses crédits actuels. Ses achats cessent d'accorder des crédits pour cette devise, et aucune transaction n'enregistre les achats qui n'en accordent pas. Les crédits déjà accordés sont conservés. |
+| Modifier le nom ou la description | Le nom ou la description avant et après. Le reste reste tel quel. |
+
+Si la devise change entre la lecture et l'écriture du skill — depuis le dashboard ou depuis un autre outil — le skill n'écrase pas ce changement. Adapty refuse l'écriture ou, dans le cas d'un changement de nom via la CLI, la lecture effectuée juste avant l'écriture révèle le changement. Rien ne change. Le skill vous montre à nouveau le changement et attend un nouveau oui.
+
+Si Adapty ne confirme pas un changement, le skill ne le renvoie pas immédiatement. Il lit d'abord la devise et vous indique ce qui a été sauvegardé. Pour la partie du changement encore manquante, il vous pose une nouvelle question et attend un nouveau oui.
+
+## Comment le skill explique un solde \{#how-the-skill-explains-a-balance\}
+
+Demandez pourquoi un utilisateur a un solde, et le skill lit les transactions et soldes de crédit de l'utilisateur, par l'ID de profil ou par votre propre ID utilisateur. Il vous indique quels achats, dépenses et attributions ont constitué le solde, et quels crédits arrivent à expiration et quand. Le [profil de l'utilisateur](virtual-currency-balance) dans le tableau de bord affiche les mêmes données.
+
+Si les crédits d'un utilisateur disparaissent après une réinstallation, sur un nouvel appareil ou après une connexion, le skill vous demande le profil précédent de l'utilisateur et lit son solde. Un solde appartient à un profil et ne se transfère pas à un autre, donc les crédits restent sur le profil précédent. Pour conserver le solde de chaque utilisateur sur tous ses appareils, [identifiez vos utilisateurs](virtual-currency-balance#balances-profiles-and-devices).
+
+## Limites \{#limits\}
+
+- **Pas de suppression de devise** : Vous ne pouvez ni supprimer une devise ni modifier son code, que ce soit dans le skill ou dans le tableau de bord.
+- **Pas de modification de solde** : Le skill ne crédite ni ne débite un solde. Votre serveur dépense et accorde des crédits via l'API server-side : consultez le [démarrage rapide de la devise virtuelle](virtual-currency-quickstart) et [Accorder un solde initial](grant-initial-balance). Pour corriger le solde d'un utilisateur, utilisez le [tableau de bord](virtual-currency-balance#adjust-a-balance-manually).
+- **Pas de modifications non surveillées** : Lors d'une exécution planifiée ou d'un script, sans personne pour répondre, le skill se contente de lire. Pour effectuer une modification, il indique ce que la modification implique et la commande à exécuter vous-même.
+
+Pour exécuter les commandes vous-même, sans le skill, consultez [Gérer les monnaies virtuelles depuis la CLI](developer-cli-virtual-currencies).

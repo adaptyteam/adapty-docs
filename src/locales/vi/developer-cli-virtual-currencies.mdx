@@ -1,0 +1,335 @@
+---
+title: "Quản lý tiền tệ ảo từ CLI"
+description: "Quản lý tiền tệ ảo từ terminal với Adapty CLI: liệt kê và tạo tiền tệ, thay đổi số lượng credits mỗi sản phẩm cấp, và đọc lịch sử giao dịch credits cũng như số dư của một ứng dụng hoặc một người dùng cụ thể."
+metadataTitle: "Tiền tệ ảo trong CLI cho nhà phát triển | Tài liệu Adapty"
+---
+
+Adapty CLI quản lý [tiền tệ ảo](virtual-currencies) từ terminal, trong topic `adapty virtual-currencies`. Bạn có thể liệt kê các loại tiền tệ của ứng dụng, tạo tiền tệ mới, thay đổi tên và mô tả của chúng, cũng như thêm, thay đổi hoặc xóa các *mapping*: tức là [sản phẩm được liên kết](create-virtual-currency#link-products) của tiền tệ, kèm theo số credits mà mỗi sản phẩm đó cấp. Bạn cũng có thể xem các giao dịch credit của một ứng dụng hoặc của một người dùng cụ thể, cũng như số dư của một người dùng. Trong kết quả đầu ra của CLI, credits được gọi là *coins*.
+
+Dùng nó để nhờ AI agent thiết lập các loại tiền tệ của bạn, hoặc để tìm hiểu tại sao một người dùng có số dư mà không cần mở dashboard. Các lệnh currency và mapping thực hiện chức năng tương đương với tab **Virtual currency** trên trang **Products**. Các lệnh đọc transaction và balance hiển thị cùng dữ liệu như hồ sơ người dùng trong dashboard, nhưng chúng không thay đổi số dư. Để điều chỉnh số dư, [hãy chỉnh sửa trong dashboard](virtual-currency-balance#adjust-a-balance-manually).
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+Chủ đề `virtual-currencies` sử dụng cùng cách cài đặt và đăng nhập như phần còn lại của CLI. Nếu bạn chưa thiết lập, hãy làm theo bước 1 và 2 trong [hướng dẫn quickstart](developer-cli-quickstart). Để kiểm tra xem CLI của bạn có chủ đề này không, chạy lệnh:
+
+```bash
+adapty virtual-currencies --help
+```
+
+Mỗi lệnh đều yêu cầu UUID của ứng dụng qua tham số `--app`. Để tìm UUID đó, chạy:
+
+```bash
+adapty apps list
+```
+
+Một mapping đặt tên sản phẩm bằng ID sản phẩm trong Adapty, không phải ID sản phẩm trên cửa hàng. Để tìm các ID sản phẩm, chạy:
+
+```bash
+adapty products list --app <app-id>
+```
+
+## Danh sách và đọc thông tin tiền tệ ảo \{#list-and-read-currencies\}
+
+```bash
+adapty virtual-currencies list --app <app-id>
+```
+
+Danh sách hiển thị từng tiền tệ với mã, tên và số lượng sản phẩm cấp tiền tệ đó. Lệnh hỗ trợ `--page` và `--page-size` giống như các danh sách khác trong CLI.
+
+Để đọc thông tin chi tiết của một tiền tệ cùng tất cả các mapping của nó, chạy lệnh:
+
+```bash
+adapty virtual-currencies get <currency-id> --app <app-id>
+```
+
+Tiền tệ có các trường sau:
+
+| Trường | Giá trị |
+|---|---|
+| `virtual_currency_id` | ID của đơn vị tiền tệ. Các lệnh khác sử dụng nó làm đối số. |
+| `code` | Mã mà server-side API, SDK và bộ lọc analytics sử dụng. Bạn không thể thay đổi nó. |
+| `name`, `description` | Tên hiển thị và mô tả tùy chọn. |
+| `products_count` | Số lượng sản phẩm cấp đơn vị tiền tệ này. |
+| `updated_at` | Thời điểm thay đổi gần nhất, tính bằng mili giây. Gửi nó trong `--expected-updated-at`, như phần [Bảo vệ chống mất thay đổi](#protection-against-lost-changes) mô tả. |
+| `mappings` | Chỉ có trong `get`: các sản phẩm cấp đơn vị tiền tệ, kèm theo số credits của từng sản phẩm. |
+
+Một mapping xác định số credits mà một sản phẩm cấp:
+
+- **`one-time`**: `credit_per_purchase` credits cho mỗi lần mua sản phẩm.
+- **`subscription`**: `credit_per_cycle` credits cho mỗi chu kỳ trả phí. `expiring: true` làm cho credits của một chu kỳ hết hạn khi gói đăng ký gia hạn hoặc kết thúc. `credit_on_trial_start` cấp credits khi bắt đầu dùng thử, hoặc `null` nếu không có.
+
+Một mapping sẽ cấp tín dụng từ lần mua hoặc gia hạn tiếp theo của sản phẩm đó, trong môi trường production lẫn sandbox. Người dùng đang đăng ký sẽ nhận được tín dụng vào lần gia hạn tiếp theo. Để cấp tín dụng ngay cho người dùng hiện tại, hãy [cấp số dư ban đầu](grant-initial-balance) thông qua API phía máy chủ. Để biết ý nghĩa của từng cài đặt, xem [Tạo tiền tệ ảo](create-virtual-currency#link-products).
+
+## Tạo một loại tiền tệ \{#create-a-currency\}
+
+:::warning
+Bạn không thể xóa một loại tiền tệ hoặc thay đổi mã của nó. Một ứng dụng có thể có tối đa 20 loại tiền tệ.
+:::
+
+```bash
+adapty virtual-currencies create --app <app-id> --code GEMS --name "Gems" \
+  --description "Spent on hints" --file mappings.json
+```
+
+`--code` nhận chữ cái, chữ số và `_`, tối đa 32 ký tự, và phải là duy nhất trong ứng dụng. CLI giữ nguyên kiểu chữ hoa/thường khi bạn nhập, không giống dashboard sẽ chuyển mã thành chữ hoa: `gems` và `GEMS` là hai mã khác nhau. Để khớp với các đơn vị tiền tệ bạn tạo trên dashboard, hãy dùng chữ hoa. API phía server và các bộ lọc transaction cùng analytics cần mã phải đúng kiểu chữ hoa/thường. `--name` nhận tối đa 64 ký tự, `--description` tối đa 256 ký tự. `--file` là tùy chọn: nếu không có, đơn vị tiền tệ sẽ không có mapping nào.
+
+File mapping là một danh sách JSON. Mỗi phần tử là một mapping đầy đủ:
+
+```json title="mappings.json"
+[
+  {
+    "product_id": "<one-time-product-id>",
+    "product_type": "one-time",
+    "credit_per_purchase": 100
+  },
+  {
+    "product_id": "<subscription-product-id>",
+    "product_type": "subscription",
+    "credit_per_cycle": 500,
+    "expiring": true,
+    "credit_on_trial_start": 50
+  }
+]
+```
+
+Trong `create`, bạn có thể bỏ qua `credit_on_trial_start`: khi đó thời gian dùng thử sẽ không được cấp credits. CLI kiểm tra file trước khi gửi bất kỳ thứ gì. Nếu file không phải là một danh sách JSON với ít nhất một phần tử, CLI sẽ thoát với mã lỗi 2.
+
+Trước khi tạo currency, CLI hiển thị code, các sản phẩm được ánh xạ, và thông tin rằng bạn không thể xóa currency hoặc thay đổi code của nó. Sau đó CLI yêu cầu xác nhận, như được mô tả trong [Xác nhận trong scripts và agents](#confirmation-in-scripts-and-agents).
+
+## Thay đổi tên hoặc mô tả \{#change-the-name-or-the-description\}
+
+```bash
+adapty virtual-currencies update <currency-id> --app <app-id> --name "Gold gems"
+```
+
+Cung cấp ít nhất một trong các tùy chọn `--name`, `--description`, và `--clear-description`. Tùy chọn nào không được cung cấp sẽ giữ nguyên giá trị hiện tại: CLI sẽ đọc thông tin currency trước rồi gửi lại giá trị hiện có. `--clear-description` xóa phần mô tả. Không thể dùng đồng thời với `--description`.
+
+`update` không yêu cầu xác nhận, vì một lệnh update khác có thể hoàn tác thay đổi.
+
+## Thêm hoặc thay đổi ánh xạ \{#add-or-change-mappings\}
+
+```bash
+adapty virtual-currencies mappings upsert <currency-id> --app <app-id> --file mappings.json
+```
+
+Tệp có dạng như [tạo tệp](#create-a-currency), với 1 đến 200 mục. Một đơn vị tiền tệ có tối đa 200 mapping tổng cộng. Mỗi mục thay thế mapping của sản phẩm tương ứng, hoặc thêm mapping cho sản phẩm chưa có. Hãy cung cấp đầy đủ tất cả các trường của từng mục, kể cả `credit_on_trial_start` (`null` nếu không có). Adapty không merge một mục với mapping hiện tại: nếu một mục thiếu hoặc có trường không xác định, Adapty sẽ từ chối mục đó với mã thoát 4 và không có gì thay đổi. Mapping nào không được đề cập trong tệp sẽ giữ nguyên. `mappings upsert` không bao giờ xóa mapping.
+
+Trước khi gửi thay đổi, CLI đọc loại tiền tệ và hiển thị từng sản phẩm có thay đổi:
+
+- Mapping mới: `new` và số credits của nó.
+- Mapping đã thay đổi: số credits trước và sau, ví dụ `30 → 50` cho mỗi lần mua hoặc mỗi kỳ. Thay đổi của `expiring` hoặc `credit_on_trial_start` cũng hiển thị giá trị trước và sau. `product_type` của một mục phải khớp với loại sản phẩm của nó: Adapty sẽ từ chối mapping có `product_type` bị thay đổi, với mã thoát 4.
+
+## Xóa một mapping \{#remove-a-mapping\}
+
+```bash
+adapty virtual-currencies mappings delete <currency-id> --app <app-id> --product <product-id>
+```
+
+Sau khi xóa, các giao dịch mua sản phẩm sẽ không còn cấp credits của loại tiền này nữa, và Adapty sẽ không ghi lại bất kỳ transaction nào cho chúng. Những credits mà sản phẩm đã cấp trước đó vẫn được giữ nguyên trong số dư của người dùng. Nếu sản phẩm không có mapping nào, Adapty trả về lỗi 404 và exit code 4.
+
+## Đọc giao dịch tín dụng \{#read-credit-transactions\}
+
+Để đọc các giao dịch tín dụng của một ứng dụng, chạy lệnh:
+
+```bash
+adapty virtual-currencies transactions list --app <app-id> \
+  --date-from 2026-11-01 --date-to 2026-11-07 --timezone Europe/Berlin
+```
+
+Khoảng thời gian là bắt buộc, tối đa 366 ngày, bao gồm cả hai ngày đầu và cuối. Các ngày theo múi giờ `--timezone` (tên múi giờ IANA), hoặc theo múi giờ của ứng dụng nếu không chỉ định. Lọc giao dịch với `--currency-code`, `--operation`, `--feature`, và `--sandbox` hoặc `--no-sandbox`. Để xem các giá trị của operation, tham khảo [Operation](virtual-currencies#operation).
+
+Để xem giao dịch của một người dùng, hãy chỉ định người dùng bằng đúng một trong hai tùy chọn `--profile` (Adapty profile ID) hoặc `--customer-user-id` (ID người dùng của bạn):
+
+```bash
+adapty virtual-currencies profiles transactions list --app <app-id> --customer-user-id <user-id>
+```
+
+Khoảng thời gian giao dịch của người dùng là tùy chọn. Nếu không chỉ định, CLI sẽ đọc toàn bộ lịch sử của người dùng. Lệnh này dùng các bộ lọc tương tự và cũng hỗ trợ `--timezone`.
+
+Các giao dịch được hiển thị theo thứ tự mới nhất trước, mỗi lần chạy lệnh cho một trang. Mặc định mỗi trang có 20 giao dịch, và `--page-size` cho phép đặt từ 1 đến 100. Khi khoảng thời gian có nhiều giao dịch hơn, bảng sẽ kết thúc bằng `More rows:` kèm theo lệnh cho trang tiếp theo: các flag giống như trước và `--cursor` với cursor của trang hiện tại. Chạy trang tiếp theo với cùng khoảng thời gian, bộ lọc và múi giờ. Cursor dùng với bộ lọc khác sẽ báo lỗi `cursor_filters_mismatch`. Với `--json`, đầu ra là phản hồi của Adapty nguyên vẹn, gồm `data` và `meta`, và cursor nằm ở `meta.pagination.next_cursor`.
+
+CLI không có tùy chọn để đọc tất cả các trang. Để tải mọi giao dịch vào data warehouse của bạn, hãy sử dụng tính năng xuất dữ liệu hàng ngày sang [Amazon S3](s3-exports#virtual-currency-transactions) hoặc [Google Cloud Storage](google-cloud-storage#virtual-currency-transactions).
+
+:::note
+Để xem tổng số liệu và xu hướng, hãy dùng các biểu đồ tiền tệ ảo của [`adapty analytics`](developer-cli-analytics) thay vì cộng tổng các giao dịch. Để tìm tên các biểu đồ, chạy lệnh `adapty analytics catalog`. Một biểu đồ sẽ loại trừ những người dùng có giao dịch sandbox, còn danh sách giao dịch thì không. Vì vậy, tổng cộng từ danh sách giao dịch có thể khác với số liệu trên biểu đồ.
+:::
+
+## Đọc số dư của người dùng \{#read-the-balances-of-a-user\}
+
+```bash
+adapty virtual-currencies profiles balances get --app <app-id> --profile <profile-id>
+```
+
+Xác định người dùng bằng đúng một trong hai tham số `--profile` và `--customer-user-id`. Số dư hiển thị từng loại tiền tệ của người dùng với `balance` (tổng số dư), `held` (tín dụng đang giữ) và `available` (tín dụng khả dụng), cùng với phân tích hết hạn: các tín dụng không hết hạn, các tín dụng sắp hết hạn sớm nhất kèm thời điểm hết hạn, tổng các tín dụng hết hạn sau đó, và các tín dụng đã hết hạn.
+
+Để tìm hiểu lý do tại sao người dùng có số dư, hãy đọc các giao dịch của người dùng và số dư cùng nhau. Dashboard hiển thị dữ liệu tương tự trên [hồ sơ người dùng](virtual-currency-balance).
+
+## Bảo vệ trước các thay đổi bị mất \{#protection-against-lost-changes\}
+
+Ai đó có thể thay đổi currency trong dashboard, hoặc một agent khác có thể thay đổi nó, trong khoảng thời gian giữa lần bạn đọc và lần bạn ghi. Để giữ lại thay đổi đó, `mappings upsert` và `mappings delete` gửi `expected_updated_at` — tức là giá trị `updated_at` của currency mà bạn đã đọc. Nếu currency thay đổi sau lần đọc đó, Adapty sẽ từ chối thao tác ghi với lỗi `virtual_currency_conflict`, exit code 4, và không thay đổi gì cả. Hãy đọc lại currency và quyết định lại.
+
+| Cách lệnh chạy | `expected_updated_at` mà CLI gửi đi |
+|---|---|
+| Với `--yes` | Giá trị của `--expected-updated-at`. Nếu không có flag này, CLI không gửi gì và thoát với mã 6. |
+| Trong terminal, với `--expected-updated-at` | Giá trị của flag, sau khi bạn trả lời `y`. |
+| Trong terminal, không có `--expected-updated-at` | `updated_at` từ lần đọc của chính CLI, sau khi bạn trả lời `y`. |
+
+Một script đọc `updated_at` bằng `get --json` và truyền nó sau khi được phê duyệt:
+
+```bash
+updated_at=$(adapty virtual-currencies get <currency-id> --app <app-id> --json | jq .updated_at)
+# Show the change to the person who approves it. After their yes:
+adapty virtual-currencies mappings upsert <currency-id> --app <app-id> \
+  --file mappings.json --yes --expected-updated-at "$updated_at"
+```
+
+## Xác nhận trong script và agent \{#confirmation-in-scripts-and-agents\}
+
+Các lệnh này hiển thị hiệu ứng và yêu cầu phê duyệt trước khi gửi thay đổi:
+
+- `create`
+- `mappings upsert`
+- `mappings delete`
+
+Cách yêu cầu phê duyệt phụ thuộc vào cách lệnh được chạy:
+
+| Cách lệnh chạy | Điều gì xảy ra |
+|---|---|
+| Trong terminal, không có `--yes` và không có `--json` | CLI hiển thị kết quả dự kiến và hỏi `Apply? [y/N]`. Nếu bạn trả lời `y` hoặc `yes`, CLI sẽ gửi yêu cầu. Với bất kỳ câu trả lời nào khác, CLI thoát với mã 1 và không gửi gì. |
+| Với `--yes` | CLI gửi yêu cầu mà không hỏi. Các thao tác ghi mapping cũng cần [`--expected-updated-at`](#protection-against-lost-changes). |
+| Không có `--yes`, có `--json`, trong pipe, hoặc không có terminal | CLI không gửi gì và thoát với mã 6. Lỗi hiển thị kết quả dự kiến. |
+
+Một script đọc `updated_at` bằng `get --json`, hiển thị thay đổi, và chạy lệnh với `--yes --expected-updated-at` sau khi được chấp thuận. Một agent cũng có thể chạy lệnh mà không có `--yes` và hiển thị kết quả từ lỗi trả về.
+
+`list`, `get`, `update`, và các lệnh đọc giao dịch và số dư chạy mà không cần hỏi.
+
+## Lỗi \{#errors\}
+
+| Mã lỗi | Nguyên nhân | Cách xử lý |
+|---|---|---|
+| 1 | Bạn nhập câu trả lời khác `y` hoặc `yes` tại dấu nhắc. Không có gì được gửi. | Chạy lại lệnh nếu bạn muốn tiếp tục. |
+| 2 | CLI từ chối đầu vào trước khi gửi: một flag, file mappings không phải JSON list có ít nhất một phần tử, `update` không có thay đổi, `--description` dùng cùng `--clear-description`, hoặc có hoặc không có cả `--profile` lẫn `--customer-user-id`. | Sửa lỗi theo tên lỗi mô tả. |
+| 3 | Bạn chưa đăng nhập, hoặc Adapty từ chối quyền truy cập với HTTP status 403: app thuộc tài khoản khác, hoặc tài khoản của bạn chỉ đọc được app nhưng không sửa được. Với `--json`, lỗi trả về `status: 403`. | Đăng nhập bằng `adapty auth login` và tìm app ID trong `adapty apps list`. Nếu đọc được nhưng ghi không được, hãy liên hệ chủ tài khoản để được cấp quyền chỉnh sửa. |
+| 4 | Adapty từ chối yêu cầu. Lỗi kèm theo lý do, và `--json` trả về HTTP status cùng `error_code`. Lỗi server (5xx) khi ghi cũng trả về mã 4, và kết quả không xác định. | Xem [Thông báo từ Adapty](#messages-from-adapty). Sau lỗi server khi ghi, xem [Nếu lệnh ghi không nhận được phản hồi](#if-a-write-gets-no-answer). |
+| 5 | CLI không kết nối được với Adapty. | Kiểm tra kết nối mạng. Sau lệnh ghi, xem [Nếu lệnh ghi không nhận được phản hồi](#if-a-write-gets-no-answer). |
+| 6 | Lệnh cần xác nhận được chạy mà không có `--yes` và không có ai để xác nhận, hoặc lệnh ghi mappings chạy với `--yes` nhưng thiếu `--expected-updated-at`. Không có gì được gửi. | Hiển thị kết quả trong thông báo lỗi cho người có quyền phê duyệt thay đổi. Sau khi được phê duyệt, chạy lại lệnh theo hướng dẫn tại [Bảo vệ chống mất thay đổi](#protection-against-lost-changes). |
+| 130 | Bạn nhấn Ctrl+C tại dấu nhắc. Không có gì được gửi. | — |
+
+### Tin nhắn từ Adapty
+
+Với `--json`, lỗi trả về `error_code`:
+
+| `error_code` | Nguyên nhân | Cách xử lý |
+|---|---|---|
+| `virtual_currency_conflict` | Tiền tệ đã thay đổi sau lần đọc mà `updated_at` của thao tác ghi đã gửi. Không có gì thay đổi. | Đọc tiền tệ bằng `get`, rồi quyết định lại. |
+| `invalid_date_range` | Khoảng thời gian của `transactions list` dài hơn 366 ngày, hoặc khoảng thời gian của danh sách giao dịch kết thúc trước khi bắt đầu. | Dùng khoảng thời gian ngắn hơn, hoặc cung cấp `--date-from` không muộn hơn `--date-to`. |
+| `cursor_filters_mismatch` | Con trỏ thuộc về một trang có khoảng thời gian khác, bộ lọc khác, hoặc múi giờ khác. | Chạy trang tiếp theo với các cờ giống như trang đầu tiên. |
+| `invalid_cursor` | Giá trị của `--cursor` không phải là con trỏ từ Adapty. | Sao chép con trỏ từ dòng `More rows:`, hoặc từ `meta.pagination.next_cursor`. |
+| `profile_does_not_exist` | Ứng dụng không có người dùng nào với profile ID hoặc customer user ID này. Người dùng đã bị xóa không thể tìm thấy bằng customer user ID. | Kiểm tra lại xem ID có đúng không. Với người dùng đã xóa, hãy dùng `--profile`. |
+| `throttled` | Có hơn 2 lần gọi cùng một giao dịch hoặc đọc số dư trong một giây cho cùng một ứng dụng. | Chờ và chạy lại lệnh. CLI sẽ chờ và thử đọc lại tối đa 3 lần. |
+
+Adapty cũng từ chối loại tiền tệ thứ 21 trong một ứng dụng và mã mà ứng dụng đã sử dụng, với mã thoát 4.
+
+### Nếu một lần ghi không nhận được phản hồi \{#if-a-write-gets-no-answer\}
+
+Nếu CLI không nhận được phản hồi cho một lần ghi, do lỗi mạng hoặc lỗi máy chủ (mã thoát 4 hoặc 5), CLI không thể biết liệu Adapty đã lưu thay đổi hay chưa. CLI sẽ không gửi lại lần ghi đó. Trước khi chạy lại lệnh, hãy đọc dữ liệu mà Adapty đã lưu: sau `create`, chạy `list` và tìm mã đó. Sau bất kỳ lần ghi nào khác, hãy đọc currency bằng `get`. Lần ghi thứ hai có thể thất bại dù lần đầu đã thành công: với `virtual_currency_conflict`, với lỗi 404 cho một mapping đã bị xóa, hoặc với một mã đã được dùng sau khi tạo.
+
+## Tham chiếu lệnh \{#command-reference\}
+
+Mỗi lệnh đều nhận `--app`, là UUID của ứng dụng lấy từ `adapty apps list`. Các lệnh nhận `<currency-id>` sử dụng `virtual_currency_id` từ `list`.
+
+### `virtual-currencies list`
+
+| Flag | Required | Description |
+|---|---|---|
+| `--page` | Không | Số trang. Mặc định: 1. |
+| `--page-size` | Không | Số lượng tiền tệ mỗi trang, tối đa 100. Mặc định: 20. |
+
+### `virtual-currencies get`
+
+Nhận ID tiền tệ làm đối số. Trả về tiền tệ cùng với tất cả các ánh xạ của nó.
+
+### `virtual-currencies create`
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--code` | Có | Mã của loại tiền tệ. Không thể thay đổi sau này. |
+| `--name` | Có | Tên hiển thị. |
+| `--description` | Không | Mô tả. |
+| `--file` | Không | File JSON chứa các ánh xạ. Xem [Tạo loại tiền tệ](#create-a-currency). |
+| `--yes`, `-y` | Không | Tạo mà không cần xác nhận. Bắt buộc khi dùng `--json` hoặc trong pipe. |
+
+### `virtual-currencies update`
+
+Nhận ID tiền tệ làm đối số.
+
+| Flag | Required | Description |
+|---|---|---|
+| `--name` | No | Tên hiển thị mới. |
+| `--description` | No | Mô tả mới. |
+| `--clear-description` | No | Xóa mô tả. |
+
+### `virtual-currencies mappings upsert`
+
+Nhận ID tiền tệ làm đối số.
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--file` | Có | File JSON chứa từ 1 đến 200 mapping đầy đủ. Xem [Thêm hoặc thay đổi mapping](#add-or-change-mappings). |
+| `--expected-updated-at` | Khi dùng `--yes` | Giá trị `updated_at` của lần đọc mà thay đổi này dựa vào. |
+| `--yes`, `-y` | Không | Thay đổi mà không hỏi xác nhận. Bắt buộc khi dùng `--json` hoặc trong pipe. |
+
+### `virtual-currencies mappings delete`
+
+Nhận ID tiền tệ làm đối số.
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--product` | Có | ID sản phẩm Adapty của mapping cần xóa. |
+| `--expected-updated-at` | Với `--yes` | Giá trị `updated_at` của lần đọc mà thay đổi này dựa trên. |
+| `--yes`, `-y` | Không | Xóa mà không cần xác nhận. Bắt buộc khi dùng với `--json` hoặc trong pipe. |
+
+### `virtual-currencies transactions list`
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--date-from`, `--date-to` | Có | Ngày đầu và ngày cuối, `YYYY-MM-DD`, tối đa 366 ngày. |
+| `--timezone` | Không | Múi giờ IANA của các ngày. Mặc định: múi giờ của ứng dụng. |
+| `--currency-code` | Không | Chỉ các giao dịch theo đơn vị tiền tệ này. |
+| `--operation` | Không | Chỉ các giao dịch với operation này. |
+| `--feature` | Không | Chỉ các giao dịch với feature này. |
+| `--sandbox`, `--no-sandbox` | Không | `--sandbox` chỉ lấy giao dịch sandbox, `--no-sandbox` chỉ lấy giao dịch production. Mặc định: cả hai. |
+| `--page-size` | Không | Số giao dịch mỗi trang, từ 1 đến 100. Mặc định: 20. |
+| `--cursor` | Không | Con trỏ của trang tiếp theo, lấy từ trang trước. |
+
+### `virtual-currencies profiles transactions list`
+
+Nhận đúng một trong hai `--profile` và `--customer-user-id`, cùng với các flag của `transactions list`. Khoảng thời gian là tùy chọn.
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--profile` | Một trong hai | ID hồ sơ người dùng Adapty của người dùng. |
+| `--customer-user-id` | Một trong hai | ID của bạn cho người dùng. |
+
+### `virtual-currencies profiles balances get`
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--profile` | Một trong hai | ID hồ sơ người dùng Adapty của người dùng. |
+| `--customer-user-id` | Một trong hai | ID của bạn cho người dùng. |
+
+## Làm việc từ trợ lý AI \{#work-from-an-ai-assistant\}
+
+[Adapty MCP server](adapty-mcp) cung cấp các hành động tương tự như các công cụ `virtual_currencies_*`, ví dụ `virtual_currencies_mappings_upsert` cho `mappings upsert`. Các công cụ hoạt động theo cùng cách với các lệnh, với những điểm khác biệt sau:
+
+- **Bảo vệ chống mất thay đổi**: `virtual_currencies_update`, `virtual_currencies_mappings_upsert` và `virtual_currencies_mappings_delete` yêu cầu `expected_updated_at`, tức là `updated_at` của lần đọc. Sau lỗi `virtual_currency_conflict`, assistant sẽ đọc lại currency đó.
+- **Mô tả**: Trong `virtual_currencies_update`, nếu `description` trống thì mô tả sẽ bị xóa.
+- **Phân trang**: Khi `meta.pagination.has_more` là true, assistant sẽ gửi `meta.pagination.next_cursor` vào `cursor`, cùng với các filter và múi giờ như cũ, để lấy trang tiếp theo.
+- **Phê duyệt**: Các tool không yêu cầu phê duyệt và không có `--yes`. Trước khi thực hiện `virtual_currencies_create`, `virtual_currencies_mappings_upsert` và `virtual_currencies_mappings_delete`, assistant sẽ hiển thị thay đổi và chờ bạn xác nhận.
+- **Throttling**: Sau lỗi `throttled`, các tool sẽ không thử đọc lại. Thông báo lỗi sẽ cho biết cần chờ bao lâu.
+
+## Tiếp theo là gì \{#whats-next\}
+
+- [Agent skill cho tiền tệ ảo](virtual-currencies-skill) — để agent thiết lập tiền tệ và giải thích số dư của người dùng, với sự đồng ý của bạn trước mỗi thay đổi.
+- [Tạo tiền tệ ảo](create-virtual-currency) — thiết lập tương tự trên dashboard.
+- [Số dư tiền tệ ảo](virtual-currency-balance) — số dư và lịch sử thay đổi của người dùng trên dashboard.
