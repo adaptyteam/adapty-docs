@@ -14,9 +14,9 @@ Las reglas asumen que `Adapty.activate()` y `Adapty.identify()` ya se han resuel
 
 | Haz esto | No hagas esto | Por qué |
 |---|---|---|
-| Obtén el placement que vas a mostrar, o precalienta la caché con [`preloadFlows`](#preload-placements) (SDK 4.1+). | Lanza tus propias llamadas concurrentes a `getFlow` al iniciar. | Un burst de prefetch manual bloquea el hilo principal y produce una pantalla en negro. `preloadFlows` está diseñado para esto y ejecuta el lote de forma concurrente. |
-| Llama a `getFlow` después de que la atribución haya tenido tiempo de resolverse — por ejemplo, 1–2 segundos después de `activate` o tras el disparo de `setOnProfileUpdatedListener`. | Llama a `getFlow` en `Application.onCreate()`. | La atribución aún no ha llegado. El flow se resuelve contra la audiencia por defecto y omite silenciosamente los segmentos y la personalización de ASA. |
-| Configura un `loadTimeout` y un [paywall de respaldo](fallback-paywalls) para cada placement. | Esperes a `getFlow` indefinidamente. | Sin un timeout, los usuarios con mala conectividad ven una pantalla en blanco hasta que la red responde — o cierran la app. |
+| Obtén el placement que vas a mostrar, o precalienta la caché con [`preloadFlows`](#preload-placements) (SDK 4.1+). | Lanza tus propias llamadas concurrentes a `getFlow` al iniciar. | Un prefetch manual bloquea el hilo principal y produce una pantalla en negro. `preloadFlows` está diseñado para esto y ejecuta el lote de forma concurrente. |
+| Llama a `getFlow` después de que la atribución haya tenido tiempo de resolverse — por ejemplo, 1–2 segundos después de `activate` o tras que se dispare `setOnProfileUpdatedListener`. | Llamar a `getFlow` en `Application.onCreate()`. | La atribución aún no ha llegado. El flow se resuelve con la audiencia predeterminada y omite silenciosamente los segmentos y la personalización de ASA. |
+| Mantén el `loadTimeout` predeterminado de 5 segundos o establece otro valor, y configura un [paywall de respaldo](fallback-paywalls) para cada placement. | Pasa a `getFlow` un `loadTimeout` tan grande que nunca se dispare. | Si el timeout nunca se dispara, los usuarios con mala conectividad ven una pantalla en blanco hasta que la red responde — o cierran la app. |
 
 Consulta [Obtener paywalls y productos personalizados](fetch-paywalls-and-products-android) para la referencia de los parámetros `fetchPolicy` y `loadTimeout`, y [Placements](placements) para elegir el placement adecuado.
 
@@ -91,18 +91,26 @@ Adapty.getFlow("main_paywall", AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoa
 - Si un placement supera el tiempo de espera, encuentra un error de servidor o falla por un error de red, el SDK recurre a las variaciones de respaldo para ese placement. Los demás fallos se informan tal cual.
 - La precarga solo calienta la caché. No devuelve contenido: igualmente debes llamar a `getFlow` para mostrarlo.
 
-### Qué cubre una precarga \{#what-a-preload-covers\}
+### Lo que cubre una precarga \{#what-a-preload-covers\}
 
 Un flow llega a la pantalla en capas. Una precarga cubre la primera, exactamente igual que `getFlow`:
 
-| Capa | Obtenida por | Preparada por una precarga |
+| Capa | Obtenida por | Calentada por una precarga |
 |---|---|---|
 | JSON del flow — la variación elegida, sus IDs de producto y el Remote Config | `getFlow` | Sí |
-| Diseño de interfaz — estructura, estilos y textos de la pantalla | `getFlowConfiguration` | No |
+| Diseño de UI — la estructura, el estilo y el texto de la pantalla | `getFlowConfiguration` | No |
 | Imágenes, incluido el fotograma estático que reemplaza a un elemento de vídeo | `getFlowConfiguration`, en segundo plano | No |
-| Archivos de vídeo | El reproductor del sistema, al renderizar la pantalla | No almacenado en caché por el SDK |
+| Archivos de vídeo | ExoPlayer, mientras se renderiza la pantalla | No. El SDK almacena en caché hasta 50 MB de vídeo reproducido |
 
-`getFlowConfiguration` espera el layout, por lo que la primera solicitud de un layout determinado implica un viaje de ida y vuelta a la red, incluso después de una precarga. El SDK guarda ese layout en su propio caché de disco, que sobrevive a los reinicios de la app y se lee antes de cualquier llamada a la red, de modo que el coste recae en la primera solicitud y no en cada una. Una vez que el SDK tiene el layout, comienza a cachear las imágenes de forma independiente a la llamada: no bloquea la pantalla, y no hay ningún callback ni error que informe de cuándo termina.
+`getFlowConfiguration` busca el layout en tres lugares, en este orden:
+
+1. La caché en disco del SDK, que sobrevive a los reinicios de la app.
+2. Tu [archivo de respaldo](android-use-fallback-paywalls) para SDK 4.4 o posterior, si lo descargaste después de publicar el flow por última vez.
+3. Adapty, a través de la red. Esto implica un viaje de ida y vuelta, incluso después de una precarga. La primera vez que la app muestra cada versión publicada del flow, el SDK realiza esta solicitud. Después guarda el layout en la caché en disco.
+
+Una vez que el SDK tiene el layout, empieza a cachear las imágenes de forma independiente a la llamada: no bloquea la pantalla y no hay ningún callback ni error que indique cuándo termina.
+
+Cuando se agota el `loadTimeout` de `getFlowConfiguration`, el SDK no recurre al respaldo: vuelve a solicitar el layout a la API de Adapty. El `loadTimeout` no limita esa segunda solicitud.
 
 ### Identificar qué placement falló \{#find-out-which-placement-failed\}
 
@@ -159,17 +167,20 @@ val flowView = AdaptyUI.getFlowView(
 )
 ```
 
-Los archivos incluidos en el paquete aumentan el tamaño de descarga de tu app, así que incluye solo los archivos multimedia que el usuario ve primero.
+Los archivos incluidos en el bundle aumentan el tamaño de descarga de tu app, así que incluye solo los medios que el usuario ve al principio.
 
-Los archivos multimedia que no incluyas en el paquete seguirán apareciendo de inmediato: la configuración de la vista lleva una copia de baja resolución de cada imagen, incluido el fotograma estático de los vídeos, y la muestra hasta que se cargue el archivo completo.
+Una imagen incluida en el bundle aparece sin espera, pero el SDK igualmente descarga la imagen subida en segundo plano.
 
-Para la referencia completa de `customAssets`, consulta [Personalizar recursos](android-get-pb-paywalls#customize-assets).
+Los medios que no incluyas en el bundle también aparecen de inmediato: la configuración de la vista lleva una copia pequeña de baja resolución de cada imagen, incluyendo el fotograma estático de un vídeo, y la muestra hasta que se cargue el archivo completo.
+
+Para la referencia completa de `customAssets`, consulta [Personalizar assets](android-get-pb-paywalls#customize-assets).
 
 ## Ajusta para conectividad deficiente \{#tune-for-poor-connectivity\}
 
-Para mercados con conectividad consistentemente deficiente (zonas rurales, transporte público, regiones con problemas de enrutamiento):
+Para mercados con conectividad deficiente de forma habitual (zonas rurales, transporte público, regiones con problemas de enrutamiento):
 
 - Establece `fetchPolicy` en `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` en cada solicitud excepto la primera.
 - Configura un [paywall de respaldo](fallback-paywalls) para cada placement en el Adapty Dashboard.
-- Establece `loadTimeout` entre 3 y 5 segundos y acepta el respaldo cuando se agote el tiempo.
-- No condicionales la visualización del flow a `getProfile`. Llama a `getFlow` de forma independiente para que un perfil lento no bloquee la interfaz.
+- Equilibra `loadTimeout` entre velocidad y precisión de targeting. Con un timeout más corto, los usuarios ven el respaldo antes. Con un timeout más largo, el flow con targeting tiene más tiempo para cargarse.
+- [Mantén el flow ligero](flow-size), para que su diseño se descargue antes.
+- No condicionar la visualización del flow a `getProfile`. Llama a `getFlow` de forma independiente para que un perfil lento no bloquee la interfaz.
