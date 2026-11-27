@@ -1,10 +1,10 @@
 ---
 title: "Flows commands"
-description: "Adapty CLI commands that create flows, read and write their builder configs, validate and preview them, upload media and custom fonts, publish them, list and restore their versions, duplicate them, and read their metrics and screen funnel."
+description: "Adapty CLI commands that create flows, read and write their builder configs, validate and preview them, upload media and custom fonts, publish them, list and restore their versions, duplicate them, copy them to another app, and read their metrics and screen funnel."
 metadataTitle: "Flows CLI Commands | Adapty Docs"
 ---
 
-[Flows](adapty-flow-builder) are the paywalls and onboardings you build in the Flow & Paywall Builder. The CLI manages the flow record, its builder config, publication, and the [version history](flow-version-history). A builder config is a large JSON document that the Flow & Paywall Builder normally produces, and the CLI doesn't generate one. To author or edit a config from the terminal, use the [flow-generator skill](flow-generator-skill), which drives these commands for you. Before publishing, the [flow-audit skill](flow-audit-skill) checks whether the flow is ready for production. The [`fonts` commands](#custom-fonts) upload and manage the custom fonts that flows use, and need CLI version 0.33.0 or later. The `flows metrics` commands read the numbers of the [flow metrics](flow-metrics) page and need CLI version 0.15.0 or later. The `flows funnel` commands read the [flow funnel](flow-funnel) and need CLI version 0.19.0 or later. The commands are listed here as a reference.
+[Flows](adapty-flow-builder) are the paywalls and onboardings you build in the Flow & Paywall Builder. The CLI manages the flow record, its builder config, publication, and the [version history](flow-version-history). A builder config is a large JSON document that the Flow & Paywall Builder normally produces, and the CLI doesn't generate one. To author or edit a config from the terminal, use the [flow-generator skill](flow-generator-skill), which drives these commands for you. Before publishing, the [flow-audit skill](flow-audit-skill) checks whether the flow is ready for production. The [`fonts` commands](#custom-fonts) upload and manage the custom fonts that flows use, and need CLI version 0.33.0 or later. The [`flows copy`](#adapty-flows-copy) command copies a flow to another app of the same account and needs CLI version 0.34.0 or later. The `flows metrics` commands read the numbers of the [flow metrics](flow-metrics) page and need CLI version 0.15.0 or later. The `flows funnel` commands read the [flow funnel](flow-funnel) and need CLI version 0.19.0 or later. The commands are listed here as a reference.
 
 ## adapty flows list
 
@@ -649,6 +649,50 @@ adapty flows duplicate --app <app-id> <flow-id> --version <version-id>
 The command prints `New flow '<name>' (<flow-id>), not published.` The new flow is named after the source flow with `_copy` at the end. It isn't published, and it has one draft with the content of the version. The source flow, its draft, and its history stay as they are. You can duplicate a flow while it's being published.
 
 Adapty refuses to copy a version that uses a deleted product, and to copy an archived flow. The messages are the same as for [`flows versions restore`](#adapty-flows-versions-restore).
+
+## adapty flows copy
+
+Copy a flow to another app of the same account. This is **Duplicate to another app** in the dashboard (see [Copy a flow to another app](copy-flows#copy-a-flow-to-another-app)). The `flows copy` command needs CLI version 0.34.0 or later. To see your version, run `adapty --version`.
+
+```bash
+adapty flows copy --app <app-id> <flow-id> --to-app <target-app-id>
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | Flow ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | ID (UUID) of the app that has the flow |
+| `--to-app` | Yes | ID (UUID) of the app to copy the flow to: another app of the same account that you can access |
+
+The command copies the draft, or the live version when the flow has no draft. It has no `--version` flag. To copy an earlier version, duplicate it first with [`flows duplicate --version`](#adapty-flows-duplicate), then copy the new flow.
+
+The copy is a new flow in the target app, with the same name as the source flow and one unpublished draft. Each run makes one more flow. The source flow and its app don't change. Adapty removes the products from the copy. The copy uses the fonts of the target app that have the same names as the fonts of the flow, and Adapty adds the fonts that the target app doesn't have. For the full list of what goes into the copy, see [Copy a flow to another app](copy-flows#what-goes-into-the-copy).
+
+The command prints `New flow '<name>' (<flow-id>) in app <target-app-id>, not published.` When the checklist has entries, it then prints `Check before you publish:` and one line for each entry, as `- <kind>: <message>`. With `--json`, the response contains `flow_id`, `name`, `target_app_id`, and `checklist`, a list of entries with `kind` and `message`:
+
+| Kind | Meaning |
+|---|---|
+| `products_removed` | Adapty removed products from the copy, and the message names them. Add the products of the target app to the copy before you publish it |
+| `font_replaced` | The font conflicts with a font of the target app that has the same name or uses the same iOS or Android font name, so the copy shows the system font in its place. Upload the font or select another one |
+| `font_not_in_source_app` | The font doesn't belong to the source app, so the copy shows the system font in its place. Select another font |
+| `font_import_failed` | Adapty couldn't add the font to the target app, so the copy shows the system font in its place. Upload the font or select another one |
+| `fonts_to_bundle` | The copy uses custom fonts. Add the font files to the bundle of the target app, and test the flow on a device |
+
+To learn which fonts conflict, see [Custom fonts in the copy](copy-flows#custom-fonts-in-the-copy).
+
+A flow with no products and only system fonts gets an empty checklist.
+
+Adapty refuses the copy and adds nothing to the target app in these cases. The command prints Adapty's message and exits with code 4:
+
+| Message | What to do |
+|---|---|
+| `The target app is not available.` | The target app doesn't exist, you can't access it, or it belongs to another account. Get the ID from [`apps list`](developer-cli-apps#adapty-apps-list). |
+| `Choose another app. To copy a flow inside this app, use Duplicate.` | `--to-app` is the same as `--app`. To copy a flow in the same app, use [`flows duplicate`](#adapty-flows-duplicate). |
+
+Adapty also refuses to copy an archived flow, a flow that isn't in the source app (`--app`), and a flow that has no version. The command then prints Adapty's message and exits with code 4. Without `--to-app`, or with an ID that isn't a UUID, the command exits with code 2 and sends no request.
 
 ## adapty flows metrics list
 
