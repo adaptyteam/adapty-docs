@@ -106,11 +106,31 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
   `sdk-flows-manual` and their own sources (`jscore`, `ios-sdk`, etc. in `sources.md`) — don't correct or
   extend them from inside a flow-logic article.
 - **What the in-dashboard preview can resolve is decided by the dashboard, not by the builder.** The
-  dashboard passes the builder exactly six product fields: `id`, `title`, `access_level`, `price` (the
-  USD price), `price_per_day`, `billing_period` — and no offer fields at all. Check that before writing
-  any claim about what a preview shows: the builder's product variables can only resolve what the
-  dashboard sent, and a field's *absence* is why a variable renders as a token (dashboard code,
-  2026-08-24).
+  builder's product variables can only resolve what the dashboard sent, and a field's *absence* is why a
+  variable renders as a token. Updated 2026-11-27 (dashboard code): the product mapping now also has
+  slots for the offer-type flags, the `offer_*` values, and the `intro_*` fields below, but it reads them
+  from keys (`subscription.offer.phases`, `offerPrice`, `isFreeTrial`) that the typed dashboard product
+  doesn't declare. Unless the product list returns those keys, which is unverified, offer and intro
+  values still render as tokens and the flags still come only from **Preview as**. The docs keep saying
+  offer values stay unresolved in the preview; confirm in the UI before changing that.
+- **Intro price fields (2026-11-27, builder and transformer code).** `intro_price`,
+  `intro_billing_period`, `intro_full_duration` (strings) and `has_intro_price` (boolean, conditions
+  only; in text it is a publish error like the other booleans) read the first *paid* phase
+  (pay-as-you-go or pay-up-front) of the offer, where `offer_*` read the first phase. They exist for a
+  Google Play offer with a free trial and then a paid phase. Empty / `false` when no paid phase exists:
+  a trial-only offer, any iOS free trial (StoreKit offers have one phase), and a trial + intro Google
+  Play offer on an Android SDK older than 4.4.2, which sends the first phase only. Guard the intro line
+  with `has_intro_price`. Which cross-platform SDK versions bundle native Android 4.4.2 is open as of
+  2026-11-27.
+- **There is no `Offer required` publish issue (2026-11-27, builder code).** An `offer_*` or `intro_*`
+  variable on a product without an offer publishes; the SDK resolves eligibility and the value is empty
+  when the user has no offer. The issue went away with the per-screen product registry (2026-09-17).
+  Checked: the builder's publish-issue title list, a case-insensitive search for
+  `offer[-_ ]?required` in the builder, dashboard and transformer sources (titles can also be generated
+  from an issue code, so the code form was searched too). Removed from `onboarding-variables`,
+  `flow-common-issues` and `paywall-product-block` on 2026-11-27 — don't reintroduce it.
+- **Formulas can read `offer_price` but no `intro_*` field** (2026-11-27, builder code: the formula
+  operand list is the price fields plus `offer_price`).
 - **The per-screen product registry (flow schema v12)** — panel behaviour, menu items, toasts, dialog
   labels, and the publish-blocking issues with their exact titles. `paywall-product-block` and
   `flow-common-issues` quote those titles verbatim — verify against the builder UI, not against a
@@ -257,6 +277,7 @@ or developer can see and click.
 | flow-metrics | — | marketer, dev | 25 | tutorial |
 | flow-screen-transitions | — | marketer, dev | 3 | tutorial |
 | flow-show-hide-animations | — | marketer, dev | 6 | tutorial |
+| flow-size | — | marketer, dev | 8 | tutorial |
 | flows-and-paywalls | entry | marketer, dev | 2 | tutorial |
 | import-from-figma | how-to | marketer, dev | 12 | tutorial |
 | migrate-to-flows | migration | marketer, dev | 8 | tutorial |
@@ -521,6 +542,7 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
 | "should we switch to flows", "combine onboarding and paywall", "keep the old paywall live during rollout", "`getFlow` vs `getPaywall`", "A/B test a flow" | `migrate-to-flows` for the decision, the comparison table, and the rollout sequence. Running the A/B test is not this zone — that's `ab-tests` (and `placements-and-audiences` for how a published flow goes live at all); the SDK call itself is `sdk-flows-display`. |
 | "Set variable doesn't switch the plan", "the toggle doesn't change the selected product", "how do I assign `products.selectedProduct`" | `flow-common-issues#a-set-variable-action-doesnt-change-the-selected-product`; the mechanics are `onboarding-actions#select-product`. **The trap, which caught an agent on 2026-08-13:** the tempting explanation is "product variables are read-only", and it conflates two unrelated things. Product *variables* (`prod_price`, `offer_price`) are store-sourced display values (`onboarding-variables.mdx:52-54`), but which product is *selected* is not a variable at all — so there is nothing to assign, and variable mutability is the wrong frame entirely. Answer with **Select product**. |
 | "can't upload the image/video", "upload fails", "my logo is an SVG", "the GIF doesn't animate" | The reader-facing entry is `flow-common-issues#an-image-or-video-wont-upload`, but the limits themselves are owned by `flow-design`'s `custom-media` (Image and Video sections). Cross-zone by construction: when a format, size or duration limit changes, edit `custom-media` first and mirror it here — the troubleshooting page restates those numbers rather than sourcing them. |
+| "the flow loads slowly", "the flow is too heavy", "Large config", "Large flow", "reduce the flow size", "how big is my flow" | `flow-size`. Before the first screen, the app downloads the flow's layout: every screen, the text content of every locale, a small base64 preview of each image, and the icons. It does so once per device for each published version; full-size images and videos load later, by URL. Previews usually carry the weight: one per Image element, one per element or screen with its own background image, one per color style, and one more per locale with its own file (builder and backend code, 2026-11-23). How to see the size is in flux: today the builder shows a gray "Large config" icon next to the flow name only above 1 MB of the published version; an Issues panel with a "Flow size" line and a warning above 500 KB of Android download is coming, and the article keeps that text in MDX comments until it ships. Nothing reports the size of a light flow before that: no CLI command, no API field. The flow-generator skill names what is heavy before a save or publish. |
 | "import from Figma", "the designer already built it", "turn our mockups into a flow", "the plugin won't run", "my import link expired", "the imported screen has no products", "the screens came in the wrong order", "the font says Select font", "my illustration is missing" | `import-from-figma`. Three traps (re-measured 2026-09-08 against two real imports read back with `adapty flows config get`). (1) The plugin is a Community plugin now, so "it doesn't appear in Figma" is a view-only file or an unsaved plugin, not the browser. (2) An import wires more than it looks: buttons get Navigate to screen actions to the *next screen in Layers-panel order*, quiz options become selectable groups with element IDs, text fields and date pickers become inputs, and pricing cards become a product-type group plus Purchase actions against placeholder product slots (`figma_import_*`). So "the buy button does nothing" is a products question (slots exist, no store product behind them), and "screens are out of order / every button opens the wrong screen" is one defect — layer order, not canvas order. (3) Missing illustrations have three known causes: a video fill, a hidden layer, or an image inside a boolean group; the chart case (auto-layout frames with solid fills) vanished for an unknown reason. Route all of these to that article's `Import limitations`, not to `paywall-product-block`. |
 | "thank-you screen after purchase", "continue the onboarding after the paywall", "the flow closes after a purchase", "the next screen opens before the purchase finishes", "show an alert when the purchase fails", "welcome-back screen after restore" | `respond-to-purchase-outcomes` for setup; `flow-common-issues#the-flow-doesnt-run-the-actions-set-for-a-purchase-result` when outcomes don't run. The usual cause of "the flow closes after a purchase" is app code that closes the flow in its purchase callback, not the flow. "Opens before the purchase finishes" is a navigation placed after **Purchase** in the same trigger. |
 | "buy button does nothing on Android", "first tap on Purchase is ignored" | `flow-common-issues#a-purchase-button-does-nothing-on-android` when the product exists: Google Play hasn't returned it yet. An unassigned product is still `paywall-product-block`. |
@@ -653,6 +675,23 @@ needed in place.
   page). `flow-custom-tags` (the BMI use case and the BMI example in the `<platform>-flow-custom-tags` guides) still
   calculates a BMI in app code and passes it through a custom tag; that stays valid, but a formula now does it in
   the flow.
+- **Formulas, second round (2026-11-25, builder and transformer code before release).** The **Expression** field
+  is a code editor: references show as chips (**Weekly · prod_price** for a product), typing `{{` opens hints that
+  fit the cursor, and **Insert variable** has four tabs: **Functions**, **Elements**, **Products**, **Custom**. A
+  formula reads the price and `prod_price_per_day|week|month|year` of any catalog product, and the per-period prices
+  of the selected product. The builder adds a read catalog product to the end of the list of products of each screen
+  that reads the formula (texts and conditions, through other formulas, and on the host screens of a reusable
+  component), with no offer; it never removes the entry. A per-period price uses the text table (a month is 30 days,
+  30/7 weeks), the same as the price variables in `onboarding-variables`; the builder preview takes the period from
+  the product's **Subscription duration**, so a product without one has no preview value. New functions
+  `daysBetween`, `weeksBetween`, `monthsBetween`, `yearsBetween` give a Number (whole units, negative when `end` is
+  earlier). Date variables and Date formulas gained **Is empty** / **Is not empty** in conditions. All of it is in
+  `flow-formulas`.
+  **Ripple:** a flow from the CLI or the API whose read formula names a catalog product that no screen lists without
+  an offer fails to publish with `formula_undeclared_product`; `flow-common-issues` has its row (the builder adds the
+  entry itself, so builder users don't see it). Open: the screenshots of the new editor are not captured yet. The shipped `flow-generator` skill learns the
+  same language in its own change. The `flow-formula-create.webp` screenshot shows the plain text field of the
+  first release.
 - **Navigate Next follows screen order, not answers.** It opens the next screen in the flow's order whatever users
   picked, so a branch to one of two parallel screens needs **Navigate to Screen** on both to rejoin.
 - **What sends input values.** Navigation actions (**Navigate to Screen**, **Navigate Next**, **Navigate back**),

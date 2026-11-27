@@ -81,16 +81,20 @@ Product variables pull localized data directly from the app stores. Use them in 
 | `offer_billing_period` | Localized billing period of an offer. Same as `offer_full_duration` for trial and pay-upfront offers. Empty if the user is not eligible. | 1 week |
 | `offer_full_duration` | Localized full duration of an offer. Empty if the user is not eligible. | 1 month |
 | `offer_price_per_day`, `offer_price_per_week`, `offer_price_per_month`, `offer_price_per_year` | Offer price converted to one day, week, month, or year. A pay-up-front offer's price is spread over its full duration, and a free trial returns a zero price. Empty if the user is not eligible. | $4.24 (`offer_price_per_month`) |
+| `intro_price` | Localized price of the first paid phase of an offer. Differs from `offer_price` only for an offer that starts with a free trial. Empty if the offer has no paid phase. See [Free trial followed by an intro price](#free-trial-followed-by-an-intro-price). | $2.99 |
+| `intro_billing_period` | Localized billing period of the first paid phase of an offer. Empty if the offer has no paid phase. | 1 month |
+| `intro_full_duration` | Localized full duration of the first paid phase of an offer. Empty if the offer has no paid phase. | 3 months |
 | `is_free_trial` | Returns `true` if the user is eligible for an offer with a free trial. | true |
 | `is_pay_up_front` | Returns `true` if the user is eligible for a pay-up-front offer. | true |
 | `is_pay_as_you_go` | Returns `true` if the user is eligible for a pay-as-you-go offer. | true |
+| `has_intro_price` | Returns `true` if the user is eligible for an offer with a paid phase: a pay-as-you-go or pay-up-front price. | true |
 | `is_monthly_plan` | Returns `true` if the user buys the product under the 12-month commitment plan. | true |
 
 The `prod_price_per_*` variables convert the price from the product's billing period into the period you ask for. The conversion uses fixed period lengths, not calendar dates:
 
 - 1 week = 7 days
 - 1 month = 30 days
-- 1 year = 12 months, or 365 days
+- 1 year = 12 months, 52 weeks, or 365 days
 
 For a $59.99 monthly subscription, `prod_price_per_week` returns $14.00: $59.99 × 7 ÷ 30 = $13.9977, rounded for display. A month is 30 / 7 ≈ 4.2857 weeks, so multiplying the weekly value by 4 doesn't return the original price.
 
@@ -114,12 +118,34 @@ In this example, `prod_title` returns "Premium Subscription" and `prod_price` re
 
 For Pay Upfront and Free Trial offers, `offer_billing_period` and `offer_full_duration` return the same value. For Pay As You Go, they differ because the billing period is one week but the full duration is three weeks.
 
-`offer_price`, `offer_billing_period`, and `offer_full_duration` require a product with an offer. Without one, the flow [doesn't publish](flow-common-issues#a-flow-wont-preview-or-publish).
-
-All of these values come from the store, so the builder preview resolves only some of them: offer values stay unresolved on the canvas, and `is_free_trial`, `is_pay_up_front`, and `is_pay_as_you_go` follow the offer you selected on the product card. See [Preview products and offers](paywall-device-compatibility-preview#preview-products-and-offers) to preview each offer type while you build.
+All of these values come from the store, so the builder preview resolves only some of them: offer values stay unresolved on the canvas, and `is_free_trial`, `is_pay_up_front`, `is_pay_as_you_go`, and `has_intro_price` follow the offer you selected on the product card. See [Preview products and offers](paywall-device-compatibility-preview#preview-products-and-offers) to preview each offer type while you build.
 
 :::note
 To learn more about offers and how to configure them, see [Offers](offers).
+:::
+
+### Free trial followed by an intro price
+
+A [Google Play offer](google-play-offers) can have two phases: a free trial, and then a discounted price. The `offer_*` variables read the first phase of the offer, so for this offer they describe the free trial. The `intro_*` variables read the first paid phase, so they describe the discounted price.
+
+For example, take a $9.99 monthly subscription with a Google Play offer: the first week free, then $2.99/month for 3 months. For a user eligible for this offer, the variables return:
+
+| Variable | Value |
+| :--- | :--- |
+| `offer_price` | $0 |
+| `offer_full_duration` | 1 week |
+| `intro_price` | $2.99 |
+| `intro_billing_period` | 1 month |
+| `intro_full_duration` | 3 months |
+| `is_free_trial` | `true` |
+| `has_intro_price` | `true` |
+
+An App Store offer has one phase. For a paid App Store offer, the `intro_*` variables return the same values as the `offer_*` variables. For an App Store free trial, the `intro_*` variables are empty and `has_intro_price` is `false`.
+
+To show the discounted price only to users who get it, put the text with the `intro_*` variables in an element that is [visible](onboarding-element-visibility) only when `has_intro_price` is `true`. Users without a paid phase in their offer then don't see a sentence with empty values.
+
+:::important
+For a Google Play offer that starts with a free trial, the `intro_*` variables require Adapty Android SDK v4.4.2 or later, React Native SDK v4.4.0 or later, or Flutter SDK v4.4.1 or later. Other SDK versions pass only the first phase of the offer to the flow, so the `intro_*` variables are empty and `has_intro_price` is `false`. An offer without a free trial has one paid phase, and the `intro_*` variables return its values on every SDK version.
 :::
 
 ### 12-month commitment plan

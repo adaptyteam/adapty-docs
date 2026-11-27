@@ -423,4 +423,7 @@ async function main() {
     console.log('\nPlatform-specific llms-full.txt generation complete!');
 }
 
-main().catch(console.error);
+main().catch((err) => {
+    console.error(err);
+    process.exit(1); // fail the build instead of shipping a partial export
+});

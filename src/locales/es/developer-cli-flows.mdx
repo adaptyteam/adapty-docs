@@ -1,10 +1,10 @@
 ---
 title: "Comandos de flows"
-description: "Comandos de la CLI de Adapty que crean flows, leen y escriben sus configuraciones de builder, los validan y previsualizan, suben medios, los publican, listan y restauran sus versiones, los duplican, y leen sus métricas y embudo de pantallas."
+description: "Comandos de la CLI de Adapty que crean flows, leen y escriben sus configuraciones del builder, los validan y previsualizan, suben archivos multimedia y fuentes personalizadas, los publican, listan y restauran sus versiones, los duplican, y leen sus métricas y embudo de pantallas."
 metadataTitle: "Comandos de Flows en la CLI | Documentación de Adapty"
 ---
 
-Los [flows](adapty-flow-builder) son los paywalls y onboardings que creas en el Flow & Paywall Builder. La CLI gestiona el registro del flow, su configuración del builder, la publicación y el [historial de versiones](flow-version-history). Una configuración del builder es un documento JSON de gran tamaño que normalmente genera el Flow & Paywall Builder, y la CLI no genera uno por sí sola. Para crear o editar una configuración desde el terminal, usa el [skill flow-generator](flow-generator-skill), que ejecuta estos comandos por ti. Antes de publicar, el [skill flow-audit](flow-audit-skill) comprueba si el flow está listo para producción. Los comandos `flows metrics` leen los datos de la página de [métricas del flow](flow-metrics) y requieren la versión 0.15.0 o posterior de la CLI. Los comandos `flows funnel` leen el [funnel del flow](flow-funnel) y requieren la versión 0.19.0 o posterior de la CLI. Los comandos se listan aquí como referencia.
+Los [flows](adapty-flow-builder) son los paywalls y onboardings que creas en el Flow & Paywall Builder. La CLI gestiona el registro del flow, su configuración del builder, la publicación y el [historial de versiones](flow-version-history). Una configuración del builder es un documento JSON de gran tamaño que normalmente genera el Flow & Paywall Builder, y la CLI no genera uno. Para crear o editar una configuración desde el terminal, usa el [skill flow-generator](flow-generator-skill), que ejecuta estos comandos por ti. Antes de publicar, el [skill flow-audit](flow-audit-skill) comprueba si el flow está listo para producción. Los [comandos `fonts`](#custom-fonts) suben y gestionan las fuentes personalizadas que usan los flows, y requieren la versión 0.33.0 o posterior de la CLI. Los comandos `flows metrics` leen los números de la página de [métricas del flow](flow-metrics) y requieren la versión 0.15.0 o posterior de la CLI. Los comandos `flows funnel` leen el [funnel del flow](flow-funnel) y requieren la versión 0.19.0 o posterior de la CLI. Los comandos se enumeran aquí como referencia.
 
 ## adapty flows list \{#adapty-flows-list\}
 
@@ -96,9 +96,17 @@ adapty flows publish --app <app-id> <flow-id>
 
 Dado que publicar cambia lo que ven tus usuarios, el comando muestra el nombre del flow y pide confirmación. Cualquier respuesta distinta de `y` cancela el comando con código de salida 1. Con `--json` o en una tubería, el comando rechaza con código de salida 2 en lugar de esperar una respuesta, así que usa `--yes` en scripts y sesiones de agentes.
 
-La publicación es asíncrona: la respuesta devuelve `status: publishing` y el flow aún no está activo. Consulta [`flows get`](#adapty-flows-get) hasta que el estado pase a `published` o `publication_failed`. Si ocurre `publication_failed`, [`flows config get`](#adapty-flows-config-get) indica el motivo.
+En la versión 0.33.0 o posterior de la CLI, cuando la configuración usa una [fuente personalizada](#custom-fonts), el comando lee las fuentes actuales de la app. Si la copia en la configuración está desactualizada, el comando guarda la configuración con las fuentes actuales y luego publica. El guardado conserva los Remote Configs y falla si alguien modificó la configuración después de que el comando la leyó. Si el guardado se realiza correctamente y comienza la publicación, la salida en formato legible incluye `Fonts refreshed`.
 
-La publicación falla con HTTP 400 cuando el flow no tiene configuración, cuando la configuración no es publicable o cuando la versión actual ya está activa. Para validar una configuración antes de publicarla, usa [`flows config validate`](#adapty-flows-config-validate).
+El comando se detiene antes de cualquier escritura si no puede leer las fuentes. Sale con código 2 si un nombre de familia de fuentes en el config coincide con varias familias. Para resolver la coincidencia, renombra una familia o usa el ID de familia en el config.
+
+La respuesta del config debe contener un objeto `config` y un entero `updated_at`, incluso cuando no sea necesario guardar nada. Si el comando necesita guardar el config, la respuesta también debe contener una lista `remote_configs`. Si no se cumplen estos requisitos, el comando se detiene antes de cualquier escritura con código de salida 4 y `malformed_response`.
+
+Un guardado fallido o incierto detiene el comando antes de enviar la solicitud de publicación. Si la CLI no puede leer la respuesta del guardado o la conexión falla durante el proceso, es posible que el guardado sí se haya completado. Lee la configuración almacenada con [`flows config get`](#adapty-flows-config-get) antes de volver a publicar. Si la publicación falla tras un guardado exitoso, la configuración guardada se conserva.
+
+La publicación es asíncrona: la respuesta devuelve `status: publishing` y el flow aún no está activo. Haz polling en [`flows get`](#adapty-flows-get) hasta que el estado sea `published` o `publication_failed`. Si el estado es `publication_failed`, [`flows config get`](#adapty-flows-config-get) indica el motivo.
+
+La publicación falla con HTTP 400 cuando el flow no tiene configuración, cuando la configuración no es publicable o cuando la versión actual ya está publicada. Para verificar una configuración antes de publicarla, usa [`flows config validate`](#adapty-flows-config-validate). Si el flow no existe, el comando sale con el código 4. En versiones anteriores a la CLI 0.33.0, salía con el código 1.
 
 ## adapty flows config get
 
@@ -239,6 +247,251 @@ adapty flows media upload-video --app <app-id> ./intro.mp4
 Formatos aceptados: MP4 y WebM. El vídeo debe durar como máximo 30 segundos, pesar como máximo 50 MB, y tanto su ancho como su alto deben ser de al menos 640 píxeles. No se admite GIF y el comando no convierte imágenes animadas a vídeo.
 
 La respuesta contiene la URL del vídeo (una lista de reproducción HLS), la URL de la imagen de vista previa y el `width` y `height` del vídeo. En la configuración, un elemento de vídeo los recibe como `videoUrl`, `previewUrl`, `width` y `height`.
+
+## Fuentes personalizadas \{#custom-fonts\}
+
+Los comandos `adapty fonts` permiten subir y gestionar las [fuentes personalizadas](using-custom-fonts-in-flow-builder) de una app. Todos los flows de la app usan las mismas fuentes, igual que las que subes en el Flow & Paywall Builder. Una familia de fuentes tiene una o más caras. Una cara es un peso y estilo de un archivo `.ttf` o `.otf`. Los comandos `fonts` requieren la versión 0.33.0 o posterior de la CLI. Para ver tu versión, ejecuta `adapty --version`.
+
+:::warning
+Adapty no envía los archivos de fuentes a los dispositivos de los usuarios. Para mostrar una fuente personalizada en tu app, [añade los mismos archivos de fuentes al bundle de tu app](using-custom-fonts-in-flow-builder#add-the-font-files-to-your-apps-bundle), con los nombres de fuente de iOS y Android que las tipografías tienen en Adapty.
+:::
+
+Para usar una fuente personalizada en la configuración de un flow, establece la fuente por familia y peso. En un elemento de texto, la fuente está en `props.font`: `"font": {"family": {"type": "user", "id": "<font-family-id>"}, "weight": "bold"}`. En un estilo de texto en `theme.typography`, `family` y `weight` son claves de `settings` del estilo, sin ningún objeto `font` a su alrededor. La familia también puede especificarse por su nombre de familia. La cursiva se establece en un span de texto enriquecido. Al publicar el flow, Adapty utiliza la variante con ese peso y estilo. Si la familia no tiene esa variante, Adapty usa la variante con el peso más cercano en el mismo estilo y, si no, en cualquier estilo. Cuando dos variantes están igual de cerca, gana la más ligera.
+
+Un comando que cambia una familia de fuentes que usan los flows muestra esos flows en `flows_to_publish`. Publica cada uno de ellos con [`flows publish`](#adapty-flows-publish) para enviar el cambio a tus usuarios. `flows_to_publish` es `null` en dos casos, y el comando muestra una advertencia. Con `--json`, `flows_to_publish_error` indica el motivo y el siguiente paso:
+
+- **La subida se detuvo en un archivo**, el último o único archivo incluido: es posible que Adapty haya almacenado ese archivo, por lo que no se conocen las familias modificadas. Ejecuta [`fonts list`](#adapty-fonts-list) para encontrarlas y luego [`fonts usage`](#adapty-fonts-usage) para cada una de ellas.
+- **Solo falló la lectura de los flows**: cada archivo tiene su resultado. Ejecuta [`fonts usage`](#adapty-fonts-usage) para cada familia que el comando haya modificado.
+
+## adapty fonts list
+
+Lista las familias de fuentes personalizadas de una app con sus variantes tipográficas.
+
+```bash
+adapty fonts list --app <app-id>
+```
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+
+Para cada tipografía, la respuesta contiene el peso, el estilo cursiva, los nombres de fuente para iOS y Android, la tipografía predeterminada de la familia y el formato de archivo. `metadata_status` indica si el peso y el estilo cursiva de la tipografía son conocidos: `detected` y `confirmed` significan que sí lo son; `needs_review` y `legacy_unconfirmed` significan que no. Para establecerlos, usa [`fonts faces update`](#adapty-fonts-faces-update).
+
+## adapty fonts get
+
+Obtén una familia de fuentes con sus variantes.
+
+```bash
+adapty fonts get --app <app-id> <font-family-id>
+```
+
+| Argumento | Descripción |
+|---|---|
+| `font-family-id` | ID de familia de fuentes (UUID) |
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+
+## adapty fonts upload \{#adapty-fonts-upload\}
+
+Sube archivos de fuentes. Adapty compara el nombre de familia almacenado en cada archivo con los nombres de familia de fuentes de la aplicación, ignorando mayúsculas y minúsculas. Si hay una coincidencia, el archivo se une a esa familia. Si no hay ninguna, Adapty crea una nueva familia.
+
+Si dos o más familias coinciden, como `Brand` y `brand`, la CLI reporta `refused` con `font_family_name_ambiguous`. Esto se aplica con o sin `--choice`. Con `--json`, el array `families` incluye `family_id` y `family_name` para cada coincidencia. Usa [`fonts add`](#adapty-fonts-add) con un ID de familia para añadir el archivo a esa familia. O usa [`fonts rename`](#adapty-fonts-rename) hasta que solo haya una familia que coincida. Luego vuelve a subir el archivo.
+
+```bash
+adapty fonts upload --app <app-id> ./Brand-Regular.otf ./Brand-Bold.otf ./Brand-Italic.otf
+```
+
+| Argument | Description |
+|---|---|
+| `file` | Ruta a un archivo `.ttf` o `.otf`. Para subir varios archivos, indica cada uno de ellos |
+
+| Indicador | Requerido | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+| `--choice` | No | Usa `replace` para reemplazar las caras en conflicto, o `keep` para dejar las caras existentes tal como están. El comando puede seguir subiendo caras nuevas |
+| `--replace-face-id` | No | Con `--choice replace` y un único archivo: reemplaza exactamente estas caras, las que un rechazo listó. Proporciona los IDs de cara como una lista separada por comas, o repite el indicador. Adapty rechaza el reemplazo cuando estas caras ya no coinciden con los conflictos |
+
+Un archivo de fuente estática crea una cara. Un archivo de fuente variable crea una cara por cada estilo con nombre en el archivo. Otros formatos, como WOFF y WOFF2, no son compatibles. El comando lee todos los archivos antes de enviar el primero: si no puede leer un archivo, se detiene con el código de salida 2 y no envía nada.
+
+El comando envía un archivo por solicitud. Tras el último archivo, imprime el resultado de cada uno. Con `--json`, los resultados están en `files`:
+
+| Resultado | Significado |
+|---|---|
+| `created` | El archivo creó una nueva familia de fuentes |
+| `added` | Las caras del archivo se unieron a una familia existente |
+| `partly_added` | Algunas caras del archivo se unieron a la familia. `kept_faces` lista las caras que la familia ya tenía |
+| `replaced` | El archivo reemplazó el archivo de las caras en conflicto, tras `--choice replace`. `replaced_faces` las enumera |
+| `kept` | `--choice keep` omitió el archivo porque entró en conflicto con una cara almacenada |
+| `refused` | Adapty rechazó el archivo. `error_code` y `message` indican el motivo |
+| `failed` | Un error de red o de autenticación, o una respuesta que el CLI no pudo leer, detuvo la subida en este archivo. Tras un error de red o una respuesta ilegible, es posible que Adapty haya almacenado el archivo: ejecuta [`fonts list`](#adapty-fonts-list) antes de enviarlo de nuevo |
+| `not_sent` | El archivo no se envió porque la subida se detuvo en un archivo anterior |
+
+Un archivo de fuente estática colisiona con una cara en dos casos: una cara de la familia a la que se une el archivo tiene el mismo peso e itálica, o cualquier cara de la app tiene el mismo nombre de fuente iOS. Para los resultados de un archivo de fuente variable, consulta la lista tras este párrafo. Dos familias distintas pueden tener cada una una cara Regular. Adapty puede rechazar un archivo en conflicto con `conflicts` y `choices` en el informe. Cuando `next_step` ofrece un reemplazo, ejecuta el comando impreso para ese archivo con `--choice replace` y `--replace-face-id`. El comando realiza una única solicitud de carga y reemplaza exactamente las caras indicadas. Una fuente variable también puede añadir caras nuevas. Para omitir el archivo por completo, omite el reintento. El comando `--choice keep` impreso puede almacenar caras nuevas si los conflictos cambian.
+
+- Si las fuentes listadas siguen existiendo y el conjunto de colisiones cambia, Adapty puede rechazar la solicitud con HTTP 409 y los `conflicts` actuales. Revisa esa lista antes de decidir si ejecutar el nuevo comando de reemplazo.
+- Si una fuente listada ha desaparecido, Adapty rechaza con `font_face_not_found` (HTTP 404). Si nada colisiona, Adapty puede rechazar con HTTP 400. Ninguna de estas respuestas reemplaza ninguna fuente. Para subir el archivo sin reemplazar ninguna fuente, ejecuta el mismo comando para ese archivo sin `--choice` ni `--replace-face-id` y revisa el nuevo resultado.
+
+:::warning
+Con `--choice replace` solo, la CLI primero envía el archivo sin elección. Si hay una colisión, vuelve a enviar el archivo para reemplazar las fuentes que esta ejecución encontró, que pueden diferir de las fuentes del rechazo anterior. Si la primera solicitud no encuentra colisiones, puede subir el archivo como fuentes nuevas. Lee `replaced_faces` para ver qué fuentes reemplazó el comando. Adapty no conserva los archivos antiguos. Para reemplazar solo algunas de las fuentes listadas, usa [`fonts faces replace`](#adapty-fonts-faces-replace) para cada una de ellas.
+:::
+
+Un archivo de fuente variable produce uno de estos resultados:
+
+- **Todos sus estilos son nuevos en la familia**: `created` o `added`, como un archivo estático.
+- **Algunos de sus estilos ya están en la familia**: `partly_added`. Los nuevos estilos se unen a la familia, y `kept_faces` lista los estilos que la familia ya tenía.
+- **Todos sus estilos ya están en la familia**: `refused`, sin opciones. Para cambiar el archivo de una cara, usa [`fonts faces replace`](#adapty-fonts-faces-replace).
+- **Un nuevo estilo tiene un nombre de fuente iOS que ya tiene otra cara de la app**: `refused`, con opciones, como cualquier colisión.
+
+Una fuente que no tiene nombre de fuente iOS o Android tras la carga se guarda y `warnings` la nombra. Establece el nombre con [`fonts faces update`](#adapty-fonts-faces-update).
+
+| Código de salida | Causa | Qué hacer |
+|---|---|---|
+| `0` | Todos los archivos se almacenaron u omitieron | — |
+| `2` | La CLI no pudo leer un archivo. O `--replace-face-id` especificó un UUID no válido, no incluía `--choice replace`, o se usó con más de un archivo. No se envió ningún archivo | Corrige la ruta o los flags y vuelve a ejecutar el comando completo |
+| `3` | Adapty rechazó la sesión de la CLI, o la cuenta no tiene acceso a la app. Los archivos posteriores a ese archivo no se enviaron | Si la sesión fue rechazada, vuelve a iniciar sesión. Si no hay acceso, verifica el ID de la app o inicia sesión con una cuenta que tenga acceso. Luego sube los archivos que no se almacenaron |
+| `4` | Adapty rechazó al menos un archivo y los demás se enviaron. O la CLI no pudo leer una respuesta y la subida se detuvo en ese archivo. O todos los archivos tienen su resultado (almacenado u omitido), pero la respuesta sobre los flows que usan las familias modificadas estaba mal formada: `flows_to_publish` es `null` | Lee el resultado de cada archivo rechazado. Si un archivo tiene estado `failed`, ejecuta [`fonts list`](#adapty-fonts-list) antes de enviarlo de nuevo. Si solo falló la lectura de los flows, ejecuta [`fonts usage`](#adapty-fonts-usage) para cada familia que modificó el comando |
+| `5` | Error de red. Los archivos posteriores a ese archivo no se enviaron | Ejecuta [`fonts list`](#adapty-fonts-list) para comprobar si el archivo con estado `failed` se almacenó, y luego sube los archivos que no se almacenaron |
+
+## adapty fonts add \{#adapty-fonts-add\}
+
+Añade variantes de archivos de fuentes a la familia tipográfica que elijas, independientemente del nombre de familia que lleven los archivos.
+
+```bash
+adapty fonts add --app <app-id> <font-family-id> ./Brand-Bold.otf
+```
+
+| Argumento | Descripción |
+|---|---|
+| `font-family-id` | ID de la familia tipográfica (UUID) |
+| `file` | Ruta a un archivo `.ttf` o `.otf`. Para añadir varios archivos, indícalos uno a uno |
+
+| Indicador | Obligatorio | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+| `--choice` | No | Usa `replace` para reemplazar las caras en conflicto, o `keep` para dejar las existentes tal como están. El comando puede seguir añadiendo caras nuevas |
+| `--replace-face-id` | No | Con `--choice replace` y un único archivo: reemplaza exactamente estas caras, las que un rechazo listó, como en [`fonts upload`](#adapty-fonts-upload) |
+
+Las reglas de colisión, resultados y códigos de salida son los mismos que para [`fonts upload`](#adapty-fonts-upload). Con `--choice keep`, un archivo variable sigue añadiendo sus nuevos estilos si sus únicas coincidencias son pares de peso e itálica que la familia ya tiene.
+
+## adapty fonts rename
+
+Renombra una familia de fuentes. Los archivos y estilos de la familia no cambian.
+
+```bash
+adapty fonts rename --app <app-id> <font-family-id> "Brand Sans"
+```
+
+| Argumento | Descripción |
+|---|---|
+| `font-family-id` | ID de la familia de fuentes (UUID) |
+| `name` | El nuevo nombre de la familia |
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+
+Ninguna otra familia de la app puede tener el mismo nombre. Se permite un nombre que solo difiera en mayúsculas/minúsculas.
+
+## Uso de fuentes de Adapty \{#adapty-fonts-usage\}
+
+Enumera los flows y paywalls que usan una familia de fuentes.
+
+```bash
+adapty fonts usage --app <app-id> <font-family-id>
+```
+
+| Argumento | Descripción |
+|---|---|
+| `font-family-id` | ID de la familia de fuentes (UUID) |
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+
+La respuesta lista los flows, incluidos los borradores, y los paywalls que usan la familia. Para cada tipografía, se listan los paywalls que la utilizan, o `null` cuando Adapty no puede distinguir las tipografías entre sí. Un flow solo aparece en la lista si su configuración hace referencia a la familia por ID. Un flow que nombra la familia únicamente por su nombre no aparece en la lista.
+
+## adapty fonts faces update
+
+Cambia el peso, el estilo itálico de una fuente, o su nombre en iOS o Android.
+
+```bash
+adapty fonts faces update --app <app-id> <font-face-id> --ios-name BrandSans-Bold --android-name brand_sans_bold
+```
+
+| Argumento | Descripción |
+|---|---|
+| `font-face-id` | ID de la fuente (UUID), tal como lo muestra [`fonts list`](#adapty-fonts-list) |
+
+| Indicador | Obligatorio | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+| `--weight` | No | Peso de la fuente, como `400` para regular o `700` para negrita. Úsalo junto con `--italic` |
+| `--italic` | No | `true` para cursiva, `false` para normal. Úsalo junto con `--weight` |
+| `--ios-name` | No | Nombre de la fuente en iOS: el nombre PostScript almacenado en el archivo de fuente. Ninguna otra variante de la app puede tenerlo |
+| `--android-name` | No | Nombre de la fuente en Android: el nombre del archivo en `res/font/` sin la extensión. Debe comenzar con una letra minúscula y contener solo letras minúsculas, dígitos y guiones bajos |
+
+Después de establecer el peso y la cursiva, el `metadata_status` de la tipografía pasa a `confirmed`. El nombre de la fuente en Android cambia en cada cara del mismo archivo. Los paywalls que usan un nombre modificado reciben el nuevo nombre.
+
+## adapty fonts faces default \{#adapty-fonts-faces-default\}
+
+Establece una tipografía como la predeterminada de su familia. La tipografía que era la predeterminada deja de serlo.
+
+```bash
+adapty fonts faces default --app <app-id> <font-face-id>
+```
+
+| Argumento | Descripción |
+|---|---|
+| `font-face-id` | ID de la tipografía (UUID) |
+
+| Flag | Requerido | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+
+## adapty fonts faces move
+
+Mueve una variante a otra familia tipográfica. El archivo de la variante no cambia.
+
+```bash
+adapty fonts faces move --app <app-id> <font-face-id> --to <font-family-id>
+```
+
+| Argumento | Descripción |
+|---|---|
+| `font-face-id` | ID de la variante tipográfica (UUID) |
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+| `--to` | Sí | ID (UUID) de la familia a la que mover la variante |
+
+La variante predeterminada de una familia no puede moverse. Una variante con peso e itálica conocidos no puede moverse a una familia que ya tenga una variante con el mismo peso e itálica.
+
+## adapty fonts faces replace
+
+Sube un nuevo archivo para una cara de fuente.
+
+```bash
+adapty fonts faces replace --app <app-id> <font-face-id> ./Brand-Bold.otf
+```
+
+| Argumento | Descripción |
+|---|---|
+| `font-face-id` | ID de la cara de fuente (UUID) |
+| `file` | Ruta al nuevo archivo `.ttf` o `.otf` |
+
+| Indicador | Requerido | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la aplicación (UUID) |
+| `--weight` | No | Grosor de fuente del estilo. Úsalo junto con `--italic` |
+| `--italic` | No | `true` o `false`. Úsalo junto con `--weight` |
+| `--yes` | No | Reemplaza el archivo sin pedir confirmación. Requerido con `--json`, en un pipe o sin terminal |
+
+La cara mantiene su ID, su marca predeterminada y el nombre de fuente de Android. El nombre de fuente de iOS proviene del nuevo archivo. Adapty no conserva el archivo antiguo y no es posible recuperarlo. Por eso, el comando solicita confirmación. Con `--json`, en un pipe o sin terminal, el comando necesita `--yes`: sin él, el comando se detiene con el código de salida 6 (`confirm_required`) y no realiza ningún cambio. Para usar un archivo de fuente variable en una cara cuyo peso e itálica no se conocen, pasa `--weight` e `--italic`.
+
+Si la fuente ya tiene un peso y una configuración de cursiva definidos, el nuevo archivo debe coincidir con ambos. Adapty también rechaza el archivo si otra fuente de la familia tiene el mismo peso y configuración de cursiva, o si otra fuente en la app ya usa el nombre de fuente iOS del nuevo archivo. En cada caso, la fuente conserva su archivo anterior. Si el nombre de fuente iOS está en uso, sube un archivo con un nombre PostScript diferente o reemplaza el archivo de la fuente que usa ese nombre.
 
 ## Lista de versiones de flows de adapty \{#adapty-flows-versions-list\}
 

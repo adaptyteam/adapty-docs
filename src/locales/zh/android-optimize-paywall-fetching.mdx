@@ -12,11 +12,11 @@ metadataTitle: "优化流程与付费墙获取 | Android SDK | Adapty 文档"
 
 ## 注意事项与常见陷阱 \{#rules-and-pitfalls\}
 
-| 应该这样做 | 不要这样做 | 原因 |
+| 建议做法 | 避免做法 | 原因 |
 |---|---|---|
-| 获取即将显示的版位，或使用 [`preloadFlows`](#preload-placements)（SDK 4.1+）预热缓存。 | 在启动时自行并发调用多个 `getFlow`。 | 自己编写的预取请求会阻塞主线程并导致黑屏。`preloadFlows` 专为此场景设计，会自动并发执行批量请求。 |
-| 在归因数据有机会解析后再调用 `getFlow`——例如在 `activate` 后等待 1–2 秒，或在 `setOnProfileUpdatedListener` 触发后调用。 | 在 `Application.onCreate()` 中调用 `getFlow`。 | 此时归因数据尚未到达，流程会按默认目标受众解析，静默跳过市场细分和 ASA 个性化配置。 |
-| 设置 `loadTimeout` 并为每个版位配置[备用付费墙](fallback-paywalls)。 | 无限等待 `getFlow` 返回。 | 没有超时限制时，网络较差的用户会看到空白屏幕，直到网络恢复——或者直接关掉应用。 |
+| 获取即将展示的版位，或通过 [`preloadFlows`](#preload-placements)（SDK 4.1+）预热缓存。 | 在启动时自行并发调用 `getFlow`。 | 手动批量预取会阻塞主线程并导致黑屏。`preloadFlows` 专为此场景设计，会自动并发执行批量请求。 |
+| 在归因数据有机会解析后再调用 `getFlow`，例如在 `activate` 执行 1–2 秒后，或在 `setOnProfileUpdatedListener` 触发后。 | 在 `Application.onCreate()` 中调用 `getFlow`。 | 此时归因数据尚未到达，流程会按默认目标受众解析，悄无声息地绕过市场细分和 ASA 个性化设置。 |
+| 保持默认的 5 秒 `loadTimeout`，或设置其他合理值，并为每个版位配置[备用付费墙](fallback-paywalls)。 | 将 `getFlow` 的 `loadTimeout` 设置得极大，使其永远不会触发。 | 如果超时永远不触发，网络较差的用户会一直看到空白屏幕，直到网络恢复——或者直接关闭应用。 |
 
 有关 `fetchPolicy` 和 `loadTimeout` 参数的说明，请参阅[获取自定义付费墙和产品](fetch-paywalls-and-products-android)；有关如何选择合适版位的说明，请参阅[版位](placements)。
 
@@ -93,16 +93,24 @@ Adapty.getFlow("main_paywall", AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoa
 
 ### 预加载涵盖的内容 \{#what-a-preload-covers\}
 
-流程到达屏幕的过程分为多个层次。预加载仅覆盖第一层，与 `getFlow` 的作用完全相同：
+流程分层加载到屏幕。预加载覆盖第一层，与 `getFlow` 的行为完全一致：
 
-| 层次 | 由谁获取 | 是否被预加载预热 |
+| 层级 | 由谁获取 | 是否被预加载预热 |
 |---|---|---|
-| Flow JSON —— 所选实验变体、其产品 ID 及远程配置 | `getFlow` | 是 |
-| UI 布局 —— 屏幕的结构、样式和文本 | `getFlowConfiguration` | 否 |
-| 图片，包括用于替代视频元素的静态帧 | `getFlowConfiguration`，在后台处理 | 否 |
-| 视频文件 | 系统播放器，在屏幕渲染时加载 | SDK 不缓存 |
+| Flow JSON — 选定的实验变体、其产品 ID 及远程配置 | `getFlow` | 是 |
+| UI 布局 — 屏幕的结构、样式与文字 | `getFlowConfiguration` | 否 |
+| 图片，包括用于替代视频元素的静态帧 | `getFlowConfiguration`，在后台执行 | 否 |
+| 视频文件 | ExoPlayer，在屏幕渲染时加载 | 否。SDK 最多缓存 50 MB 的已播放视频 |
 
-`getFlowConfiguration` 会等待布局加载完成，因此即使已预加载，首次请求某个布局时仍需要一次完整的网络往返。SDK 随后会将该布局保存到自身的磁盘缓存中，缓存在应用重启后依然有效，并且在发起任何网络请求之前会优先读取缓存，所以这次开销只发生在首次请求时，而非每次请求。一旦 SDK 获取到布局，便会独立启动图片缓存：该过程不会阻塞页面展示，也不提供任何回调或错误来通知缓存完成时机。
+`getFlowConfiguration` 按以下顺序在三个位置查找布局：
+
+1. SDK 的磁盘缓存（在应用重启后仍然保留）。
+2. 适用于 SDK 4.4 及更高版本的[备用文件](android-use-fallback-paywalls)——前提是该文件是在你最后一次发布流程之后下载的。
+3. 通过网络从 Adapty 获取。即使已预加载，这仍需要一次网络往返。每次应用首次展示某个已发布版本的流程时，SDK 都会发起此请求，然后将布局保存到磁盘缓存。
+
+一旦 SDK 获取到布局，就会独立开始缓存图片，不会阻塞屏幕显示，也不会有回调或错误来通知缓存完成。
+
+当 `getFlowConfiguration` 的 `loadTimeout` 超时后，SDK 不会降级使用备用方案，而是再次向 Adapty API 请求布局。`loadTimeout` 对第二次请求没有限制。
 
 ### 查找哪个版位失败了 \{#find-out-which-placement-failed\}
 
@@ -159,17 +167,20 @@ val flowView = AdaptyUI.getFlowView(
 )
 ```
 
-捆绑文件会增加应用的下载体积，因此只捆绑用户首屏看到的媒体资源。
+捆绑文件会增加应用的下载大小，因此只捆绑用户首先看到的媒体资源。
 
-未捆绑的媒体同样会立即显示：视图配置中为每张图片（包括视频的静帧封面）内置了一份低分辨率预览图，在完整文件加载完成前持续展示。
+捆绑的图片无需等待即可显示，但 SDK 仍会在后台下载已上传的图片。
 
-完整的 `customAssets` 参考文档，请参阅[自定义资源](android-get-pb-paywalls#customize-assets)。
+未捆绑的媒体资源同样可以立即显示：视图配置中包含每张图片的低分辨率副本（包括视频的静态封面帧），在完整文件加载完成前会先显示该副本。
+
+有关 `customAssets` 的完整参考，请参阅[自定义资源](android-get-pb-paywalls#customize-assets)。
 
 ## 针对弱网环境进行调优 \{#tune-for-poor-connectivity\}
 
-对于网络状况持续较差的市场（农村地区、交通沿线、受路由影响的地区）：
+对于网络状况持续较差的市场（农村地区、交通沿线、受路由问题影响的地区）：
 
-- 除首次请求外，每次获取时将 `fetchPolicy` 设置为 `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad`。
+- 将 `fetchPolicy` 设置为 `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad`，仅首次加载时除外。
 - 在 Adapty 看板中为每个版位配置[备用付费墙](fallback-paywalls)。
-- 将 `loadTimeout` 设置为 3–5 秒，并在超时触发时接受备用内容。
-- 不要将流程显示挂起在 `getProfile` 上。独立调用 `getFlow`，避免因用户画像加载缓慢而阻塞 UI。
+- 在速度与精准定向之间合理权衡 `loadTimeout`。超时时间越短，用户越快看到备用内容；超时时间越长，目标流程有更多时间完成加载。
+- [保持流程轻量](flow-size)，让布局更快下载完成。
+- 不要将流程展示与 `getProfile` 绑定。独立调用 `getFlow`，避免用户画像加载缓慢阻塞 UI。

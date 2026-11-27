@@ -18,6 +18,10 @@
  *
  * Query parameters are dropped, `?si=` included — that token is share-link
  * attribution and has no effect on playback.
+ *
+ * The page shows YouTube's thumbnail with a play button, as a plain link to the
+ * video; the ~1 MB player loads only when someone clicks it (the script below
+ * swaps in the iframe, autoplaying, so one click still starts the video).
  */
 interface Props {
   /** Video ID, or any YouTube URL. */
@@ -68,15 +72,19 @@ const videoId = extractVideoId(id);
 
 {videoId ? (
   <div class="youtube-embed" style={{ maxWidth: width }}>
-    <iframe
-      src={`https://www.youtube.com/embed/${videoId}`}
-      title={title}
-      frameborder="0"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-      referrerpolicy="strict-origin-when-cross-origin"
-      loading="lazy"
-      allowfullscreen
-    ></iframe>
+    <a
+      class="youtube-facade"
+      href={`https://www.youtube.com/watch?v=${videoId}`}
+      data-video-id={videoId}
+      data-title={title}
+      aria-label={`Play video: ${title}`}
+    >
+      <img src={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`} alt="" loading="lazy" decoding="async" width="480" height="360" />
+      <svg class="youtube-play" viewBox="0 0 68 48" aria-hidden="true">
+        <path d="M66.5 7.7a8.6 8.6 0 0 0-6-6C55.2.3 34 .3 34 .3s-21.2 0-26.5 1.4a8.6 8.6 0 0 0-6 6C.1 13 .1 24 .1 24s0 11 1.4 16.3a8.6 8.6 0 0 0 6 6C12.8 47.7 34 47.7 34 47.7s21.2 0 26.5-1.4a8.6 8.6 0 0 0 6-6C67.9 35 67.9 24 67.9 24s0-11-1.4-16.3z" fill="#f00" />
+        <path d="M45 24 27 14v20z" fill="#fff" />
+      </svg>
+    </a>
   </div>
 ) : (
   <div class="p-4 border border-red-200 bg-red-50 text-red-600 rounded-md text-sm">
@@ -92,11 +100,64 @@ const videoId = extractVideoId(id);
     margin: 0 auto 2rem;
   }
 
-  .youtube-embed iframe {
+  /* :global — the iframe is created by the click handler below, so it has no
+     data-astro-cid attribute for a scoped selector to match. */
+  .youtube-embed :global(iframe),
+  .youtube-facade {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
     border: 0;
   }
+
+  .youtube-facade {
+    display: block;
+    overflow: hidden;
+    border-radius: 8px;
+    background: #000;
+    cursor: pointer;
+  }
+
+  .youtube-facade img {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    /* hqdefault is 4:3 with letterbox bars; cover crops them to the 16:9 box */
+    object-fit: cover;
+  }
+
+  .youtube-play {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 68px;
+    height: 48px;
+    transform: translate(-50%, -50%);
+    opacity: 0.9;
+    transition: opacity 0.15s;
+  }
+
+  .youtube-facade:hover .youtube-play,
+  .youtube-facade:focus-visible .youtube-play {
+    opacity: 1;
+  }
 </style>
+
+<script>
+  // One delegated listener for every video on every page (it survives client-side navigation).
+  document.addEventListener('click', (e) => {
+    const facade = (e.target as Element | null)?.closest?.<HTMLAnchorElement>('a.youtube-facade');
+    // Modifier clicks keep their meaning: open the video on YouTube in a new tab or window
+    if (!facade || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    const iframe = document.createElement('iframe');
+    iframe.src = `https://www.youtube.com/embed/${facade.dataset.videoId}?autoplay=1`;
+    iframe.title = facade.dataset.title || 'YouTube video player';
+    iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+    iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+    iframe.allowFullscreen = true;
+    facade.replaceWith(iframe);
+    iframe.focus();
+  });
+</script>

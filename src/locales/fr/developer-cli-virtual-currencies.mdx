@@ -1,0 +1,335 @@
+---
+title: "Gérer les devises virtuelles depuis le CLI"
+description: "Gérez les devises virtuelles depuis le terminal avec le CLI Adapty : listez et créez des devises, modifiez le nombre de crédits accordés par chaque produit, et consultez les transactions de crédits et les soldes d'une application ou d'un utilisateur."
+metadataTitle: "Devises virtuelles dans le CLI développeur | Documentation Adapty"
+---
+
+L'Adapty CLI gère les [monnaies virtuelles](virtual-currencies) depuis le terminal, sous le topic `adapty virtual-currencies`. Vous pouvez lister les monnaies d'une application, créer une monnaie, modifier son nom et sa description, et ajouter, modifier ou supprimer ses *mappings* : les [produits liés](create-virtual-currency#link-products) à la monnaie, avec le nombre de crédits accordés par chacun. Vous pouvez également consulter les transactions de crédits d'une application ou d'un utilisateur, ainsi que les soldes d'un utilisateur. Dans la sortie du CLI, les crédits sont appelés *coins*.
+
+Utilisez-le pour permettre à un agent IA de configurer vos devises, ou pour savoir pourquoi un utilisateur a un solde sans ouvrir le tableau de bord. Les commandes currency et mapping font ce que fait l'onglet **Virtual currency** de la page **Products**. Les lectures de transactions et de solde affichent les mêmes données que le profil de l'utilisateur dans le tableau de bord, mais elles ne modifient pas un solde. Pour en corriger un, [ajustez-le dans le tableau de bord](virtual-currency-balance#adjust-a-balance-manually).
+
+## Avant de commencer \{#before-you-start\}
+
+Le sujet `virtual-currencies` utilise la même installation et la même connexion que le reste du CLI. Si vous ne l'avez pas encore configuré, suivez les étapes 1 et 2 du [guide de démarrage rapide](developer-cli-quickstart). Pour vérifier si votre CLI dispose de ce sujet, exécutez :
+
+```bash
+adapty virtual-currencies --help
+```
+
+Chaque commande prend l'UUID de l'application dans `--app`. Pour le trouver, exécutez :
+
+```bash
+adapty apps list
+```
+
+Un mapping identifie un produit par son ID de produit Adapty, et non par son ID de produit dans le store. Pour trouver les IDs de produit, exécutez :
+
+```bash
+adapty products list --app <app-id>
+```
+
+## Lister et consulter les devises \{#list-and-read-currencies\}
+
+```bash
+adapty virtual-currencies list --app <app-id>
+```
+
+La liste affiche chaque devise avec son code, son nom et le nombre de produits qui l'accordent. Elle accepte `--page` et `--page-size`, comme les autres listes de la CLI.
+
+Pour consulter une devise avec tous ses mappings, exécutez :
+
+```bash
+adapty virtual-currencies get <currency-id> --app <app-id>
+```
+
+La devise possède ces champs :
+
+| Champ | Valeur |
+|---|---|
+| `virtual_currency_id` | L'identifiant de la devise. Les autres commandes le prennent comme argument. |
+| `code` | Le code utilisé par l'API server-side, le SDK et le filtre d'analyse. Vous ne pouvez pas le modifier. |
+| `name`, `description` | Le nom d'affichage et la description facultative. |
+| `products_count` | Le nombre de produits qui accordent la devise. |
+| `updated_at` | L'heure de la dernière modification, en millisecondes. Transmettez-la dans `--expected-updated-at`, comme le décrit [Protection contre les changements perdus](#protection-against-lost-changes). |
+| `mappings` | Uniquement dans `get` : les produits qui accordent la devise, avec les crédits de chaque produit. |
+
+Un mapping définit combien de crédits un produit accorde :
+
+- **`one-time`** : `credit_per_purchase` crédits pour chaque achat du produit.
+- **`subscription`** : `credit_per_cycle` crédits pour chaque période payante. `expiring: true` fait expirer les crédits d'une période lorsque l'abonnement se renouvelle ou se termine. `credit_on_trial_start` donne les crédits lors du démarrage d'un essai, ou `null` pour aucun.
+
+Un mapping accorde des crédits à partir du prochain achat ou renouvellement de son produit, en production et en sandbox. Les abonnés actuels les reçoivent lors de leur prochain renouvellement. Pour accorder des crédits aux utilisateurs existants dès maintenant, [accordez un solde](grant-initial-balance) via l'API côté serveur. Pour en savoir plus sur chaque paramètre, consultez [Créer une devise virtuelle](create-virtual-currency#link-products).
+
+## Créer une devise \{#create-a-currency\}
+
+:::warning
+Vous ne pouvez pas supprimer une devise ni modifier son code. Une application peut avoir jusqu'à 20 devises.
+:::
+
+```bash
+adapty virtual-currencies create --app <app-id> --code GEMS --name "Gems" \
+  --description "Spent on hints" --file mappings.json
+```
+
+`--code` accepte les lettres, les chiffres et `_`, jusqu'à 32 caractères, et doit être unique dans l'application. Le CLI conserve la casse telle que vous la saisissez, contrairement au tableau de bord qui met les codes en majuscules : `gems` et `GEMS` sont deux codes différents. Pour correspondre aux devises créées dans le tableau de bord, utilisez des majuscules. L'API server-side ainsi que les filtres de transactions et d'analytique nécessitent le code dans la même casse. `--name` accepte jusqu'à 64 caractères, et `--description` jusqu'à 256. `--file` est optionnel : sans lui, la devise n'a pas de mappings.
+
+Le fichier de mappings est une liste JSON. Chaque élément est un mapping complet :
+
+```json title="mappings.json"
+[
+  {
+    "product_id": "<one-time-product-id>",
+    "product_type": "one-time",
+    "credit_per_purchase": 100
+  },
+  {
+    "product_id": "<subscription-product-id>",
+    "product_type": "subscription",
+    "credit_per_cycle": 500,
+    "expiring": true,
+    "credit_on_trial_start": 50
+  }
+]
+```
+
+Dans `create`, vous pouvez omettre `credit_on_trial_start` : une période d'essai n'accordera alors aucun crédit. Le CLI vérifie le fichier avant d'envoyer quoi que ce soit. Si le fichier n'est pas une liste JSON contenant au moins un élément, le CLI se termine avec le code 2.
+
+Avant de créer la devise, la CLI affiche le code, les produits associés, et le fait que vous ne pouvez pas supprimer la devise ni modifier son code. Elle demande ensuite une confirmation, comme décrit dans [Confirmation dans les scripts et les agents](#confirmation-in-scripts-and-agents).
+
+## Modifier le nom ou la description \{#change-the-name-or-the-description\}
+
+```bash
+adapty virtual-currencies update <currency-id> --app <app-id> --name "Gold gems"
+```
+
+Fournissez au moins l'un des paramètres `--name`, `--description` ou `--clear-description`. Une valeur non fournie reste inchangée : le CLI lit d'abord la devise et renvoie sa valeur actuelle. `--clear-description` supprime la description. Il ne peut pas être utilisé en même temps que `--description`.
+
+`update` ne demande pas de confirmation, car un second update permet de revenir en arrière.
+
+## Ajouter ou modifier des correspondances \{#add-or-change-mappings\}
+
+```bash
+adapty virtual-currencies mappings upsert <currency-id> --app <app-id> --file mappings.json
+```
+
+Le fichier a la même forme que le [fichier de création](#create-a-currency), avec 1 à 200 éléments. Une devise a au maximum 200 correspondances au total. Chaque élément remplace la correspondance de son produit, ou en ajoute une pour un produit qui n'en a pas. Donnez tous les champs de chaque élément, y compris `credit_on_trial_start` (`null` si absent). Adapty ne fusionne pas un élément avec la correspondance existante : il rejette tout élément dont un champ est manquant ou inconnu avec le code de sortie 4, sans aucune modification. Une correspondance absente du fichier reste inchangée. `mappings upsert` ne supprime jamais une correspondance.
+
+Avant d'envoyer la modification, la CLI lit la devise et affiche chaque produit qui change :
+
+- Un nouveau mapping : `new` et ses crédits.
+- Un mapping modifié : les crédits avant et après, par exemple `30 → 50` pour chaque achat ou chaque période. Une modification de `expiring` ou `credit_on_trial_start` affiche également sa valeur avant et après. Le `product_type` d'un élément doit correspondre au type de son produit : Adapty refuse un mapping dont le `product_type` change, avec le code de sortie 4.
+
+## Supprimer un mapping \{#remove-a-mapping\}
+
+```bash
+adapty virtual-currencies mappings delete <currency-id> --app <app-id> --product <product-id>
+```
+
+Après la suppression, les achats du produit n'accordent plus aucun crédit pour cette devise, et Adapty n'enregistre aucune transaction pour eux. Les crédits déjà accordés par le produit restent dans le solde de vos utilisateurs. Si le produit ne possède aucun mapping, Adapty répond avec une erreur 404 et le code de sortie 4.
+
+## Lire les transactions de crédit \{#read-credit-transactions\}
+
+Pour lire les transactions de crédit d'une application, exécutez :
+
+```bash
+adapty virtual-currencies transactions list --app <app-id> \
+  --date-from 2026-11-01 --date-to 2026-11-07 --timezone Europe/Berlin
+```
+
+La période est obligatoire, au maximum 366 jours, les deux jours inclus. Les jours correspondent au fuseau horaire `--timezone`, un nom de fuseau horaire IANA, ou au fuseau horaire de l'application si ce paramètre est omis. Filtrez les transactions avec `--currency-code`, `--operation`, `--feature`, et `--sandbox` ou `--no-sandbox`. Pour les valeurs de l'opération, consultez [Operation](virtual-currencies#operation).
+
+Pour lire les transactions d'un utilisateur, désignez l'utilisateur par exactement l'un des paramètres `--profile`, l'identifiant de profil Adapty, et `--customer-user-id`, votre propre identifiant utilisateur :
+
+```bash
+adapty virtual-currencies profiles transactions list --app <app-id> --customer-user-id <user-id>
+```
+
+La période des transactions d'un utilisateur est facultative. Sans elle, la CLI lit l'intégralité de l'historique de l'utilisateur. Elle accepte les mêmes filtres et l'option `--timezone`.
+
+Les transactions sont affichées de la plus récente à la plus ancienne, une page par commande. Une page contient 20 transactions par défaut ; `--page-size` permet de définir entre 1 et 100 résultats. Lorsque la période contient plus de transactions, le tableau se termine par `More rows:` suivi de la commande pour la page suivante : les mêmes options et `--cursor` avec le curseur de la page actuelle. Lancez la page suivante avec la même période, les mêmes filtres et le même fuseau horaire. Un curseur utilisé avec d'autres filtres échoue avec l'erreur `cursor_filters_mismatch`. Avec `--json`, la sortie correspond à la réponse brute d'Adapty, `data` et `meta`, et le curseur se trouve dans `meta.pagination.next_cursor`.
+
+La CLI ne propose pas d'option pour lire toutes les pages. Pour charger l'intégralité des transactions dans votre entrepôt de données, utilisez l'export quotidien vers [Amazon S3](s3-exports#virtual-currency-transactions) ou [Google Cloud Storage](google-cloud-storage#virtual-currency-transactions).
+
+:::note
+Pour les totaux et les tendances, utilisez les graphiques de devise virtuelle de [`adapty analytics`](developer-cli-analytics), et non une somme de transactions. Pour trouver les noms des graphiques, exécutez `adapty analytics catalog`. Un graphique exclut chaque utilisateur ayant une transaction sandbox, contrairement à la liste des transactions. Ainsi, une somme de transactions peut différer d'un graphique.
+:::
+
+## Lire les soldes d'un utilisateur \{#read-the-balances-of-a-user\}
+
+```bash
+adapty virtual-currencies profiles balances get --app <app-id> --profile <profile-id>
+```
+
+Identifiez l'utilisateur avec exactement l'un des paramètres `--profile` ou `--customer-user-id`. Les soldes affichent chaque devise de l'utilisateur avec son `balance`, les crédits `held` et `available`, ainsi que la ventilation par expiration : les crédits qui n'expirent pas, les crédits qui expirent le plus tôt avec leurs dates d'expiration, la somme des crédits qui expirent plus tard, et les crédits expirés.
+
+Pour comprendre pourquoi un utilisateur a un solde, consultez ensemble les transactions et les soldes de l'utilisateur. Le tableau de bord affiche les mêmes données sur le [profil de l'utilisateur](virtual-currency-balance).
+
+## Protection contre les modifications perdues \{#protection-against-lost-changes\}
+
+Il est possible que la devise soit modifiée dans le tableau de bord, ou par un autre agent, entre votre lecture et votre écriture. Pour préserver ces modifications, `mappings upsert` et `mappings delete` envoient `expected_updated_at`, c'est-à-dire la valeur `updated_at` de la devise au moment de votre lecture. Si la devise a changé après cette lecture, Adapty refuse l'écriture avec l'erreur `virtual_currency_conflict`, code de sortie 4, et n'effectue aucune modification. Relisez la devise, puis décidez à nouveau.
+
+| Mode d'exécution de la commande | La valeur `expected_updated_at` envoyée par le CLI |
+|---|---|
+| Avec `--yes` | La valeur de `--expected-updated-at`. Sans ce flag, le CLI n'envoie rien et quitte avec le code 6. |
+| Dans un terminal, avec `--expected-updated-at` | La valeur du flag, après avoir répondu `y`. |
+| Dans un terminal, sans `--expected-updated-at` | La valeur `updated_at` issue de la lecture du CLI, après avoir répondu `y`. |
+
+Un script lit `updated_at` avec `get --json` et la transmet après approbation :
+
+```bash
+updated_at=$(adapty virtual-currencies get <currency-id> --app <app-id> --json | jq .updated_at)
+# Show the change to the person who approves it. After their yes:
+adapty virtual-currencies mappings upsert <currency-id> --app <app-id> \
+  --file mappings.json --yes --expected-updated-at "$updated_at"
+```
+
+## Confirmation dans les scripts et les agents \{#confirmation-in-scripts-and-agents\}
+
+Ces commandes affichent leur effet et demandent une approbation avant d'envoyer la modification :
+
+- `create`
+- `mappings upsert`
+- `mappings delete`
+
+La façon dont elles demandent dépend du contexte d'exécution de la commande :
+
+| Comment la commande s'exécute | Ce qui se passe |
+|---|---|
+| Dans un terminal, sans `--yes` et sans `--json` | Le CLI affiche l'effet et demande `Apply? [y/N]`. Si vous répondez `y` ou `yes`, le CLI envoie la requête. Pour toute autre réponse, le CLI quitte avec le code 1 et n'envoie rien. |
+| Avec `--yes` | Le CLI envoie la requête sans demander. Les écritures de mapping nécessitent également [`--expected-updated-at`](#protection-against-lost-changes). |
+| Sans `--yes`, avec `--json`, dans un pipe, ou sans terminal | Le CLI n'envoie rien et quitte avec le code 6. L'erreur affiche l'effet. |
+
+Un script lit `updated_at` via `get --json`, affiche la modification, puis exécute la commande avec `--yes --expected-updated-at` après validation. Un agent peut également exécuter la commande sans `--yes` et montrer l'effet à partir de l'erreur.
+
+`list`, `get`, `update`, ainsi que les lectures de transactions et de solde s'exécutent sans demande de confirmation.
+
+## Erreurs \{#errors\}
+
+| Code de sortie | Cause | Que faire |
+|---|---|---|
+| 1 | Vous avez saisi autre chose que `y` ou `yes` à l'invite. Rien n'a été envoyé. | Relancez la commande si c'était votre intention. |
+| 2 | Le CLI a rejeté la saisie avant d'envoyer quoi que ce soit : un flag incorrect, un fichier de mappings qui n'est pas une liste JSON avec au moins un élément, `update` sans modification, `--description` combiné avec `--clear-description`, ou les deux options `--profile` et `--customer-user-id` présentes ou absentes simultanément. | Corrigez ce que l'erreur indique. |
+| 3 | Vous n'êtes pas connecté, ou Adapty a refusé l'accès avec le statut HTTP 403 : l'application appartient à un autre compte, ou votre connexion permet de lire l'application mais pas de la modifier. Avec `--json`, l'erreur indique `status: 403`. | Connectez-vous avec `adapty auth login` et trouvez l'identifiant de l'application dans `adapty apps list`. Si les lectures fonctionnent mais pas les écritures, demandez à un propriétaire du compte de vous accorder un accès permettant d'effectuer des modifications. |
+| 4 | Adapty a refusé la requête. L'erreur en indique la raison ; avec `--json`, vous obtenez le statut HTTP et `error_code`. Une erreur serveur (5xx) lors d'une écriture donne également le code 4, et le résultat est alors inconnu. | Consultez [Messages from Adapty](#messages-from-adapty). Après une erreur serveur lors d'une écriture, consultez [If a write gets no answer](#if-a-write-gets-no-answer). |
+| 5 | Le CLI n'a pas pu joindre Adapty. | Vérifiez que vous êtes en ligne. Après une écriture, consultez [If a write gets no answer](#if-a-write-gets-no-answer). |
+| 6 | Une commande nécessitant une confirmation a été lancée sans `--yes` et sans personne pour répondre, ou une écriture de mapping a été lancée avec `--yes` mais sans `--expected-updated-at`. Rien n'a été envoyé. | Montrez l'effet indiqué dans l'erreur à la personne qui approuve la modification. Une fois approuvée, relancez la commande comme décrit dans [Protection against lost changes](#protection-against-lost-changes). |
+| 130 | Vous avez appuyé sur Ctrl+C à l'invite. Rien n'a été envoyé. | — |
+
+### Messages d'Adapty \{#messages-from-adapty\}
+
+Avec `--json`, l'erreur donne l'`error_code` :
+
+| `error_code` | Cause | Que faire |
+|---|---|---|
+| `virtual_currency_conflict` | La devise a changé après la lecture dont le `updated_at` a été envoyé lors de l'écriture. Rien n'a été modifié. | Lisez la devise avec `get`, puis décidez à nouveau. |
+| `invalid_date_range` | La période de `transactions list` dépasse 366 jours, ou la période d'une liste de transactions se termine avant de commencer. | Utilisez une période plus courte, ou donnez un `--date-from` qui ne soit pas postérieur à `--date-to`. |
+| `cursor_filters_mismatch` | Le curseur appartient à une page avec une autre période, d'autres filtres ou un autre fuseau horaire. | Exécutez la page suivante avec les mêmes options que la première page. |
+| `invalid_cursor` | La valeur de `--cursor` n'est pas un curseur provenant d'Adapty. | Copiez le curseur depuis la ligne `More rows:`, ou depuis `meta.pagination.next_cursor`. |
+| `profile_does_not_exist` | L'application ne possède aucun utilisateur avec cet ID de profil ou cet ID utilisateur client. Un utilisateur supprimé ne peut pas être retrouvé via l'ID utilisateur client. | Vérifiez que l'ID est correct. Pour un utilisateur supprimé, utilisez `--profile`. |
+| `throttled` | Plus de 2 appels du même identifiant de transaction ou de lecture de solde en une seconde pour la même application. | Attendez, puis réexécutez la commande. Le CLI attend et retente une lecture jusqu'à 3 fois. |
+
+Adapty refuse également une 21e devise dans une application et un code que l'application utilise déjà, avec le code de sortie 4.
+
+### Si une écriture reste sans réponse \{#if-a-write-gets-no-answer\}
+
+Si le CLI ne reçoit pas de réponse à une écriture, en raison d'une erreur réseau ou d'une erreur serveur (code de sortie 4 ou 5), il ne peut pas savoir si Adapty a enregistré la modification. Le CLI n'envoie pas l'écriture une seconde fois. Avant de relancer la commande, vérifiez ce qu'Adapty a sauvegardé : après un `create`, lancez `list` et cherchez le code. Après toute autre écriture, lisez la devise avec `get`. Une deuxième écriture peut échouer même si la première a réussi : avec `virtual_currency_conflict`, avec une erreur 404 pour un mapping déjà supprimé, ou avec un code déjà utilisé après un create.
+
+## Référence des commandes \{#command-reference\}
+
+Chaque commande accepte `--app`, l'UUID de l'application issu de `adapty apps list`. Les commandes qui acceptent `<currency-id>` utilisent le `virtual_currency_id` retourné par `list`.
+
+### `virtual-currencies list`
+
+| Flag | Required | Description |
+|---|---|---|
+| `--page` | Non | Numéro de page. Défaut : 1. |
+| `--page-size` | Non | Devises par page, jusqu'à 100. Défaut : 20. |
+
+### `virtual-currencies get`
+
+Prend l'identifiant de la devise comme argument. Renvoie la devise avec tous ses mappings.
+
+### `virtual-currencies create`
+
+| Indicateur | Requis | Description |
+|---|---|---|
+| `--code` | Oui | Le code de la devise. Vous ne pourrez pas le modifier ultérieurement. |
+| `--name` | Oui | Le nom d'affichage. |
+| `--description` | Non | La description. |
+| `--file` | Non | Le fichier JSON des correspondances. Voir [Créer une devise](#create-a-currency). |
+| `--yes`, `-y` | Non | Créer sans confirmation. Requis avec `--json` ou dans un pipe. |
+
+### `virtual-currencies update`
+
+Prend l'ID de la devise comme argument.
+
+| Indicateur | Requis | Description |
+|---|---|---|
+| `--name` | Non | Le nouveau nom d'affichage. |
+| `--description` | Non | La nouvelle description. |
+| `--clear-description` | Non | Supprimer la description. |
+
+### `virtual-currencies mappings upsert`
+
+Prend l'ID de la devise comme argument.
+
+| Indicateur | Requis | Description |
+|---|---|---|
+| `--file` | Oui | Le fichier JSON contenant 1 à 200 mappings complets. Voir [Ajouter ou modifier des mappings](#add-or-change-mappings). |
+| `--expected-updated-at` | Avec `--yes` | Le `updated_at` de la lecture sur laquelle la modification est basée. |
+| `--yes`, `-y` | Non | Modifier sans demander de confirmation. Requis avec `--json` ou dans un pipe. |
+
+### `virtual-currencies mappings delete`
+
+Prend l'identifiant de la devise comme argument.
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--product` | Oui | L'identifiant de produit Adapty du mapping à supprimer. |
+| `--expected-updated-at` | Avec `--yes` | Le `updated_at` de la lecture sur laquelle la modification est basée. |
+| `--yes`, `-y` | Non | Supprimer sans confirmation. Requis avec `--json` ou dans un pipe. |
+
+### `virtual-currencies transactions list`
+
+| Drapeau | Requis | Description |
+|---|---|---|
+| `--date-from`, `--date-to` | Oui | Le premier et le dernier jour, `YYYY-MM-DD`, 366 jours maximum. |
+| `--timezone` | Non | Le fuseau horaire IANA des jours. Par défaut : le fuseau horaire de l'application. |
+| `--currency-code` | Non | Uniquement les transactions dans cette devise. |
+| `--operation` | Non | Uniquement les transactions avec cette opération. |
+| `--feature` | Non | Uniquement les transactions avec cette fonctionnalité. |
+| `--sandbox`, `--no-sandbox` | Non | `--sandbox` pour les transactions sandbox uniquement, `--no-sandbox` pour la production uniquement. Par défaut : les deux. |
+| `--page-size` | Non | Transactions par page, de 1 à 100. Par défaut : 20. |
+| `--cursor` | Non | Le curseur de la page suivante, issu de la page précédente. |
+
+### `virtual-currencies profiles transactions list`
+
+Prend exactement l'un des arguments `--profile` et `--customer-user-id`, ainsi que les flags de `transactions list`. La période est facultative.
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--profile` | L'un des deux | L'ID de profil Adapty de l'utilisateur. |
+| `--customer-user-id` | L'un des deux | Votre propre ID de l'utilisateur. |
+
+### `virtual-currencies profiles balances get`
+
+| Drapeau | Requis | Description |
+|---|---|---|
+| `--profile` | L'un des deux | L'ID de profil Adapty de l'utilisateur. |
+| `--customer-user-id` | L'un des deux | Votre propre ID de l'utilisateur. |
+
+## Travailler depuis un assistant IA \{#work-from-an-ai-assistant\}
+
+Le [serveur MCP Adapty](adapty-mcp) propose les mêmes actions que les outils `virtual_currencies_*`, par exemple `virtual_currencies_mappings_upsert` pour `mappings upsert`. Les outils fonctionnent de la même façon que les commandes, avec ces différences :
+
+- **Protection contre les modifications perdues** : `virtual_currencies_update`, `virtual_currencies_mappings_upsert` et `virtual_currencies_mappings_delete` exigent `expected_updated_at`, le `updated_at` d'une lecture. Après une erreur `virtual_currency_conflict`, l'assistant relit la devise.
+- **Description** : Dans `virtual_currencies_update`, une `description` vide supprime la description.
+- **Pages** : Quand `meta.pagination.has_more` est vrai, l'assistant envoie `meta.pagination.next_cursor` dans `cursor`, avec les mêmes filtres et le même fuseau horaire, pour la page suivante.
+- **Approbation** : Les outils ne demandent pas de confirmation et n'ont pas de `--yes`. Avant `virtual_currencies_create`, `virtual_currencies_mappings_upsert` et `virtual_currencies_mappings_delete`, l'assistant vous présente la modification et attend votre accord.
+- **Limitation de débit** : Après une erreur `throttled`, les outils ne retentent pas la lecture. L'erreur indique la durée d'attente.
+
+## Et ensuite ? \{#whats-next\}
+
+- [Skill agent pour les monnaies virtuelles](virtual-currencies-skill) — laissez votre agent configurer vos monnaies et expliquer le solde d'un utilisateur, avec votre accord avant chaque modification.
+- [Créer une monnaie virtuelle](create-virtual-currency) — la même configuration depuis le tableau de bord.
+- [Solde de monnaie virtuelle](virtual-currency-balance) — les soldes et l'historique des modifications d'un utilisateur dans le tableau de bord.
