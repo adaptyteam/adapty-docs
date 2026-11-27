@@ -467,4 +467,7 @@ async function generateLLMFiles() {
     } catch { /* no locales directory */ }
 }
 
-generateLLMFiles().catch(console.error);
+generateLLMFiles().catch((err) => {
+    console.error(err);
+    process.exit(1); // fail the build instead of shipping a partial export
+});
