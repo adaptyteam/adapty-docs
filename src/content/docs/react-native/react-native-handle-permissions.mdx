@@ -4,15 +4,15 @@ description: "Ask users for system permissions, such as push notifications or ca
 metadataTitle: "Handle Flow Permissions - React Native | Adapty Docs"
 ---
 
-A [flow](adapty-flow-builder) can ask users for a system permission with the **Request permission** action, for example push notifications on an onboarding screen that explains what the notifications are for, or camera access before a feature that scans documents. The Adapty SDK doesn't show the system permission dialog itself. It passes the request to the `onRequestPermission` handler in your app. Your app shows the dialog and returns the user's answer, and the flow continues.
+A [flow](adapty-flow-builder) can ask users for a system permission with the **Request permission** action. For example, it can ask for push notifications on an onboarding screen that explains them, or for camera access before a feature that scans documents. The Adapty SDK doesn't show the system permission dialog itself. It passes the request to the `onRequestPermission` handler in your app. Your app shows the dialog and returns the user's answer, and the flow continues.
 
 ## Before you start
 
 You need:
 
 - **Adapty React Native SDK 4.0.0 or later**: Earlier versions don't have the `onRequestPermission` handler.
-- **A flow with the Request permission action**: In the Flow & Paywall Builder, add the **Request permission** action to an element's **On Tap** or **On Screen Appear** trigger. In the action, select the permission in the **Permission** field, and add the actions to run after the user answers to its outcome sections, such as **Navigate Next** in **After response**. For the action settings, see [Request permission](onboarding-actions#request-permission).
-- **A library that shows the permission dialogs**: The code in this guide uses [react-native-permissions](https://github.com/zoontek/react-native-permissions) 5.x. To set it up, follow its [setup guide](https://github.com/zoontek/react-native-permissions#setup), and add each permission that your handler requests, such as `Notifications` and `Camera`, to the iOS permissions it sets up. Any other library that shows the dialogs works too, for example `expo-notifications` in an Expo app.
+- **A flow with the Request permission action**: In the Flow & Paywall Builder, add the **Request permission** action to the **On Tap** or **On Screen Appear** trigger of an element. In the action, select the permission in the **Permission** field. Then add the actions to run after the user answers to the outcome sections of the action, such as **Navigate Next** in **After response**. For the action settings, see [Request permission](onboarding-actions#request-permission).
+- **A library that shows the permission dialogs**: The code in this guide uses [react-native-permissions](https://github.com/zoontek/react-native-permissions) 5.x. To set it up, follow its [setup guide](https://github.com/zoontek/react-native-permissions#setup). On iOS, list each permission that your handler requests, such as `Notifications` and `Camera`, in the `setup_permissions` call of your `ios/Podfile`. Any other library that shows the dialogs works too, for example `expo-notifications` in an Expo app.
 - **A key-value storage for the Android answers**: To tell a new refusal from an earlier one on Android, the handler saves which permissions it requested. The code uses [AsyncStorage](https://github.com/react-native-async-storage/async-storage). Any other storage that keeps its values between app launches works too.
 - **The declarations of the permissions that your handler requests**: A purpose string in `Info.plist` on iOS, and a permission in the Android manifest. See [Declare the permissions](#declare-the-permissions).
 - **For push notifications on Android, `targetSdk` 33 or higher**: Only apps that target Android 13 or later choose when the notification permission dialog appears.
@@ -21,14 +21,13 @@ You need:
 
 1. The flow reaches the **Request permission** action: the user taps the element, or the screen appears.
 2. The Adapty SDK calls your `onRequestPermission` handler with the permission selected in the action, such as `push` or `camera`.
-3. Your app shows the system dialog and resolves the handler's promise to an object with the answer in `status` and the status of the answer in `detail`, such as `{ status: 'denied', detail: 'denied' }`.
-4. The flow runs the actions of one outcome section.
+3. Your app shows the system dialog. The handler's promise resolves to an object with the user's answer, `granted` or `denied`, in its `status` property, and the status of the answer in `detail`. For example: `{ status: 'denied', detail: 'permanently_denied' }`.
 
 <FlowPermissionAnswers />
 
 The flow waits on the screen until your handler's promise resolves. If the promise never resolves, the flow stays on the screen. If the OS doesn't show the dialog, for example because the user already answered it, the handler returns the earlier answer at once, and the flow runs the outcome actions right away. If those actions leave the screen, the user sees the screen that requests the permission only for a moment.
 
-With **On Screen Appear**, the flow doesn't send the request again when the user comes back to the screen with a **Navigate back** action, unless every outcome section of the action is empty. With **On Tap**, each tap sends a new request. The flow sends one permission request at a time: while a request waits for your answer, a tap on an element that requests a permission does nothing.
+With **On Screen Appear**, the flow sends the request once. When the user comes back to the screen with a **Navigate back** action, the flow doesn't send it again, unless every outcome section of the action is empty. With **On Tap**, each tap sends a new request. The flow sends one permission request at a time: while a request waits for your answer, a tap on an element that requests a permission does nothing.
 
 ## Implement the handler
 
@@ -112,12 +111,11 @@ Copy the functions from [Code for each permission](#code-for-each-permission) on
 
 The functions use these helpers, which turn the results of react-native-permissions into the statuses from [System permissions](flow-permissions#rules-for-every-permission):
 
-- **iOS**: Every refusal comes back from react-native-permissions as `RESULTS.BLOCKED`, also right after the alert. So `requestIOS()` reads the status with `check()` first: `BLOCKED` before the request passes `permanently_denied`, and `BLOCKED` after the alert passes `denied`.
+- **iOS**: Every refusal comes back from react-native-permissions as `RESULTS.BLOCKED`, also right after the alert. So `requestIOS()` reads the current result with `check()` first: `BLOCKED` before the request passes `permanently_denied`, and `BLOCKED` after the alert passes `denied`.
 - **Android**: The `answerAndroid()` helper reads whether Android shows a rationale before the request, and saves a flag for each dialog that it requested. After the request, react-native-permissions returns `RESULTS.DENIED` when Android shows a rationale, and `RESULTS.BLOCKED` when it doesn't.
 
 ```typescript showLineNumbers title="permissions.ts"
-// iOS: converts a status to the flow's answer. `before` is true for a status
-// read before the request, when iOS shows no alert.
+// iOS: the answer for a result read before the request (`before`) or after the alert.
 function iosAnswer(status: PermissionStatus, before: boolean): FlowPermissionResponse {
   switch (status) {
     case RESULTS.GRANTED:
@@ -130,21 +128,19 @@ function iosAnswer(status: PermissionStatus, before: boolean): FlowPermissionRes
       // Also restricted access: react-native-permissions doesn't report it apart.
       return { status: 'denied', detail: 'unsupported' };
     default:
-      // DENIED: still not determined after the request. The user made no choice.
+      // DENIED: still not determined after the request, so the user made no choice.
       return { status: 'denied' };
   }
 }
 
-// iOS: reads the status first, and shows the alert only while the status
-// isn't determined, which react-native-permissions reports as DENIED.
+// iOS: shows the alert only while the permission isn't determined (DENIED).
 async function requestIOS(permission: Permission): Promise<FlowPermissionResponse> {
   const before = await check(permission);
   if (before !== RESULTS.DENIED) return iosAnswer(before, true);
   return iosAnswer(await request(permission), false);
 }
 
-// Android: runs a request, and tells a refusal in the dialog from a refusal
-// without a dialog by the rationale before and after the request.
+// Android: tells a refusal in the dialog from one without a dialog by the rationale.
 async function answerAndroid(
   key: string,
   run: (rationale: Rationale) => Promise<PermissionStatus>,
@@ -193,7 +189,7 @@ function requestAndroid(permission: Permission): Promise<FlowPermissionResponse>
 The promise resolves to an object with these properties:
 
 - **`status`**: The user's answer: `granted` if the user allowed the permission, and `denied` otherwise.
-- **`detail`**: The status of the answer, such as `granted` or `permanently_denied`. The statuses from [How the flow requests a permission](#how-the-flow-requests-a-permission) go in this property, not in `status`. Without `detail`, a refusal runs **After response**.
+- **`detail`**: The status of the answer, such as `granted` or `permanently_denied`, from the table in [How the flow requests a permission](#how-the-flow-requests-a-permission). A status goes in this property, never in the `status` property. Without `detail`, a refusal runs **After response**.
 
 The Adapty SDK answers `denied` without a status when your handler throws an error or its promise rejects, so the flow runs **After response**.
 
@@ -201,19 +197,15 @@ A granted notification permission lets your app show notifications. To receive p
 
 ## Code for each permission
 
-Each function in this section requests one permission and returns the answer for the flow. Add it to `permissions.ts`, with the handler and the helpers. The setup line of each permission names its declarations and the name to set up in react-native-permissions on iOS.
+Each function in this section requests one permission and returns the answer for the flow. Add it to `permissions.ts`, with the handler and the helpers. The setup line of each permission names its declarations, and the name to list in the `setup_permissions` call of your `ios/Podfile`.
 
-The functions differ from [System permissions](flow-permissions) where react-native-permissions doesn't report what the article's tables need:
-
-- **Restricted access on iOS**: A permission that parental controls or a device policy restrict comes back from react-native-permissions as `RESULTS.UNAVAILABLE`. The functions can't tell it from an unavailable permission, so they pass `unsupported` instead of `restricted`, and the flow runs **After response** instead of **When denied**. This applies to every permission that the functions request on iOS.
-- **A second refusal of a dialog for several permissions on Android**: The `requestMultiple()` function takes no rationale callback. So for location while using the app, precise location, photos on Android 13 and later, calendar, and Bluetooth on Android 12 and later, a second refusal in the dialog passes `permanently_denied` instead of `denied`. Both run **When denied**.
-- **Missing device features on Android**: The library doesn't detect whether the device has a camera, Bluetooth, or a speech recognition service, so the functions don't pass `unsupported` on such a device. To pass it, detect the feature in a native module first.
+On iOS, react-native-permissions reports restricted access as `RESULTS.UNAVAILABLE`. So every function passes `unsupported` instead of `restricted`, and the flow runs **After response** instead of **When denied**.
 
 ### Push notifications \{#push\}
 
-Declare `POST_NOTIFICATIONS` on Android, and set up `Notifications` — see [System permissions](flow-permissions#push).
+Declare `POST_NOTIFICATIONS` on Android. List `Notifications` in `setup_permissions` of your Podfile. See [System permissions](flow-permissions#push).
 
-```typescript
+```typescript showLineNumbers title="permissions.ts"
 async function requestPush(): Promise<FlowPermissionResponse> {
   if (Platform.OS === 'ios') {
     const before = await checkNotifications();
@@ -245,9 +237,9 @@ async function requestPush(): Promise<FlowPermissionResponse> {
 
 ### App tracking (ATT) \{#tracking\}
 
-Declare `NSUserTrackingUsageDescription`, and set up `AppTrackingTransparency` — see [System permissions](flow-permissions#tracking).
+Declare `NSUserTrackingUsageDescription`. List `AppTrackingTransparency` in `setup_permissions` of your Podfile. See [System permissions](flow-permissions#tracking).
 
-```typescript
+```typescript showLineNumbers title="permissions.ts"
 async function requestTracking(): Promise<FlowPermissionResponse> {
   // Android has no tracking permission.
   if (Platform.OS !== 'ios') return { status: 'denied', detail: 'unsupported' };
@@ -260,15 +252,14 @@ async function requestTracking(): Promise<FlowPermissionResponse> {
 
 ### Location while using the app \{#location_when_use\}
 
-Declare `NSLocationWhenInUseUsageDescription`, `ACCESS_COARSE_LOCATION`, and `ACCESS_FINE_LOCATION`, and set up `LocationWhenInUse` — see [System permissions](flow-permissions#location_when_use).
+Declare `NSLocationWhenInUseUsageDescription`, `ACCESS_COARSE_LOCATION`, and `ACCESS_FINE_LOCATION`. List `LocationWhenInUse` in `setup_permissions` of your Podfile. See [System permissions](flow-permissions#location_when_use).
 
-```typescript
+```typescript showLineNumbers title="permissions.ts"
 async function requestLocationWhenInUse(): Promise<FlowPermissionResponse> {
   if (Platform.OS === 'ios') {
     const before = await check(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
     if (before !== RESULTS.DENIED) return iosAnswer(before, true);
-    // iOS doesn't call back when the request fails, for example in the background.
-    // Wait at most 30 seconds, then answer from the status.
+    // iOS may never call back, for example in the background: wait at most 30 seconds.
     await Promise.race([
       request(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE),
       new Promise<void>((resolve) => setTimeout(resolve, 30_000)),
@@ -286,33 +277,32 @@ async function requestLocationWhenInUse(): Promise<FlowPermissionResponse> {
 }
 ```
 
+- **Differs from System permissions**: On Android, a second refusal in the dialog passes `permanently_denied` instead of `denied`, because `requestMultiple()` takes no rationale callback. Both run **When denied**.
+
 ### Location always \{#location_always\}
 
-Declare `NSLocationWhenInUseUsageDescription`, `NSLocationAlwaysAndWhenInUseUsageDescription`, `ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION`, and `ACCESS_BACKGROUND_LOCATION`, and set up `LocationWhenInUse` and `LocationAlways` — see [System permissions](flow-permissions#location_always). On Android, the function requests foreground location with `requestLocationWhenInUse()`, so copy that function too.
+Declare `NSLocationWhenInUseUsageDescription`, `NSLocationAlwaysAndWhenInUseUsageDescription`, `ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION`, and `ACCESS_BACKGROUND_LOCATION`. List `LocationWhenInUse` and `LocationAlways` in `setup_permissions` of your Podfile. See [System permissions](flow-permissions#location_always). On Android, the function requests foreground location with `requestLocationWhenInUse()`, so copy that function too.
 
-```typescript
+```typescript showLineNumbers title="permissions.ts"
 async function requestLocationAlways(): Promise<FlowPermissionResponse> {
   if (Platform.OS === 'ios') {
     const whenInUseBefore = await check(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
     // BLOCKED before the request: location is denied, or the app made its one Always request.
     const before = await check(PERMISSIONS.IOS.LOCATION_ALWAYS);
     if (before !== RESULTS.DENIED) return iosAnswer(before, true);
-    // iOS doesn't call back when the request fails, for example in the background.
-    // Wait at most 30 seconds, then answer from the status.
+    // iOS may never call back, for example in the background: wait at most 30 seconds.
     await Promise.race([
       request(PERMISSIONS.IOS.LOCATION_ALWAYS),
       new Promise<void>((resolve) => setTimeout(resolve, 30_000)),
     ]);
-    const after = await check(PERMISSIONS.IOS.LOCATION_ALWAYS);
     // From "not determined", allowing location in the first alert grants provisional Always access.
     if (
-      after === RESULTS.BLOCKED &&
       whenInUseBefore === RESULTS.DENIED &&
       (await check(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE)) === RESULTS.GRANTED
     ) {
       return { status: 'granted', detail: 'provisional' };
     }
-    return iosAnswer(after, false);
+    return iosAnswer(await check(PERMISSIONS.IOS.LOCATION_ALWAYS), false);
   }
   // Android needs foreground location first, then background location in a separate request.
   const foreground = await requestLocationWhenInUse();
@@ -330,18 +320,16 @@ async function requestLocationAlways(): Promise<FlowPermissionResponse> {
 
 ### Precise location \{#location_full_accuracy\}
 
-Declare `NSLocationWhenInUseUsageDescription`, `NSLocationTemporaryUsageDescriptionDictionary` with your purpose key, `ACCESS_COARSE_LOCATION`, and `ACCESS_FINE_LOCATION`, and set up `LocationWhenInUse` and `LocationAccuracy` — see [System permissions](flow-permissions#location_full_accuracy).
+Declare `NSLocationWhenInUseUsageDescription`, `NSLocationTemporaryUsageDescriptionDictionary` with your purpose key, `ACCESS_COARSE_LOCATION`, and `ACCESS_FINE_LOCATION`. List `LocationWhenInUse` and `LocationAccuracy` in `setup_permissions` of your Podfile. See [System permissions](flow-permissions#location_full_accuracy).
 
-```typescript
+```typescript showLineNumbers title="permissions.ts"
 async function requestLocationFullAccuracy(): Promise<FlowPermissionResponse> {
   if (Platform.OS === 'ios') {
-    // requestLocationAccuracy() rejects without location access, so request location first.
-    // Its alert has a Precise switch.
+    // requestLocationAccuracy() rejects without location access: request location first.
     const before = await check(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
     const decided = before !== RESULTS.DENIED;
     if (!decided) {
-      // iOS doesn't call back when the request fails, for example in the background.
-      // Wait at most 30 seconds, then answer from the status.
+      // iOS may never call back, for example in the background: wait at most 30 seconds.
       await Promise.race([
         request(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE),
         new Promise<void>((resolve) => setTimeout(resolve, 30_000)),
@@ -349,8 +337,7 @@ async function requestLocationFullAccuracy(): Promise<FlowPermissionResponse> {
     }
     const location = decided ? before : await check(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
     if (location !== RESULTS.GRANTED) return iosAnswer(location, decided);
-    // A key of NSLocationTemporaryUsageDescriptionDictionary in Info.plist.
-    // iOS reports a declined alert as an error, so read the accuracy then.
+    // A declined alert rejects, so read the accuracy then.
     const accuracy = await requestLocationAccuracy({ purposeKey: 'StoreFinder' }).catch(() =>
       checkLocationAccuracy(),
     );
@@ -376,24 +363,26 @@ async function requestLocationFullAccuracy(): Promise<FlowPermissionResponse> {
 ```
 
 - Replace `StoreFinder` with a key of `NSLocationTemporaryUsageDescriptionDictionary` in your `Info.plist`. `requestLocationAccuracy()` throws an error on Android, so the function doesn't call it there.
-- **Differs from System permissions**: When approximate location is already granted, `requestMultiple()` requests `ACCESS_FINE_LOCATION` alone, because it skips granted permissions. Some Android 12 releases ignore that request, so the user sees no dialog, and the function passes `denied`.
+- **Differs from System permissions**: On Android, a second refusal in the dialog passes `permanently_denied` instead of `denied`, because `requestMultiple()` takes no rationale callback. Both run **When denied**. When approximate location is already granted, `requestMultiple()` skips it and requests `ACCESS_FINE_LOCATION` alone. Some Android 12 releases ignore that request, so the user sees no dialog, and the function passes `denied`.
 
 ### Camera \{#camera\}
 
-Declare `NSCameraUsageDescription` and `CAMERA`, and set up `Camera` — see [System permissions](flow-permissions#camera).
+Declare `NSCameraUsageDescription` and `CAMERA`. List `Camera` in `setup_permissions` of your Podfile. See [System permissions](flow-permissions#camera).
 
-```typescript
+```typescript showLineNumbers title="permissions.ts"
 async function requestCamera(): Promise<FlowPermissionResponse> {
   if (Platform.OS === 'ios') return requestIOS(PERMISSIONS.IOS.CAMERA);
   return requestAndroid(PERMISSIONS.ANDROID.CAMERA);
 }
 ```
 
+- **Differs from System permissions**: On Android, react-native-permissions doesn't read `FEATURE_CAMERA_ANY`, so on a device without a camera the function shows the dialog instead of passing `unsupported`.
+
 ### Microphone \{#microphone\}
 
-Declare `NSMicrophoneUsageDescription` and `RECORD_AUDIO`, and set up `Microphone` — see [System permissions](flow-permissions#microphone).
+Declare `NSMicrophoneUsageDescription` and `RECORD_AUDIO`. List `Microphone` in `setup_permissions` of your Podfile. See [System permissions](flow-permissions#microphone).
 
-```typescript
+```typescript showLineNumbers title="permissions.ts"
 async function requestMicrophone(): Promise<FlowPermissionResponse> {
   if (Platform.OS === 'ios') return requestIOS(PERMISSIONS.IOS.MICROPHONE);
   return requestAndroid(PERMISSIONS.ANDROID.RECORD_AUDIO);
@@ -402,9 +391,9 @@ async function requestMicrophone(): Promise<FlowPermissionResponse> {
 
 ### Photos \{#photos\}
 
-Declare `NSPhotoLibraryUsageDescription`, `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_VISUAL_USER_SELECTED`, and `READ_EXTERNAL_STORAGE` for Android 12 and earlier, and set up `PhotoLibrary` — see [System permissions](flow-permissions#photos).
+Declare `NSPhotoLibraryUsageDescription`, `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_VISUAL_USER_SELECTED`, and `READ_EXTERNAL_STORAGE` for Android 12 and earlier. List `PhotoLibrary` in `setup_permissions` of your Podfile. See [System permissions](flow-permissions#photos).
 
-```typescript
+```typescript showLineNumbers title="permissions.ts"
 async function requestPhotos(): Promise<FlowPermissionResponse> {
   if (Platform.OS === 'ios') return requestIOS(PERMISSIONS.IOS.PHOTO_LIBRARY);
   if (Platform.OS === 'android' && Platform.Version < 33) {
@@ -424,19 +413,20 @@ async function requestPhotos(): Promise<FlowPermissionResponse> {
     ) {
       return RESULTS.GRANTED;
     }
-    // react-native-permissions never returns LIMITED on Android. On Android 14 and later,
-    // a selection of photos grants only READ_MEDIA_VISUAL_USER_SELECTED.
+    // Android 14 and later: a selection of photos grants only READ_MEDIA_VISUAL_USER_SELECTED.
     if (result[READ_MEDIA_VISUAL_USER_SELECTED] === RESULTS.GRANTED) return RESULTS.LIMITED;
     return result[READ_MEDIA_IMAGES];
   });
 }
 ```
 
+- **Differs from System permissions**: On Android 13 and later, a second refusal in the dialog passes `permanently_denied` instead of `denied`, because `requestMultiple()` takes no rationale callback. Both run **When denied**.
+
 ### Media library \{#media_library\}
 
-Declare `NSAppleMusicUsageDescription`, `READ_MEDIA_AUDIO`, and `READ_EXTERNAL_STORAGE` for Android 12 and earlier, and set up `MediaLibrary` — see [System permissions](flow-permissions#media_library).
+Declare `NSAppleMusicUsageDescription`, `READ_MEDIA_AUDIO`, and `READ_EXTERNAL_STORAGE` for Android 12 and earlier. List `MediaLibrary` in `setup_permissions` of your Podfile. See [System permissions](flow-permissions#media_library).
 
-```typescript
+```typescript showLineNumbers title="permissions.ts"
 async function requestMediaLibrary(): Promise<FlowPermissionResponse> {
   if (Platform.OS === 'ios') return requestIOS(PERMISSIONS.IOS.MEDIA_LIBRARY);
   if (Platform.OS === 'android' && Platform.Version < 33) {
@@ -448,9 +438,9 @@ async function requestMediaLibrary(): Promise<FlowPermissionResponse> {
 
 ### Apple Music \{#music\}
 
-Declare `NSAppleMusicUsageDescription`, and set up `StoreKit` — see [System permissions](flow-permissions#music).
+Declare `NSAppleMusicUsageDescription`. List `StoreKit` in `setup_permissions` of your Podfile. See [System permissions](flow-permissions#music).
 
-```typescript
+```typescript showLineNumbers title="permissions.ts"
 async function requestMusic(): Promise<FlowPermissionResponse> {
   // Android has no Apple Music permission.
   if (Platform.OS !== 'ios') return { status: 'denied', detail: 'unsupported' };
@@ -458,13 +448,13 @@ async function requestMusic(): Promise<FlowPermissionResponse> {
 }
 ```
 
-- `PERMISSIONS.IOS.STOREKIT` requests access with `SKCloudServiceController`. It returns the same authorization as MusicKit, but Apple deprecated it in iOS 18, so use it only while the app can't call MusicKit. To request access with MusicKit's `MusicAuthorization.request()`, use a native module.
+- **Differs from System permissions**: The `PERMISSIONS.IOS.STOREKIT` request uses `SKCloudServiceController` instead of MusicKit. It returns the same authorization, but Apple deprecated it in iOS 18. To request access with MusicKit's `MusicAuthorization.request()`, use a native module.
 
 ### Speech recognition \{#speech\}
 
-Declare `NSSpeechRecognitionUsageDescription` and `RECORD_AUDIO`, and set up `SpeechRecognition` — see [System permissions](flow-permissions#speech).
+Declare `NSSpeechRecognitionUsageDescription` and `RECORD_AUDIO`. List `SpeechRecognition` in `setup_permissions` of your Podfile. See [System permissions](flow-permissions#speech).
 
-```typescript
+```typescript showLineNumbers title="permissions.ts"
 async function requestSpeech(): Promise<FlowPermissionResponse> {
   if (Platform.OS === 'ios') return requestIOS(PERMISSIONS.IOS.SPEECH_RECOGNITION);
   // Android has no speech recognition permission: SpeechRecognizer needs the microphone.
@@ -472,11 +462,13 @@ async function requestSpeech(): Promise<FlowPermissionResponse> {
 }
 ```
 
+- **Differs from System permissions**: On Android, react-native-permissions doesn't call `SpeechRecognizer.isRecognitionAvailable()`. On a device without a recognition service, the function passes the microphone answer instead of `unsupported`.
+
 ### Contacts \{#contacts\}
 
-Declare `NSContactsUsageDescription` and `READ_CONTACTS`, and set up `Contacts` — see [System permissions](flow-permissions#contacts).
+Declare `NSContactsUsageDescription` and `READ_CONTACTS`. List `Contacts` in `setup_permissions` of your Podfile. See [System permissions](flow-permissions#contacts).
 
-```typescript
+```typescript showLineNumbers title="permissions.ts"
 async function requestContacts(): Promise<FlowPermissionResponse> {
   // On iOS 18 and later, a selection of contacts comes back as LIMITED.
   if (Platform.OS === 'ios') return requestIOS(PERMISSIONS.IOS.CONTACTS);
@@ -486,9 +478,9 @@ async function requestContacts(): Promise<FlowPermissionResponse> {
 
 ### Calendar \{#calendar\}
 
-Declare `NSCalendarsFullAccessUsageDescription`, `READ_CALENDAR`, and `WRITE_CALENDAR`, and set up `Calendars` and `CalendarsWriteOnly` — see [System permissions](flow-permissions#calendar).
+Declare `NSCalendarsFullAccessUsageDescription`, `NSCalendarsUsageDescription` for iOS 16 and earlier, `READ_CALENDAR`, and `WRITE_CALENDAR`. List `Calendars` and `CalendarsWriteOnly` in `setup_permissions` of your Podfile. See [System permissions](flow-permissions#calendar).
 
-```typescript
+```typescript showLineNumbers title="permissions.ts"
 async function requestCalendar(): Promise<FlowPermissionResponse> {
   if (Platform.OS === 'ios') {
     const answer = await requestIOS(PERMISSIONS.IOS.CALENDARS);
@@ -511,13 +503,14 @@ async function requestCalendar(): Promise<FlowPermissionResponse> {
 }
 ```
 
+- **Differs from System permissions**: On Android, a second refusal in the dialog passes `permanently_denied` instead of `denied`, because `requestMultiple()` takes no rationale callback. Both run **When denied**.
 - On iOS 17 and later, `PERMISSIONS.IOS.CALENDARS` requests full access. The function reads `PERMISSIONS.IOS.CALENDARS_WRITE_ONLY` only to pass `limited` for write-only access, so it shows no second alert.
 
 ### Reminders \{#reminders\}
 
-Declare `NSRemindersFullAccessUsageDescription`, and set up `Reminders` — see [System permissions](flow-permissions#reminders).
+Declare `NSRemindersFullAccessUsageDescription`, and `NSRemindersUsageDescription` for iOS 16 and earlier. List `Reminders` in `setup_permissions` of your Podfile. See [System permissions](flow-permissions#reminders).
 
-```typescript
+```typescript showLineNumbers title="permissions.ts"
 async function requestReminders(): Promise<FlowPermissionResponse> {
   // Android has no system reminders.
   if (Platform.OS !== 'ios') return { status: 'denied', detail: 'unsupported' };
@@ -527,9 +520,9 @@ async function requestReminders(): Promise<FlowPermissionResponse> {
 
 ### Health data \{#health\}
 
-react-native-permissions doesn't request HealthKit or Health Connect access. To request health data, use a native module or a health library, and pass the statuses from [System permissions](flow-permissions#health).
+react-native-permissions doesn't request HealthKit or Health Connect access. To request health data, use a native module or a health library. See [System permissions](flow-permissions#health).
 
-```typescript
+```typescript showLineNumbers title="permissions.ts"
 async function requestHealth(): Promise<FlowPermissionResponse> {
   // react-native-permissions has no request for health data.
   return { status: 'denied', detail: 'unsupported' };
@@ -538,16 +531,15 @@ async function requestHealth(): Promise<FlowPermissionResponse> {
 
 ### Motion & Fitness \{#motion\}
 
-Declare `NSMotionUsageDescription` and `ACTIVITY_RECOGNITION`, and set up `Motion` — see [System permissions](flow-permissions#motion).
+Declare `NSMotionUsageDescription` and `ACTIVITY_RECOGNITION`. List `Motion` in `setup_permissions` of your Podfile. See [System permissions](flow-permissions#motion).
 
-```typescript
+```typescript showLineNumbers title="permissions.ts"
 async function requestMotion(): Promise<FlowPermissionResponse> {
   if (Platform.OS === 'ios') {
     // UNAVAILABLE before the request: the device has no motion data.
     const before = await check(PERMISSIONS.IOS.MOTION);
     if (before !== RESULTS.DENIED) return iosAnswer(before, true);
-    // iOS has no request method: the alert appears at the first motion query.
-    // Wait at most 30 seconds, then answer from the status.
+    // iOS shows the alert at the first motion query: wait at most 30 seconds for it.
     await Promise.race([
       request(PERMISSIONS.IOS.MOTION),
       new Promise<void>((resolve) => setTimeout(resolve, 30_000)),
@@ -564,23 +556,21 @@ async function requestMotion(): Promise<FlowPermissionResponse> {
 
 ### Bluetooth \{#bluetooth\}
 
-Declare `NSBluetoothAlwaysUsageDescription`, `BLUETOOTH_SCAN`, `BLUETOOTH_CONNECT`, and `ACCESS_FINE_LOCATION` for Android 11 and earlier, and set up `Bluetooth` — see [System permissions](flow-permissions#bluetooth).
+Declare `NSBluetoothAlwaysUsageDescription`, `BLUETOOTH_SCAN`, `BLUETOOTH_CONNECT`, and `ACCESS_FINE_LOCATION` for Android 11 and earlier. List `Bluetooth` in `setup_permissions` of your Podfile. See [System permissions](flow-permissions#bluetooth).
 
-```typescript
+```typescript showLineNumbers title="permissions.ts"
 async function requestBluetooth(): Promise<FlowPermissionResponse> {
   if (Platform.OS === 'ios') {
     const before = await check(PERMISSIONS.IOS.BLUETOOTH);
     if (before !== RESULTS.DENIED) return iosAnswer(before, true);
-    // iOS has no request method: the alert appears when the app first uses Bluetooth.
-    // Wait at most 30 seconds, then answer from the status. Bluetooth turned off isn't a refusal.
+    // iOS shows the alert at the first Bluetooth use: wait at most 30 seconds for it.
     await Promise.race([
       request(PERMISSIONS.IOS.BLUETOOTH),
       new Promise<void>((resolve) => setTimeout(resolve, 30_000)),
     ]);
     return iosAnswer(await check(PERMISSIONS.IOS.BLUETOOTH), false);
   }
-  // Android 11 and earlier: scanning needs precise location. One flag for every request
-  // that shows the location dialog.
+  // Android 11 and earlier: scanning needs precise location, under the location flag.
   if (Platform.OS === 'android' && Platform.Version < 31) {
     const { ACCESS_FINE_LOCATION } = PERMISSIONS.ANDROID;
     return answerAndroid('location', (rationale) => request(ACCESS_FINE_LOCATION, rationale));
@@ -595,19 +585,19 @@ async function requestBluetooth(): Promise<FlowPermissionResponse> {
 }
 ```
 
+- **Differs from System permissions**: On Android 12 and later, a second refusal in the dialog passes `permanently_denied` instead of `denied`, because `requestMultiple()` takes no rationale callback. Both run **When denied**. The function also doesn't read `FEATURE_BLUETOOTH`, so it doesn't pass `unsupported` on a device without Bluetooth.
 - On the iOS Simulator, react-native-permissions reports Bluetooth as `RESULTS.UNAVAILABLE`, so the function passes `unsupported`. Test the request on a device.
 
 ### Local network \{#local_network\}
 
-On Android, declare `ACCESS_LOCAL_NETWORK` only if the app targets Android 17 (API 37) or higher — see [System permissions](flow-permissions#local_network).
+On Android, declare `ACCESS_LOCAL_NETWORK` only if the app targets Android 17 (API 37) or higher. See [System permissions](flow-permissions#local_network).
 
-```typescript
+```typescript showLineNumbers title="permissions.ts"
 // The targetSdkVersion of your Android app.
 const ANDROID_TARGET_SDK = 36;
 
 async function requestLocalNetwork(): Promise<FlowPermissionResponse> {
-  // iOS has no request method and no status for the local network. A native module
-  // can show the alert with a local network operation: answer from its result instead.
+  // iOS has no request method for the local network: see System permissions.
   if (Platform.OS === 'ios') return { status: 'denied', detail: 'unsupported' };
   // Below Android 17, apps access the local network with INTERNET, without a dialog.
   if (ANDROID_TARGET_SDK < 37 || (Platform.OS === 'android' && Platform.Version < 37)) {
@@ -621,9 +611,9 @@ async function requestLocalNetwork(): Promise<FlowPermissionResponse> {
 
 ### HomeKit \{#homekit\}
 
-react-native-permissions doesn't request HomeKit access, and Android has no such permission. To request it on iOS, use a native module — see [System permissions](flow-permissions#homekit).
+react-native-permissions doesn't request HomeKit access, and Android has no such permission. To request it on iOS, use a native module. See [System permissions](flow-permissions#homekit).
 
-```typescript
+```typescript showLineNumbers title="permissions.ts"
 async function requestHomeKit(): Promise<FlowPermissionResponse> {
   // react-native-permissions has no request for HomeKit.
   return { status: 'denied', detail: 'unsupported' };
@@ -632,9 +622,9 @@ async function requestHomeKit(): Promise<FlowPermissionResponse> {
 
 ### Focus status \{#focus_status\}
 
-react-native-permissions doesn't request access to the Focus status, and Android has no such permission. To request it on iOS, use a native module — see [System permissions](flow-permissions#focus_status).
+react-native-permissions doesn't request access to the Focus status, and Android has no such permission. To request it on iOS, use a native module. See [System permissions](flow-permissions#focus_status).
 
-```typescript
+```typescript showLineNumbers title="permissions.ts"
 async function requestFocusStatus(): Promise<FlowPermissionResponse> {
   // react-native-permissions has no request for the Focus status.
   return { status: 'denied', detail: 'unsupported' };
@@ -643,9 +633,9 @@ async function requestFocusStatus(): Promise<FlowPermissionResponse> {
 
 ### Siri \{#siri\}
 
-Add the Siri capability, declare `NSSiriUsageDescription`, and set up `Siri` — see [System permissions](flow-permissions#siri).
+Add the Siri capability and declare `NSSiriUsageDescription`. List `Siri` in `setup_permissions` of your Podfile. See [System permissions](flow-permissions#siri).
 
-```typescript
+```typescript showLineNumbers title="permissions.ts"
 async function requestSiri(): Promise<FlowPermissionResponse> {
   // Android has no Siri permission.
   if (Platform.OS !== 'ios') return { status: 'denied', detail: 'unsupported' };
@@ -657,7 +647,7 @@ async function requestSiri(): Promise<FlowPermissionResponse> {
 
 ## Request each permission
 
-This table lists what the functions in [Code for each permission](#code-for-each-permission) request with react-native-permissions for each value, and the name to add to the iOS permissions that react-native-permissions sets up. A dash means that react-native-permissions has no such request: the function answers `unsupported`, or your app requests the permission in its own native module.
+This table lists what each function requests with react-native-permissions. The **iOS setup name** column has the name to list in `setup_permissions`. A dash means that react-native-permissions has no such request: the function answers `unsupported`, or your app requests the permission in its own native module.
 
 | Value | iOS | iOS setup name | Android |
 |:------|:----|:---------------|:--------|
@@ -682,8 +672,6 @@ This table lists what the functions in [Code for each permission](#code-for-each
 | `homekit` | — | — | — |
 | `focus_status` | — | — | — |
 | `siri` | `PERMISSIONS.IOS.SIRI` | `Siri` | — |
-
-For the answers that react-native-permissions can't give, see [Code for each permission](#code-for-each-permission).
 
 ## Declare the permissions
 
@@ -753,7 +741,16 @@ await view.present();
 
 ## Test the permission request
 
-iOS shows most permission dialogs only once per app install. Android stops showing a permission dialog after the user allows the permission or denies it twice. To see the dialog again while you test the flow, delete the app from the device and install it again. Then open the flow and reach the **Request permission** action. If the flow moves on without a dialog, make sure that the flow view has the `onRequestPermission` handler, and that the app declares the permission on both platforms. For notifications on Android, the app must also target Android 13 or later.
+iOS shows most permission dialogs only once per app install. Android stops showing a permission dialog after the user allows the permission or denies it twice. To see the dialog again while you test the flow:
+
+1. Delete the app from the device, and install it again.
+2. Open the flow, and reach the **Request permission** action.
+
+If the flow moves on without a dialog, make sure that:
+
+- The flow view has the `onRequestPermission` handler.
+- The app declares the permission on both platforms, and lists it in `setup_permissions` on iOS.
+- For notifications on Android, the app targets Android 13 or later.
 
 To see how users answer permission requests, read the flow's analytics events in the `onAnalytics` handler of the flow view. For details, see [Handle flow & paywall events](react-native-handling-events-1).
 

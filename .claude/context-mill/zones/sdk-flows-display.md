@@ -243,15 +243,16 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
   restructuring the article, not adding a third wrapper.
 - **Per-kind permission facts live only in `flow-permissions`** (added 2026-11-26). What each of the 21
   permission kinds shows users, its `Info.plist` keys, capabilities, manifest permissions and API
-  levels, and the native result → answer → section → `outcome` table are written once, in the shared
+  levels, and the native result → answer → section → outcome table are written once, in the shared
   tutorial article `flow-permissions` (title **System permissions**, sidebar Flow & Paywall Builder →
-  Navigation and interaction, after `onboarding-actions`). The seven `*-handle-permissions` guides carry
+  Navigation and interaction, after `onboarding-actions`). Since 2026-11-27 the article is assigned to
+  `flow-logic`, next to its sibling tutorial articles; this zone owns the seven guides that implement it. The seven `*-handle-permissions` guides carry
   the handler code, SDK minimums, the declaration table, the wrapper's plugin table and status mapping,
   testing, and one pointer sentence in `## Declare the permissions`. The reference holds no Adapty SDK
   identifiers (no `AdaptyPermission`, `onShowRequestPermission`, `handlePermission`) and no minimum
   Adapty SDK versions: those differ per SDK. Third-party plugin mappings (permission_handler,
   react-native-permissions, Capacitor plugins, Unity APIs, moko-permissions) live only in the matching
-  guide's `## Request each permission` section (KMP: `### Use moko-permissions`).
+  guide's `## Request each permission` section (KMP: `## If your app uses moko-permissions`).
   Since 2026-11-27, each of the seven guides also has `## Code for each permission`: a dispatcher in
   `## Implement the handler` and one H3 per kind, with the reference's heading text and wire-value id,
   a pointer `See [System permissions](flow-permissions#<id>)`, and one self-contained code block. A
@@ -263,7 +264,6 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | family | ios | android | react-native | flutter | unity | kmp | capacitor |
 |---|---|---|---|---|---|---|---|
 | flow-input | ios-flow-input | android-flow-input | react-native-flow-input | flutter-flow-input | unity-flow-input | kmp-flow-input | capacitor-flow-input |
-| flow-permissions |  |  |  |  |  |  |  |
 | flow-screen-views | ios-flow-screen-views | android-flow-screen-views | react-native-flow-screen-views | flutter-flow-screen-views | unity-flow-screen-views | kmp-flow-screen-views | capacitor-flow-screen-views |
 | get-pb-paywalls | get-pb-paywalls | android-get-pb-paywalls | react-native-get-pb-paywalls | flutter-get-pb-paywalls | unity-get-pb-paywalls | kmp-get-pb-paywalls | capacitor-get-pb-paywalls |
 | handle-paywall-actions | handle-paywall-actions | android-handle-paywall-actions | react-native-handle-paywall-actions | flutter-handle-paywall-actions | unity-handle-paywall-actions | kmp-handle-paywall-actions | capacitor-handle-paywall-actions |
@@ -309,7 +309,6 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | capacitor-present-paywalls | — | dev | 8 | capacitor |
 | capacitor-use-fallback-paywalls | — | dev | 4 | capacitor |
 | capacitor-web-paywall | — | dev | 3 | capacitor |
-| flow-permissions | reference | dev, marketer | 30 | tutorial |
 | flutter-flow-input | — | dev | 10 | flutter |
 | flutter-flow-screen-views | — | dev | 4 | flutter |
 | flutter-get-pb-paywalls | — | dev | 11 | flutter |
@@ -421,7 +420,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 - **Three reusables carry the platform-independent half of the `handle-permissions` family** (added
   2026-11-24; rewritten 2026-11-26, when the per-kind reference `flow-permissions` was added).
   `FlowPermissionAnswers` (which answer runs which section, and the statuses), `FlowPermissionEvents`
-  (the three analytics events, the `outcome` values and the exact status strings) and
+  (the three analytics events, the outcome values and the exact status strings) and
   `FlowPermissionDeclarations` (the summary table: builder label, value, `Info.plist` keys and
   capabilities, Android permissions with their Android versions folded into the cells) in
   `src/components/reusable/`. The five cross-platform guides render `FlowPermissionDeclarations`; the iOS
@@ -433,17 +432,18 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
   - **New permission kind or renamed builder label:** a new H3 in its group in `flow-permissions` (id =
     wire value), a `FlowPermissionDeclarations` row, the iOS inline row (and its `AdaptyPermission`
     case), the Android inline row if Android has a permission, a row in each wrapper's plugin table, the
-    builder labels and callout (dashboard code), and `onboarding-actions` only if it names the kind.
+    builder labels and the builder's setup line (dashboard code), and `onboarding-actions` only if it
+    names the kind.
   - **Changed declaration (key, manifest permission, API level, capability):** the kind's section in
-    `flow-permissions`, `FlowPermissionDeclarations`, the iOS or Android inline table, the builder
-    callout.
+    `flow-permissions`, `FlowPermissionDeclarations`, the iOS or Android inline table, the builder's
+    setup line.
   - **The builder's setup line must stay equal to `FlowPermissionDeclarations`** (2026-11-27): the
-    callout prints every declaration of the selected kind from the same table, so a changed row is a
-    dashboard change too, and the reverse.
+    builder prints the full declarations row of the selected kind, with its qualifiers, so a changed row
+    is a dashboard change too, and the reverse.
   - **Changed routing or a new status string:** `FlowPermissionAnswers`, the Section column of the 21
     per-kind tables, `onboarding-actions#request-permission`, the status-mapping tables of the five
     wrapper guides, and the handler samples if a status they send changes.
-  - **Changed `outcome` mapping or events:** `FlowPermissionEvents`, the `outcome` column of the 21
+  - **Changed outcome mapping or events:** `FlowPermissionEvents`, the outcome column of the 21
     per-kind tables, the `FlowInputParams` event-name row.
   - **Changed no-handler behavior, SDK minimums or handler names:** the seven guides and the
     `onboarding-actions` warning only. Not the reference.
@@ -455,7 +455,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
     a device or emulator: compiling isn't enough. The device run of 2026-11-27 found an Android guide
     crash that compiled cleanly: `getSharedPreferences` in an activity property initializer runs before
     the activity has a context; `by lazy` fixed it.
-  The Section and `outcome` columns are derived from `FlowPermissionAnswers` and the `FlowPermissionEvents`
+  The Section and outcome columns are derived from `FlowPermissionAnswers` and the `FlowPermissionEvents`
   table, never chosen per kind. `FlowInputParams` names the permission events in its row for the event
   name, because the flow-input articles filter the same analytics callback. Each `*-handle-permissions`
   article introduces `FlowPermissionEvents` with "To see how users answer permission requests", so a
@@ -498,7 +498,7 @@ and are deliberately not repeated here.
 | "where do I start with paywalls" | The `paywalls` family — the per-platform entry pages, whose job is routing to builder vs manual. |
 | "get the email the user typed in the flow", "read quiz answers in the app", "save onboarding answers as custom attributes" | `flow-input`. Values ride the analytics callback as `flow_user_input`; text fields report on focus loss, selectables per tap, pickers on close. A default or pre-selected value never fires an event — the shared `FlowInputTiming` snippet is where that lives. |
 | "the input event never arrives", "no flow_user_input on my device" | `flow-input`, the `## Before you start` snippet: the flow must have been published after 2026-09-07; the SDK floor is only "first v4". The Adapty preview app never shows these events — its `AdaptyUIFlowView` call registers no analytics callback (preview app code, closed-source) — so the test has to run in the developer's own build. |
-| "app crashes when the flow asks for X", "Info.plist key for X", "which capability does Health need" | `flow-permissions#<kind>`. iOS terminates the app for most kinds when the purpose string is missing; Siri crashes on any `INPreferences` call without the Siri capability. The guide's handler must answer the status "unsupported" for kinds the app doesn't declare. |
+| "app crashes when the flow asks for X", "Info.plist key for X", "which capability does Health need" | `flow-permissions#<kind>`. iOS terminates the app for most kinds when the purpose string is missing; Siri needs the Siri capability for authorization (Apple), and one Simulator run crashed on an `INPreferences` call without it. The guide's handler must answer the status "unsupported" for kinds the app doesn't declare. |
 | "location always never asked", "background location", "Allow all the time missing" | `flow-permissions#location_always`. Two steps on both OSes: iOS gives provisional Always and asks later; Android 11+ sends the user to a settings page, after foreground location. |
 | "flow stuck on the location screen", "permission screen never moves on" | `flow-permissions#location_when_use` first: `requestWhenInUseAuthorization()` never calls back when the status is decided or the key is missing. Then the guide's no-handler warning for the SDK. |
 | "ATT from the onboarding", "tracking dialog doesn't show at launch" | `flow-permissions#tracking`. The alert needs an active app; **On Screen Appear** on the first screen can fire too early. Sending the status to Adapty is `ios-deal-with-att`. |
@@ -691,195 +691,72 @@ and transformer code, 2026-11-24):
   - Still open: the Android modal-activity question above (Flutter, Unity) — no Android device check yet.
   - The Unity guide requires 4.3.0 on Android, but the newest Unity tag read on 2026-11-24 was
     `4.3.0-beta.1`. Since 4.3.0 requires Unity 6, the Unity sample no longer has a pre-Unity-6 branch.
-    Corrected 2026-11-26: the requirement is gone (see the minimum-versions bullet), and the sample
-    guards `PermissionRequestDismissed` with `#if UNITY_6000_0_OR_NEWER`: the Unity 2022.3 scripting
-    reference has no such event, and Unity 4.1.x supports 2022.3.
+    Corrected 2026-11-26: the requirement is gone (see the minimum-versions bullet). Superseded
+    2026-11-27: the Unity Android code now uses its own Java `.androidlib` plugin, not
+    `PermissionCallbacks`.
 
-### Per-kind permission reference — 2026-11-26
+### Permission kinds: verified facts and open items — 2026-11-26/27
 
-Written while adding `flow-permissions`. Vendor facts from developer.apple.com and
-developer.android.com (fetched 2026-11-26), SDK facts from the public repos at the tags named,
-builder labels and groups from dashboard code, 2026-11-26.
+Sources: developer.apple.com and developer.android.com (fetched 2026-11-26), the public SDK and plugin
+repos at the tags named in the guides, dashboard code (2026-11-26/27), and device runs of the guides'
+code on 2026-11-27 (an iOS 26.5 Simulator with real dialogs, an Android 16 emulator, a physical iPhone on
+iOS 27.2). Corrections to earlier notes are made in place above.
 
-- **Builder labels and groups** (dashboard code, 2026-11-26): five groups in the select, in order
-  Notifications and tracking / Location / Camera and media / Personal data / Device and home; the 21
-  labels are the H3s of `flow-permissions`, in the same order. Corrected 2026-11-27: the builder callout
-  lists every declaration from the same table as `FlowPermissionDeclarations` and notes Health Connect for
-  `health` on Android; `music` is `unsupported` on Android in both.
-- **No analytics floor above the handler minimum.** AdaptySDK-iOS sends `isBackendEvent` flow events,
-  `flow_permission_*` included, from 4.0.0 (`Sources.UIBuilder/UIState/AdaptyUIActionHandler.swift`,
-  `Sources/Events/AdaptyUI+Events.swift`); `session_id` and `flow_layout_id` join the payload in 4.1.0.
-  AdaptySDK-Android forwards every flow-script backend event in Live mode from 4.0.0
-  (`adapty-ui/.../store/FlowReducer.kt`, `AnalyticsEffectHandler.kt`). The docs state no floor.
-- **Wrappers pass the detail string through unchanged** (Flutter 4.4.0 `lib/src/adapty.dart`, React
-  Native v4.4.1 `src/ui/flow-view-emitter.ts`, Capacitor v4.3.0 `src/ui-builder/flow-view-emitter.ts`,
-  Unity 4.1.2 `Runtime/Adapty.cs`, KMP 4.1.0 `internal/AdaptyUIImpl.kt`). Unity and KMP answer nothing
-  without a handler on either OS: under a wrapper, the `crossplatform` module replaces the native
-  Android default listener, so `false, null` applies to native Android only.
-- **Plugin traps the guides now document:** permission_handler_android 14.1.1 returns granted for
-  `mediaLibrary` and `reminders` and denied for `appTrackingTransparency` and `assistant` without a
-  dialog; permission_handler on iOS returns `permanentlyDenied` for every refusal;
-  react-native-permissions 5.7.0 reports iOS restricted as `unavailable`; Capacitor's
-  `prompt-with-rationale` is Android's first refusal and `denied` is Android's permanent refusal
-  (`capacitor/android/.../Bridge.java`), so the earlier sample that sent `prompt-with-rationale` to
-  **After response** was wrong and is corrected; moko-permissions 0.20.1 throws `IllegalStateException`
-  on iOS `restricted` / `limited` for camera, microphone and gallery, and `MOTION` doesn't wait for the
-  answer on iOS.
-- **Flutter iOS setup:** Adapty Flutter 4.x is SPM-only (`CHANGELOG.md` 4.0.0). permission_handler_apple
-  9.4.8+ turns on permissions from `Info.plist` keys under SPM; the `Podfile` macros apply to earlier
-  versions only. The guide's CocoaPods prerequisite was replaced.
-- **KMP repo examples misroute** (KMP 4.1.0 `MIGRATION_GUIDE_4.0.0.md`, `AdaptyUIPermissionResult.kt`
-  KDoc): `denied("user declined")` and `denied("unsupported: …")` give `outcome` `other` and run
-  **After response**. The guide uses the canonical strings.
-- **Could not confirm (2026-11-26), kept out of the docs:**
-  - iOS: whether an explicit push request after provisional authorization shows the alert; whether
-    `CNContactStore.requestAccess` throws on a refusal; which status ATT reports when **Allow Apps to
-    Request to Track** is off; whether a full-access calendar request after write-only access prompts;
-    whether `CMMotionActivityManager` query handlers run after a refusal and which call shows the alert;
-    whether `homeManager(_:didUpdate:)` fires for a status decided before the manager existed; what
-    happens without the local network, Siri or contacts purpose string; HomeKit behavior on a device
-    without the entitlement; whether `music` and `media_library` share one privacy record (one Simulator
-    probe said yes, the wrapper research could not confirm); whether the MusicKit App Service is needed
-    for the authorization; Bluetooth cases on iOS 18 where creating a manager shows no alert (forum
-    reports).
-  - Android: whether a dismissed dialog or OEM builds break the `shouldShowRequestPermissionRationale`
-    heuristic; whether a one-time grant can be told apart; the `<uses-feature android:required="false">`
-    advice for `CAMERA`; how the auto-added `READ_MEDIA_VISUAL_USER_SELECTED` interacts with
-    compatibility mode; whether calendar read and write can be granted separately; whether the
-    background-location result reaches the app on return from Settings (looked for in the docs, not
-    found).
-  - Wrappers: Unity's player loop on iOS under a presented flow; Unity `PermissionCallbacks` and moko
-    results while the wrapper's `AdaptyUiActivity` covers the app activity; the `Info.plist` key that
-    Unity's Location Usage Description field writes; Kotlin/Native bindings for AppTrackingTransparency,
-    EventKit, Speech, MediaPlayer, Intents, HomeKit and HealthKit; Capacitor's Android state after a
-    dismissed dialog and for approximate location; community Capacitor plugins; cleanup of pending
-    permission callbacks in the closed-source Android `crossplatform` module.
-
-### Independent review of the permission reference — 2026-11-26
-
-Four reviewers checked the reference and the seven guides against developer.apple.com,
-developer.android.com, the SDK repos at tags and the plugin sources. What the review changed, with the
-evidence:
-
-- **Android refusal rule (corrected).** `shouldShowRequestPermissionRationale()` is also `false` after a
-  dialog closed without a choice (developer.android.com, notification-permission: "User swipes away from
-  dialog" leaves the state unchanged). The reference and the Android sample now read the rationale before
-  the request and keep a per-permission "requested before" flag: no rationale before a repeated request →
-  `permanently_denied`; a rationale before or after → `denied`; no rationale before or after a first
-  request → no status. The Android background-location row no longer claims `permanently_denied`: the
-  settings-page flow has no documented rationale semantics.
-- **Location always after Allow Once (added).** Apple, `requestAlwaysAuthorization()`: "If the user
-  responded to `requestWhenInUseAuthorization()` with Allow Once, then Core Location ignores further
-  calls". The handler must not wait for the app to become active; it waits briefly for an alert and never
-  past 60 s.
-- **CoreLocation delegate (added).** Apple, `locationManagerDidChangeAuthorization(_:)`: called when the
-  app creates the manager and when the status changes. The docs say to ignore `.notDetermined` and answer
-  after a change that follows the request. "Never calls back" now cites
-  `requestWhenInUseAuthorization()` ("does nothing and doesn't call") and `requestAlwaysAuthorization()`
-  ("further calls have no effect").
-- **ATT (added).** Apple, `requestTrackingAuthorization(completionHandler:)`: full-page sheet in France,
-  Germany, Italy, Poland and Romania; in the EU the app can ask again a year after the answer. The
-  active-state wait is conditional on `applicationState != .active`.
-- **Other corrections:** photos add-only apps request `.addOnly`; Google Play limits
-  `READ_MEDIA_IMAGES`/`VIDEO`; compatibility mode applies to target SDK 34+ and is revoked "eventually";
-  `NSRemindersUsageDescription` is a fallback on iOS 17+, not an auto-deny (Apple, accessing the event
-  store); `CAMERA` implies only `android.hardware.camera` and `.autofocus`; Health write types map
-  all / some / none to `granted` / `limited` / `denied` (`permanently_denied` when
-  `getRequestStatusForAuthorization` said `.unnecessary`), plus `errorHealthDataRestricted` →
-  `restricted`; Health Connect needs Android 9+; HomeKit's `.restricted` flag means "doesn't have access to
-  home data", so it no longer maps to `restricted`; Focus status also needs notification authorization;
-  local network rows are keyed on target SDK and device version; `music` on Android is `unsupported`
-  everywhere; precise location on Android can be one-time.
-- **Wrapper guides:** Flutter now requires permission_handler `^13.0.2` with permission_handler_apple
-  9.6.4+ (CHANGELOGs 9.5.1, 9.6.3, 9.6.4; android 14.1.0); React Native adds
-  `PERMISSIONS.IOS.STOREKIT` for `music`, `requestMultiple` reduction rules and the iOS "BLOCKED = every
-  refusal" note; Capacitor reads `coarseLocation`, answers `photos` as `unsupported` on Android
-  (`@capacitor/camera` reports it granted with no permission); KMP reads the state below Android 13 for
-  push, and moko `GALLERY` reports limited as granted; Unity requests fine with coarse location.
-- **Softened or removed as unsourced (2026-11-26), kept only here:**
-  - iOS reports provisional Always and full Always as the same `.authorizedAlways` (forum posts only).
-    Corrected 2026-11-27 (iOS 26.5 Simulator, device run of the guide code, real dialogs): from
-    `.notDetermined`, **Allow While Using App** in the first alert reports `.authorizedAlways`
-    (provisional Always) and **Allow Once** reports `.authorizedWhenInUse`. The reference states both and
-    answers `provisional` for each; a later request answers `granted` for `.authorizedAlways` and
-    `permanently_denied` after Allow Once (no alert).
-  - An `INPreferences` status read crashes without the Siri capability (observed once on the Simulator;
-    Apple only says the capability is needed "for authorization to succeed").
-  - A crash without `NSFocusStatusUsageDescription` (observed on the Simulator; Apple only says to add the
-    key before using `INFocusStatusCenter`).
-  - The iOS Simulator reports Bluetooth as allowed and has no motion data (Simulator observations).
-  - Calendar auto-deny "without a crash", and location with a missing key failing "without a callback and
-    without a crash": Apple says only "automatically denies" and "fail immediately".
-  - The iOS Photos and iOS 18 Contacts button labels.
-- **Still unverified (2026-11-26):** whether HomeKit sets `.restricted` when the user declines; whether
-  Android stops showing the precise-location upgrade or the background-location settings request after
-  repeated refusals; whether moko-permissions bound to the app's main activity gets results while the
-  flow's `AdaptyUiActivity` covers it (the KMP guide only says to bind the controller to the activity that
-  shows the flow); whether Media library and Apple Music share one privacy setting on iOS (resolved
-  2026-11-27, iOS 26.5 Simulator, device run of the guide code: they share one authorization status;
-  after a refusal of `music`, a `media_library` request answered `permanently_denied` with no alert; both
-  reference sections say so); whether
-  `RecognizerIntent` needs no `RECORD_AUDIO`.
-
-### Per-kind code in the seven guides — 2026-11-27
-
-- **Decisions applied to the reference (product decisions, 2026-11-27):** the Android rationale checks
-  run in order (a rationale before or after → `denied`; none and an earlier request →
-  `permanently_denied`; none on the first request → no status); iOS location kinds and contacts have a
-  "still `.notDetermined` or no answer before the app's timeout → no status" row; **Allow Once** and
-  **Allow While Using App** both answer `provisional` for `location_always` (corrected 2026-11-27,
-  iOS 26.5 Simulator: Allow While Using App reports `.authorizedAlways`, Allow Once
-  `.authorizedWhenInUse`; the app can tell them apart, the answer stays `provisional` for both); Android `location_always` applies the general rule to the foreground step and
-  answers `denied` when no settings page appears; Health Connect counts any request without a grant as a
-  cancel and answers `permanently_denied` on the request after two cancels (the second cancel answers
-  `denied`); Bluetooth on Android 11 and earlier needs `ACCESS_FINE_LOCATION` (Android 9 and earlier
-  accept coarse); `SKCloudServiceController` is an acceptable fallback for `music` where MusicKit can't be
-  called; push on Android 13+ can be granted while `areNotificationsEnabled()` is false.
-- **Code corrected to the rationale order (2026-11-27):** the KMP runtime helper and Unity's Android
-  helper checked "requested before" first; both now check the rationale first. KMP's Health Connect
-  counter answered `permanently_denied` on the second cancel; it now counts cancels before the request.
-  Capacitor `local_network` answers `granted` below target or device API 37 (`@capacitor/device`
-  `androidSDKVersion` plus an app constant for the target SDK), and `unsupported` above, because no
-  official plugin requests `ACCESS_LOCAL_NETWORK`.
-- **Could not confirm (2026-11-27), recorded by the code authors:**
-  - Unity coroutines keep running on iOS while a flow is presented (the Unity samples that poll in a
-    coroutine depend on it).
-  - Android permission results (Unity `PermissionCallbacks`, moko-permissions, `ActivityResult` from a
-    non-flow activity) reach the app while the wrapper's `AdaptyUiActivity` covers the app's activity.
-  - The iOS `location_always` heuristic: the app resigns active when the upgrade alert appears, and a
-    short wait (2 s in the iOS sample) tells "no alert" apart from "alert shown". Not checked on a device.
-  - Whether a full-access calendar request after write-only access shows an upgrade prompt on iOS 17+.
-  - Media library `.restricted`: Apple's definition is "may access some of the content"; the reference
-    keeps `restricted` (product decision, 2026-11-27). Open question in the rollout.
-
-### Device runs of the guide code — 2026-11-27
-
-iOS 26.5 Simulator with real system dialogs, and an Android 16 (API 36) emulator, running the code from
-the seven guides' `## Code for each permission`.
-
-- **HomeKit (iOS):** a new `HMHomeManager` in a later launch already has the decided status,
-  synchronously. After a refusal, iOS calls no delegate method; after an allow, it calls
-  `homeManagerDidUpdateHomes`. The iOS guide polls `authorizationStatus` every 0.25 s for up to 50 s, and
-  the reference says to read the status right after creating the manager and while waiting. Replaces the
-  earlier open question on whether `homeManager(_:didUpdate:)` fires for a decided status.
-- **`location_always` (iOS):** see the correction in "Independent review" above.
-- **`music` and `media_library` (iOS):** one shared authorization status (see above).
-- **Contacts limited access (iOS 18+):** four steps (alert, "how to share" sheet, picker, confirmation);
-  a user can exceed 60 s, so `flow_permission_unanswered` with `on_screen` can precede a late answer that
-  still runs its section. The reference says so.
-- **Android:** `getSharedPreferences` in a property initializer crashed before the activity had a
-  context; fixed with `by lazy` in the Android guide. `adb shell pm revoke` and `pm clear-permission-flags`
-  don't clear the app's own "requested before" flags; the reference now says to clear the app data with
-  `pm clear` or reinstall. Android 16 labels differ from earlier versions (precise-location upgrade:
-  "Keep approximate location"; photos: "Allow limited access"), so the reference describes those dialogs
-  without labels.
-- **Local network refusal confirmed on a physical iPhone (iOS 27.2, 2026-11-27, iOS guide code):** no
-  report to the app; the guide code's timeout answer came after 20.8 s, and the flow then ran **After
-  response** with `no_status`. The reference states that **When denied** never runs for `local_network` on
-  iOS, that the user waits on the screen until the app's timeout, and that the timeout must stay well
-  under 60 s; the iOS guide says the same next to its code. Health read requests behave the same way
-  (always no status); the reference says so plainly.
-- **Builder callout (dashboard code, 2026-11-27):** the callout now warns that `local_network` and
-  `health` give no refusal on iOS; the dashboard PR adds it. A change to that behavior moves the callout
-  and the two reference sections together.
-
+- **Builder (dashboard code, 2026-11-27):** the select's groups and 21 labels equal the reference's H2s
+  and H3s. The builder prints the full declarations row of the selected kind with its qualifiers, warns
+  that `local_network` and `health` give no refusal on iOS, and shows the generalized "no way out"
+  warning. It links the setup guides for `push` only until this docs PR ships.
+- **Analytics:** no SDK floor above 4.0.0 for `flow_permission_*` (AdaptySDK-iOS
+  `Sources/Events/AdaptyUI+Events.swift`; `session_id` from 4.1.0; AdaptySDK-Android
+  `adapty-ui/.../store/AnalyticsEffectHandler.kt`). The contract (outcome = the user's answer; unanswered
+  after 60 s; `instanceId` = the screen that sent the request) was checked on devices against the branch
+  build, 2026-11-26.
+- **SDK layer:** every wrapper passes the detail string through unchanged. Without a handler, Unity, KMP
+  and Flutter before 4.4.1 send no answer; Flutter 4.4.1+, React Native, Capacitor and native Android
+  answer `denied` with no status. Under a wrapper, the public `crossplatform` module of AdaptySDK-Android
+  replaces the native default listener. The iOS bridge flushes pending requests only on event-handler
+  registration.
+- **Mapping facts from vendor docs** (each in the reference with its source): the Android rationale is
+  also false after a dialog closed without a choice, so the rule reads it before and after and keeps a
+  "requested before" flag, checking rationale first; iOS ignores Always requests after Allow Once;
+  `locationManagerDidChangeAuthorization` also fires on manager creation; ATT shows a full-page sheet in
+  France, Germany, Italy, Poland and Romania and can ask again in the EU after a year;
+  `kCLErrorPromptDeclined` means the alert wasn't presented, while a decline completes with no error
+  (`CLError.h`, `CLLocationManager.h`; corrected 2026-11-27, the earlier note said the opposite); photos
+  add-only apps request `.addOnly`; Google Play limits `READ_MEDIA_IMAGES`/`VIDEO`; photo compatibility
+  mode applies to target SDK 34+; `NSRemindersUsageDescription` is a fallback on iOS 17+; `CAMERA`
+  implies `android.hardware.camera` and `.autofocus`; HealthKit write types map all/some/none to
+  `granted`/`limited`/`denied`; HomeKit's `.restricted` flag isn't a device policy; Focus status needs
+  notification authorization; local network is keyed on target SDK and device version (API 37).
+- **Verified on devices (2026-11-27):** **Allow While Using App** in the first Always alert reports
+  `.authorizedAlways` and **Allow Once** `.authorizedWhenInUse` (both answered `provisional`);
+  `music` and `media_library` share one authorization status; a new `HMHomeManager` has a decided status
+  synchronously, a HomeKit refusal calls no delegate, and the iOS guide polls every 0.25 s; iOS 18
+  limited contacts takes four steps and can exceed 60 s; a local network refusal is never reported
+  (timeout answer after 20.8 s on iOS 27.2); the temporary precise-location alert shows **Allow Once**
+  and **Don't Allow**, and Bluetooth access can survive a reinstall of the same bundle ID (physical
+  iPhone, docs commit 19b7fa625). Those two labels are device-verified, so they stay; the other iOS
+  button labels removed on 2026-11-26 stay out. On Android 16, the precise-location and photos dialogs
+  use new labels, so the reference describes them without labels; `pm revoke` doesn't clear the app's
+  own flags (use `pm clear`); `getSharedPreferences` in a property initializer crashed (fixed with
+  `by lazy`).
+- **Plugin traps the guides document:** permission_handler_android answers iOS-only kinds without a
+  dialog; permission_handler and react-native-permissions report every iOS refusal as permanent;
+  react-native-permissions reports iOS restricted as unavailable; Capacitor `prompt-with-rationale` is
+  Android's first refusal; `@capacitor/camera` reports Android `photos` granted with no permission;
+  moko-permissions throws on iOS `restricted` and its `MOTION` doesn't wait. Flutter needs
+  permission_handler `^13.0.2` with permission_handler_apple 9.6.4+.
+- **Guide conventions:** a 21-kind dispatcher in every guide; one `See [System permissions](…#<id>)`
+  pointer and one **Differs from System permissions** bullet per deviation under each H3; the KMP
+  moko section is `## If your app uses moko-permissions`; the Unity Android code uses its own Java
+  `.androidlib` plugin with AndroidX ActivityResult (it replaced the `PermissionCallbacks` sample).
+- **Softened or removed as unsourced:** a crash on an `INPreferences` status read without the Siri
+  capability and a crash without `NSFocusStatusUsageDescription` (one Simulator observation each);
+  Simulator Bluetooth and motion behavior; "without a crash" wording; speech `.denied` on unsupported
+  devices (removed 2026-11-27: Apple defines `.denied` as the user's refusal).
+- **Still unverified:** whether HomeKit sets `.restricted` on a refusal; whether Android stops showing the
+  precise-location upgrade or the background-location settings request after repeated refusals; Unity
+  coroutines on iOS under a presented flow; Android results delivered to an activity behind the flow's
+  `AdaptyUiActivity`; the iOS 2-second "no alert" heuristic for `location_always`; the iOS 17 calendar
+  upgrade prompt from write-only to full access; whether `RecognizerIntent` needs `RECORD_AUDIO`; media
+  library `.restricted` ("may access some of the content") kept as `restricted` by product decision.

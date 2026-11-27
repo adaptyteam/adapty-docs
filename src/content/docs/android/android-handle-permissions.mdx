@@ -4,14 +4,14 @@ description: "Ask users for system permissions, such as push notifications or ca
 metadataTitle: "Handle Flow Permissions - Android | Adapty Docs"
 ---
 
-A [flow](adapty-flow-builder) can ask users for a system permission with the **Request permission** action, for example push notifications on an onboarding screen that explains what the notifications are for, or camera access before a feature that scans documents. The Adapty SDK doesn't show the system permission dialog itself. It passes the request to the `onShowRequestPermission` method of your flow event listener. Your app shows the dialog and returns the user's answer, and the flow continues.
+A [flow](adapty-flow-builder) can ask users for a system permission with the **Request permission** action. For example, an onboarding screen can explain what push notifications are for and then ask for them, or a flow can ask for camera access before a feature that scans documents. The Adapty SDK doesn't show the system permission dialog itself. It passes the request to the `onShowRequestPermission` method of your flow event listener. Your app shows the dialog and returns the user's answer, and the flow continues.
 
 ## Before you start
 
 You need:
 
 - **Adapty Android SDK 4.0.0 or later**: Earlier versions don't have `onShowRequestPermission`.
-- **A flow with the Request permission action**: In the Flow & Paywall Builder, add the **Request permission** action to an element's **On Tap** or **On Screen Appear** trigger. In the action, select the permission in the **Permission** field, and add the actions to run after the user answers to its outcome sections, such as **Navigate Next** in **After response**. For the action settings, see [Request permission](onboarding-actions#request-permission).
+- **A flow with the Request permission action**: In the Flow & Paywall Builder, add the **Request permission** action to an element's **On Tap** or **On Screen Appear** trigger. In the action, select the permission in the **Permission** field. Then add the actions that run after the user answers to the outcome sections of the action, such as **Navigate Next** in **After response**. For the action settings, see [Request permission](onboarding-actions#request-permission).
 - **A manifest permission for each permission that your listener requests**: See [Declare the permissions](#declare-the-permissions).
 - **For push notifications, `targetSdk` 33 or higher**: Only apps that target Android 13 or later choose when the notification permission dialog appears.
 
@@ -20,7 +20,6 @@ You need:
 1. The flow reaches the **Request permission** action: the user taps the element, or the screen appears.
 2. The Adapty SDK calls `onShowRequestPermission` on the event listener of the flow view, with `permission` set to the permission selected in the action, such as `"push"` or `"camera"`.
 3. Your app requests the permission from Android and invokes `callback` with the answer and a status.
-4. The flow runs the actions of one outcome section.
 
 <FlowPermissionAnswers />
 
@@ -30,7 +29,7 @@ The flow waits on the screen until your app invokes `callback`. If your app neve
 - **The user allowed the permission before**: The permission is already granted.
 - **The user denied the dialog twice**: Android stops showing the dialog for that permission and denies each new request.
 
-With **On Screen Appear**, the flow doesn't send the request again when the user comes back to the screen with a **Navigate back** action, unless every outcome section of the action is empty. With **On Tap**, each tap sends a new request. The flow sends one permission request at a time: while a request waits for your answer, a tap on an element that requests a permission does nothing.
+With **On Screen Appear**, the flow doesn't send the request again when the user comes back to the screen with a **Navigate back** action. It sends the request again only if every outcome section of the action is empty. With **On Tap**, each tap sends a new request. The flow sends one permission request at a time. While a request waits for your answer, a tap on an element that requests a permission does nothing.
 
 ## Override onShowRequestPermission
 
@@ -38,7 +37,7 @@ With **On Screen Appear**, the flow doesn't send the request again when the user
 **The default listener never asks the user.** `AdaptyFlowDefaultEventListener` answers every permission request with `false` and no status, and shows no dialog. If your listener extends `AdaptyFlowDefaultEventListener` and doesn't override `onShowRequestPermission`, the flow runs the **After response** actions right away.
 :::
 
-To answer permission requests, override `onShowRequestPermission` in your event listener. Request only the permissions that your app declares: a flow author can add a request for any permission at any time, and the flow also reaches app versions released before the request was added. Answer every other permission with `false` and the status `"unsupported"`, without a dialog.
+To answer permission requests, override `onShowRequestPermission` in your event listener. Request only the permissions that your app declares. A flow author can add a request for any permission at any time, and app versions released before that change also get the request. Answer every other permission with `false` and the status `"unsupported"`, without a dialog.
 
 In this example, the activity that shows the flow routes each permission to its own function. A small helper, `RuntimePermissionRequester`, registers one launcher for the system dialog, and the permission functions in [Code for each permission](#code-for-each-permission) share it:
 
@@ -161,9 +160,9 @@ Copy the functions only for the permissions that your app requests. Delete the c
 - **`customArgs`**: Custom arguments of the request. The **Request permission** action sends none, so the value is `null`.
 - **`callback`**: The callback that returns the answer to the flow. Its first argument, `granted`, is `true` if the user allowed the permission, and `false` otherwise. Its second argument, `detailResult`, is the status of the answer, such as `"granted"` or `"permanently_denied"`.
 
-`RuntimePermissionRequester` reads `shouldShowRequestPermissionRationale()` before and after the dialog, and keeps a flag for each permission that the app requested before. This way it tells a refusal in the dialog from a refusal without a dialog, and from a dialog closed without a choice. For the rule, see [System permissions](flow-permissions#rules-for-every-permission). Invoke `callback` once for every request. The Adapty SDK doesn't catch exceptions from `onShowRequestPermission`, so the example catches them and invokes `callback(false, null)`.
+`RuntimePermissionRequester` reads `shouldShowRequestPermissionRationale()` before and after the dialog, and keeps a flag for each permission that the app requested before. This way it tells a refusal in the dialog from a refusal without a dialog, and from a dialog closed without a choice. For the rule that tells these refusals apart, see [Rules for every permission](flow-permissions#rules-for-every-permission). Invoke `callback` once for every request. The Adapty SDK doesn't catch exceptions from `onShowRequestPermission`, so the example catches them and invokes `callback(false, null)`.
 
-The flags, and the cancel count of [Health data](#health), are in the `flow_permissions` shared preferences file. Android Auto Backup can restore this file when the user reinstalls the app or moves to a new device. The flags then describe requests that the new installation never made, so a first dialog that the user closes without a choice gets `permanently_denied` instead of no status.
+`RuntimePermissionRequester` keeps its flags in the `flow_permissions` shared preferences file, and the code for [Health data](#health) keeps its cancel count there too. Android Auto Backup can restore this file when the user reinstalls the app or moves to a new device. The flags then describe requests that the new installation never made. A first dialog that the user closes without a choice then gets `permanently_denied` instead of no status.
 
 To keep the file out of backups, exclude it in your app's backup rules. If your app has its own backup rules, set up as described in [Android backup rules](sdk-installation-android#android-backup-rules-auto-backup-configuration), add one line for the file to each rules file:
 
@@ -172,7 +171,7 @@ To keep the file out of backups, exclude it in your app's backup rules. If your 
 
 Without its own backup rules, the app uses the rules of the Adapty SDK, which don't exclude this file. To add your own rules, follow [Android backup rules](sdk-installation-android#android-backup-rules-auto-backup-configuration).
 
-In Jetpack Compose, register the launcher with `rememberLauncherForActivityResult` instead of `registerForActivityResult`. If the activity can be recreated while the dialog is open, for example on rotation, keep the pending callback in a `ViewModel`, so that the new activity can invoke it.
+In Jetpack Compose, register the launcher with `rememberLauncherForActivityResult` instead of `registerForActivityResult`. The activity can be recreated while the dialog is open, for example on rotation. To let the new activity invoke the pending callback, keep the callback in a `ViewModel`.
 
 A granted notification permission lets your app show notifications. To receive push notifications, register the device with your push provider, such as Firebase Cloud Messaging, as your app does outside flows.
 
@@ -184,7 +183,7 @@ Each function in this section requests one permission and answers the flow. The 
 
 Declare `POST_NOTIFICATIONS`. See [System permissions](flow-permissions#push).
 
-```kotlin
+```kotlin showLineNumbers title="Kotlin"
 import android.Manifest
 import android.os.Build
 import androidx.core.app.NotificationManagerCompat
@@ -201,13 +200,13 @@ fun requestPush(requester: RuntimePermissionRequester, callback: PermissionCallb
 }
 ```
 
-- Only an app that targets Android 13 (API 33) or higher decides when the dialog appears.
+- For the `targetSdk` that lets the app decide when the dialog appears, see [Before you start](#before-you-start).
 
 ### App tracking (ATT) \{#tracking\}
 
 Android has no tracking permission. See [System permissions](flow-permissions#tracking).
 
-```kotlin
+```kotlin showLineNumbers title="Kotlin"
 import com.adapty.ui.listeners.AdaptyFlowEventListener.PermissionCallback
 
 // The advertising ID uses an install-time permission that asks the user nothing.
@@ -218,7 +217,7 @@ fun requestTracking(callback: PermissionCallback) = callback(false, "unsupported
 
 Declare `ACCESS_COARSE_LOCATION`, and `ACCESS_FINE_LOCATION` for precise location. See [System permissions](flow-permissions#location_when_use).
 
-```kotlin
+```kotlin showLineNumbers title="Kotlin"
 import android.Manifest
 import com.adapty.ui.listeners.AdaptyFlowEventListener.PermissionCallback
 
@@ -237,7 +236,7 @@ fun requestLocationWhenInUse(requester: RuntimePermissionRequester, callback: Pe
 
 Declare `ACCESS_BACKGROUND_LOCATION` with the foreground location permissions. See [System permissions](flow-permissions#location_always).
 
-```kotlin
+```kotlin showLineNumbers title="Kotlin"
 import android.Manifest
 import android.os.Build
 import com.adapty.ui.listeners.AdaptyFlowEventListener.PermissionCallback
@@ -271,7 +270,7 @@ fun requestLocationAlways(requester: RuntimePermissionRequester, callback: Permi
 
 Declare `ACCESS_FINE_LOCATION` and `ACCESS_COARSE_LOCATION`. See [System permissions](flow-permissions#location_full_accuracy).
 
-```kotlin
+```kotlin showLineNumbers title="Kotlin"
 import android.Manifest
 import com.adapty.ui.listeners.AdaptyFlowEventListener.PermissionCallback
 
@@ -295,7 +294,7 @@ fun requestPreciseLocation(requester: RuntimePermissionRequester, callback: Perm
 
 Declare `CAMERA`. See [System permissions](flow-permissions#camera).
 
-```kotlin
+```kotlin showLineNumbers title="Kotlin"
 import android.Manifest
 import android.content.pm.PackageManager
 import com.adapty.ui.listeners.AdaptyFlowEventListener.PermissionCallback
@@ -314,7 +313,7 @@ fun requestCamera(requester: RuntimePermissionRequester, callback: PermissionCal
 
 Declare `RECORD_AUDIO`. See [System permissions](flow-permissions#microphone).
 
-```kotlin
+```kotlin showLineNumbers title="Kotlin"
 import android.Manifest
 import com.adapty.ui.listeners.AdaptyFlowEventListener.PermissionCallback
 
@@ -327,7 +326,7 @@ fun requestMicrophone(requester: RuntimePermissionRequester, callback: Permissio
 
 Declare `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_VISUAL_USER_SELECTED`, and `READ_EXTERNAL_STORAGE` with `android:maxSdkVersion="32"`. See [System permissions](flow-permissions#photos).
 
-```kotlin
+```kotlin showLineNumbers title="Kotlin"
 import android.Manifest
 import android.os.Build
 import com.adapty.ui.listeners.AdaptyFlowEventListener.PermissionCallback
@@ -362,7 +361,7 @@ fun requestPhotos(requester: RuntimePermissionRequester, callback: PermissionCal
 
 Declare `READ_MEDIA_AUDIO`, and `READ_EXTERNAL_STORAGE` with `android:maxSdkVersion="32"`. See [System permissions](flow-permissions#media_library).
 
-```kotlin
+```kotlin showLineNumbers title="Kotlin"
 import android.Manifest
 import android.os.Build
 import com.adapty.ui.listeners.AdaptyFlowEventListener.PermissionCallback
@@ -381,7 +380,7 @@ fun requestMediaLibrary(requester: RuntimePermissionRequester, callback: Permiss
 
 Android has no Apple Music permission. See [System permissions](flow-permissions#music).
 
-```kotlin
+```kotlin showLineNumbers title="Kotlin"
 import com.adapty.ui.listeners.AdaptyFlowEventListener.PermissionCallback
 
 fun requestMusic(callback: PermissionCallback) = callback(false, "unsupported")
@@ -391,7 +390,7 @@ fun requestMusic(callback: PermissionCallback) = callback(false, "unsupported")
 
 Declare `RECORD_AUDIO`, and a `<queries>` element for the speech recognition service if the app targets Android 11 or higher. See [System permissions](flow-permissions#speech).
 
-```kotlin
+```kotlin showLineNumbers title="Kotlin"
 import android.Manifest
 import android.speech.SpeechRecognizer
 import com.adapty.ui.listeners.AdaptyFlowEventListener.PermissionCallback
@@ -407,7 +406,7 @@ fun requestSpeech(requester: RuntimePermissionRequester, callback: PermissionCal
 
 Declare `READ_CONTACTS`. See [System permissions](flow-permissions#contacts).
 
-```kotlin
+```kotlin showLineNumbers title="Kotlin"
 import android.Manifest
 import com.adapty.ui.listeners.AdaptyFlowEventListener.PermissionCallback
 
@@ -421,7 +420,7 @@ fun requestContacts(requester: RuntimePermissionRequester, callback: PermissionC
 
 Declare `READ_CALENDAR`, and `WRITE_CALENDAR` to add events. See [System permissions](flow-permissions#calendar).
 
-```kotlin
+```kotlin showLineNumbers title="Kotlin"
 import android.Manifest
 import com.adapty.ui.listeners.AdaptyFlowEventListener.PermissionCallback
 
@@ -435,7 +434,7 @@ fun requestCalendar(requester: RuntimePermissionRequester, callback: PermissionC
 
 Android has no reminders store. See [System permissions](flow-permissions#reminders).
 
-```kotlin
+```kotlin showLineNumbers title="Kotlin"
 import com.adapty.ui.listeners.AdaptyFlowEventListener.PermissionCallback
 
 fun requestReminders(callback: PermissionCallback) = callback(false, "unsupported")
@@ -445,7 +444,7 @@ fun requestReminders(callback: PermissionCallback) = callback(false, "unsupporte
 
 Add the Health Connect client library, `androidx.health.connect:connect-client`, and declare a permission for each data type, such as `android.permission.health.READ_STEPS`. Health Connect also needs a privacy policy activity and a `<queries>` element. `connect-client` 1.1.0 and later need `compileSdk 36` and Android Gradle plugin 8.9.1 or later. See [System permissions](flow-permissions#health).
 
-```kotlin
+```kotlin showLineNumbers title="Kotlin"
 import android.content.Context
 import androidx.activity.ComponentActivity
 import androidx.core.content.edit
@@ -531,7 +530,7 @@ class HealthPermissionRequester(private val activity: ComponentActivity) {
 
 Declare `ACTIVITY_RECOGNITION`. See [System permissions](flow-permissions#motion).
 
-```kotlin
+```kotlin showLineNumbers title="Kotlin"
 import android.Manifest
 import android.os.Build
 import com.adapty.ui.listeners.AdaptyFlowEventListener.PermissionCallback
@@ -547,7 +546,7 @@ fun requestMotion(requester: RuntimePermissionRequester, callback: PermissionCal
 
 Declare `BLUETOOTH_SCAN` and `BLUETOOTH_CONNECT`, and the permissions for Android 11 and earlier. See [System permissions](flow-permissions#bluetooth).
 
-```kotlin
+```kotlin showLineNumbers title="Kotlin"
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -555,7 +554,7 @@ import com.adapty.ui.listeners.AdaptyFlowEventListener.PermissionCallback
 
 fun requestBluetooth(requester: RuntimePermissionRequester, callback: PermissionCallback) {
     val activity = requester.activity
-    // For a Bluetooth Low Energy app, check PackageManager.FEATURE_BLUETOOTH_LE instead.
+    // For a Bluetooth Low Energy app, use PackageManager.FEATURE_BLUETOOTH_LE instead.
     if (!activity.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH)) {
         return callback(false, "unsupported")
     }
@@ -578,7 +577,7 @@ fun requestBluetooth(requester: RuntimePermissionRequester, callback: Permission
 
 Declare `ACCESS_LOCAL_NETWORK` only if the app targets Android 17 (API 37) or higher. See [System permissions](flow-permissions#local_network).
 
-```kotlin
+```kotlin showLineNumbers title="Kotlin"
 import android.os.Build
 import com.adapty.ui.listeners.AdaptyFlowEventListener.PermissionCallback
 
@@ -596,7 +595,7 @@ fun requestLocalNetwork(requester: RuntimePermissionRequester, callback: Permiss
 
 Android has no HomeKit permission. See [System permissions](flow-permissions#homekit).
 
-```kotlin
+```kotlin showLineNumbers title="Kotlin"
 import com.adapty.ui.listeners.AdaptyFlowEventListener.PermissionCallback
 
 fun requestHomeKit(callback: PermissionCallback) = callback(false, "unsupported")
@@ -606,7 +605,7 @@ fun requestHomeKit(callback: PermissionCallback) = callback(false, "unsupported"
 
 Android has no Focus status permission: apps read the Do Not Disturb mode without one. See [System permissions](flow-permissions#focus_status).
 
-```kotlin
+```kotlin showLineNumbers title="Kotlin"
 import com.adapty.ui.listeners.AdaptyFlowEventListener.PermissionCallback
 
 fun requestFocusStatus(callback: PermissionCallback) = callback(false, "unsupported")
@@ -616,7 +615,7 @@ fun requestFocusStatus(callback: PermissionCallback) = callback(false, "unsuppor
 
 Android has no Siri permission. See [System permissions](flow-permissions#siri).
 
-```kotlin
+```kotlin showLineNumbers title="Kotlin"
 import com.adapty.ui.listeners.AdaptyFlowEventListener.PermissionCallback
 
 fun requestSiri(callback: PermissionCallback) = callback(false, "unsupported")
@@ -659,7 +658,7 @@ The Adapty SDK sends permission requests to the event listener of the flow view.
 
 ## Test the permission request
 
-To test a notification request, use a device with Android 13 or later: earlier versions show no notification dialog. Android stops showing a permission dialog after the user allows the permission or denies it twice. To see the dialog again while you test the flow, delete the app from the device and install it again. Then open the flow and reach the **Request permission** action. If the flow moves on without a dialog, make sure that your listener overrides `onShowRequestPermission`, and that the app declares the manifest permission. For notifications, the app must also target Android 13 or later.
+To test a notification request, use a device with Android 13 or later: earlier versions show no notification dialog. Android stops showing a permission dialog after the user allows the permission or denies it twice. To see the dialog again while you test the flow, delete the app from the device and install it again. Then open the flow and reach the **Request permission** action. If the flow moves on without a dialog, make sure that your listener overrides `onShowRequestPermission`, and that the app declares the manifest permission. For notifications, also make sure that the app meets the `targetSdk` requirement in [Before you start](#before-you-start).
 
 To see how users answer permission requests, read the flow's analytics events in the `onAnalyticEvent` method of your listener. For details, see [Handle flow & paywall events](android-handling-events).
 

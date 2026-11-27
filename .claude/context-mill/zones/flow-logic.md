@@ -240,7 +240,7 @@ or developer can see and click.
 | adapty-flow-builder | entry | marketer, dev | 3 | tutorial |
 | archive-flows | — | marketer, dev | 2 | tutorial |
 | basic-paywall-screen | — | marketer, dev | 11 | tutorial |
-| builder-loaders-and-progress-bars | — | marketer, dev | 6 | tutorial |
+| builder-loaders-and-progress-bars | — | marketer, dev | 13 | tutorial |
 | builder-navigation-actions | entry | marketer, dev | 0 | tutorial |
 | builder-save-publish | — | marketer, dev | 4 | tutorial |
 | builder-ui | — | marketer, dev | 15 | tutorial |
@@ -255,12 +255,13 @@ or developer can see and click.
 | flow-common-issues | reference | marketer, dev | 16 | tutorial |
 | flow-funnel | — | marketer, dev | 14 | tutorial |
 | flow-metrics | — | marketer, dev | 25 | tutorial |
+| flow-permissions | reference | dev, marketer | 30 | tutorial |
 | flow-screen-transitions | — | marketer, dev | 3 | tutorial |
 | flow-show-hide-animations | — | marketer, dev | 6 | tutorial |
 | flows-and-paywalls | entry | marketer, dev | 2 | tutorial |
 | import-from-figma | how-to | marketer, dev | 12 | tutorial |
 | migrate-to-flows | migration | marketer, dev | 8 | tutorial |
-| onboarding-actions | — | marketer, dev | 24 | tutorial |
+| onboarding-actions | — | marketer, dev | 25 | tutorial |
 | onboarding-element-visibility | — | marketer, dev | 1 | tutorial |
 | onboarding-flow-tutorial | — | marketer, dev | 10 | tutorial |
 | onboarding-navigation-branching | — | marketer, dev | 4 | tutorial |
@@ -468,13 +469,13 @@ or developer can see and click.
   for navigation placed after the request (dashboard code, 2026-11-20). The trigger table above it still
   says **On screen appear** / **On tap** while the builder labels are **On Screen Appear** / **On Tap**.
 - **Request permission's per-kind facts live in `flow-permissions` (2026-11-24, updated 2026-11-26).** The
-  builder's warning callout lists every `Info.plist` key and Android manifest permission the app declares
-  for the selected kind, from the same table as `FlowPermissionDeclarations`, with Health Connect as a
-  note for health on Android (dashboard code, corrected 2026-11-27; until then it named one main key).
-  Since 2026-11-26 the owner of every per-kind fact (dialog,
-  all keys and capabilities, API levels, native result → answer → section → `outcome`) is the shared
-  article `flow-permissions` in `sdk-flows-display`, whose summary table is the `FlowPermissionDeclarations`
-  reusable; the iOS and Android guides carry inline copies. `onboarding-actions#request-permission` links
+  builder prints the full declarations row of the selected kind, with its qualifiers (OS versions,
+  capabilities, Health Connect as a note for health on Android), from the same data as
+  `FlowPermissionDeclarations` (dashboard code, 2026-11-27; until then it named one main key).
+  Since 2026-11-26 the owner of every per-kind fact (dialog, all keys and capabilities, API levels, the
+  native result → answer → section → outcome table) is the shared article `flow-permissions`, assigned to
+  this zone on 2026-11-27 (its siblings, such as `respond-to-purchase-outcomes`, are here). Its summary
+  table is the `FlowPermissionDeclarations` reusable; the iOS and Android guides carry inline copies. `onboarding-actions#request-permission` links
   `flow-permissions` once, after the sentence that lists example permissions. A new permission kind or a
   changed declaration moves those together, along with the routing list in
   `onboarding-actions#request-permission` and the builder's setup line, which must stay equal to
@@ -505,8 +506,8 @@ with the SDK side — see "Reader jobs" for exactly which `sdk-flows-display`/`s
 "what you configure in the dashboard," the SDK zones own "what code reads it."
 
 Per-kind permission facts (what each permission shows users, its `Info.plist` keys, Android permissions
-and OS versions, the answer to pass) route to `flow-permissions` in `sdk-flows-display`; the **Request
-permission** action itself (triggers, outcome sections, one request at a time) stays here in
+and OS versions, the answer to pass) route to `flow-permissions` (this zone since 2026-11-27); the app code that answers them is the
+`handle-permissions` family in `sdk-flows-display`. The **Request permission** action itself (triggers, outcome sections, one request at a time) stays here in
 `onboarding-actions#request-permission` (2026-11-26).
 
 ## Ticket language
@@ -713,8 +714,11 @@ needed in place.
   Interface Guidelines (developer.apple.com/design/human-interface-guidelines/privacy, "Pre-alert
   screens") recommend one button that opens the system alert and no way to leave the screen without
   seeing it. `onboarding-actions#request-permission` recommends a **Skip** button so that users of app
-  versions that never answer can leave. `flow-permissions` quotes only the one-button recommendation and
-  doesn't repeat the Skip advice; which one the docs should lead with is a product decision.
+  versions that never answer can leave. Decided 2026-11-27 (product decision): the docs lead with the
+  Skip button, and `flow-permissions` keeps Apple's one-button screen only as a caveat for flows that
+  every app version answers. The builder's warning, generalized on 2026-11-27 (dashboard code), reads:
+  "The user can leave this screen only through the permission request, and only once the app answers
+  it. Add another way out, such as a Skip button." `onboarding-actions` quotes it.
 - **The "Request a system permission other than push notifications" custom-action use case was
   replaced (2026-11-24)** by "Open the system settings", since the action now covers every permission.
 - **The `request-permission-action.webp` screenshot still shows the push-only editor (2026-11-24)**:
