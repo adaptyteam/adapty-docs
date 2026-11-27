@@ -88,10 +88,25 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
   link ID field is required. Don't document the iOS link ID or the reason; the dashboard may drop the
   field. iOS apps go through the Other tab. **No SKAN anywhere in the UA service** (2026-10-01, UA
   service code), so the article says SKAN setup isn't needed. Other tab = anything taking a tracking
-  template with auto-tagging: Search, PMax (tested end to end per product), Demand Gen, Display, Video,
-  Shopping. Analytics depth: campaign metrics for all types, ad metrics where Google reports ads (PMax
+  template with auto-tagging: Search, PMax (tested end to end per product), Demand Gen, Display, Video.
+  Analytics depth: campaign metrics for all types, ad metrics where Google reports ads (PMax
   has none → campaign only), keyword metrics for Search only. Reviewer feedback (2026-09-29): readers
   search "UAC" and "PMax", so those words belong in the article text and keywords.
+- **Google's own rules narrow what the wiring allows** (corrected 2026-11-24, reviewer walkthrough of a
+  live Google Ads account, checked against Google's help pages). "Support follows from the wiring" is
+  only Adapty's half. **Shopping** is incompatible: its ads land on product pages of the advertiser's
+  site, never a store, and Google's Shopping policy bans digital content with recurring payment
+  subscriptions (support.google.com/merchants/answer/4752265). **PMax** suits web funnels only: Google
+  offers it under Sales, Leads, Website traffic and Local store visits, and app promotion is App
+  campaigns' objective. **Conversion window:** Adapty creates every click-upload action with a 30-day
+  click-through window and never edits an action it reuses, so an advertiser can raise it to Google's
+  90-day maximum (UA service code, 2026-11-24). **Open question:** whether Google creates the app
+  conversion action by itself on the first App Conversion API event. The UA team's product doc says it
+  does; Google documents that only for its listed App Attribution Partners, which don't include Adapty
+  (support.google.com/google-ads/answer/17086025), and describes a manual import for everyone else. The
+  guide now carries an import fallback step. **"Unverified" link ID status** is Google's documented
+  wording (support.google.com/google-ads/answer/7365001). Adapty's tracking domain `api-ua.adapty.io` is
+  on Google's certified click-tracker list (support.google.com/adspolicy/answer/13690010).
 - **Click-to-install matching: no IDFA, no Advertising ID, and the docs must not say "fingerprint"**
   (2026-10-02, UA service and dashboard code). Deterministic = the click id in Android's Play Install
   Referrer (`adpt_click_id`, then Google's `gclid`), default 168 h, range 1–720 h. iOS has **no**
@@ -181,21 +196,21 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
 | meta-create-campaign | — | marketer, analyst | 7 | tutorial |
 | tiktok-create-campaign | — | marketer, analyst | 8 | tutorial |
 | ua-amazon-s3 | — | marketer, analyst | 5 | tutorial |
-| ua-analytics | entry | marketer, analyst | 7 | tutorial |
+| ua-analytics | entry | marketer, analyst | 11 | tutorial |
 | ua-attribution-data | — | marketer, analyst | 0 | tutorial |
 | ua-custom-s3 | — | marketer, analyst | 3 | tutorial |
 | ua-deferred-data | — | marketer, analyst | 0 | tutorial |
-| ua-facebook | — | marketer, analyst | 11 | tutorial |
+| ua-facebook | — | marketer, analyst | 12 | tutorial |
 | ua-funnelfox | — | marketer, analyst | 6 | tutorial |
-| ua-google-ads | — | marketer, analyst | 18 | tutorial |
+| ua-google-ads | — | marketer, analyst | 9 | tutorial |
 | ua-google-cloud-storage | — | marketer, analyst | 5 | tutorial |
 | ua-integrations | entry | marketer, analyst | 4 | tutorial |
-| ua-metrics | — | marketer, analyst | 6 | tutorial |
+| ua-metrics | — | marketer, analyst | 7 | tutorial |
 | ua-paddle | — | marketer, analyst | 6 | tutorial |
 | ua-predicted-metrics | — | marketer, analyst | 6 | tutorial |
 | ua-stripe | — | marketer, analyst | 6 | tutorial |
 | ua-tag-ad-urls | — | marketer, analyst | 2 | tutorial |
-| ua-tiktok | — | marketer, analyst | 10 | tutorial |
+| ua-tiktok | — | marketer, analyst | 11 | tutorial |
 | ua-tracking-links | — | marketer, analyst | 2 | tutorial |
 | ua-web-pixel | — | marketer, analyst | 5 | tutorial |
 | user-acquisition | — | marketer, analyst | 7 | tutorial |

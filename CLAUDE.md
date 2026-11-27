@@ -102,7 +102,7 @@ The components below are **auto-registered** in `src/pages/[...slug].astro` — 
 | `ZoomImage` | `<ZoomImage id="file.png" width="700px" alt="..." />` — add `float="right"` or `float="left"` to float image beside text |
 | `Tabs`/`TabItem` | `<Tabs groupId="platform"><TabItem value="ios" label="iOS">...</TabItem></Tabs>` |
 | `Details` | `<Details summary="Title">content</Details>`, or `<Details><summary>Title</summary>…`. A plain `<details>` element renders through the same component, so all three shapes look identical — there is one collapsible design, in `Details.astro`. Add `defaultOpen` to start it expanded. |
-| `DocVideo` | `<DocVideo id="demo.mp4" alt="..." />` — silent demo loop that autoplays like a GIF, no controls. Video and a same-name `.webp` poster go in `src/assets/shared/video/` |
+| `DocVideo` | `<DocVideo id="demo.mp4" alt="..." />` — silent demo loop that autoplays like a GIF, no controls. Video and a same-name `.webp` poster go in `src/assets/shared/video/`. Don't add GIFs: `node scripts/gif-to-video.mjs` converts them, and an existing `<ZoomImage id="x.gif">` then plays `x.mp4` |
 | `NarratedVideo` | `<NarratedVideo id="walkthrough.mp4" label="..." />` — short screencast with a voiceover, played on demand: cover with label and length, sound, speed, seek, full screen. Same folder and poster convention as `DocVideo`; the poster is the cover |
 | `InlineTooltip` | `<InlineTooltip tooltip="hover text">[link](page.md)</InlineTooltip>` |
 | `CustomDocCardList` | `<CustomDocCardList ids={['id1','id2']} />` or `<CustomDocCardList />` for auto |
@@ -172,9 +172,8 @@ These apply to every doc edit, however small. They are the rules no linter can c
 | File | Role |
 |------|------|
 | `src/styles/global.css` | **Primary stylesheet.** Tailwind import, theme variables (`@theme`), light/dark CSS custom properties, all design block styles (code blocks, details, callouts, tables, zoom images, heading anchors, task lists, highlight lines) |
-| `src/css/custom.css` | Legacy Docusaurus-era variables (`--purplePrimary`, `--ifm-*`). Still loaded via `src/css/custom.scss` but superseded by `global.css` for new work |
 | `src/components/api-reference/TryItPanel.css` | Styles for the Try-it panel of the API reference; the other API reference components carry scoped `<style>` blocks |
-| `src/css/fonts/fonts.css` | `@font-face` declarations for Inter, Roboto, Fira Code. Fira Code is self-hosted, so every visitor gets its programming ligatures unless a rule turns them off (see the `font-variant-ligatures: none` rule in `global.css`) |
+| `src/css/fonts/fonts.css` | `@font-face` declarations for Manrope and JetBrains Mono, the only self-hosted fonts (`DocsLayout.astro` preloads Manrope). Missing glyphs fall through to system fonts. JetBrains Mono ships programming ligatures; the `font-variant-ligatures: none` rule in `global.css` turns them off |
 
 ### Theme system
 
@@ -182,14 +181,14 @@ These apply to every doc edit, however small. They are the rules no linter can c
 - All design tokens are CSS custom properties defined in `:root` (light) and `.dark` (dark) blocks in `global.css`
 - Key tokens: `--bg-primary`, `--bg-secondary`, `--text-primary`, `--text-secondary`, `--accent-primary` (`#5c13ff` light / `#a78bfa` dark), `--border-primary`, `--shadow-sm/md/lg`
 - Brand color: `--color-primary-500: #6720ff`
-- Fonts: Inter (body), Fira Code (code blocks)
+- Fonts: Manrope (body), JetBrains Mono (code blocks)
 - Tailwind 4 configured in `global.css` via `@theme` block (custom font sizes, line heights, brand colors)
 
 ### Design blocks in `global.css`
 
 These are the styled visual blocks that articles use. Most of their CSS lives in `global.css`; the two component-scoped exceptions are noted below.
 
-- **Code blocks** (`.code-block-wrapper`) — title bar, copy button, Shiki syntax highlighting, dark mode color inversion, diff styling, line highlighting (`.highlight-line`)
+- **Code blocks** (`.code-block-wrapper`) — title bar, copy button, Shiki syntax highlighting, diff styling, line highlighting (`.highlight-line`). The frame and copy button are rendered at build time by the Shiki transformers in `src/plugins/shiki-highlight-transformer.mjs`; dark-mode token colors come from Shiki's dual themes (`--shiki-dark`), not JS
 - **Callouts** — rendered by remark-aside plugin into `<Callout>` (note/tip/info/warning/danger/important/link). Styles are scoped inside `src/components/Callout.astro`, not `global.css`
 - **Details/Accordion** — collapsible sections with a tinted summary bar and chevron. Styles are scoped in `src/components/Details.astro`, not `global.css` (see the `Details` row in the components table)
 - **Ordered lists** (`.docs-prose ol`) — circular step-number bullets (Mintlify-inspired)

@@ -1632,7 +1632,7 @@ paths:
           required: false
           schema:
             type: string
-          description: ID duy nhất của hồ sơ người dùng trong hệ thống của bạn. Lựa chọn tốt nhất nếu bạn đang làm việc với các hồ sơ người dùng ẩn danh. Yêu cầu phải có `adapty-customer-user-id` hoặc `adapty-profile-id`.
+          description: ID duy nhất của hồ sơ người dùng trong hệ thống của bạn. Lựa chọn tốt nhất nếu bạn đang làm việc với các hồ sơ ẩn danh. Yêu cầu phải có `adapty-customer-user-id` hoặc `adapty-profile-id`.
       responses:
         '200':
           description: Số dư được trả về thành công
@@ -1648,16 +1648,33 @@ paths:
                     balance: 12450
                     held: 0
                     available: 12450
+                    expiry:
+                      non_expiring: 12450
+                      expiring: []
+                      expiring_later: 0
+                      expired: 0
                   - code: GEMS
                     name: Gems
                     balance: 3280
                     held: 0
                     available: 3280
+                    expiry:
+                      non_expiring: 280
+                      expiring:
+                        - amount: 3000
+                          expires_at: 2026-12-24T10:00:00.000000+0000
+                      expiring_later: 0
+                      expired: 0
                   - code: ENERGY
                     name: Energy
                     balance: 840
                     held: 0
                     available: 840
+                    expiry:
+                      non_expiring: 840
+                      expiring: []
+                      expiring_later: 0
+                      expired: 0
         '400':
           description: Yêu cầu không hợp lệ. Không có `adapty-profile-id` hay `adapty-customer-user-id` nào được gửi (`error_code` là `validation_error`).
           content:
@@ -3350,16 +3367,16 @@ components:
           type: integer
           format: int32
           minimum: 0
-          description: Tổng số dư, bao gồm các khoản đang được giữ.
+          description: Tổng số dư, bao gồm các khoản hiện đang được giữ.
         held:
           type: integer
           format: int32
           minimum: 0
-          description: Tổng của tất cả các khoản giữ đang hoạt động (số tiền đã đặt trước). Hiện tại luôn là 0.
+          description: Tổng của tất cả các khoản giữ đang hoạt động (số tiền được đặt trước). Hiện tại luôn là 0.
         available:
           type: integer
           format: int32
-          description: Số dư có thể sử dụng, được tính bằng `balance - held`.
+          description: Số dư có thể chi tiêu, được tính bằng `balance` trừ `held` trừ các khoản tín dụng đã hết hạn mà Adapty chưa xóa.
       required:
         - code
         - name
@@ -3368,7 +3385,7 @@ components:
         - available
     VirtualCurrencyBalanceListResponse:
       type: object
-      description: Số dư hiện tại cho tất cả các loại tiền tệ ảo của hồ sơ người dùng.
+      description: Số dư hiện tại của hồ sơ người dùng cho mọi loại tiền tệ ảo trong ứng dụng, bao gồm cả các loại tiền tệ có số dư bằng 0.
       properties:
         response_created_at:
           type: integer
@@ -3394,22 +3411,70 @@ components:
           type: integer
           format: int32
           minimum: 0
-          description: Tổng số dư, bao gồm các khoản hiện đang được giữ.
+          description: Tổng số dư, bao gồm các khoản đang được giữ.
         held:
           type: integer
           format: int32
           minimum: 0
-          description: Tổng của tất cả các khoản giữ đang hoạt động (số tiền được đặt trước). Hiện luôn là 0.
+          description: Tổng của tất cả các khoản giữ đang hoạt động (số tiền được đặt trước). Hiện tại luôn là 0.
         available:
           type: integer
           format: int32
-          description: Số dư có thể chi tiêu, được tính bằng `balance - held`.
+          minimum: 0
+          description: Số dư có thể chi tiêu, được tính bằng `balance` trừ `held` trừ `expiry.expired`.
+        expiry:
+          $ref: '#/components/schemas/VirtualCurrencyBalanceExpiry'
       required:
         - code
         - name
         - balance
         - held
         - available
+        - expiry
+    VirtualCurrencyBalanceExpiry:
+      type: object
+      description: Số dư, được chia theo thời gian hết hạn tại thời điểm phản hồi. `non_expiring`, tổng của `expiring[].amount`, `expiring_later`, và `expired` cộng lại bằng `balance`.
+      properties:
+        non_expiring:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Số credits không bao giờ hết hạn.
+        expiring:
+          type: array
+          description: Các credits sẽ hết hạn, được nhóm theo thời gian hết hạn, gần nhất trước. Liệt kê tối đa 10 thời điểm hết hạn. Các credits có thời gian hết hạn muộn hơn được tổng hợp trong `expiring_later`.
+          items:
+            $ref: '#/components/schemas/VirtualCurrencyExpiringAmount'
+        expiring_later:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Các credits hết hạn nằm ngoài 10 thời điểm hết hạn trong `expiring`. Giá trị là 0 trừ khi `expiring` có đủ 10 mục.
+        expired:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Các credits đã qua thời gian hết hạn nhưng vẫn được tính trong `balance`. Người dùng không thể sử dụng chúng, và Adapty sẽ xóa chúng khỏi `balance` trong vài phút, do đó giá trị thường là 0.
+      required:
+        - non_expiring
+        - expiring
+        - expiring_later
+        - expired
+    VirtualCurrencyExpiringAmount:
+      type: object
+      properties:
+        amount:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Số tín dụng sẽ hết hạn tại thời điểm `expires_at` trừ khi người dùng sử dụng chúng trước.
+        expires_at:
+          type: string
+          description: Thời điểm muộn nhất các tín dụng này hết hạn, theo UTC. Việc gia hạn gói đăng ký trước khi kết thúc kỳ hạn, hoặc hoàn tiền, có thể xóa chúng sớm hơn.
+          example: 2026-12-24T10:00:00.000000+0000
+      required:
+        - amount
+        - expires_at
     VirtualCurrencyTransactionsHistoryResponse:
       type: object
       description: Danh sách phân trang các giao dịch tiền tệ ảo cho một hồ sơ người dùng.

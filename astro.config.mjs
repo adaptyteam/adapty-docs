@@ -9,7 +9,7 @@ import mdx from '@astrojs/mdx';
 import react from '@astrojs/react';
 import remarkDirective from 'remark-directive';
 import rehypeSlug from 'rehype-slug';
-import { highlightLinesTransformer } from './src/plugins/shiki-highlight-transformer.mjs';
+import { codeBlockWrapperTransformer, highlightLinesTransformer, titleTransformer } from './src/plugins/shiki-highlight-transformer.mjs';
 import { remarkAside } from './src/plugins/remark-aside.mjs';
 import { remarkTransformRequire } from './src/plugins/remark-transform-require.mjs';
 import { remarkNormalizeDetails } from './src/plugins/remark-normalize-details.mjs';
@@ -23,7 +23,7 @@ import { remarkFloatClear } from './src/plugins/remark-float-clear.mjs';
 // Slugs of pages carrying `noindex: true` in their frontmatter. The sitemap
 // filter below only receives a URL, so noindex slugs are listed here by hand —
 // add any new one to both the frontmatter and this list.
-const NOINDEX_SLUGS = [];
+const NOINDEX_SLUGS = ['ua-meta-ads'];
 
 // https://astro.build/config
 export default defineConfig({
@@ -61,32 +61,17 @@ export default defineConfig({
     }
   },
 
+  // @astrojs/mdx inherits this whole block, so .md and .mdx render the same way.
   markdown: {
     remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkFloatClear, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkNormalizeDetails, remarkTransformLinks],
     rehypePlugins: [rehypeSlug],
     shikiConfig: {
-      theme: 'github-light',
+      // Each token carries both colors: the light one inline, the dark one as
+      // --shiki-dark, which global.css switches to under `.dark`.
+      themes: { light: 'github-light', dark: 'github-dark-default' },
+      defaultColor: 'light',
       wrap: true,
-      transformers: [
-        {
-          name: 'title-transformer',
-          pre(node) {
-            // Extract title from meta
-            const meta = this.options.meta?.__raw || '';
-            const titleMatch = meta.match(/title="([^"]+)"/);
-            if (titleMatch) {
-              node.properties['data-title'] = titleMatch[1];
-            }
-
-            // Add language attribute for badge display
-            const lang = this.options.lang || '';
-            if (lang) {
-              node.properties['data-language'] = lang;
-            }
-          }
-        },
-        highlightLinesTransformer()
-      ]
+      transformers: [titleTransformer(), highlightLinesTransformer(), codeBlockWrapperTransformer()],
     },
   },
 
@@ -109,33 +94,6 @@ export default defineConfig({
         };
       },
     }),
-    mdx({
-      remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkFloatClear, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkNormalizeDetails, remarkTransformLinks],
-      rehypePlugins: [rehypeSlug],
-      shikiConfig: {
-        theme: 'github-light',
-        wrap: true,
-        transformers: [
-          {
-            name: 'title-transformer',
-            pre(node) {
-              // Extract title from meta
-              const meta = this.options.meta?.__raw || '';
-              const titleMatch = meta.match(/title="([^"]+)"/);
-              if (titleMatch) {
-                node.properties['data-title'] = titleMatch[1];
-              }
-
-              // Add language attribute for badge display
-              const lang = this.options.lang || '';
-              if (lang) {
-                node.properties['data-language'] = lang;
-              }
-            }
-          },
-          highlightLinesTransformer()
-        ]
-      }
-    })
+    mdx(),
   ]
 });

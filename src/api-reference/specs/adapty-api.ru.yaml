@@ -1614,7 +1614,7 @@ paths:
     get:
       summary: Список балансов виртуальной валюты
       description: |
-        Возвращает текущий баланс каждой виртуальной валюты для профиля. Если в приложении нет виртуальных валют, `data` будет пустым массивом.
+        Возвращает текущий баланс каждой виртуальной валюты для профиля. Если в приложении нет виртуальных валют, `data` является пустым массивом.
       operationId: listVirtualCurrencyBalances
       tags:
         - Virtual Currency
@@ -1626,13 +1626,13 @@ paths:
           required: false
           schema:
             type: string
-          description: Уникальный ID пользователя в вашей системе. Требуется либо `adapty-customer-user-id`, либо `adapty-profile-id`.
+          description: Уникальный идентификатор клиента в вашей системе. Требуется либо `adapty-customer-user-id`, либо `adapty-profile-id`.
         - name: adapty-profile-id
           in: header
           required: false
           schema:
             type: string
-          description: Уникальный ID профиля в вашей системе. Наилучший вариант при работе с анонимными профилями. Требуется либо `adapty-customer-user-id`, либо `adapty-profile-id`.
+          description: Уникальный идентификатор профиля в вашей системе. Наилучший вариант при работе с анонимными профилями. Требуется либо `adapty-customer-user-id`, либо `adapty-profile-id`.
       responses:
         '200':
           description: Балансы успешно возвращены
@@ -1648,16 +1648,33 @@ paths:
                     balance: 12450
                     held: 0
                     available: 12450
+                    expiry:
+                      non_expiring: 12450
+                      expiring: []
+                      expiring_later: 0
+                      expired: 0
                   - code: GEMS
                     name: Gems
                     balance: 3280
                     held: 0
                     available: 3280
+                    expiry:
+                      non_expiring: 280
+                      expiring:
+                        - amount: 3000
+                          expires_at: 2026-12-24T10:00:00.000000+0000
+                      expiring_later: 0
+                      expired: 0
                   - code: ENERGY
                     name: Energy
                     balance: 840
                     held: 0
                     available: 840
+                    expiry:
+                      non_expiring: 840
+                      expiring: []
+                      expiring_later: 0
+                      expired: 0
         '400':
           description: Некорректный запрос. Не передан ни `adapty-profile-id`, ни `adapty-customer-user-id` (`error_code` равен `validation_error`).
           content:
@@ -3356,7 +3373,7 @@ components:
         available:
           type: integer
           format: int32
-          description: Баланс, доступный для списания, вычисляется как `balance - held`.
+          description: Баланс, доступный для использования, вычисляемый как `balance` минус `held` минус истёкшие кредиты, которые Adapty ещё не удалил.
       required:
         - code
         - name
@@ -3365,12 +3382,12 @@ components:
         - available
     VirtualCurrencyBalanceListResponse:
       type: object
-      description: Текущие балансы всех виртуальных валют профиля.
+      description: Текущие балансы профиля по всем виртуальным валютам в приложении, включая валюты с нулевым балансом.
       properties:
         response_created_at:
           type: integer
           format: int64
-          description: Время генерации ответа в виде Unix-временной метки в миллисекундах.
+          description: Время генерации ответа в виде Unix-таймстампа в миллисекундах.
         data:
           type: array
           items:
@@ -3383,7 +3400,7 @@ components:
       properties:
         code:
           type: string
-          description: Уникальный код виртуальной валюты в приложении. Буквы ASCII, цифры и символ подчёркивания.
+          description: Уникальный код виртуальной валюты в приложении. Символы ASCII (буквы, цифры и знак подчёркивания).
         name:
           type: string
           description: Отображаемое название виртуальной валюты.
@@ -3391,22 +3408,70 @@ components:
           type: integer
           format: int32
           minimum: 0
-          description: Общий баланс, включая суммы, находящиеся в резерве.
+          description: Общий баланс, включая суммы, находящиеся на удержании.
         held:
           type: integer
           format: int32
           minimum: 0
-          description: Сумма всех активных резервов (зарезервированные средства). В настоящее время всегда равна 0.
+          description: Сумма всех активных удержаний (зарезервированные средства). В настоящее время всегда равна 0.
         available:
           type: integer
           format: int32
-          description: Баланс, доступный для использования, вычисляется как `balance - held`.
+          minimum: 0
+          description: Баланс, доступный для использования; вычисляется как `balance` минус `held` минус `expiry.expired`.
+        expiry:
+          $ref: '#/components/schemas/VirtualCurrencyBalanceExpiry'
       required:
         - code
         - name
         - balance
         - held
         - available
+        - expiry
+    VirtualCurrencyBalanceExpiry:
+      type: object
+      description: Баланс, разбитый по времени истечения срока на момент ответа. `non_expiring`, сумма `expiring[].amount`, `expiring_later` и `expired` в сумме дают `balance`.
+      properties:
+        non_expiring:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Кредиты, у которых нет срока истечения.
+        expiring:
+          type: array
+          description: Кредиты с истекающим сроком, сгруппированные по времени истечения, начиная с ближайшего. Отображает до 10 сроков истечения. Кредиты с более поздними сроками суммируются в `expiring_later`.
+          items:
+            $ref: '#/components/schemas/VirtualCurrencyExpiringAmount'
+        expiring_later:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Кредиты с истекающим сроком, не вошедшие в 10 записей `expiring`. Равно 0, если в `expiring` менее 10 записей.
+        expired:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Кредиты, у которых уже истёк срок, но которые ещё учитываются в `balance`. Пользователи не могут их тратить, а Adapty удаляет их из `balance` в течение нескольких минут, поэтому значение обычно равно 0.
+      required:
+        - non_expiring
+        - expiring
+        - expiring_later
+        - expired
+    VirtualCurrencyExpiringAmount:
+      type: object
+      properties:
+        amount:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Количество кредитов, которые истекают в момент `expires_at`, если пользователь не потратит их раньше.
+        expires_at:
+          type: string
+          description: Крайнее время истечения срока действия этих кредитов в UTC. Продление подписки до окончания периода или возврат средств могут списать их раньше.
+          example: 2026-12-24T10:00:00.000000+0000
+      required:
+        - amount
+        - expires_at
     VirtualCurrencyTransactionsHistoryResponse:
       type: object
       description: Постраничный список транзакций виртуальной валюты для профиля.

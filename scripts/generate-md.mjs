@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { withSkillNote } from './llm-skill-note.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -386,7 +386,7 @@ async function processLocaleFiles(locale, baseComponents, englishFiles) {
 
         let content = cleanFrontmatter(rawContent);
         content = stripContent(content, components);
-        content = withSkillNote(content);
+        content = withSkillNote(content, locale);
 
         const rawBasename = entry.name.replace(/\.(md|mdx)$/, '');
         const basename = MD_BASENAME_OVERRIDES.get(rawBasename) ?? rawBasename;
@@ -428,4 +428,11 @@ async function main() {
     console.log('Markdown generation complete.');
 }
 
-main().catch(console.error);
+// Run only when executed directly: generate-platform-llms-full.mjs imports
+// stripComments from here, which used to start a second, concurrent export.
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+    main().catch((err) => {
+        console.error(err);
+        process.exit(1); // fail the build instead of shipping a partial export
+    });
+}

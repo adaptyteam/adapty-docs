@@ -68,12 +68,31 @@ Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID") { result in
 | **fetchPolicy** | varsayılan: `.reloadRevalidatingCacheData` | <p>`fetchPolicy`, SDK'nın önce hangi katmanı okuyacağını belirler; önbelleği kullanıp kullanamayacağını değil. Varsayılan olarak SDK önce sunucuya gider ve bu istek başarısız olursa önbelleğe alınmış verileri döndürür. Kullanıcılarınızın her zaman en güncel verilere ulaşmasını sağladığından bu seçeneği öneriyoruz.</p><p></p><p>Ancak kullanıcılarınızın kararsız bir internet bağlantısıyla baş ettiğini düşünüyorsanız `.returnCacheDataElseLoad` seçeneğini değerlendirin; bu seçenek sırayı tersine çevirir — önce önbelleği okur, önbellekte hiçbir şey yoksa sunucuya gider. Kullanıcılar mutlak olarak en son verilere ulaşamayabilir; ancak internet bağlantısı ne kadar kesintili olursa olsun daha hızlı yükleme süreleri yaşarlar. Önbellek düzenli olarak güncellenir, dolayısıyla ağ isteklerini önlemek amacıyla oturum boyunca güvenle kullanılabilir.</p><p></p><p>Üçüncü bir politika olan `.returnCacheDataIfNotExpiredElseLoad(maxAge:)`, ikisi arasında bir yerde durur: önbelleğe alınan kopya `maxAge` saniyeden daha yeni olduğu sürece önce önbelleği okur ve daha eski olduğunda sunucuya gider.</p><p></p><p>Önbelleğin uygulama yeniden başlatıldığında bozulmadan kaldığını ve yalnızca uygulama kaldırılıp yeniden yüklendiğinde ya da manuel temizleme yapıldığında silindiğini unutmayın.</p><p></p><p>Adapty SDK, flow'ları ve paywallları iki katmanda depolar: yukarıda açıklanan düzenli olarak güncellenen önbellek ve [yedek paywalllar](fallback-paywalls). Ayrıca flow'ları ve paywallları daha hızlı getirmek için CDN kullanıyoruz; CDN'e ulaşılamadığı durumlarda ise bağımsız bir yedek sunucu devreye giriyor.</p> |
 | **loadTimeout** | varsayılan: 5 sn | <p>Bu değer, söz konusu yöntemin zaman aşımını sınırlar. Adapty sunucusu zamanında yanıt vermez veya hata döndürürse SDK önbelleğe alınmış flow'u döndürür. Önbellekte hiçbir şey yoksa ve sunucu zaman aşımına uğramış ya da sunucu hatası döndürmüşse SDK, flow'u yedek sunucudan ister (yalnızca placement'ın **All Users** kitlesine hizmet eden bir CDN kopyası). Son çare olarak SDK, flow'u [yedek dosyanızdan](ios-use-fallback-paywalls) döndürür.</p><p></p><p>Nadir durumlarda bu yöntemin `loadTimeout` içinde belirtilenden biraz daha geç zaman aşımına uğrayabileceğini unutmayın; çünkü işlem arka planda farklı isteklerden oluşabilir.</p> |
 
+<Tabs groupId="ios-sdk-version" queryString>
+<TabItem value="4.5" label="SDK 4.5 veya sonrası" default>
+
 :::note
-v4'te `locale` parametresi `getFlow`'dan çıkarılıp `getFlowConfiguration`'a taşındı (yalnızca AdaptyUI ile render edilirken kullanılır). Özel paywalllar için tüm mevcut locale'ler `flow.remoteConfigs` içinde birlikte döner — kullanıcının cihazıyla veya uygulamanızın ayarıyla eşleşen locale'i seçin.
+v4'te `getFlow` metodunun `locale` parametresi yoktur ve SDK, cihazda ayarlanan tercih edilen dilleri okumaz. Bu dilleri uygulamanızda, örneğin `Locale.preferredLanguages` ile kendiniz okuyun. Flow veya paywallı kimin gösterdiği, bunları nerede kullanacağınızı belirler:
+
+- SDK, Flow & Paywall Builder'dan flow'ları görüntüler. Bir flow'u sahip olduğu ilk tercih edilen dilde göstermek için `getFlowConfiguration` içindeki `preferredLocales` parametresine [dilleri iletin](localizations-and-locale-codes#pass-the-users-languages-to-the-sdk).
+- Uygulamanız özel paywallları kendisi görüntüler. `getFlow`, tüm locale'ler için remote config'leri `flow.remoteConfigs` içinde döndürür: tercih edilen dillere uyan remote config'i seçin.
 :::
 
+</TabItem>
+<TabItem value="4.4" label="SDK 4.0–4.4">
+
+:::note
+V4'te `getFlow`'un `locale` parametresi yoktur ve SDK cihaz dilini okumaz. [Dil kodunu](localizations-and-locale-codes#pass-the-users-languages-to-the-sdk) uygulamanızda, cihaz diline veya kullanıcının uygulamada seçtiği dile göre seçin. Flow'u veya paywall'u kimin gösterdiği, kodu nerede kullanacağınızı belirler:
+
+- SDK, Flow & Paywall Builder'dan flow'ları görüntüler. Bir flow'un yerelleştirmesini seçmek için `getFlowConfiguration` fonksiyonuna `locale` parametresiyle yerel ayar kodunu geçin.
+- Uygulamanız özel paywalls'ları kendisi görüntüler. `getFlow`, tüm yerel ayarlar için remote config'leri `flow.remoteConfigs` içinde döndürür: yerel ayar koduna uyan remote config'i seçin.
+:::
+
+</TabItem>
+</Tabs>
+
 :::tip
-Kullanıcı flow'a ihtiyaç duymadan önce önbelleği doldurmak için birden fazla placement için [`preloadFlows`](ios-optimize-paywall-fetching#preload-placements) (iOS SDK 4.1+) çağırın. Önceden yüklenmiş kopyayı ağa gitmeden okumak için `fetchPolicy: .returnCacheDataElseLoad` kullanın.
+Kullanıcının flow'a ihtiyaç duymadan önce önbelleği doldurmak için [`preloadFlows`](ios-optimize-paywall-fetching#preload-placements) (iOS SDK 4.1+) fonksiyonunu birkaç placement için aynı anda çağırın. Önceden yüklenmiş kopyayı ağdan önce okumak için `fetchPolicy: .returnCacheDataElseLoad` değerini geçirin.
 :::
 
 Ürün ID'lerini doğrudan koda yazmayın! Flow'lar uzaktan yapılandırıldığından, mevcut ürünler, ürün sayısı ve özel teklifler (ücretsiz deneme gibi) zamanla değişebilir. Kodunuzun bu senaryoları ele aldığından emin olun.

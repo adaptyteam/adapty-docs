@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import yaml from 'js-yaml';
 import { LLM_SKILL_NOTE } from './llm-skill-note.mjs';
+import { mergeSdkSidebars, renderMergedSdk } from './llms-sdk-merge.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SIDEBARS_DIR = path.resolve(__dirname, '../src/data/sidebars');
@@ -10,6 +11,7 @@ const DOCS_BASE = path.resolve(__dirname, '../src/content/docs');
 const LOCALES_BASE_DIR = path.resolve(__dirname, '../src/locales');
 const API_CONFIG = path.resolve(__dirname, '../src/api-reference/config.json');
 const API_SPECS_DIR = path.resolve(__dirname, '../public/api-specs');
+const PLATFORMS = JSON.parse(await fs.readFile(path.resolve(__dirname, '../src/data/platforms.json'), 'utf-8'));
 
 // Get output dir from args or default to public
 const targetDirName = process.argv[2] || '../public';
@@ -246,14 +248,19 @@ async function loadApiCatalog(locale) {
 // `urlPrefix` is `''` for English or `/<locale>` for localized indexes —
 // the locale API .md exports are produced by `[locale]/[slug].md.ts` and
 // `[locale]/[slug]/operations/[op].md.ts`.
-function renderApiEntry(api, indent, urlPrefix) {
+function renderApiEntry(api, indent, urlPrefix, titlesOnly = false) {
     const lines = [];
-    lines.push(`${indent}- [${api.name} — API reference](${BASE_URL}${urlPrefix}/${api.slug}.md): ${api.description.split('\n')[0].trim() || 'API specification'}`);
+    const summary = titlesOnly ? '' : `: ${api.description.split('\n')[0].trim() || 'API specification'}`;
+    lines.push(`${indent}- [${api.name} — API reference](${BASE_URL}${urlPrefix}/${api.slug}.md)${summary}`);
 
     const opLine = (op, prefix) => {
         const flag = op.deprecated ? ' _(deprecated)_' : '';
         return `${prefix}- \`${op.method} ${op.path}\` — [${op.summary}](${BASE_URL}${urlPrefix}/${api.slug}/operations/${op.operationId}.md)${flag}`;
     };
+
+    // The combined llms.txt lists each API's reference page only; the
+    // operation list lives in api-llms.txt.
+    if (titlesOnly) return lines.join('\n') + '\n';
 
     if (api.tagOrder.length === 0) {
         for (const op of api.operations) lines.push(opLine(op, `${indent}  `));
@@ -337,7 +344,7 @@ function parseItems(items, ctx, depth = 0) {
             // see the whole API surface from this index.
             const api = apiCatalog.get(item.href);
             if (api) {
-                output += renderApiEntry(api, indent, urlPrefix);
+                output += renderApiEntry(api, indent, urlPrefix, ctx.titlesOnly);
             } else {
                 output += `${indent}- [${item.label}](${item.href})\n`;
             }
@@ -346,39 +353,66 @@ function parseItems(items, ctx, depth = 0) {
     return output;
 }
 
-// Build the per-sidebar `<platform>-llms.txt` content + a combined index for
+// Build the per-sidebar `<platform>-llms.txt` files + a combined index for
 // a given language. `urlPrefix` is `''` for English or `/<locale>` for
 // localized output. `labels` is the parsed _sidebar-labels.json (empty for
 // English).
+//
+// The per-sidebar files carry a description for every page. The combined
+// llms.txt lists titles only and merges the seven SDK sidebars into one
+// section with a link per platform, so it stays small enough for agents to
+// read in one fetch without truncation.
 async function buildSidebarFiles(outputDir, sidebarFiles, ctx) {
-    let allContent = `# Adapty Documentation\n\n> Adapty is an in-app purchase platform for mobile apps. It handles subscriptions, one-time purchases, and consumables — from purchase processing and receipt validation to analytics, A/B testing, and integrations.\n\n${LLM_SKILL_NOTE}\n\n`;
-
+    const sidebars = new Map();
     for (const file of sidebarFiles) {
         if (!file.endsWith('.json')) continue;
+        const sidebarData = JSON.parse(await fs.readFile(path.join(SIDEBARS_DIR, file), 'utf-8'));
+        sidebars.set(file.replace('.json', ''), Array.isArray(sidebarData) ? sidebarData : []);
+    }
 
-        const filePath = path.join(SIDEBARS_DIR, file);
-        const content = await fs.readFile(filePath, 'utf-8');
-        const sidebarData = JSON.parse(content);
-
-        const platformName = file.replace('.json', '');
-        let sidebarContent = `# ${platformName} Documentation\n\n`;
-        let items = Array.isArray(sidebarData) ? sidebarData : [];
-        sidebarContent += parseItems(items, ctx);
-
-        // Standalone per-platform file carries the note; the section appended
-        // to the combined llms.txt does not (the combined header already has it).
-        const standaloneContent = sidebarContent.replace(
-            `# ${platformName} Documentation\n\n`,
-            `# ${platformName} Documentation\n\n${LLM_SKILL_NOTE}\n\n`,
-        );
-        await fs.writeFile(path.join(outputDir, `${platformName}-llms.txt`), standaloneContent);
+    for (const [platformName, items] of sidebars) {
+        const content = `# ${platformName} Documentation\n\n${LLM_SKILL_NOTE}\n\n${parseItems(items, ctx)}`;
+        await fs.writeFile(path.join(outputDir, `${platformName}-llms.txt`), content);
         console.log(`Generated: ${path.relative(OUTPUT_DIR, path.join(outputDir, `${platformName}-llms.txt`))}`);
+    }
 
-        allContent += sidebarContent + '\n---\n\n';
+    const titlesCtx = { ...ctx, descriptions: new Map(), titlesOnly: true };
+    // Short platform names: each SDK topic line carries up to seven links.
+    const SHORT_LABELS = { 'react-native': 'RN', kmp: 'KMP' };
+    const sdkPlatforms = PLATFORMS.sdkPlatforms
+        .filter(p => sidebars.has(p.id))
+        .map(p => ({ ...p, label: SHORT_LABELS[p.id] ?? p.label }));
+    const sectionIndexes = [
+        { id: 'tutorial', label: 'Tutorial' },
+        ...sdkPlatforms,
+        { id: 'api', label: 'CLI & APIs' },
+    ].filter(p => sidebars.has(p.id))
+        .map(p => `[${p.label}](${BASE_URL}${ctx.urlPrefix}/${p.id}-llms.txt)`)
+        .join(' · ');
+
+    let allContent = `# Adapty Documentation\n\n> Adapty is an in-app purchase platform for mobile apps. It handles subscriptions, one-time purchases, and consumables — from purchase processing and receipt validation to analytics, A/B testing, and integrations.\n\n${LLM_SKILL_NOTE}\n\nThis index lists page titles only. Each section also has its own index with a one-line summary of every page: ${sectionIndexes}\n\n`;
+
+    if (sidebars.has('tutorial')) {
+        allContent += `# Tutorial Documentation\n\n${parseItems(sidebars.get('tutorial'), titlesCtx)}\n---\n\n`;
+    }
+
+    if (sdkPlatforms.length > 0) {
+        const merged = mergeSdkSidebars(sdkPlatforms.map(p => ({ platformId: p.id, items: sidebars.get(p.id) })));
+        allContent += `# SDK Documentation\n\nEach topic links to its page for every platform that has one. RN is React Native, KMP is Kotlin Multiplatform.\n${renderMergedSdk(merged, {
+            platforms: sdkPlatforms,
+            baseUrl: BASE_URL,
+            urlPrefix: ctx.urlPrefix,
+            noindexDocIds: ctx.noindexDocIds ?? new Set(),
+            translate: item => translateLabel(item, ctx.labels),
+        })}\n---\n\n`;
+    }
+
+    if (sidebars.has('api')) {
+        allContent += `# CLI & APIs Documentation\n\n${parseItems(sidebars.get('api'), titlesCtx)}`;
     }
 
     await fs.writeFile(path.join(outputDir, 'llms.txt'), allContent);
-    console.log(`Generated: ${path.relative(OUTPUT_DIR, path.join(outputDir, 'llms.txt'))} (all sidebars)`);
+    console.log(`Generated: ${path.relative(OUTPUT_DIR, path.join(outputDir, 'llms.txt'))} (all sidebars, ${allContent.length} chars)`);
 }
 
 async function generateLLMFiles() {
@@ -433,4 +467,7 @@ async function generateLLMFiles() {
     } catch { /* no locales directory */ }
 }
 
-generateLLMFiles().catch(console.error);
+generateLLMFiles().catch((err) => {
+    console.error(err);
+    process.exit(1); // fail the build instead of shipping a partial export
+});

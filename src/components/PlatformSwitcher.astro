@@ -1,91 +1,18 @@
 ---
 import platformsData from '../data/platforms.json';
+import { getPlatformSwitchLinks } from '../utils/platform-switch';
 
 interface Props {
   currentPlatformId: string;
-  currentLabel?: string;
-  currentActiveId?: string;
+  currentActiveId: string;
+  currentLocale?: string;
 }
 
-const { currentPlatformId, currentLabel, currentActiveId } = Astro.props;
+const { currentPlatformId, currentActiveId, currentLocale } = Astro.props;
 const { sdkPlatforms } = platformsData;
 
 const currentPlatform = sdkPlatforms.find((p) => p.id === currentPlatformId);
-
-// Load all sidebars to find matching pages
-const sidebarModules = import.meta.glob('../data/sidebars/*.json', { eager: true });
-
-function getTargetLink(platformId: string, targetLabel?: string, activeId?: string): string {
-    const platform = sdkPlatforms.find(p => p.id === platformId);
-    if (!platform) return '#';
-    
-    // Resolve sidebar data
-    const sidebarPath = `../data/sidebars/${platform.sidebar}`;
-    const sidebarModule = sidebarModules[sidebarPath];
-    const sidebarData = sidebarModule ? (sidebarModule as any).default : [];
-
-    // Helper to find item by label
-    const findItemByLabel = (items: any[], label: string): any | undefined => {
-        for (const item of items) {
-            if (item.label === label && item.type === 'doc' && item.id) return item;
-            if (item.items) {
-                const found = findItemByLabel(item.items, label);
-                if (found) return found;
-            }
-        }
-    };
-
-    // Helper to find overview (intro/overview page)
-    const findOverview = (items: any[]): any | undefined => {
-         // Priority 1: Check categories and docs for "overview" or "intro" in ID
-         for (const item of items) {
-            const id = item.id || item.link?.id;
-            if (id && (id.toLowerCase().includes('overview') || id.toLowerCase().includes('intro'))) {
-                return { id }; 
-            }
-            if (item.items) {
-                const found = findOverview(item.items);
-                if (found) return found;
-            }
-         }
-         // Priority 2: Fallback to the first document found
-         const findFirstDoc = (subItems: any[]): any | undefined => {
-             for (const item of subItems) {
-                 if (item.type === 'doc' && item.id) return item;
-                 if (item.items) {
-                     const found = findFirstDoc(item.items);
-                     if (found) return found;
-                 }
-             }
-         }
-         return findFirstDoc(items);
-    };
-
-    const isCurrentOverview = activeId?.toLowerCase().includes('overview') || 
-                             activeId?.toLowerCase().includes('intro') ||
-                             activeId === 'what-is-adapty';
-
-    const baseUrl = import.meta.env.BASE_URL; // e.g. "/docs/"
-    const normalizedBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
-
-    // 1. If current is overview, always try to land on target's overview
-    if (isCurrentOverview) {
-        const targetOverview = findOverview(sidebarData);
-        if (targetOverview) return `${normalizedBase}${targetOverview.id}`.replace(/\/+/g, '/');
-    }
-
-    // 2. Otherwise, try to find matching label first (Topic Consistency)
-    if (targetLabel) {
-        const match = findItemByLabel(sidebarData, targetLabel);
-        if (match) return `${normalizedBase}${match.id}`.replace(/\/+/g, '/');
-    }
-
-    // 3. Last Fallback: Target platform's overview
-    const overview = findOverview(sidebarData);
-    if (overview) return `${normalizedBase}${overview.id}`.replace(/\/+/g, '/');
-
-    return `${normalizedBase}/${platformId}-sdk-overview`.replace(/\/+/g, '/'); // Ultimate hardcoded fallback
-}
+const links = getPlatformSwitchLinks(currentPlatformId, currentActiveId, currentLocale);
 ---
 
 <div class="platform-switcher-container">
@@ -107,10 +34,9 @@ function getTargetLink(platformId: string, targetLabel?: string, activeId?: stri
     <div class="platform-switcher-content">
         <div class="platform-switcher-label">SDK Platforms</div>
       {sdkPlatforms.map((platform) => (
-        <button
-          type="button"
+        <a
+          href={links[platform.id]}
           data-platform-id={platform.id}
-          data-platform-sidebar={platform.sidebar}
           class:list={[
             "platform-switcher-item",
             currentPlatformId === platform.id && "platform-switcher-item-active"
@@ -122,7 +48,7 @@ function getTargetLink(platformId: string, targetLabel?: string, activeId?: stri
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
              </svg>
           )}
-        </button>
+        </a>
       ))}
     </div>
   </div>
@@ -261,161 +187,18 @@ function getTargetLink(platformId: string, targetLabel?: string, activeId?: stri
 </style>
 
 <script>
-    import platformsData from '../data/platforms.json';
-    
-    // Load all sidebars at build time for client-side use
-    const sidebarModules = import.meta.glob('../data/sidebars/*.json', { eager: true });
-    const sidebarsMap = new Map();
-    
-    for (const [path, module] of Object.entries(sidebarModules)) {
-        const fileName = path.split('/').pop()?.replace('.json', '') || '';
-        sidebarsMap.set(fileName, (module as any).default);
-    }
+  import type { TransitionBeforeSwapEvent } from 'astro:transitions/client';
 
-    function getCurrentActiveId(): string {
-        const currentPath = window.location.pathname;
-        // Remove leading slash and get the last segment
-        const segments = currentPath.split('/').filter(Boolean);
-        return segments[segments.length - 1] || '';
-    }
-
-    function findItemByActiveId(items: any[], activeId: string): any | undefined {
-        for (const item of items) {
-            // Check if item.id matches exactly
-            if (item.id === activeId) {
-                return item;
-            }
-            // Check if item.id ends with activeId (for nested paths)
-            if (item.id && item.id.endsWith(activeId)) {
-                return item;
-            }
-            // Check category links
-            if (item.link?.id === activeId || (item.link?.id && item.link.id.endsWith(activeId))) {
-                return item;
-            }
-            // Recursively search in nested items
-            if (item.items) {
-                const found = findItemByActiveId(item.items, activeId);
-                if (found) return found;
-            }
-        }
-        return undefined;
-    }
-
-    function findItemByLabel(items: any[], label: string): any | undefined {
-        for (const item of items) {
-            // Match by label for doc items
-            if (item.label === label && item.type === 'doc' && item.id) {
-                return item;
-            }
-            // Also check category links
-            if (item.label === label && item.type === 'category' && item.link?.id) {
-                return { id: item.link.id, label: item.label };
-            }
-            // Recursively search in nested items
-            if (item.items) {
-                const found = findItemByLabel(item.items, label);
-                if (found) return found;
-            }
-        }
-        return undefined;
-    }
-
-    function findOverview(items: any[]): any | undefined {
-        // Priority 1: Check for overview/intro in ID
-        for (const item of items) {
-            const id = item.id || item.link?.id;
-            if (id && (id.toLowerCase().includes('overview') || id.toLowerCase().includes('intro'))) {
-                return { id };
-            }
-            if (item.items) {
-                const found = findOverview(item.items);
-                if (found) return found;
-            }
-        }
-        // Priority 2: First document
-        function findFirstDoc(subItems: any[]): any | undefined {
-            for (const item of subItems) {
-                if (item.type === 'doc' && item.id) return item;
-                if (item.items) {
-                    const found = findFirstDoc(item.items);
-                    if (found) return found;
-                }
-            }
-        }
-        return findFirstDoc(items);
-    }
-
-    function getTargetLink(platformId: string, sidebarName: string): string {
-        const baseUrl = import.meta.env.BASE_URL;
-        // Remove .json extension if present
-        const cleanSidebarName = sidebarName.replace('.json', '');
-        const sidebarData = sidebarsMap.get(cleanSidebarName);
-        if (!sidebarData) {
-            return `${baseUrl}/${platformId}-sdk-overview`.replace(/\/+/g, '/');
-        }
-
-        // Get current page info dynamically
-        const currentActiveId = getCurrentActiveId();
-        const currentSidebar = document.querySelector('[data-platform-id]')?.getAttribute('data-platform-id');
-        const currentPlatformData = platformsData.sdkPlatforms.find((p: any) => p.id === currentSidebar);
-        const currentSidebarData = currentSidebar && currentPlatformData ? sidebarsMap.get(currentPlatformData.sidebar.replace('.json', '')) : null;
-        
-        // Find current item to get its label
-        let currentLabel: string | undefined;
-        if (currentSidebarData) {
-            const currentItem = findItemByActiveId(currentSidebarData, currentActiveId);
-            currentLabel = currentItem?.label;
-        }
-
-        // Check if current page is overview
-        const isCurrentOverview = currentActiveId?.toLowerCase().includes('overview') ||
-                                currentActiveId?.toLowerCase().includes('intro') ||
-                                currentActiveId === 'what-is-adapty';
-
-        // 1. If current is overview, go to target's overview
-        if (isCurrentOverview) {
-            const targetOverview = findOverview(sidebarData);
-            if (targetOverview) {
-                return `${baseUrl}/${targetOverview.id}`.replace(/\/+/g, '/');
-            }
-        }
-
-        // 2. Try to find matching label (Topic Consistency)
-        if (currentLabel) {
-            const match = findItemByLabel(sidebarData, currentLabel);
-            if (match) {
-                return `${baseUrl}/${match.id}`.replace(/\/+/g, '/');
-            }
-        }
-
-        // 3. Fallback to target's overview
-        const overview = findOverview(sidebarData);
-        if (overview) {
-            return `${baseUrl}/${overview.id}`.replace(/\/+/g, '/');
-        }
-
-        return `${baseUrl}/${platformId}-sdk-overview`.replace(/\/+/g, '/');
-    }
-
-    function initPlatformSwitcher() {
-        const platformButtons = document.querySelectorAll('.platform-switcher-item[data-platform-id]');
-        
-        platformButtons.forEach((button) => {
-            button.addEventListener('click', (e) => {
-                e.preventDefault();
-                const platformId = button.getAttribute('data-platform-id');
-                const sidebarName = button.getAttribute('data-platform-sidebar');
-                
-                if (platformId && sidebarName) {
-                    const targetUrl = getTargetLink(platformId, sidebarName);
-                    window.location.href = targetUrl;
-                }
-            });
-        });
-    }
-
-    // Initialize on page load
-    document.addEventListener('astro:page-load', initPlatformSwitcher);
-    initPlatformSwitcher();
+  // The sidebar is transition:persist per platform, so navigating within a
+  // platform keeps this switcher and drops the new page's copy, whose links
+  // were computed for the new page. Carry those links over before the swap.
+  document.addEventListener('astro:before-swap', (event) => {
+    const { newDocument } = event as TransitionBeforeSwapEvent;
+    newDocument.querySelectorAll<HTMLAnchorElement>('.platform-switcher-item[data-platform-id]').forEach((fresh) => {
+      const kept = document.querySelector<HTMLAnchorElement>(
+        `.platform-switcher-item[data-platform-id="${fresh.dataset.platformId}"]`,
+      );
+      if (kept) kept.setAttribute('href', fresh.getAttribute('href') ?? '');
+    });
+  });
 </script>

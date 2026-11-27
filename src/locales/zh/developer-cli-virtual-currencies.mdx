@@ -1,0 +1,335 @@
+---
+title: "从 CLI 管理虚拟货币"
+description: "通过 Adapty CLI 在终端中管理虚拟货币：列出并创建货币、修改每个产品授予的积分数量，以及查看应用或某个用户的积分交易记录和余额。"
+metadataTitle: "开发者 CLI 中的虚拟货币 | Adapty 文档"
+---
+
+Adapty CLI 可通过终端管理[虚拟货币](virtual-currencies)，对应命令主题为 `adapty virtual-currencies`。你可以列出应用的所有货币、创建货币、修改货币的名称和描述，以及添加、修改或删除货币的*映射*：即货币的[关联产品](create-virtual-currency#link-products)及其各自授予的积分数量。你还可以查看应用或某位用户的积分交易记录，以及某位用户的余额。CLI 输出中将积分称为 *coins*。
+
+使用它让 AI 代理配置你的货币，或在不打开看板的情况下排查用户余额问题。货币和映射命令的功能与 **Products** 页面的 **Virtual currency** 选项卡相同。交易记录和余额读取显示的数据与看板中用户画像里的数据一致，但不会修改余额。如需更正余额，请[在看板中手动调整](virtual-currency-balance#adjust-a-balance-manually)。
+
+## 开始之前 \{#before-you-start\}
+
+`virtual-currencies` 主题与 CLI 其他部分使用相同的安装方式和登录方式。如果尚未完成配置，请参照[快速入门指南](developer-cli-quickstart)的第 1 步和第 2 步进行操作。要查看您的 CLI 是否包含该主题，请运行：
+
+```bash
+adapty virtual-currencies --help
+```
+
+每条命令都需要在 `--app` 参数中传入应用的 UUID。要查找该 UUID，请运行：
+
+```bash
+adapty apps list
+```
+
+映射通过 Adapty 产品 ID 来标识产品，而非商店产品 ID。要查找产品 ID，请运行：
+
+```bash
+adapty products list --app <app-id>
+```
+
+## 列出并读取虚拟货币 \{#list-and-read-currencies\}
+
+```bash
+adapty virtual-currencies list --app <app-id>
+```
+
+列表中会显示每种货币的代码、名称以及授予该货币的产品数量。与 CLI 的其他列表命令一样，支持 `--page` 和 `--page-size` 参数。
+
+如需查看某种货币的完整映射信息，请运行：
+
+```bash
+adapty virtual-currencies get <currency-id> --app <app-id>
+```
+
+该货币包含以下字段：
+
+| 字段 | 值 |
+|---|---|
+| `virtual_currency_id` | 货币的 ID，其他命令将其作为参数使用。 |
+| `code` | 服务端 API、SDK 和分析筛选器使用的代码，不可修改。 |
+| `name`、`description` | 显示名称和可选描述。 |
+| `products_count` | 授予该货币的产品数量。 |
+| `updated_at` | 最后一次修改的时间，以毫秒为单位。请通过 `--expected-updated-at` 传入，详见[防止变更丢失](#protection-against-lost-changes)。 |
+| `mappings` | 仅在 `get` 中出现：授予该货币的产品列表，以及每个产品对应的积分数量。 |
+
+映射定义了每个产品授予多少积分：
+
+- **`one-time`**：每次购买该产品可获得 `credit_per_purchase` 个积分。
+- **`subscription`**：每个付费周期可获得 `credit_per_cycle` 个积分。`expiring: true` 表示当订阅续期或结束时，该周期的积分将过期。`credit_on_trial_start` 为试用开始时授予的积分，设为 `null` 则不授予任何积分。
+
+映射会在下次购买或续订相应产品时授予积分，无论是在生产环境还是沙盒环境中。当前订阅用户将在下次续订时获得积分。如需立即为现有用户授予积分，请通过服务端 API [授予余额](grant-initial-balance)。有关每项设置的详细说明，请参阅[创建虚拟货币](create-virtual-currency#link-products)。
+
+## 创建货币 \{#create-a-currency\}
+
+:::warning
+您无法删除货币或更改其代码。一个应用最多可以有 20 种货币。
+:::
+
+```bash
+adapty virtual-currencies create --app <app-id> --code GEMS --name "Gems" \
+  --description "Spent on hints" --file mappings.json
+```
+
+`--code` 接受字母、数字和 `_`，最多 32 个字符，且在应用中必须唯一。CLI 会保留你输入时的大小写，而看板会将代码转为大写：`gems` 和 `GEMS` 是两个不同的代码。要与看板中创建的货币保持一致，请使用大写。服务端 API 以及交易和分析过滤器都需要使用相同大小写的代码。`--name` 最多 64 个字符，`--description` 最多 256 个字符。`--file` 为可选项：不指定时，该货币不包含任何映射。
+
+映射文件是一个 JSON 列表，每个条目代表一条完整的映射：
+
+```json title="mappings.json"
+[
+  {
+    "product_id": "<one-time-product-id>",
+    "product_type": "one-time",
+    "credit_per_purchase": 100
+  },
+  {
+    "product_id": "<subscription-product-id>",
+    "product_type": "subscription",
+    "credit_per_cycle": 500,
+    "expiring": true,
+    "credit_on_trial_start": 50
+  }
+]
+```
+
+在 `create` 中，你可以省略 `credit_on_trial_start`：此时试用期不会发放任何积分。CLI 在发送请求前会校验该文件。如果文件不是至少包含一个元素的 JSON 列表，CLI 将以退出码 2 退出。
+
+在创建货币之前，CLI 会显示货币代码、映射的产品，以及提示您无法删除该货币或更改其代码。然后会请求确认，详见[在脚本和 Agent 中确认操作](#confirmation-in-scripts-and-agents)。
+
+## 更改名称或描述 \{#change-the-name-or-the-description\}
+
+```bash
+adapty virtual-currencies update <currency-id> --app <app-id> --name "Gold gems"
+```
+
+`--name`、`--description` 和 `--clear-description` 至少需要提供其中一个。未提供的参数将保持不变：CLI 会先读取当前货币信息，再将其现有值一并发送。`--clear-description` 用于删除描述，不能与 `--description` 同时使用。
+
+`update` 不会请求确认，因为再执行一次更新即可撤销操作。
+
+## 添加或更改映射 \{#add-or-change-mappings\}
+
+```bash
+adapty virtual-currencies mappings upsert <currency-id> --app <app-id> --file mappings.json
+```
+
+文件格式与[创建文件](#create-a-currency)相同，包含 1 到 200 个条目。一种货币最多共有 200 条映射。每个条目会替换对应产品的现有映射，或为尚无映射的产品新增一条映射。每个条目的所有字段都必须填写，包括 `credit_on_trial_start`（无则填 `null`）。Adapty 不会将条目与当前映射合并：若条目存在缺失或未知字段，将以退出码 4 拒绝该请求，且不做任何更改。文件中未涉及的映射保持不变。`mappings upsert` 不会删除任何映射。
+
+在发送更改之前，CLI 会读取货币并显示每个发生变化的产品：
+
+- 新映射：`new` 及其积分。
+- 已更改的映射：每次购买或每个周期的变更前后积分，例如 `30 → 50`。`expiring` 或 `credit_on_trial_start` 的更改也会显示变更前后的值。某个条目的 `product_type` 必须与其产品类型一致：如果 `product_type` 发生变更，Adapty 将拒绝该映射并返回退出码 4。
+
+## 删除映射 \{#remove-a-mapping\}
+
+```bash
+adapty virtual-currencies mappings delete <currency-id> --app <app-id> --product <product-id>
+```
+
+删除后，购买该产品将不再授予此货币的积分，Adapty 也不会为相关交易写入记录。该产品此前已授予的积分仍保留在用户余额中。如果该产品没有映射关系，Adapty 将返回 404 错误并以退出代码 4 退出。
+
+## 读取积分交易记录 \{#read-credit-transactions\}
+
+要读取某应用的积分交易记录，请运行：
+
+```bash
+adapty virtual-currencies transactions list --app <app-id> \
+  --date-from 2026-11-01 --date-to 2026-11-07 --timezone Europe/Berlin
+```
+
+时间范围为必填项，最多 366 天，首尾两天均包含在内。这里的"天"是指 `--timezone` 所指定的时区（IANA 时区名称）对应的日历日；若不指定，则使用应用时区。可通过 `--currency-code`、`--operation`、`--feature` 以及 `--sandbox` 或 `--no-sandbox` 对交易记录进行筛选。操作类型的可选值，请参阅 [Operation](virtual-currencies#operation)。
+
+要读取某位用户的交易记录，需通过 `--profile`（Adapty 用户画像 ID）或 `--customer-user-id`（你自己的用户 ID）中的其中一个来指定用户：
+
+```bash
+adapty virtual-currencies profiles transactions list --app <app-id> --customer-user-id <user-id>
+```
+
+用户交易记录的时间范围是可选的。不指定时，CLI 会读取该用户的全部历史记录。支持与前述相同的筛选条件和 `--timezone`。
+
+交易记录按最新优先排列，每次命令返回一页数据。默认每页显示 20 条记录，`--page-size` 可设置为 1 到 100。如果该时间段内的交易记录超过一页，表格末尾会显示 `More rows:` 以及下一页的命令：与当前命令使用相同的参数，并附加 `--cursor` 和当前页的游标值。获取下一页时，须保持相同的时间段、筛选条件和时区。若游标与其他筛选条件不匹配，则会返回 `cursor_filters_mismatch` 错误。使用 `--json` 时，输出为 Adapty 的原始响应，包含 `data` 和 `meta` 字段，游标值位于 `meta.pagination.next_cursor`。
+
+CLI 没有读取所有页面的选项。要将每笔交易加载到数据仓库，请使用每日导出功能导出至 [Amazon S3](s3-exports#virtual-currency-transactions) 或 [Google Cloud Storage](google-cloud-storage#virtual-currency-transactions)。
+
+:::note
+如需汇总数据和趋势分析，请使用 [`adapty analytics`](developer-cli-analytics) 中的虚拟货币数据图表，而不是对交易求和。要查找图表名称，请运行 `adapty analytics catalog`。数据图表会排除有沙盒交易的用户，而交易列表不会。因此，交易求和的结果可能与数据图表不一致。
+:::
+
+## 读取用户余额 \{#read-the-balances-of-a-user\}
+
+```bash
+adapty virtual-currencies profiles balances get --app <app-id> --profile <profile-id>
+```
+
+通过 `--profile` 或 `--customer-user-id` 中的一个来指定用户（二选一）。余额信息会展示用户每种货币的 `balance`（总余额）、`held`（冻结额度）和 `available`（可用额度），以及到期明细：永不过期的额度、最早到期的额度及其到期时间、稍后到期的额度总和，以及已过期的额度。
+
+要了解用户余额的原因，请结合读取用户的交易记录和余额数据。看板在[用户画像](virtual-currency-balance)中展示相同的数据。
+
+## 防止更改丢失 \{#protection-against-lost-changes\}
+
+在你读取和写入之间，可能有人在看板中修改了货币，或者另一个 agent 也进行了修改。为了保留这些变更，`mappings upsert` 和 `mappings delete` 会发送 `expected_updated_at`，即你读取时该货币的 `updated_at` 值。如果该货币在读取后发生了变化，Adapty 会拒绝写入操作，返回 `virtual_currency_conflict` 错误，退出码为 4，且不做任何更改。请重新读取货币数据，再重新决策。
+
+| 命令运行方式 | CLI 发送的 `expected_updated_at` |
+|---|---|
+| 使用 `--yes` | `--expected-updated-at` 的值。若未提供该标志，CLI 不发送任何内容并以代码 6 退出。 |
+| 在终端中，使用 `--expected-updated-at` | 该标志的值，在你回答 `y` 之后。 |
+| 在终端中，不使用 `--expected-updated-at` | CLI 自身读取的 `updated_at` 值，在你回答 `y` 之后。 |
+
+脚本通过 `get --json` 读取 `updated_at` 并在审批后传入：
+
+```bash
+updated_at=$(adapty virtual-currencies get <currency-id> --app <app-id> --json | jq .updated_at)
+# Show the change to the person who approves it. After their yes:
+adapty virtual-currencies mappings upsert <currency-id> --app <app-id> \
+  --file mappings.json --yes --expected-updated-at "$updated_at"
+```
+
+## 脚本和代理中的确认机制 \{#confirmation-in-scripts-and-agents\}
+
+以下命令会先显示操作效果，再请求确认才发送变更：
+
+- `create`
+- `mappings upsert`
+- `mappings delete`
+
+具体的确认方式取决于命令的运行环境：
+
+| 命令运行方式 | 发生的情况 |
+|---|---|
+| 在终端中，不带 `--yes` 且不带 `--json` | CLI 显示操作效果并询问 `Apply? [y/N]`。若回答 `y` 或 `yes`，CLI 发送请求。其他任何回答，CLI 以代码 1 退出且不发送任何内容。 |
+| 带 `--yes` | CLI 直接发送请求，不再询问。映射写入操作还需要 [`--expected-updated-at`](#protection-against-lost-changes)。 |
+| 不带 `--yes`，带 `--json`，在管道中，或无终端 | CLI 不发送任何内容并以代码 6 退出。错误信息会显示操作效果。 |
+
+脚本通过 `get --json` 读取 `updated_at`，显示变更内容，并在用户确认后使用 `--yes --expected-updated-at` 执行命令。Agent 也可以不带 `--yes` 直接运行命令，并从错误信息中展示影响。
+
+`list`、`get`、`update` 以及事务和余额读取操作无需询问即可运行。
+
+## 错误 \{#errors\}
+
+| 退出代码 | 原因 | 处理方法 |
+|---|---|---|
+| 1 | 在提示时输入的内容不是 `y` 或 `yes`，未发送任何内容。 | 如果本来打算确认，请重新运行命令。 |
+| 2 | CLI 在发送前拒绝了输入：标志有误、映射文件不是至少包含一个条目的 JSON 列表、`update` 时没有变更、`--description` 与 `--clear-description` 同时使用，或者 `--profile` 和 `--customer-user-id` 两者都填或都不填。 | 根据错误提示修正相应内容。 |
+| 3 | 未登录，或 Adapty 以 HTTP 403 状态拒绝了访问：该应用属于其他账户，或者当前登录账户只能读取该应用而无权修改。使用 `--json` 时，错误会显示 `status: 403`。 | 执行 `adapty auth login` 登录，并在 `adapty apps list` 中查找应用 ID。如果读取正常但写入失败，请联系账户所有者申请具有修改权限的访问权限。 |
+| 4 | Adapty 拒绝了请求。错误信息会说明原因，使用 `--json` 时会显示 HTTP 状态码和 `error_code`。写入操作遇到服务端错误（5xx）时也会返回代码 4，此时操作结果未知。 | 参见 [Adapty 返回的消息](#messages-from-adapty)。写入操作遇到服务端错误后，请参见 [写入无响应时的处理方法](#if-a-write-gets-no-answer)。 |
+| 5 | CLI 无法连接到 Adapty。 | 请确认网络连接正常。写入操作后请参见 [写入无响应时的处理方法](#if-a-write-gets-no-answer)。 |
+| 6 | 需要确认的命令在未指定 `--yes` 且无人应答的情况下运行，或映射写入操作在指定了 `--yes` 但未指定 `--expected-updated-at` 的情况下运行，未发送任何内容。 | 将错误中显示的影响告知负责审批变更的人员。获得批准后，按照 [防止变更丢失](#protection-against-lost-changes) 中的说明重新运行命令。 |
+| 130 | 在提示时按下了 Ctrl+C，未发送任何内容。 | — |
+
+### 来自 Adapty 的消息 \{#messages-from-adapty\}
+
+使用 `--json` 时，错误会返回 `error_code`：
+
+| `error_code` | 原因 | 处理方式 |
+|---|---|---|
+| `virtual_currency_conflict` | 在写入操作所携带的 `updated_at` 对应的读取之后，货币已被修改。本次写入未生效。 | 使用 `get` 重新读取货币信息，然后再决定操作。 |
+| `invalid_date_range` | `transactions list` 的时间段超过 366 天，或交易列表的结束时间早于开始时间。 | 缩短查询时间段，或确保 `--date-from` 不晚于 `--date-to`。 |
+| `cursor_filters_mismatch` | 该游标属于另一个时间段、其他筛选条件或其他时区的分页结果。 | 使用与第一页完全相同的参数来请求下一页。 |
+| `invalid_cursor` | `--cursor` 的值不是 Adapty 返回的游标。 | 从 `More rows:` 行或 `meta.pagination.next_cursor` 中复制游标。 |
+| `profile_does_not_exist` | 该应用中不存在具有此用户画像 ID 或客户用户 ID 的用户。已删除的用户无法通过客户用户 ID 查找。 | 确认 ID 是否正确。对于已删除的用户，请使用 `--profile`。 |
+| `throttled` | 同一应用在一秒内对同一笔交易或余额读取的调用次数超过 2 次。 | 稍等片刻后重新执行命令。CLI 会自动等待并最多重试读取 3 次。 |
+
+Adapty 也会拒绝应用中第 21 种货币以及应用已使用的货币代码，退出码为 4。
+
+### 如果写入没有收到响应 \{#if-a-write-gets-no-answer\}
+
+如果 CLI 因网络错误或服务器错误（退出码 4 或 5）而未收到写入响应，它无法判断 Adapty 是否已保存该更改。CLI 不会重新发送写入请求。在再次运行命令之前，请先读取 Adapty 已保存的内容：在 `create` 之后，运行 `list` 并查找对应的代码；在其他写入操作之后，使用 `get` 读取对应货币。即使第一次写入实际上已成功，第二次写入仍可能失败：可能返回 `virtual_currency_conflict`，或因映射已被删除而返回 404，或因代码已被使用而导致 create 失败。
+
+## 命令参考 \{#command-reference\}
+
+每个命令都需要传入 `--app` 参数，即从 `adapty apps list` 获取的应用 UUID。需要传入 `<currency-id>` 的命令使用的是从 `list` 获取的 `virtual_currency_id`。
+
+### `virtual-currencies list`
+
+| Flag | Required | Description |
+|---|---|---|
+| `--page` | 否 | 页码。默认值：1。 |
+| `--page-size` | 否 | 每页显示的货币数量，最多 100 个。默认值：20。 |
+
+### `virtual-currencies get`
+
+以货币 ID 作为参数，返回该货币及其所有映射关系。
+
+### `virtual-currencies create`
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--code` | 是 | 货币的代码。创建后无法更改。 |
+| `--name` | 是 | 显示名称。 |
+| `--description` | 否 | 描述。 |
+| `--file` | 否 | 映射的 JSON 文件。请参阅[创建货币](#create-a-currency)。 |
+| `--yes`, `-y` | 否 | 不询问直接创建。与 `--json` 一起使用或在管道中使用时必填。 |
+
+### `virtual-currencies update`
+
+以货币 ID 作为参数。
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--name` | 否 | 新的显示名称。 |
+| `--description` | 否 | 新的描述。 |
+| `--clear-description` | 否 | 删除描述。 |
+
+### `virtual-currencies mappings upsert`
+
+以货币 ID 作为参数。
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--file` | 是 | 包含 1 到 200 条完整映射的 JSON 文件。请参阅[添加或修改映射](#add-or-change-mappings)。 |
+| `--expected-updated-at` | 与 `--yes` 一起使用时 | 本次修改所基于的读取操作的 `updated_at` 值。 |
+| `--yes`, `-y` | 否 | 无需确认直接执行更改。与 `--json` 一起使用或在管道中使用时必填。 |
+
+### `virtual-currencies mappings delete`
+
+以货币 ID 作为参数。
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--product` | 是 | 要删除映射的 Adapty 产品 ID。 |
+| `--expected-updated-at` | 与 `--yes` 一起使用时 | 该变更所基于的读取记录的 `updated_at` 值。 |
+| `--yes`, `-y` | 否 | 不询问直接删除。与 `--json` 一起使用或在管道中运行时必填。 |
+
+### `virtual-currencies transactions list`
+
+| 参数 | 是否必填 | 说明 |
+|---|---|---|
+| `--date-from`, `--date-to` | 是 | 起止日期，格式为 `YYYY-MM-DD`，最多 366 天。 |
+| `--timezone` | 否 | 日期所对应的 IANA 时区。默认值：应用时区。 |
+| `--currency-code` | 否 | 仅返回该货币的交易记录。 |
+| `--operation` | 否 | 仅返回该操作类型的交易记录。 |
+| `--feature` | 否 | 仅返回包含该功能的交易记录。 |
+| `--sandbox`, `--no-sandbox` | 否 | `--sandbox` 仅返回沙盒交易，`--no-sandbox` 仅返回生产环境交易。默认值：两者均包含。 |
+| `--page-size` | 否 | 每页返回的交易数量，范围 1 到 100。默认值：20。 |
+| `--cursor` | 否 | 下一页的游标，从上一页响应中获取。 |
+
+### `virtual-currencies profiles transactions list`
+
+接受 `--profile` 和 `--customer-user-id` 中的恰好一个，以及 `transactions list` 的标志。时间段是可选的。
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--profile` | 两者之一 | 用户的 Adapty 用户画像 ID。 |
+| `--customer-user-id` | 两者之一 | 你自己的用户 ID。 |
+
+### `virtual-currencies profiles balances get`
+
+| 参数 | 是否必填 | 描述 |
+|---|---|---|
+| `--profile` | 二选一 | 用户的 Adapty 用户画像 ID。 |
+| `--customer-user-id` | 二选一 | 您自定义的用户 ID。 |
+
+## 通过 AI 助手操作 \{#work-from-an-ai-assistant\}
+
+[Adapty MCP 服务器](adapty-mcp)提供与 `virtual_currencies_*` 工具相同的操作，例如用 `virtual_currencies_mappings_upsert` 对应 `mappings upsert`。这些工具的工作方式与命令相同，但有以下区别：
+
+- **防止更改丢失**：`virtual_currencies_update`、`virtual_currencies_mappings_upsert` 和 `virtual_currencies_mappings_delete` 需要 `expected_updated_at`，即读取时的 `updated_at` 值。出现 `virtual_currency_conflict` 错误后，助手会重新读取该货币。
+- **描述**：在 `virtual_currencies_update` 中，将 `description` 置为空会删除描述。
+- **分页**：当 `meta.pagination.has_more` 为 true 时，助手会在 `cursor` 中传入 `meta.pagination.next_cursor`，并保持相同的过滤条件和时区，以获取下一页数据。
+- **审批**：这些工具不会请求审批，也没有 `--yes` 参数。在执行 `virtual_currencies_create`、`virtual_currencies_mappings_upsert` 和 `virtual_currencies_mappings_delete` 之前，助手会向你展示变更内容并等待你确认。
+- **限流**：出现 `throttled` 错误后，工具不会重试读取操作。错误信息中会说明需要等待的时长。
+
+## 下一步 \{#whats-next\}
+
+- [虚拟货币的 Agent 技能](virtual-currencies-skill) — 让你的 Agent 帮助设置货币并向用户说明余额，每次更改前都需要你确认。
+- [创建虚拟货币](create-virtual-currency) — 在看板中完成相同的设置。
+- [虚拟货币余额](virtual-currency-balance) — 在看板中查看用户的余额及变动历史。

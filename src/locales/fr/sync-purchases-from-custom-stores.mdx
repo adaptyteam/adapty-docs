@@ -148,15 +148,20 @@ Pour qu'Adapty associe les transactions d'un store personnalisé à vos produits
 
 ## Étape 3. Synchroniser les transactions via l'API \{#step-3-sync-transactions-via-api\}
 
-Quand un achat est effectué dans votre store personnalisé, vous devez le synchroniser avec Adapty via l'API côté serveur.
+Lorsqu'un achat est effectué dans votre store personnalisé, vous devez le synchroniser avec Adapty via l'API côté serveur.
 
 Cet appel API va :
 - Enregistrer la transaction dans Adapty
 - Accorder le niveau d'accès correspondant à l'utilisateur
-- Déclencher les intégrations et webhooks que vous avez configurés
-- Faire apparaître la transaction dans vos analyses
+- Déclencher toutes les intégrations et webhooks que vous avez configurés
+- Faire apparaître la transaction dans vos analytics
 
 Consultez la référence complète de la méthode [ici](api-adapty/operations/setTransaction).
+
+Le corps de la requête dépend du type d'achat. Choisissez l'onglet correspondant à votre produit :
+
+<Tabs groupId="purchase-type">
+<TabItem value="subscription" label="Abonnement" default>
 
 ```bash
 curl --request POST \
@@ -166,28 +171,63 @@ curl --request POST \
   --header 'Content-Type: application/json' \
   --header 'adapty-customer-user-id: YOUR_CUSTOMER_USER_ID' \
   --data '{
-  "purchase_type": "PRODUCT_PERIOD",
+  "purchase_type": "subscription",
   "store": "YOUR_CUSTOM_STORE",
-  "environment": "production",
+  "environment": "Production",
   "store_product_id": "YOUR_STORE_PRODUCT_ID",
   "store_transaction_id": "STORE_TRANSACTION_ID",
   "store_original_transaction_id": "ORIGINAL_TRANSACTION_ID",
   "price": {
-    "country": "COUNTRY_CODE",
-    "currency": "CURRENCY_CODE",
-    "value": "YOUR_PRICE"
+    "country": "US",
+    "currency": "USD",
+    "value": 9.99
+  },
+  "purchased_at": "2024-01-15T10:30:00Z",
+  "originally_purchased_at": "2024-01-15T10:30:00Z",
+  "expires_at": "2024-02-15T10:30:00Z",
+  "renew_status": true
+}'
+```
+
+</TabItem>
+<TabItem value="one-time" label="Achat unique">
+
+```bash
+curl --request POST \
+  --url https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/ \
+  --header 'Accept: application/json' \
+  --header 'Authorization: Api-Key YOUR_SECRET_API_KEY' \
+  --header 'Content-Type: application/json' \
+  --header 'adapty-customer-user-id: YOUR_CUSTOMER_USER_ID' \
+  --data '{
+  "purchase_type": "one_time_purchase",
+  "store": "YOUR_CUSTOM_STORE",
+  "environment": "Production",
+  "store_product_id": "YOUR_STORE_PRODUCT_ID",
+  "store_transaction_id": "STORE_TRANSACTION_ID",
+  "store_original_transaction_id": "ORIGINAL_TRANSACTION_ID",
+  "price": {
+    "country": "US",
+    "currency": "USD",
+    "value": 9.99
   },
   "purchased_at": "2024-01-15T10:30:00Z"
 }'
 ```
 
+</TabItem>
+</Tabs>
+
 :::important
 Paramètres importants :
-- **store** : L'ID de votre store personnalisé issu de l'étape 2
-- **store_product_id** : L'ID du produit dans le store issu de l'étape 2
-- **store_transaction_id** : Un identifiant unique pour cette transaction
-- **purchased_at** : Horodatage ISO 8601 indiquant quand l'achat a eu lieu
-- **price** : Le montant payé par l'utilisateur
+- **purchase_type** : `subscription` ou `one_time_purchase`. Toute autre valeur retourne une erreur HTTP 400.
+- **environment** : `Production` ou `Sandbox`, avec une majuscule en début. Par défaut : `Production`. Envoyez `Sandbox` pour les achats de test.
+- **store** : l'ID de votre store personnalisé créé à l'étape 2
+- **store_product_id** : l'ID du produit dans le store, défini à l'étape 2
+- **store_transaction_id** : un identifiant unique pour cette transaction, jusqu'à 50 caractères
+- **purchased_at** : horodatage ISO 8601 indiquant quand l'achat a eu lieu
+- **price** : le montant payé par l'utilisateur. `country` est un code ISO 3166-1 alpha-2, `currency` est un code ISO 4217, et `value` est un nombre.
+- **expires_at** : pour les abonnements, l'horodatage ISO 8601 jusqu'auquel l'utilisateur conserve le niveau d'accès. Les abonnements nécessitent également `originally_purchased_at` et `renew_status`.
 :::
 
 ## Étape 4. Vérifier l'accès dans l'application \{#step-4-verify-access-in-the-app\}

@@ -1,0 +1,335 @@
+---
+title: "CLIから仮想通貨を管理する"
+description: "Adapty CLIを使ってターミナルから仮想通貨を管理する：通貨の一覧表示と作成、各プロダクトが付与するクレジット数の変更、アプリまたは特定ユーザーのクレジットトランザクションと残高の確認。"
+metadataTitle: "開発者CLIの仮想通貨 | Adapty ドキュメント"
+---
+
+Adapty CLI は、ターミナルから `adapty virtual-currencies` トピックを使って[仮想通貨](virtual-currencies)を管理します。アプリの通貨一覧を取得したり、通貨を作成したり、名前や説明を変更したり、*マッピング*（通貨に[リンクされたプロダクト](create-virtual-currency#link-products)と、それぞれが付与するクレジット数）の追加・変更・削除を行ったりできます。また、アプリ全体または特定ユーザーのクレジットトランザクションや、特定ユーザーの残高を確認することもできます。CLI の出力では、クレジットのことを *coins* と表記します。
+
+AIエージェントで通貨設定を行ったり、ダッシュボードを開かずにユーザーの残高を確認したりするのに役立ちます。currency および mapping コマンドは、**Products** ページの **Virtual currency** タブで行う操作と同じです。transaction および balance の読み取りコマンドは、ダッシュボードのユーザープロファイルと同じデータを表示しますが、残高を変更することはありません。残高を修正するには、[ダッシュボードで調整してください](virtual-currency-balance#adjust-a-balance-manually)。
+
+## 始める前に \{#before-you-start\}
+
+`virtual-currencies` トピックは、CLIの他の機能と同じインストールおよびログイン手順を使用します。まだ設定していない場合は、[クイックスタートガイド](developer-cli-quickstart)のステップ1と2に従ってください。CLIにこのトピックが含まれているか確認するには、次を実行してください：
+
+```bash
+adapty virtual-currencies --help
+```
+
+すべてのコマンドは `--app` にアプリのUUIDを指定する必要があります。確認するには、次を実行してください：
+
+```bash
+adapty apps list
+```
+
+マッピングでは、ストアのプロダクトIDではなく、AdaptyのプロダクトIDでプロダクトを指定します。プロダクトIDを確認するには、次を実行してください：
+
+```bash
+adapty products list --app <app-id>
+```
+
+## 通貨の一覧表示と取得 \{#list-and-read-currencies\}
+
+```bash
+adapty virtual-currencies list --app <app-id>
+```
+
+一覧には各通貨のコード、名前、およびその通貨を付与するプロダクトの数が表示されます。他のCLI一覧と同様に、`--page` と `--page-size` オプションを使用できます。
+
+特定の通貨とそのすべてのマッピングを取得するには、次のコマンドを実行します：
+
+```bash
+adapty virtual-currencies get <currency-id> --app <app-id>
+```
+
+通貨には以下のフィールドがあります：
+
+| フィールド | 値 |
+|---|---|
+| `virtual_currency_id` | 通貨のID。他のコマンドはこれを引数として受け取ります。 |
+| `code` | サーバーサイドAPI、SDK、アナリティクスフィルターが使用するコード。変更はできません。 |
+| `name`、`description` | 表示名とオプションの説明。 |
+| `products_count` | この通貨を付与するプロダクトの数。 |
+| `updated_at` | 最終変更日時（ミリ秒単位）。[変更の消失に対する保護](#protection-against-lost-changes)に記載の通り、`--expected-updated-at` に指定して送信してください。 |
+| `mappings` | `get` のみ：通貨を付与するプロダクトと、各プロダクトのクレジット数。 |
+
+1つのプロダクトが付与するクレジット数は、マッピングで設定します：
+
+- **`one-time`**: プロダクトの購入ごとに `credit_per_purchase` クレジットを付与します。
+- **`subscription`**: 有料期間ごとに `credit_per_cycle` クレジットを付与します。`expiring: true` を設定すると、サブスクリプションの更新または終了時に該当期間のクレジットが失効します。`credit_on_trial_start` はトライアル開始時に付与するクレジット数を指定します（付与しない場合は `null`）。
+
+マッピングは、プロダクションおよびサンドボックス環境における次回の購入またはサブスクリプション更新時にクレジットを付与します。現在のサブスクライバーは次回の更新時にクレジットを受け取ります。既存ユーザーに今すぐクレジットを付与するには、サーバーサイド API を通じて[残高を付与](grant-initial-balance)してください。各設定の詳細については、[バーチャル通貨の作成](create-virtual-currency#link-products)を参照してください。
+
+## 通貨を作成する \{#create-a-currency\}
+
+:::warning
+通貨の削除や通貨コードの変更はできません。1つのアプリで最大20通貨まで設定できます。
+:::
+
+```bash
+adapty virtual-currencies create --app <app-id> --code GEMS --name "Gems" \
+  --description "Spent on hints" --file mappings.json
+```
+
+`--code` には英字、数字、`_` が使用でき、最大32文字まで入力可能です。また、アプリ内で一意である必要があります。CLIは入力した文字のケースをそのまま保持しますが、ダッシュボードではコードが大文字に変換されます。そのため、`gems` と `GEMS` は異なるコードとして扱われます。ダッシュボードで作成した通貨と一致させるには、大文字を使用してください。サーバーサイドAPIおよびトランザクションや分析フィルターでも、同じケースのコードが必要です。`--name` は最大64文字、`--description` は最大256文字まで入力できます。`--file` は省略可能で、指定しない場合、その通貨にマッピングは設定されません。
+
+マッピングファイルはJSONのリスト形式です。各アイテムはひとつのマッピングを表します。
+
+```json title="mappings.json"
+[
+  {
+    "product_id": "<one-time-product-id>",
+    "product_type": "one-time",
+    "credit_per_purchase": 100
+  },
+  {
+    "product_id": "<subscription-product-id>",
+    "product_type": "subscription",
+    "credit_per_cycle": 500,
+    "expiring": true,
+    "credit_on_trial_start": 50
+  }
+]
+```
+
+`create` では `credit_on_trial_start` を省略できます。省略した場合、トライアル期間中はクレジットが付与されません。CLI はファイルの内容を送信前に検証します。ファイルが少なくとも1件のアイテムを含む JSON リストでない場合、CLI はコード 2 で終了します。
+
+CLIは通貨を作成する前に、コード、マッピングされたプロダクト、そして通貨の削除やコードの変更ができないことを表示します。その後、[スクリプトとエージェントでの確認](#confirmation-in-scripts-and-agents)で説明されているように、承認を求めます。
+
+## 名前や説明を変更する \{#change-the-name-or-the-description\}
+
+```bash
+adapty virtual-currencies update <currency-id> --app <app-id> --name "Gold gems"
+```
+
+`--name`、`--description`、`--clear-description` のうち少なくとも1つを指定してください。指定しなかった値はそのまま維持されます。CLI は最初に通貨情報を取得し、現在の値をそのまま送信します。`--clear-description` は説明を削除します。`--description` と同時に使用することはできません。
+
+`update` は確認を求めません。再度 update を実行すれば元に戻せるためです。
+
+## マッピングを追加または変更する \{#add-or-change-mappings\}
+
+```bash
+adapty virtual-currencies mappings upsert <currency-id> --app <app-id> --file mappings.json
+```
+
+このファイルは[ファイルの作成](#create-a-currency)と同じ形式で、1～200件のアイテムを含みます。1つの通貨に設定できるマッピングは合計200件までです。各アイテムは対象プロダクトの既存マッピングを置き換えるか、マッピングが存在しないプロダクトに新規マッピングを追加します。`credit_on_trial_start`（不要な場合は`null`）を含む、各アイテムの全フィールドを必ず指定してください。Adaptyはアイテムを現在のマッピングにマージしません。フィールドが欠けていたり不明なフィールドがある場合、終了コード4でそのアイテムを拒否し、変更は一切行われません。ファイルに記載されていないマッピングはそのまま維持されます。`mappings upsert`でマッピングが削除されることはありません。
+
+変更を送信する前に、CLIは通貨を読み取り、変更される各プロダクトを表示します：
+
+- 新しいマッピング：`new` とそのクレジット。
+- 変更されたマッピング：変更前後のクレジット（例：購入ごとまたは期間ごとに `30 → 50`）。`expiring` または `credit_on_trial_start` の変更も、変更前後の値が表示されます。アイテムの `product_type` は、そのプロダクトのタイプと一致している必要があります。`product_type` が変更されたマッピングは、Adapty が終了コード 4 で拒否します。
+
+## マッピングを削除する \{#remove-a-mapping\}
+
+```bash
+adapty virtual-currencies mappings delete <currency-id> --app <app-id> --product <product-id>
+```
+
+削除後、そのプロダクトの購入ではこの通貨のクレジットが付与されなくなり、Adapty はトランザクションを記録しません。プロダクトがすでに付与したクレジットは、ユーザーの残高にそのまま残ります。プロダクトにマッピングが存在しない場合、Adapty は 404 エラーを返し、終了コード 4 で終了します。
+
+## クレジットトランザクションの読み取り \{#read-credit-transactions\}
+
+アプリのクレジットトランザクションを読み取るには、次のコマンドを実行します。
+
+```bash
+adapty virtual-currencies transactions list --app <app-id> \
+  --date-from 2026-11-01 --date-to 2026-11-07 --timezone Europe/Berlin
+```
+
+期間は必須で、最大366日間、両端の日を含みます。日付は `--timezone`（IANA タイムゾーン名）で指定したタイムゾーン、または指定しない場合はアプリのタイムゾーンが使用されます。`--currency-code`、`--operation`、`--feature`、および `--sandbox` か `--no-sandbox` でトランザクションをフィルタリングできます。操作の値については、[Operation](virtual-currencies#operation) を参照してください。
+
+1人のユーザーのトランザクションを取得するには、`--profile`（Adapty プロファイル ID）または `--customer-user-id`（独自のユーザー ID）のいずれか1つでユーザーを指定します。
+
+```bash
+adapty virtual-currencies profiles transactions list --app <app-id> --customer-user-id <user-id>
+```
+
+ユーザーのトランザクション期間は省略可能です。指定しない場合、CLI はそのユーザーの全履歴を取得します。同じフィルターおよび `--timezone` が使用できます。
+
+トランザクションは新しい順に表示されます。コマンドごとに1ページずつ出力され、デフォルトでは1ページに20件表示されます。`--page-size` で1〜100件に変更できます。対象期間にさらにトランザクションがある場合、テーブルの末尾に `More rows:` と次ページ取得用のコマンドが表示されます。同じフラグに加え、現在のページのカーソル値を `--cursor` で指定します。次ページを取得する際は、期間・フィルター・タイムゾーンを同じ値で実行してください。異なるフィルターでカーソルを使用すると、`cursor_filters_mismatch` エラーになります。`--json` を指定すると、Adapty のレスポンスがそのまま `data` と `meta` の形式で出力され、カーソルは `meta.pagination.next_cursor` から取得できます。
+
+CLIにはすべてのページを読み込むオプションがありません。すべてのトランザクションをデータウェアハウスに取り込むには、[Amazon S3](s3-exports#virtual-currency-transactions) または [Google Cloud Storage](google-cloud-storage#virtual-currency-transactions) への日次エクスポートを使用してください。
+
+:::note
+合計値やトレンドを確認するには、トランザクションの合計ではなく、[`adapty analytics`](developer-cli-analytics) のバーチャルカレンシーチャートを使用してください。チャート名を確認するには、`adapty analytics catalog` を実行してください。チャートはサンドボックストランザクションが存在するユーザーを除外しますが、トランザクション一覧は除外しません。そのため、トランザクションの合計とチャートの値が異なる場合があります。
+:::
+
+## ユーザーの残高を取得する \{#read-the-balances-of-a-user\}
+
+```bash
+adapty virtual-currencies profiles balances get --app <app-id> --profile <profile-id>
+```
+
+ユーザーの指定には `--profile` または `--customer-user-id` のいずれか一方のみを使用します。残高には、ユーザーの各通貨の `balance`、`held`（保留中）クレジット、`available`（利用可能）クレジット、および有効期限の内訳（有効期限なしのクレジット、最も早く期限切れになるクレジットとその期限、それ以降に期限切れになるクレジットの合計、期限切れ済みのクレジット）が表示されます。
+
+ユーザーが残高を持つ理由を把握するには、ユーザーのトランザクションと残高を併せて確認してください。ダッシュボードでは、[ユーザーのプロファイル](virtual-currency-balance)で同じデータを確認できます。
+
+## 変更の消失に対する保護 \{#protection-against-lost-changes\}
+
+ダッシュボードで誰かが通貨を変更したり、別のエージェントが変更したりすることが、読み取りと書き込みの間に起こる可能性があります。その変更を保持するために、`mappings upsert` と `mappings delete` は、読み取った通貨の `updated_at` である `expected_updated_at` を送信します。その読み取り以降に通貨が変更されていた場合、Adapty は `virtual_currency_conflict` エラー（終了コード 4）で書き込みを拒否し、何も変更しません。再度通貨を読み取り、改めて判断してください。
+
+| コマンドの実行方法 | CLIが送信する `expected_updated_at` |
+|---|---|
+| `--yes` を使用する場合 | `--expected-updated-at` の値。フラグを指定しない場合、CLIは何も送信せずコード6で終了する。 |
+| ターミナルで `--expected-updated-at` を指定する場合 | `y` と回答した後、フラグの値。 |
+| ターミナルで `--expected-updated-at` を指定しない場合 | `y` と回答した後、CLIが自身で読み取った `updated_at` の値。 |
+
+スクリプトは `get --json` で `updated_at` を読み取り、承認後にそれを渡します：
+
+```bash
+updated_at=$(adapty virtual-currencies get <currency-id> --app <app-id> --json | jq .updated_at)
+# Show the change to the person who approves it. After their yes:
+adapty virtual-currencies mappings upsert <currency-id> --app <app-id> \
+  --file mappings.json --yes --expected-updated-at "$updated_at"
+```
+
+## スクリプトとエージェントでの確認 \{#confirmation-in-scripts-and-agents\}
+
+以下のコマンドは、変更を送信する前に影響を表示して承認を求めます：
+
+- `create`
+- `mappings upsert`
+- `mappings delete`
+
+承認の方法は、コマンドの実行方法によって異なります：
+
+| コマンドの実行方法 | 実行結果 |
+|---|---|
+| ターミナルで、`--yes` も `--json` も指定しない場合 | CLIはその影響を表示し、`Apply? [y/N]` と確認を求めます。`y` または `yes` と入力するとCLIがリクエストを送信します。それ以外の入力では、CLIはコード1で終了し、何も送信しません。 |
+| `--yes` を指定した場合 | CLIは確認なしにリクエストを送信します。マッピングの書き込み操作には、[`--expected-updated-at`](#protection-against-lost-changes) も必要です。 |
+| `--yes` なし、かつ `--json` あり、またはパイプ経由、あるいはターミナルなしの場合 | CLIは何も送信せず、コード6で終了します。エラーにはその影響が表示されます。 |
+
+スクリプトは `get --json` で `updated_at` を取得し、変更内容を表示した後、承認を受けてから `--yes --expected-updated-at` を付けてコマンドを実行します。エージェントは `--yes` なしでコマンドを実行し、エラーから結果を確認することもできます。
+
+`list`、`get`、`update`、およびトランザクションや残高の読み取りは確認なしで実行されます。
+
+## エラー \{#errors\}
+
+| 終了コード | 原因 | 対処方法 |
+|---|---|---|
+| 1 | プロンプトで `y` または `yes` 以外を入力した。何も送信されていない。 | 意図していた場合はコマンドを再実行してください。 |
+| 2 | 送信前にCLIが入力を拒否した：フラグ、少なくとも1つのアイテムを含むJSONリストでないマッピングファイル、変更のない `update`、`--description` と `--clear-description` の併用、または `--profile` と `--customer-user-id` の両方指定または両方未指定。 | エラーが示す内容を修正してください。 |
+| 3 | ログインしていないか、Adaptyがアクセスを拒否した（HTTPステータス403）：アプリが別のアカウントに属している、またはサインインがアプリの読み取りはできても変更はできない。`--json` を使うとエラーに `status: 403` が含まれる。 | `adapty auth login` でログインし、`adapty apps list` でアプリIDを確認してください。読み取りは成功して書き込みが失敗する場合は、変更を加えられるアクセス権をアカウントオーナーに依頼してください。 |
+| 4 | Adaptyがリクエストを拒否した。エラーに理由が示され、`--json` ではHTTPステータスと `error_code` が確認できる。書き込み時のサーバーエラー（5xx）もコード4となり、結果は不明。 | [Adaptyからのメッセージ](#messages-from-adapty)を参照してください。書き込み時にサーバーエラーが発生した場合は、[書き込みに応答がない場合](#if-a-write-gets-no-answer)を参照してください。 |
+| 5 | CLIがAdaptyに到達できなかった。 | オンラインであることを確認してください。書き込み後は、[書き込みに応答がない場合](#if-a-write-gets-no-answer)を参照してください。 |
+| 6 | 承認を求めるコマンドが `--yes` なしかつ応答者なしで実行された、またはマッピングの書き込みが `--yes` ありかつ `--expected-updated-at` なしで実行された。何も送信されていない。 | エラーに示された変更内容を承認者に確認してもらってください。承認後、[変更の消失に対する保護](#protection-against-lost-changes)の説明に従ってコマンドを再実行してください。 |
+| 130 | プロンプトでCtrl+Cを押した。何も送信されていない。 | — |
+
+### Adapty からのメッセージ \{#messages-from-adapty\}
+
+`--json` を使用すると、エラーに `error_code` が含まれます:
+
+| `error_code` | 原因 | 対処法 |
+|---|---|---|
+| `virtual_currency_conflict` | 書き込み時に送った `updated_at` の読み取り後に通貨が変更されました。変更はありません。 | `get` で通貨を読み取り、再度判断してください。 |
+| `invalid_date_range` | `transactions list` の期間が366日を超えているか、トランザクションリストの終了日が開始日より前になっています。 | より短い期間を使用するか、`--date-from` が `--date-to` より後にならないように設定してください。 |
+| `cursor_filters_mismatch` | カーソルが、異なる期間・フィルター・タイムゾーンのページに属しています。 | 最初のページと同じフラグを使って次のページを実行してください。 |
+| `invalid_cursor` | `--cursor` の値が Adapty のカーソルではありません。 | `More rows:` の行、または `meta.pagination.next_cursor` からカーソルをコピーしてください。 |
+| `profile_does_not_exist` | このプロファイル ID またはカスタマーユーザー ID を持つユーザーがアプリに存在しません。削除されたユーザーはカスタマーユーザー ID では検索できません。 | ID が正しいか確認してください。削除済みユーザーの場合は `--profile` を使用してください。 |
+| `throttled` | 同じアプリで同一のトランザクションまたは残高の読み取りが1秒間に2回を超えて呼び出されました。 | 少し待ってからコマンドを再実行してください。CLI は自動で待機し、最大3回まで読み取りを再試行します。 |
+
+Adapty はまた、アプリ内で21番目の通貨や、アプリがすでに使用しているコードについても、終了コード4で拒否します。
+
+### 書き込みに応答がない場合 \{#if-a-write-gets-no-answer\}
+
+CLIが書き込みに対して応答を受け取れなかった場合（ネットワークエラーまたはサーバーエラー、終了コード4または5）、Adaptyが変更を保存したかどうかを判断できません。CLIは書き込みを再送しません。コマンドを再実行する前に、Adaptyが保存した内容を確認してください。`create`の後は`list`を実行してコードを探してください。その他の書き込みの後は`get`で通貨を読み取ってください。最初の書き込みが成功していても、2回目の書き込みが失敗する場合があります。`virtual_currency_conflict`、すでに削除されたマッピングに対する404、またはcreate後に使用済みコードが原因となることがあります。
+
+## コマンドリファレンス \{#command-reference\}
+
+すべてのコマンドで `--app`（`adapty apps list` で取得できるアプリの UUID）を指定する必要があります。`<currency-id>` を受け取るコマンドには、`list` で取得した `virtual_currency_id` を使用します。
+
+### `virtual-currencies list`
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--page` | いいえ | ページ番号。デフォルト: 1。 |
+| `--page-size` | いいえ | 1ページあたりの通貨数（最大100）。デフォルト: 20。 |
+
+### `virtual-currencies get`
+
+通貨IDを引数として受け取ります。すべてのマッピングを含む通貨を返します。
+
+### `virtual-currencies create`
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--code` | はい | 通貨のコード。後から変更することはできません。 |
+| `--name` | はい | 表示名。 |
+| `--description` | いいえ | 説明。 |
+| `--file` | いいえ | マッピングの JSON ファイル。[通貨を作成する](#create-a-currency)を参照してください。 |
+| `--yes`, `-y` | いいえ | 確認なしで作成します。`--json` を使用する場合またはパイプ経由の場合は必須です。 |
+
+### `virtual-currencies update`
+
+通貨IDを引数として受け取ります。
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--name` | いいえ | 新しい表示名。 |
+| `--description` | いいえ | 新しい説明。 |
+| `--clear-description` | いいえ | 説明を削除します。 |
+
+### `virtual-currencies mappings upsert`
+
+通貨IDを引数として受け取ります。
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--file` | はい | 1〜200件のマッピングを含むJSONファイル。[マッピングの追加・変更](#add-or-change-mappings)を参照してください。 |
+| `--expected-updated-at` | `--yes` と併用時 | 変更の基となった読み取りの `updated_at` 値。 |
+| `--yes`, `-y` | いいえ | 確認なしで変更します。`--json` 使用時やパイプ経由の場合は必須です。 |
+
+### `virtual-currencies mappings delete`
+
+通貨IDを引数として受け取ります。
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--product` | はい | 削除するマッピングのAdapty プロダクトID。 |
+| `--expected-updated-at` | `--yes` を使用する場合 | 変更の基となった読み取り時の `updated_at`。 |
+| `--yes`, `-y` | いいえ | 確認なしで削除します。`--json` 使用時またはパイプ内では必須。 |
+
+### `virtual-currencies transactions list`
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--date-from`, `--date-to` | はい | 開始日と終了日（`YYYY-MM-DD`形式）。最大366日。 |
+| `--timezone` | いいえ | 日付のIANAタイムゾーン。デフォルト: アプリのタイムゾーン。 |
+| `--currency-code` | いいえ | 指定した通貨のトランザクションのみ。 |
+| `--operation` | いいえ | 指定したオペレーションのトランザクションのみ。 |
+| `--feature` | いいえ | 指定したフィーチャーのトランザクションのみ。 |
+| `--sandbox`, `--no-sandbox` | いいえ | `--sandbox`はサンドボックストランザクションのみ、`--no-sandbox`は本番環境のみ。デフォルト: 両方。 |
+| `--page-size` | いいえ | 1ページあたりのトランザクション数（1〜100）。デフォルト: 20。 |
+| `--cursor` | いいえ | 次のページのカーソル（前のページから取得）。 |
+
+### `virtual-currencies profiles transactions list`
+
+`--profile` と `--customer-user-id` のいずれか一方、および `transactions list` のフラグを受け取ります。期間は任意です。
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--profile` | いずれか一方 | ユーザーの Adapty プロファイル ID。 |
+| `--customer-user-id` | いずれか一方 | ユーザーの独自 ID。 |
+
+### `virtual-currencies profiles balances get`
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--profile` | どちらか一方 | ユーザーの Adapty プロファイル ID。 |
+| `--customer-user-id` | どちらか一方 | ユーザーの独自 ID。 |
+
+## AIアシスタントとの連携 \{#work-from-an-ai-assistant\}
+
+[Adapty MCPサーバー](adapty-mcp)は、`virtual_currencies_*` ツール（例：`mappings upsert` に対応する `virtual_currencies_mappings_upsert`）と同じ操作を提供します。これらのツールはコマンドと同じように動作しますが、以下の点が異なります。
+
+- **変更の消失に対する保護**: `virtual_currencies_update`、`virtual_currencies_mappings_upsert`、`virtual_currencies_mappings_delete` は、読み取り時の `updated_at` である `expected_updated_at` を必須とします。`virtual_currency_conflict` エラーが発生した場合、アシスタントは通貨を再度読み取ります。
+- **説明**: `virtual_currencies_update` で `description` を空にすると、説明が削除されます。
+- **ページング**: `meta.pagination.has_more` が true の場合、アシスタントは同じフィルターとタイムゾーンを維持しつつ、次のページの取得に `cursor` として `meta.pagination.next_cursor` を送信します。
+- **承認**: ツールは承認を求めず、`--yes` オプションもありません。`virtual_currencies_create`、`virtual_currencies_mappings_upsert`、`virtual_currencies_mappings_delete` を実行する前に、アシスタントは変更内容を表示してあなたの確認を待ちます。
+- **スロットリング**: `throttled` エラーが発生した場合、ツールは再試行しません。エラーメッセージに待機時間が示されます。
+
+## 次のステップ \{#whats-next\}
+
+- [バーチャル通貨のエージェントスキル](virtual-currencies-skill) — エージェントが通貨のセットアップとユーザー残高の説明を行います。各変更前に確認が求められます。
+- [バーチャル通貨の作成](create-virtual-currency) — ダッシュボードで同じセットアップを行います。
+- [バーチャル通貨残高](virtual-currency-balance) — ダッシュボードでのユーザーの残高と変更履歴。
