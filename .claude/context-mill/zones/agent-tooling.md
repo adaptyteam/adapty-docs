@@ -206,6 +206,7 @@ on one side, a non-deterministic agent on the other.
 | developer-cli-reference | — | dev | 5 | api |
 | developer-cli-refund-saver | reference | dev | 11 | api |
 | developer-cli-retention-messaging | reference | dev | 29 | api |
+| developer-cli-virtual-currencies | reference | dev | 25 | api |
 | export-analytics-with-ai | — | dev | 14 | tutorial |
 | flow-agent-skills | entry | dev | 0 | tutorial |
 | flow-audit-skill | — | dev | 7 | tutorial |
@@ -215,6 +216,7 @@ on one side, a non-deterministic agent on the other.
 | migrate-placements-skill | — | dev | 10 | tutorial |
 | refund-saver-skill | how-to | dev | 8 | tutorial |
 | server-side-api-with-ai | — | dev | 5 | tutorial |
+| virtual-currencies-skill | how-to | dev | 6 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
 
