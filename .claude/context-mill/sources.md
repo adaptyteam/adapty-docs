@@ -132,10 +132,11 @@ npm's `latest` dist-tag is `4.1.1` (`beta` points at `4.0.1-beta.1`). The beta l
 `v4.0.0-beta.1` (2026-07-10) through `v4.0.2-beta.1` (2026-08-14). Every release has a matching
 `release/<version>` branch, `release/4.1.1` being the newest, so `ref_pattern` still holds. Each tag
 pins the same-numbered core (`v4.1.0` → `@adapty/core@4.1.0`, `v4.1.1` → `4.1.1`): read the tag's
-`package.json` pin, then that `jscore` ref — never a `jscore` branch tip. Native iOS side is SPM-only: `Package.swift` present,
-no `Podfile`/`.podspec` anywhere in the repo. No Kids Mode mechanism exists here or in `jscore`
-(grepped both `src/` trees for `kidsMode`/`KidsMode`/`kids_mode`, zero hits) — do not document a
-Capacitor Kids Mode toggle.
+`package.json` pin, then that `jscore` ref — never a `jscore` branch tip. Native iOS side: SPM through `Package.swift`, and since 4.2.0 CocoaPods through `AdaptyCapacitor.podspec`
+(corrected 2026-11-26: `release/4.4.0` has both files). Kids Mode exists since then too: an SPM trait
+(`AdaptyCapacitorKidsMode` in `Package.swift`) and `adapty_enable_kids_mode` in `ios/adapty_podfile.rb`
+(`AGENTS.md`, 2026-11-26). An earlier version of this entry said the repo was SPM-only with no Kids Mode
+(true of the 4.1 line, when it was written).
 
 ## jscore — @adapty/core, shared core for React Native and Capacitor
 path: ~/Documents/AdaptySDK-JS-Core

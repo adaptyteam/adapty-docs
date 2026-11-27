@@ -622,3 +622,30 @@ builder and transformer behavior from dashboard code and transformer code, 2026-
 - **Not in iOS 4.5.0:** loading a single localization per layout. No SDK branch or backend response
   carries the per-flow locale list it would need (checked 2026-11-23).
 
+
+**Capacitor custom elements, checked 2026-11-26** against `AdaptySDK-Capacitor` `release/4.4.0` (PR #124):
+
+- **Custom elements are app-level native code; the plugin has no API for them.** The app registers the
+  resolver in `AppDelegate` and in an `Application` subclass (`examples/adapty-devtools/README.md`,
+  `AGENTS.md`). From 4.4.0 the plugin exports the Adapty BOM with `api platform` (`android/build.gradle`),
+  so the app adds `io.adapty:android-ui` without a version (commit message of `959de2b99`).
+- **The Capacitor 8 Android template has no Kotlin and no `Application` class**: `MainActivity.java`
+  only, no Kotlin Gradle plugin in the root buildscript before the example added it. The generated
+  `android/app/capacitor.build.gradle` sets Java 21, `variables.gradle` sets `compileSdkVersion = 36`, and the
+  plugin's own Kotlin default is `2.2.20` (it reads the root `kotlin_version` when one is set).
+- **An iOS product named `App` (the Capacitor default) crashes in dyld below iOS 18 when built with
+  Xcode 26** and linked to `SwiftUICore`. The devtools example renamed its product; the CocoaPods test app
+  links with `-Xlinker -ignore_auto_link_library -Xlinker SwiftUICore` (commit message of `4829d8f24`,
+  `examples/adapty-devtools/AGENTS.md`). Open: the README says the crash hits "any app that uses SwiftUI,
+  including through AdaptyUI", which would include apps with no SwiftUI code of their own. Not confirmed;
+  only the app-code case is shown by the example.
+  Docs decision (writer, 2026-11-26): the linker-flag fix lives only in the troubleshooting section of
+  `sdk-installation-capacitor`, never in setup steps. The fault is Xcode's, and a setup step would alarm
+  every reader.
+- **Capacitor 8.5+ projects create the root view controller in `SceneDelegate.swift`** (`window?.rootViewController =
+  CAPBridgeViewController()`), not in `Main.storyboard`, and Xcode 27 requires this scene setup (Capacitor's "Updating
+  to 8.5" guide, 2026-11-27; confirmed in the 8.6.3 template). A local plugin registered in a `CAPBridgeViewController`
+  subclass only works when `SceneDelegate.swift` instantiates that subclass. The storyboard route applies only to
+  projects without `SceneDelegate.swift`. Capacitor's own "Custom ViewController" page still describes the storyboard.
+- **Zoning gap:** the custom-elements articles of every platform and the RN, Flutter, and Capacitor 4.4
+  migration guides have no entry in `zones.json` (checked with a lookup of each id, 2026-11-26).
