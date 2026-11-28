@@ -4,7 +4,7 @@ description: "Run Apple Ads campaigns, keywords, and automation rules from the t
 metadataTitle: "Ads Manager in the Developer CLI | Adapty Docs"
 ---
 
-The Adapty CLI can manage your [Ads Manager](adapty-ads-manager) account from the terminal, under the `adapty asa` topic. It covers campaigns, ad groups, keywords, ads, product pages, automation rules, metrics, and competitor research.
+The Adapty CLI can manage your [Ads Manager](adapty-ads-manager) account from the terminal, with the `adapty asa` commands. It covers campaigns, ad groups, keywords, ads, product pages, automation rules, Ads Autopilot for bids and budgets, metrics, and competitor research.
 
 Use it for the work that a browser makes slow: giving an AI agent live access to your ad performance, adding several hundred keywords from a file, and running the same setup across several campaigns. For everything else, the [dashboard](https://app.adapty.io) remains faster.
 
@@ -35,7 +35,7 @@ adapty asa whoami
 - **Writes reach Apple directly**: Each command that changes your account prints the request body and asks for confirmation before sending it. There is no staging step.
 - **Reads are cheap, writes are not**: Run `list` commands and `--dry-run` freely. Treat everything else as irreversible.
 
-To skip the confirmation prompt in a script, pass `--yes`. Under `--json` or in a pipe, a write command refuses instead of waiting for an answer that will never arrive, so `--yes` is required there.
+To skip the confirmation prompt in a script, pass `--yes`. Under `--json` or in a pipe, a command that changes your account refuses to run instead of waiting for an answer that will never arrive, so `--yes` is required there.
 
 ## Find the IDs you need
 
@@ -257,6 +257,51 @@ adapty asa automations run <automation-id> --dry-run
 ```
 
 A dry run evaluates the conditions and logs what the rule would do without touching Apple Ads. Runs are queued rather than performed immediately, so the command prints a run ID and the outcome appears in `adapty asa automations runs`.
+
+## Add keywords to the keyword autopilot
+
+Enroll each keyword in [Ads Autopilot](ads-manager-autopilot) separately, with a target cost per paying user. Ads Autopilot then keeps the bid of the keyword at the level where the cost per paying user meets the target. The `keyword-autopilot` commands need CLI version 0.34.0 or later. To see your version, run `adapty --version`.
+
+First, find the keyword in its ad group. The `internal_id` of the keyword is the targeting keyword ID that `enroll` takes:
+
+```bash
+adapty asa keywords list --ad-group <ad-group-id> --search "photo editor"
+```
+
+Enroll the keyword with `--target-cpp`: your target cost per paying user, in the currency of your Apple Ads account. When the campaign of the keyword targets more than one country, add `--country`:
+
+```bash
+adapty asa keyword-autopilot enroll --targeting-keyword <targeting-keyword-id> --target-cpp 12.50 --country US
+```
+
+When a script runs `enroll` again for a keyword that is already enrolled, the command returns `409`. The keyword keeps its target and status, so the script can skip it.
+
+The autopilot sets no bid at enrollment: it acts at its next scheduled run. A paused keyword, or a keyword in a paused campaign, waits until the keyword and its campaign are both active in Apple Ads. Until then, the keyword has `enabled: false` and `disabled_reason: awaiting_activation`, shown as **Starting** in the dashboard.
+
+To see the status of the keyword, list the enrolled keywords:
+
+```bash
+adapty asa keyword-autopilot list
+```
+
+In this list, the `status` of a new keyword is `ramp`: Ads Autopilot raises the bid step by step until the keyword receives impressions. The dashboard shows this status as **Warming up**. The [status table](developer-cli-ads-manager-reference#keyword-autopilot-statuses) lists the other values.
+
+Each row has two IDs:
+
+- **Targeting keyword ID** (`targeting_keyword_internal_id`): Identifies the keyword in Apple Ads. Only `enroll` takes it.
+- **Autopilot keyword ID** (`internal_id`): Identifies the enrollment of the keyword in Ads Autopilot. The other `keyword-autopilot` commands take it.
+
+To see the settings and recent results of the keyword, pass its autopilot keyword ID to `get`. To see what the autopilot changed and why, pass the same ID to `decisions`:
+
+```bash
+adapty asa keyword-autopilot decisions --keyword <autopilot-keyword-id>
+```
+
+To stop Ads Autopilot for the keyword, run `keyword-autopilot unenroll` with its autopilot keyword ID. The command does the same as **Take off** in the dashboard: the keyword autopilot stops changing the keyword, but doesn't undo the changes that already reached Apple Ads.
+
+[Keyword autopilot](developer-cli-ads-manager-reference#keyword-autopilot) lists every flag of these commands.
+
+The budget autopilot has two modes. In **Preview** mode, it calculates its decisions but sends nothing to Apple Ads. In **Live** mode, it sends its decisions to Apple Ads. To switch between the modes from the CLI, use the [budget autopilot commands](developer-cli-ads-manager-reference#budget-autopilot).
 
 ## Re-run scripts safely
 
