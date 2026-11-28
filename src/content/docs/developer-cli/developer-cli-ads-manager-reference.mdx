@@ -1,10 +1,10 @@
 ---
 title: "Ads Manager commands for the Adapty Developer CLI"
-description: "Reference for every adapty asa command — campaigns, ad groups, keywords, ads, segments, automations, metrics, and change history."
+description: "Reference for every adapty asa command — campaigns, ad groups, keywords, ads, segments, automations, Ads Autopilot, metrics, and change history."
 metadataTitle: "Ads Manager CLI Commands | Adapty Docs"
 ---
 
-This article lists every [Ads Manager](adapty-ads-manager) command in the Adapty CLI, with its arguments, flags, and accepted values. Ads Manager commands live under the `adapty asa` topic.
+This article lists every [Ads Manager](adapty-ads-manager) command in the Adapty CLI, with its arguments, flags, and accepted values. Ads Manager commands start with `adapty asa`.
 
 :::link
 For prerequisites, safe write practices, and task-based examples, see [Manage Ads Manager from the CLI](developer-cli-ads-manager).
@@ -850,6 +850,367 @@ adapty asa automations runs <automation-id>
 
 Accepts [pagination flags](#global-flags).
 
+## Keyword autopilot \{#keyword-autopilot\}
+
+The [keyword autopilot](ads-manager-autopilot) sets the bids of the keywords you enroll in it, and can pause them in Apple Ads. These commands enroll or unenroll one keyword per call, and read the state and decisions of the autopilot. The `keyword-autopilot` commands need CLI version 0.34.0 or later. To see your version, run `adapty --version`.
+
+The commands take two kinds of keyword ID:
+
+- **Autopilot keyword ID**: The `internal_id` that [`keyword-autopilot list`](#adapty-asa-keyword-autopilot-list) prints. It identifies the enrollment of the keyword in the keyword autopilot. `get`, `unenroll`, and `decisions --keyword` take it.
+- **Targeting keyword ID**: The `internal_id` that [`keywords list`](#adapty-asa-keywords-list) prints. It identifies the Apple Ads keyword. Only `enroll --targeting-keyword` takes it.
+
+### Keyword statuses and pause codes \{#keyword-autopilot-statuses\}
+
+`status` shows [what the keyword autopilot does with a keyword](ads-manager-autopilot#how-the-keyword-autopilot-sets-bids) at the moment. While `enabled` is `true`, the dashboard shows the following label for each status:
+
+| `status` | Dashboard label | Meaning |
+|---|---|---|
+| `ramp` | **Warming up** | The autopilot raises the bid step by step, up to the [bid cap](#adapty-asa-keyword-autopilot-enroll), until the keyword receives impressions. Every keyword starts here |
+| `learning` | **Testing** | The autopilot counts taps, installs, trials, and payments to judge the keyword |
+| `working` | **Optimizing** | Payments confirmed that the keyword meets the target. The autopilot keeps the bid where the cost per paying user meets the target |
+| `provisional` | **Optimizing (early data)** | Early signals look good, but payments don't confirm them yet. The autopilot delays bid raises |
+| `dormant` | **Sleeping** | Even at the bid cap, the keyword enters no auction. The autopilot acts on it again when impressions appear |
+| `paused` | **Paused by autopilot** | The autopilot paused the keyword in Apple Ads. `paused_code` gives the reason |
+| `human_review` | **Waiting for review** | Apple Ads didn't accept a change. The autopilot stops changing the keyword until you unenroll it and enroll it again |
+
+`enabled: false` means that the autopilot doesn't manage the keyword. The dashboard then shows the label of `disabled_reason`:
+
+| `disabled_reason` | Dashboard label | Meaning |
+|---|---|---|
+| `awaiting_activation` | **Starting** | The keyword waits until it's active in an enabled campaign in Apple Ads |
+| `external_pause` | **Paused in Apple Ads** | Someone paused the keyword or its ad group in Apple Ads. When the keyword runs again, the autopilot still doesn't manage it |
+| `unenrolled` | **Off autopilot** | Someone ran `unenroll` for the keyword, or clicked **Take off** in the dashboard |
+
+`paused_code` gives the reason the autopilot paused the keyword:
+
+| `paused_code` | Dashboard label |
+|---|---|
+| `no_download` | **No installs** |
+| `spend_guard_no_trials` | **Spend without trials** |
+| `trials_dont_convert` | **Trials don't convert** |
+| `weak_proxies` | **Weak early signals** |
+| `no_volume` | **Too little traffic** |
+| `no_auction` | **No auction** |
+| `degraded` | **Got worse over time** |
+| `funnel_tap_to_install` | **Taps don't turn into installs** |
+| `funnel_install_to_trial` | **Installs don't turn into trials** |
+| `funnel_trial_to_paid` | **Trials don't turn into payments** |
+
+The autopilot doesn't resume a keyword that it paused. After you resume the keyword in Apple Ads, it stays `paused` until you unenroll it and enroll it again.
+
+`tier` shows how much data the autopilot has on the keyword: from `t0` (none) through taps (`t1`) and installs (`t2`) to confirmed payments (`t3`). The dashboard shows `tier` as **Data confidence**: **None**, **Low**, **Medium**, or **High**.
+
+In dry run mode, the keyword autopilot changes `status` but sends nothing to Apple Ads. Each decision then ends with "(dry run: not sent to Apple)". You can't read or switch this mode from the CLI. To see what reached Apple Ads, read `apple_status` and `apple_bid` in [`keyword-autopilot list`](#adapty-asa-keyword-autopilot-list).
+
+### adapty asa keyword-autopilot list
+
+List the keywords enrolled in the keyword autopilot, most recently updated first.
+
+```bash
+adapty asa keyword-autopilot list --status paused --paused-code no_volume
+```
+
+| Flag | Description |
+|---|---|
+| `--status` | Keyword [status](#keyword-autopilot-statuses). Repeatable |
+| `--paused-code` | Reason the autopilot paused the keyword, as a [`paused_code`](#keyword-autopilot-statuses). Repeatable |
+| `--enabled` | Keep only the keywords with `enabled: true`. A keyword in `paused` or `human_review` has `enabled: true` too. `--no-enabled` keeps the others: unenrolled, waiting for activation, or paused in Apple Ads. Without either flag, the list includes both |
+| `--page` | Page number. Default: `1` |
+| `--page-size` | Keywords per page. Default: `50`, max: `200`. These limits are smaller than in the other `list` commands |
+
+Each row shows `status`, `tier`, `paused_code`, `apple_status`, `apple_bid` as of the last sync, and the last decision. The `internal_id` of the row is the autopilot keyword ID, and `targeting_keyword_internal_id` is its targeting keyword ID.
+
+### adapty asa keyword-autopilot get
+
+Show one enrolled keyword: its enrollment settings, its spend and funnel counts since the last bid change, and its recent decisions.
+
+```bash
+adapty asa keyword-autopilot get <autopilot-keyword-id>
+```
+
+| Argument | Description |
+|---|---|
+| `keyword-id` | Autopilot keyword ID (UUID) from [`keyword-autopilot list`](#adapty-asa-keyword-autopilot-list) |
+
+### adapty asa keyword-autopilot enroll
+
+Enroll one Apple Ads keyword in the keyword autopilot.
+
+```bash
+adapty asa keyword-autopilot enroll --targeting-keyword <targeting-keyword-id> --target-cpp 12.50 --country US
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--targeting-keyword` | Yes | Targeting keyword ID (UUID) from [`keywords list`](#adapty-asa-keywords-list), not the autopilot keyword ID |
+| `--target-cpp` | Yes | Target cost per paying user, not a custom product page |
+| `--country` | No | Two-letter country code. Required when the campaign of the keyword targets more than one country |
+| `--cap` | No | Bid cap, shown as **Max bid** in the dashboard. Without `--cap`, the autopilot computes the cap itself |
+| `--aggressiveness` | No | Multiplier for the computed bid cap. Default: `1.0`. Has no effect with `--cap` |
+
+`--target-cpp` and `--cap` are amounts in the currency of your Apple Ads account, which is also the currency of the keyword bid. The CLI converts nothing. These two flags and `--aggressiveness` take a positive number with up to 6 decimal places, such as `12.50`.
+
+`--cap` only limits bid raises in `ramp` and `learning`. The autopilot can bid a `working` or `provisional` keyword above the cap, up to several times its value. The autopilot doesn't cut a bid that is above the cap at enrollment.
+
+To enroll several keywords, run `enroll` once per keyword.
+
+The response shows the new enrollment. Its `internal_id` is the autopilot keyword ID.
+
+`enroll` sets no bid and sends nothing to Apple Ads. The autopilot acts at its next scheduled run, and only counts results from the moment of enrollment.
+
+You can enroll a paused keyword, or a keyword in a paused campaign. The keyword waits with `enabled: false` and `disabled_reason: awaiting_activation` until it and its campaign are both active in Apple Ads. Then the next daily run of the autopilot starts to manage the keyword.
+
+`enroll` returns `409` for a keyword that is already enrolled, even when its `status` is `paused` or `human_review`. The enrollment stays as it was. To enroll the keyword again with new settings, run `unenroll` first, then `enroll` with its targeting keyword ID. The new enrollment starts again from `ramp`, with the target and cap of the new call.
+
+`enroll` returns `422` when:
+
+- The campaign targets several countries, and `--country` is missing.
+- The app has no Adapty data.
+- The country has too little funnel data for the autopilot.
+
+### adapty asa keyword-autopilot unenroll
+
+Stop the keyword autopilot for one keyword.
+
+```bash
+adapty asa keyword-autopilot unenroll <autopilot-keyword-id>
+```
+
+| Argument | Description |
+|---|---|
+| `keyword-id` | Autopilot keyword ID (UUID) from [`keyword-autopilot list`](#adapty-asa-keyword-autopilot-list) |
+
+`unenroll` sends nothing to Apple Ads. The bid and the Apple Ads status stay as they are, so a keyword that the autopilot paused stays paused. The keyword keeps its decision history, and remains in `keyword-autopilot list` with `enabled: false`. A second `unenroll` of the same keyword changes nothing.
+
+Under `--json`, the command returns `{"keyword_id": "<keyword-id>", "unenrolled": true}`.
+
+### adapty asa keyword-autopilot decisions
+
+List the decisions of the keyword autopilot, newest first: bid changes, pauses, and alerts.
+
+```bash
+adapty asa keyword-autopilot decisions --date-from 2026-11-01 --severity alert
+```
+
+| Flag | Description |
+|---|---|
+| `--date-from` | Start of the period: `YYYY-MM-DD` (the start of that UTC day), or an ISO 8601 date and time with `Z` or a UTC offset. Default: 7 days before `--date-to` |
+| `--date-to` | End of the period: `YYYY-MM-DD` (the end of that UTC day), or an ISO 8601 date and time with `Z` or a UTC offset. Default: the moment of the call |
+| `--keyword` | Autopilot keyword ID (UUID) |
+| `--severity` | `action` or `alert`. Repeatable |
+| `--limit` | Decisions per call. Default: `100`, max: `500` |
+| `--offset` | Decisions to skip. Max: `10000` |
+
+Each decision in the list has properties such as the following:
+
+- `text.title`: The title of the decision.
+- `text.saw`: What the autopilot saw, shown as the **Saw** line on the **Activity** tab.
+- `text.why`: Why the autopilot made the decision, shown as the **Why** line.
+- `text.decision`: What the autopilot decided, shown as the **Decision** line.
+- `bid_from` and `bid_to`: The bid before and after a bid change. `null` for other decisions.
+- `status_from` and `status_to`: The status before and after a status change. `null` for other decisions.
+
+To read every decision in a period, pass a fixed `--date-to` and raise `--offset` page by page. The default `--date-to` is the moment of each call, so new decisions would shift the pages between calls. When more decisions follow, the output ends with a "More decisions follow" hint, which gives the `--offset` for the next page. If you didn't pass `--date-to`, the hint also gives the `--date-to` to reuse. Past an offset of 10000, narrow the period instead.
+
+Under `--json`, the CLI prints no hint. While `has_more` is `true`, pass the sum of `offset` and `limit` as the next `--offset`, with the same `--date-to` in every call.
+
+The command exits with code `2` when the period is empty or reversed, or when a date doesn't exist in the calendar.
+
+### adapty asa keyword-autopilot report
+
+Show a report on the enrolled keywords for a period: per keyword, its Apple Ads text, `status`, `tier`, spend, and funnel counts.
+
+```bash
+adapty asa keyword-autopilot report --date-from 2026-11-01 --date-to 2026-11-14 --json
+```
+
+| Flag | Description |
+|---|---|
+| `--date-from` | First day of the period (`YYYY-MM-DD`, UTC, included). Default: 6 days before `--date-to` |
+| `--date-to` | Last day of the period (`YYYY-MM-DD`, UTC, included). Default: today. The period can span at most 60 days |
+
+The command exits with code `2` when the period is longer than 60 days or reversed, or when a date doesn't exist in the calendar.
+
+The table output is a summary. Under `--json`, the command returns `company` and a `keywords` array. Each keyword has properties such as the following:
+
+- `apple`: The text, bid, and status of the keyword in Apple Ads.
+- `state`: The enrollment settings of the keyword.
+- `outcome`: The totals for the period, with the `status` and `tier` of the keyword.
+- `daily`: One row per day, up to the last complete day.
+- `epochs` and `decisions`: The periods between bid changes, and the decisions of the autopilot.
+
+The server refuses the whole report with `422` in the following cases:
+
+- Over time, the company enrolled more than 500 keywords. Keywords that were unenrolled later count too, so a shorter period doesn't help.
+- The period has more than 50000 decisions and routine checks. A shorter period helps.
+
+## Budget autopilot \{#budget-autopilot\}
+
+The [budget autopilot](ads-manager-autopilot) moves daily budget between the campaigns of a company. Its spend guard pauses campaigns that spend without trials or payments. These commands read the state of the budget autopilot, turn it on or off, switch its mode, and exclude or include campaigns. The `budget-autopilot` commands need CLI version 0.34.0 or later. To see your version, run `adapty --version`.
+
+The autopilot has two modes:
+
+- **`dry_run`**: The autopilot plans its changes and shows them as decisions, but sends nothing to Apple Ads. The dashboard calls this mode **Preview**.
+- **`live`**: The autopilot changes campaign budgets in Apple Ads, and its spend guard can pause campaigns.
+
+### adapty asa budget-autopilot status
+
+Show the settings and state of the budget autopilot.
+
+```bash
+adapty asa budget-autopilot status
+```
+
+The response includes the following properties:
+
+- `enrolled`: `true` when Adapty connected the company to the budget autopilot. When it's `false`, the command prints "The company is not connected to the budget autopilot." To connect the company, contact your Adapty manager.
+- `enabled`: `true` while the autopilot is on.
+- `dry_run`: `true` when the stored mode is `dry_run`, and `false` when it's `live`.
+- `mode`: The mode in effect, `dry_run` or `live`. It reads `dry_run` while the autopilot is off or Live isn't available, whatever the stored mode.
+- `live_available`: `true` when the company can switch to Live.
+- `next_run_at` and `next_guard_check_at`: The time of the next weekly run and of the next spend guard check.
+
+The response also shows the last weekly run, the managed campaigns, the open decisions, and the spend guard alerts of the last 7 days.
+
+### adapty asa budget-autopilot update
+
+Turn the budget autopilot on or off, or switch its mode.
+
+```bash
+adapty asa budget-autopilot update --enable --mode dry_run
+```
+
+| Flag | Description |
+|---|---|
+| `--enable` | Turn the autopilot on, in the stored mode |
+| `--disable` | Turn the autopilot off. The stored mode doesn't change |
+| `--mode` | `dry_run` or `live`. The autopilot stays on or off as it is |
+
+Pass at least one flag. Without a flag, the command exits with code `2`. `--enable` and `--disable` are mutually exclusive.
+
+To turn the autopilot on without changes in Apple Ads, pass `--enable --mode dry_run`. `--enable` alone keeps the stored mode. The stored mode can be `live` even while `mode` in [`status`](#adapty-asa-budget-autopilot-status) reads `dry_run`. While the autopilot is off, `--mode` only changes the stored mode.
+
+The command compares the result of your flags with the current state:
+
+- **The company isn't connected**: The command exits with code `1` and changes nothing.
+- **The state is already as requested**: The command prints "Nothing to change" and exits with code `0`.
+- **The result is Live, and `live_available` is `false`**: The command exits with code `1` and changes nothing.
+- **The result is Live**: The command lists the campaigns that Live mode will change, up to 20, on standard error. Then it asks for confirmation, like every write.
+
+Under `--json`, the command returns the state of the budget autopilot in the shape of [`status`](#adapty-asa-budget-autopilot-status), also when there's nothing to change.
+
+In Live, budget changes start with the [next Monday run](ads-manager-autopilot#start-or-stop-budget-changes-in-apple-ads). When you turn the autopilot off or switch back to `dry_run`, budgets stay as they are. Campaigns that the autopilot paused stay paused.
+
+### adapty asa budget-autopilot fronts
+
+List the campaigns that the budget autopilot manages or has excluded.
+
+```bash
+adapty asa budget-autopilot fronts --adam-id 123456
+```
+
+| Flag | Description |
+|---|---|
+| `--campaign-group` | Organization ID (UUID) from [`orgs list`](#adapty-asa-orgs-list) |
+| `--adam-id` | Apple App Store ID of the app, from [`apps list`](#adapty-asa-apps-list) |
+
+`fronts` returns the whole list in one response, sorted by monthly budget, largest first. Each row is one campaign, with properties such as the following:
+
+- `status`: The state of the campaign.
+- `daily_budget`, `monthly_budget`, and `currency`: The budget of the campaign.
+- `pending_change`: A budget change that the autopilot hasn't applied yet.
+- `excluded`: Present when the campaign is excluded, with the `reason`.
+- `cpp`, `payers`, `spend`, and `target_cpp`: The cost per paying user, the paying users, the spend, and the target cost per paying user, as of the last weekly run.
+- `skip_kind`: The reason the autopilot skipped the campaign this week.
+- `shrink_state`: `dialog` when the dashboard shows **Needs your decision** for the campaign.
+
+The dashboard shows `status` under the following labels:
+
+| `status` | Dashboard label |
+|---|---|
+| `active` | **Optimizing** |
+| `building` | **Collecting data** |
+| `shrinking` | **Reducing step by step** |
+| `closed_no_demand` | **Reducing, no payers** |
+| `null`, with `skip_kind` set | **Skipped this week** |
+
+`excluded.reason` is `manual` for a campaign excluded with `exclude` or in the dashboard. It's `external_change` when someone changed the daily budget or status of the campaign outside the autopilot while it was Live. To return the campaign, make sure that no other person or tool changes it, then run [`include`](#adapty-asa-budget-autopilot-include).
+
+### adapty asa budget-autopilot decisions
+
+List the decisions of the budget autopilot, newest first: budget transfers, skipped campaigns, and spend guard pauses.
+
+```bash
+adapty asa budget-autopilot decisions --severity critical --execution-status failed
+```
+
+| Flag | Description |
+|---|---|
+| `--date-from`, `--date-to` | Period, in the same format as in [`keyword-autopilot decisions`](#adapty-asa-keyword-autopilot-decisions). Default: `--date-to` is the moment of the call, and `--date-from` is 7 days before `--date-to` |
+| `--campaign` | Campaign ID (UUID) from [`campaigns list`](#adapty-asa-campaigns-list) |
+| `--campaign-group` | Organization ID (UUID) from [`orgs list`](#adapty-asa-orgs-list) |
+| `--adam-id` | Apple App Store ID of the app, from [`apps list`](#adapty-asa-apps-list) |
+| `--severity` | `routine`, `notable`, or `critical`. Repeatable |
+| `--decision-kind` | Decision kind, such as `transfer` or `spend_guard_triggered`. Repeatable |
+| `--execution-status` | `planned`, `sending`, `retry_wait`, `applied`, `failed`, `dry_run`, or `observation`. Repeatable |
+| `--limit` | Decisions per call. Default: `20`, max: `200` |
+| `--offset` | Decisions to skip. Max: `10000` |
+
+`critical` marks a spend guard pause. `notable` marks one of the following decisions:
+
+- An exclusion with the reason `external_change`.
+- A budget reduction that needs your decision.
+- A change that the autopilot didn't send because the campaign budget had changed.
+
+In `--execution-status`, `dry_run` marks a decision that the autopilot made in **Preview** mode. `retry_wait` marks a change that the autopilot retries after an Apple Ads error.
+
+`--decision-kind` accepts the following values:
+
+| Decisions | Values |
+|---|---|
+| Budget transfers | `transfer`, `transfer_blocked` |
+| Campaign tests | `test_batch`, `test_giveback` |
+| Step-by-step reductions | `shrink_step`, `shrink_exit`, `shrink_dialog` |
+| Spend guard pauses | `spend_guard_triggered` |
+| Exclusions and inclusions | `excluded_external_change`, `campaign_excluded`, `campaign_included` |
+| Skipped campaigns | `skipped_no_economics`, `skipped_locked`, `skipped_ab_test`, `skipped_data_stale`, `skipped_invalid_state`, `skipped_c_revised`, `skipped_budget_changed`, `skipped_metadata_stale`, `skipped_no_data`, `skipped_unsupported_type`, `skipped_multi_country` |
+
+To read every decision in a period, pass a fixed `--date-to` and raise `--offset` page by page, as for the [keyword autopilot decisions](#adapty-asa-keyword-autopilot-decisions).
+
+### adapty asa budget-autopilot exclude
+
+Stop the budget autopilot for one campaign.
+
+```bash
+adapty asa budget-autopilot exclude <campaign-id>
+```
+
+| Argument | Description |
+|---|---|
+| `campaign-id` | Campaign ID (UUID) from [`campaigns list`](#adapty-asa-campaigns-list) |
+
+The campaign keeps its current budget. The autopilot cancels its planned changes for the campaign, but doesn't undo the changes that already reached Apple Ads. The spend guard no longer pauses the campaign.
+
+A second `exclude` of the same campaign returns the same row. For a campaign that the autopilot neither manages nor excludes, `exclude` returns `404`.
+
+Under `--json`, the command returns the campaign row, in the same shape as a [`fronts`](#adapty-asa-budget-autopilot-fronts) row.
+
+### adapty asa budget-autopilot include
+
+Return an excluded campaign to the budget autopilot.
+
+```bash
+adapty asa budget-autopilot include <campaign-id>
+```
+
+| Argument | Description |
+|---|---|
+| `campaign-id` | Campaign ID (UUID) from [`campaigns list`](#adapty-asa-campaigns-list) |
+
+The command removes the exclusion, whatever its reason, and succeeds even when the campaign wasn't excluded. At the next weekly run, the autopilot decides whether to manage the campaign again, with its current budget as the starting point.
+
+Under `--json`, the command returns `{"campaign_id": "<campaign-id>", "included": true}`.
+
 ## Metrics \{#metrics\}
 
 ### adapty asa metrics
@@ -1032,16 +1393,19 @@ The response lists each changed field with its `old_values` and `new_values`, pl
 |---|---|---|
 | `402` | `ads_manager_subscription_required` | The company has no active Ads Manager subscription |
 | `403` | `cli_ad_account_unreadable` | `change-history` can't read the organization: the Apple Ads token is revoked, the organization is no longer linked, or Apple denied access |
-| `404` | — | The entity does not exist, or it belongs to another company |
+| `404` | — | The entity does not exist, or it belongs to another company. For [`budget-autopilot exclude`](#adapty-asa-budget-autopilot-exclude), the autopilot neither manages nor excludes the campaign |
 | `409` | `cli_idempotency_in_progress` | A write with the same idempotency key is still running |
+| `409` | — | The keyword passed to [`keyword-autopilot enroll`](#adapty-asa-keyword-autopilot-enroll) is already enrolled. The enrollment stays as it was |
 | `422` | `cli_idempotency_key_reuse` | The same idempotency key was used with a different request body |
 | `422` | `cli_metric_scope_too_wide` | A profile-counting metric was requested without `--campaign` or `--ad-group` |
 | `422` | `cli_response_too_large` | A `metrics` page would exceed 5000 breakdown rows |
-| `429` | `cli_analytics_busy` | The analytics pool is busy, or another keyword pool build for the company is still running. The wait is in the `Retry-After` header |
+| `422` | — | [`keyword-autopilot enroll`](#adapty-asa-keyword-autopilot-enroll) can't enroll the keyword, or a [`keyword-autopilot report`](#adapty-asa-keyword-autopilot-report) is over its limits |
+| `429` | `cli_analytics_busy` | The analytics pool is busy, or another keyword pool build or `keyword-autopilot report` for the company is still running. The wait is in the `Retry-After` header |
 | `429` | `cli_cooldown_active` | Too many rejected requests put the token into a cool-down |
+| `429` | `cli_rate_limit_exceeded` | The command used up its rate limit. The wait is in the `Retry-After` header |
 | `429` | `cli_upstream_rate_limited` | Apple rate-limited a `change-history` request. The wait from Apple is in the `Retry-After` header |
-| `504` | `cli_read_timeout` | A `change-history` request took longer than 50 seconds. Narrow the period or the filters |
+| `504` | `cli_read_timeout` | A `change-history` request or a `keyword-autopilot report` took longer than 50 seconds. Narrow the period or the filters |
 
-Metrics and the search terms list share one analytics budget per company: 5 calls per minute, and at most 2 in any 10 seconds. `change-history` has its own budget: 30 calls per minute, at most 5 in any 10 seconds, and one request at a time per company. A rejected request counts toward a cool-down only when the same command is refused again before the `Retry-After` of its previous refusal has run out, so a request sent after that wait doesn't count. 20 such rejections within 5 minutes start an escalating cool-down of 5 minutes, then 30 minutes, then 3 hours. Retrying during the pause does not extend it, but the fix is to correct the failing request rather than repeat it.
+Metrics and the search terms list share one analytics budget per company: 5 calls per minute, and at most 2 in any 10 seconds. `change-history` has its own budget: 30 calls per minute, at most 5 in any 10 seconds, and one request at a time per company. `keyword-autopilot report` has its own limit: 6 calls per minute, and one report at a time per company. The autopilot commands that only read data, except `keyword-autopilot report`, have one shared limit with most `list` and `get` commands: 120 calls per minute in total. `keywords list` and `change-history` have limits of their own. All commands that change your account, the autopilot ones included, have one shared limit: 20 calls per minute in total. A rejected request counts toward a cool-down only when the same command is refused again before the `Retry-After` of its previous refusal has run out, so a request sent after that wait doesn't count. 20 such rejections within 5 minutes start an escalating cool-down of 5 minutes, then 30 minutes, then 3 hours. Retrying during the pause does not extend it, but the fix is to correct the failing request rather than repeat it.
 
 The CLI handles short waits for you. On a `429` that is not a cool-down, if `Retry-After` is 60 seconds or less, the command waits for that long and retries once, reporting the wait on standard error.
