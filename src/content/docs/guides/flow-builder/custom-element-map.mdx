@@ -4,7 +4,7 @@ description: "Display a map of places near each user, such as partner fitness ce
 metadataTitle: "Show nearby places on a map in a flow | iOS SDK | Adapty Docs"
 ---
 
-Follow this recipe to include an interactive map in a flow. The map shows your places, such as partner fitness centers, within 2 km of the user. Your app renders the map as a native view in a [custom element](flow-custom-elements), with MapKit. Your app requests location access on the flow screen.
+Follow this recipe to include an interactive map in a flow. The map shows your places, such as partner fitness centers, within 2 km of the user. Your app renders the map as a native view in a [custom element](flow-custom-elements), with MapKit. Users grant or decline location access on the screen before the map.
 
 <DocVideo id="custom-element-map-demo.mp4" width="300px" alt="The finished flow: a map shows fitness centers near the user, who drags the map to another area and back." />
 
@@ -12,26 +12,28 @@ Follow this recipe to include an interactive map in a flow. The map shows your p
 
 - Update your app to Adapty iOS SDK 4.4 or later. Earlier SDK versions show the [fallback content](flow-custom-elements#set-fallback-content) for every custom element.
 - Set up your app to [fetch](get-pb-paywalls) and [display](ios-present-paywalls) flows.
+- Set up the [permission handler](ios-handle-permissions) of your app with the code for **Location while using the app**.
 - To ask users for location access, add the `NSLocationWhenInUseUsageDescription` key to the `Info.plist` file of your app. Set its value to the text of the prompt, such as "Find fitness centers near you."
 
-## 1. Add the custom element to the screen
+## 1. Ask for location access
+
+<CustomElementMapLocationPrompt />
+
+## 2. Add the custom element to the screen
 
 <CustomElementMapBuilderSetup />
 
 Inside the custom element, add an [**Image**](custom-media#image) with a picture of a map. Users see it as the [fallback](flow-custom-elements#set-fallback-content) when:
 
 - Their version of your app doesn't display the map.
-- They denied location access before the screen opened.
+- They didn't grant location access.
 - Their device runs iOS 16.
 
-<CustomElementMapLocationPrompt />
+## 3. Create the map view
 
-## 2. Create the map view
-
-Create a type for your places, and a model for location access:
+Create a type for your places, and a model that reads location access:
 
 ```swift showLineNumbers title="Swift"
-import Combine
 import CoreLocation
 
 // A place of your app, such as a partner fitness center
@@ -41,34 +43,19 @@ struct Place: Identifiable {
     let coordinate: CLLocationCoordinate2D
 }
 
-// One location manager for the resolver and the map view
+// Reads location access for the resolver
 @MainActor
-final class LocationAccess: NSObject, ObservableObject, CLLocationManagerDelegate {
-    @Published private(set) var status: CLAuthorizationStatus = .notDetermined
-    var isMapOnScreen = false
+final class LocationAccess {
     private let manager = CLLocationManager()
 
-    var isDenied: Bool { status == .denied || status == .restricted }
-
-    override init() {
-        super.init()
-        manager.delegate = self
-        status = manager.authorizationStatus
-    }
-
-    // Shows the prompt only if the user hasn't answered it yet
-    func requestAccess() {
-        manager.requestWhenInUseAuthorization()
-    }
-
-    nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+    var isAllowed: Bool {
         let status = manager.authorizationStatus
-        Task { @MainActor in self.status = status }
+        return status == .authorizedWhenInUse || status == .authorizedAlways
     }
 }
 ```
 
-Create a view with a map. The view requests location access and displays a marker for each of your places within 2 km of the user:
+Create a view with a map. The view displays a marker for each of your places within 2 km of the user:
 
 ```swift showLineNumbers title="Swift"
 import CoreLocation
@@ -77,62 +64,45 @@ import SwiftUI
 
 @available(iOS 17.0, *)
 struct NearbyFitnessCentersMap: View {
-    @ObservedObject var access: LocationAccess
     let places: [Place]
     @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
     @State private var nearbyPlaces: [Place] = []
 
     var body: some View {
-        ZStack {
-            if access.isDenied {
-                ContentUnavailableView(
-                    "Location access is off",
-                    systemImage: "location.slash",
-                    description: Text("To see fitness centers near you, allow location access in Settings.")
-                )
-            } else {
-                Map(position: $position) {
-                    UserAnnotation()
-                    ForEach(nearbyPlaces) { place in
-                        Marker(place.name, systemImage: "dumbbell.fill", coordinate: place.coordinate)
-                            .tint(.teal)
-                    }
-                }
-                .task {
-                    access.requestAccess()
-                    do {
-                        for try await update in CLLocationUpdate.liveUpdates() {
-                            guard let location = update.location else { continue }
-                            nearbyPlaces = places.filter { place in
-                                let placeLocation = CLLocation(
-                                    latitude: place.coordinate.latitude,
-                                    longitude: place.coordinate.longitude
-                                )
-                                return location.distance(from: placeLocation) <= 2_000 // meters
-                            }
-                            withAnimation {
-                                position = .automatic // zoom to fit the user and the places
-                            }
-                            break
-                        }
-                    } catch {
-                        // the map still shows the location of the user
-                    }
-                }
+        Map(position: $position) {
+            UserAnnotation()
+            ForEach(nearbyPlaces) { place in
+                Marker(place.name, systemImage: "dumbbell.fill", coordinate: place.coordinate)
+                    .tint(.teal)
             }
         }
-        // Tells the resolver that the map is on the screen
-        .onAppear { access.isMapOnScreen = true }
-        .onDisappear { access.isMapOnScreen = false }
+        .task {
+            do {
+                for try await update in CLLocationUpdate.liveUpdates() {
+                    guard let location = update.location else { continue }
+                    nearbyPlaces = places.filter { place in
+                        let placeLocation = CLLocation(
+                            latitude: place.coordinate.latitude,
+                            longitude: place.coordinate.longitude
+                        )
+                        return location.distance(from: placeLocation) <= 2_000 // meters
+                    }
+                    withAnimation {
+                        position = .automatic // zoom to fit the user and the places
+                    }
+                    break
+                }
+            } catch {
+                // the map still shows the location of the user
+            }
+        }
     }
 }
 ```
 
 The map view needs iOS 17 or later. On iOS 16, users see the fallback.
 
-If the user denies location access on the screen, the view replaces the map with a message about how to allow access in Settings.
-
-## 3. Match the map to the custom element
+## 4. Match the map to the custom element
 
 In your [app-wide resolver](ios-flow-custom-elements#set-an-app-wide-resolver), add properties for the `LocationAccess` model and your places. Then return the map view for the `map` Type and the `fitness_centers` ID. The highlighted lines show what to add or change. If your app has no app-wide [resolver](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) yet, copy the whole code:
 
@@ -154,10 +124,10 @@ struct CustomElementsResolver: AdaptyUICustomElementsResolver {
             guard #available(iOS 17.0, *) else {
                 return nil // iOS 16: show the fallback
             }
-            if locationAccess.isDenied, !locationAccess.isMapOnScreen {
-                return nil // access denied before the screen opened: show the fallback
+            guard locationAccess.isAllowed else {
+                return nil // no location access: show the fallback
             }
-            return AnyView(NearbyFitnessCentersMap(access: locationAccess, places: places))
+            return AnyView(NearbyFitnessCentersMap(places: places))
         // the other cases of your resolver
         default:
             return nil
@@ -168,7 +138,7 @@ struct CustomElementsResolver: AdaptyUICustomElementsResolver {
 
 <CustomElementMapResolverCalls />
 
-Create the resolver with your places, and set it as the app-wide resolver. Call `AdaptyUI.setCustomElementsResolver` once, such as at app launch:
+Create the resolver with your places, and set it as the app-wide resolver. Call the `AdaptyUI.setCustomElementsResolver` method once, such as at app launch:
 
 ```swift showLineNumbers title="Swift"
 import AdaptyUI
@@ -186,14 +156,14 @@ import CoreLocation
 AdaptyUI.setCustomElementsResolver(customElementsResolver)
 ```
 
-## 4. Test on a device
+## 5. Test on a device
 
 The Flow & Paywall Builder can't run your app code, so its canvas only shows the fallback. To preview the map:
 
 1. [Publish the flow](builder-save-publish). To see the latest published version instead of a cached one, register the device as a [test device](test-devices).
 2. To see a marker on the map, add a place within 2 km of your location to your list of places.
-3. Make sure that the device runs iOS 17 or later. Run a build of your app that includes the resolver. Open the screen, and allow location access. Verify that the map shows your location and a marker for the place that you added.
+3. Make sure that the device runs iOS 17 or later. Run a build of your app that includes the resolver and the permission handler. On the screen before the map, tap **Continue**, and grant location access. Verify that the map shows your location and a marker for the place that you added.
 
-To test the fallback, deny location access: in the **Settings** app, go to **Privacy & Security** > **Location Services** > *your app*, and select **Never**. Then open the screen again.
+To test the fallback, deny location access: in the **Settings** app, go to **Privacy & Security** > **Location Services** > *your app*, and select **Never**. Then open the flow again.
 
 To find out why the fallback appears instead of the map, follow the instructions in the [Test on a device](ios-flow-custom-elements#test-on-a-device) section of the iOS guide.

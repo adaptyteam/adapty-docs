@@ -1,0 +1,346 @@
+---
+title: "System permissions on Android"
+description: "For each permission that a flow can request on Android, look up what users see, what your app declares, and which result to pass for each permission state."
+metadataTitle: "System permissions | Android SDK | Adapty Docs"
+---
+
+When a flow runs the **Request permission** action, the Adapty SDK passes the permission request to your app. Your code shows the system dialog and passes the result to the flow. Follow this guide to write the Android code that passes the result of each permission request to the flow. For each permission that the action can request, this page describes:
+
+- What users see.
+- What your app declares, and how it requests the permission.
+- Which result your app passes for each permission state.
+
+Before you use this page, your app needs a permission handler: the code that receives each permission request from the flow and passes the result back. This page only covers what to request and which result to pass for each permission. [Handle permission requests in flows](android-handle-permissions) shows how to set up the handler.
+
+In a cross-platform app, your code also requests each permission on iOS, as [System permissions on iOS](ios-system-permissions) describes.
+
+:::tip
+To add the request to a flow, see [Request permissions in a flow](flow-permissions).
+:::
+
+## How to pass the result
+
+Call the `callback` parameter of the `onShowRequestPermission` method with `true` or `false`, and the string from the table as the second argument. For example, `callback(false, "permanently_denied")`. In a cross-platform app, pass the same values as the guide for your SDK shows.
+
+In the tables on this page, **What Android reports** is the permission state. **Result to pass** shows "Granted" (`true`) or "Not granted" (`false`), followed by the string. For example, "Not granted, `denied`" means `callback(false, "denied")`.
+
+<FlowPermissionAnswers />
+
+<FlowPermissionStrings />
+
+## Rules for every permission
+
+- **Tell a new refusal from an earlier refusal**: Android doesn't report whether it showed the dialog. To find out, call the `shouldShowRequestPermissionRationale()` method before and after the request, and keep a flag for each permission that your app requested before. The method returns `false` before the first request, after Android stops showing the dialog, and after the user closes the dialog without a choice. When the permission isn't granted after the request, pass this string:
+
+  | `shouldShowRequestPermissionRationale()` | The app requested the permission before | String |
+  |:--|:--|:--|
+  | `true` before or after the request | Any | `denied` |
+  | `false` before and after the request | Yes | `permanently_denied` |
+  | `false` before and after the request | No | No string |
+
+  The flag can't tell a dialog that the user closed without a choice from a refusal without a dialog. For example, after an **Only this time** grant expires, Android shows the dialog again. If the user closes the dialog without a choice, your app passes `permanently_denied`.
+- **Request from the activity on screen**: On Android, request the permission from the activity that is on screen while the flow is shown. Android delivers the user's choice only to a resumed activity. When the flow has its own activity, a request from the activity behind it returns the user's choice only after the flow closes. A flow has its own activity when the Flutter SDK shows it with the `present()` method, and when the Kotlin Multiplatform or Unity SDK shows it. Native Android views, the Capacitor SDK, and React Native SDK 4.3.0 and later show the flow in the activity of your app.
+- **Don't reuse an earlier result**: Some grants expire. **Only this time** lasts while the app is in use. For apps that target Android 11 or higher, Android resets the permissions of an app that the user hasn't used for a few months. Don't store a result for a later request.
+- **Reset the user's decisions when you test**: To see a dialog again, delete the app, or clear its data with the `adb shell pm clear <package>` command. Clearing the data also resets the flags that your app keeps for earlier requests. The `adb shell pm revoke` and `pm clear-permission-flags` commands only reset the permission, so the flags of your app then report an earlier request. Don't install the test build with the `adb install -g` command: it grants every runtime permission, so no dialog appears.
+
+## Notifications
+
+### Push notifications \{#push\}
+
+- **What the user sees**: On Android 13 and later, a dialog with **Allow** and **Don't allow**. The user can also swipe the dialog away, which leaves the permission unchanged. Android 12 and earlier show no dialog: notifications are on unless the user turns them off in the system settings.
+- **Setup**: Add the `<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />` element to `AndroidManifest.xml`. On Android 13 (API 33) and later, `POST_NOTIFICATIONS` is a runtime permission. Only apps that target API 33 or higher decide when the dialog appears. For an app that targets API 32 or lower, Android shows the dialog when the app starts an activity after it creates its first notification channel. After one **Don't allow**, Android doesn't show it to such an app again until the app is reinstalled. On Android 12 and earlier, show no dialog: call the `NotificationManagerCompat.areNotificationsEnabled()` method, which returns whether notifications are on.
+
+Pass the result that matches the notification permission state:
+
+| What Android reports | Result to pass |
+|:---------------------|:-----------------|
+| Granted | Granted, `granted` |
+| Denied in the dialog | Not granted, `denied` |
+| Denied, and Android showed no dialog | Not granted, `permanently_denied` |
+| The user swiped the dialog away on the first request | Not granted, no string |
+| On Android 12 and earlier, notifications are on | Granted, `granted` |
+| On Android 12 and earlier, notifications are off | Not granted, `permanently_denied` |
+
+- **Limitations**: On Android 13 and later, the user can block notifications for the app in the settings while the `POST_NOTIFICATIONS` permission stays granted. The `areNotificationsEnabled()` method then returns `false`. If the flow needs visible notifications, call the `areNotificationsEnabled()` method too. When it returns `false`, pass a not-granted result.
+
+## Location
+
+### Location while using the app \{#location_when_use\}
+
+- **What the user sees**: On Android 12 and later, a dialog where the user selects **Precise** or **Approximate** location. The dialog has the buttons **While using the app**, **Only this time**, and **Don't allow**. If the app only requests the `ACCESS_COARSE_LOCATION` permission, the user can only grant approximate location.
+- **Setup**: Declare the `ACCESS_COARSE_LOCATION` permission in `AndroidManifest.xml`. To request precise location, declare the `ACCESS_FINE_LOCATION` permission too. Request both permissions together: some Android 12 releases ignore a request for the `ACCESS_FINE_LOCATION` permission alone.
+
+Pass the result that matches the location permission state:
+
+| What Android reports | Result to pass |
+|:---------------------|:-----------------|
+| Precise or approximate location granted | Granted, `granted` |
+| Denied in the dialog | Not granted, `denied` |
+| Denied, and Android showed no dialog | Not granted, `permanently_denied` |
+
+To report approximate location in analytics, pass `limited` with the granted result instead of `granted`. The flow still runs the **When allowed** actions.
+
+- **Limitations**:
+  - **Only this time** grants access while the app is in use.
+  - When the user changes precise location to approximate, in the dialog or in the Android settings, Android restarts the app process.
+
+### Location always \{#location_always\}
+
+- **What the user sees**: Two steps.
+  - **Android 10**: The dialog includes **Allow all the time**.
+  - **Android 11 and later**: For apps that target Android 11 or higher, the dialog has no **Allow all the time** option. The user turns on background location on a settings page.
+- **Setup**: Declare the `ACCESS_COARSE_LOCATION` and `ACCESS_FINE_LOCATION` permissions in `AndroidManifest.xml`. For Android 10 (API 29) and later, declare the `ACCESS_BACKGROUND_LOCATION` permission too. Android 9 and earlier grant background location together with foreground location. Request foreground location first, then background location in a separate request. For apps that target Android 11 or higher, a request for foreground and background location together grants neither. Google Play restricts background location to an app's core features.
+
+Pass the result that matches the location permission state:
+
+| What Android reports | Result to pass |
+|:---------------------|:-----------------|
+| Foreground location not granted in its request | As for **Location while using the app**: `denied`, `permanently_denied`, or no string |
+| Background location granted | Granted, `granted` |
+| Background location not granted when the user comes back, or Android showed no settings page | Not granted, `denied` |
+| On Android 9 and earlier, foreground location granted | Granted, `granted` |
+
+- **How to pass the result**: On Android 11 and later, the user leaves the app for the settings page. Read the permission state when the user comes back to the app, and pass the result then.
+
+### Precise location \{#location_full_accuracy\}
+
+- **What the user sees**: On Android 12 and later, if the user selected **Approximate** in the location dialog, Android shows a second dialog when your app requests precise location. In this dialog, the user selects precise location, precise location only this time, or approximate location. If the user granted approximate location with **Only this time**, the second dialog has two options: precise location only this time, or approximate location. On Android 11 and earlier, the user can't select approximate location: an app that requests the `ACCESS_FINE_LOCATION` permission receives precise location.
+- **Setup**: Declare the `ACCESS_COARSE_LOCATION` and `ACCESS_FINE_LOCATION` permissions in `AndroidManifest.xml`. When only approximate location is granted, request both permissions again.
+
+Pass the result that matches the location accuracy:
+
+| What Android reports | Result to pass |
+|:---------------------|:-----------------|
+| `ACCESS_FINE_LOCATION` granted, including **Only this time** | Granted, `granted` |
+| Only `ACCESS_COARSE_LOCATION` granted after the request | Not granted, `denied` |
+| No location access, denied in the dialog | Not granted, `denied` |
+| No location access, and Android showed no dialog | Not granted, `permanently_denied` |
+| On Android 11 and earlier, `ACCESS_FINE_LOCATION` granted | Granted, `granted` |
+
+## Camera and media
+
+### Camera \{#camera\}
+
+- **What the user sees**: On Android 11 and later, a dialog with **While using the app**, **Only this time**, and **Don't allow**.
+- **Setup**: Declare the `CAMERA` runtime permission in `AndroidManifest.xml`. The `CAMERA` permission implies the required features `android.hardware.camera` and `android.hardware.camera.autofocus`, so Google Play doesn't offer the app to devices without a back camera. To install the app on such devices, declare the `<uses-feature android:name="android.hardware.camera" android:required="false" />` element.
+
+Pass the result that matches the camera permission state:
+
+| What Android reports | Result to pass |
+|:---------------------|:-----------------|
+| Granted, including **Only this time** | Granted, `granted` |
+| Denied in the dialog | Not granted, `denied` |
+| Denied, and Android showed no dialog | Not granted, `permanently_denied` |
+| The device has no camera: `FEATURE_CAMERA_ANY` is missing | Not granted, `unsupported` |
+
+- **Limitations**: **Only this time** expires shortly after the app goes to the background.
+
+### Microphone \{#microphone\}
+
+- **What the user sees**: On Android 11 and later, a dialog with **While using the app**, **Only this time**, and **Don't allow**.
+- **Setup**: Declare the `RECORD_AUDIO` runtime permission in `AndroidManifest.xml`.
+
+Pass the result that matches the microphone permission state:
+
+| What Android reports | Result to pass |
+|:---------------------|:-----------------|
+| Granted, including **Only this time** | Granted, `granted` |
+| Denied in the dialog | Not granted, `denied` |
+| Denied, and Android showed no dialog | Not granted, `permanently_denied` |
+
+- **Limitations**: **Microphone** and **Speech recognition** use the same permission, `RECORD_AUDIO`. After the user grants one of them, or Android stops showing its dialog, a request for the other one returns the same permission state without a dialog.
+
+### Photos \{#photos\}
+
+- **What the user sees**: On Android 14 and later, a dialog where the user selects limited access, full access, or no access. Limited access opens a system picker where the user selects photos and videos. On Android 13, the dialog has no option for limited access.
+- **Setup**: On Android 13 and later, request the `READ_MEDIA_IMAGES` and `READ_MEDIA_VIDEO` permissions together. On Android 14 and later, add the `READ_MEDIA_VISUAL_USER_SELECTED` permission to this request. On Android 12 and earlier, request the `READ_EXTERNAL_STORAGE` permission. Declare all four permissions in `AndroidManifest.xml`:
+
+```xml title="AndroidManifest.xml"
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+<uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+<uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
+```
+
+Pass the result that matches the photo and video permission states:
+
+| What Android reports | Result to pass |
+|:---------------------|:-----------------|
+| On Android 13 and later, `READ_MEDIA_IMAGES` or `READ_MEDIA_VIDEO` granted | Granted, `granted` |
+| On Android 14 and later, only `READ_MEDIA_VISUAL_USER_SELECTED` granted | Granted, `limited` |
+| On Android 12 and earlier, `READ_EXTERNAL_STORAGE` granted | Granted, `granted` |
+| Nothing granted, denied in the dialog | Not granted, `denied` |
+| Nothing granted, and Android showed no dialog | Not granted, `permanently_denied` |
+
+- **Limitations**:
+  - Google Play restricts the `READ_MEDIA_IMAGES` and `READ_MEDIA_VIDEO` permissions to [use cases in its policy](https://developer.android.com/training/data-storage/shared/media). Other apps use the Android photo picker, which needs no permission.
+  - To report a partial grant on Android 14, declare the `READ_MEDIA_VISUAL_USER_SELECTED` permission. In an app that targets Android 14 or higher and doesn't declare this permission, Android reports the `READ_MEDIA_IMAGES` and `READ_MEDIA_VIDEO` permissions as granted after the user selects some photos. Android revokes that grant eventually after the app goes to the background. Your app then passes `granted` for access to a selection only.
+  - Access to the selected media on Android 14 expires eventually.
+
+### Media library \{#media_library\}
+
+- **What the user sees**: A runtime permission dialog.
+- **Setup**: For Android 13 and later, declare the `READ_MEDIA_AUDIO` permission in `AndroidManifest.xml`. For Android 12 and earlier, declare the `READ_EXTERNAL_STORAGE` permission with the `android:maxSdkVersion="32"` attribute.
+
+Pass the result that matches the audio permission state:
+
+| What Android reports | Result to pass |
+|:---------------------|:-----------------|
+| Granted | Granted, `granted` |
+| Denied in the dialog | Not granted, `denied` |
+| Denied, and Android showed no dialog | Not granted, `permanently_denied` |
+
+- **Limitations**: Android has no partial access to audio files: the `READ_MEDIA_VISUAL_USER_SELECTED` permission only covers photos and videos.
+
+### Speech recognition \{#speech\}
+
+- **What the user sees**: The microphone dialog: Android has no separate speech recognition permission.
+- **Setup**: Declare the `RECORD_AUDIO` permission in `AndroidManifest.xml`. The `SpeechRecognizer` class needs no other permission. If the app targets Android 11 (API 30) or higher, add a `<queries>` element for the speech recognition service:
+
+```xml title="AndroidManifest.xml"
+<queries>
+    <intent>
+        <action android:name="android.speech.RecognitionService" />
+    </intent>
+</queries>
+```
+
+Pass the result that matches the microphone permission state:
+
+| What Android reports | Result to pass |
+|:---------------------|:-----------------|
+| `SpeechRecognizer.isRecognitionAvailable()` returns `false` | Not granted, `unsupported` |
+| `RECORD_AUDIO` granted | Granted, `granted` |
+| Denied in the dialog | Not granted, `denied` |
+| Denied, and Android showed no dialog | Not granted, `permanently_denied` |
+
+- **Limitations**:
+  - The default Android recognizer can send audio to remote servers.
+  - **Speech recognition** and **Microphone** share the `RECORD_AUDIO` permission. After the user grants one of them, or Android stops showing its dialog, a request for the other one returns the same permission state without a dialog.
+
+## Personal data
+
+### Contacts \{#contacts\}
+
+- **What the user sees**: A runtime permission dialog.
+- **Setup**: Declare the `READ_CONTACTS` permission in `AndroidManifest.xml`. If the app writes contacts, declare the `WRITE_CONTACTS` permission too.
+
+Pass the result that matches the contacts permission state:
+
+| What Android reports | Result to pass |
+|:---------------------|:-----------------|
+| Granted | Granted, `granted` |
+| Denied in the dialog | Not granted, `denied` |
+| Denied, and Android showed no dialog | Not granted, `permanently_denied` |
+
+### Calendar \{#calendar\}
+
+- **What the user sees**: A runtime permission dialog.
+- **Setup**: Declare the `READ_CALENDAR` permission in `AndroidManifest.xml`. To add events, declare the `WRITE_CALENDAR` permission too. Request both permissions together.
+
+Pass the result that matches the calendar permission state:
+
+| What Android reports | Result to pass |
+|:---------------------|:-----------------|
+| Granted | Granted, `granted` |
+| Denied in the dialog | Not granted, `denied` |
+| Denied, and Android showed no dialog | Not granted, `permanently_denied` |
+
+- **Limitations**: To add an event without calendar access, use a [calendar intent](https://developer.android.com/identity/providers/calendar-provider) with the `ACTION_INSERT` action.
+
+### Health data \{#health\}
+
+- **What the user sees**: The Health Connect permissions screen, with an entry for each data type. Health Connect shows this screen instead of a runtime permission dialog.
+- **Setup**:
+  - Add the Health Connect client library, `androidx.health.connect:connect-client`, to your app.
+  - Add a `<uses-permission>` element to `AndroidManifest.xml` for each data type and access, such as the `android.permission.health.READ_STEPS` permission. Declare the same data types in the Google Play Console.
+  - Add an activity that shows your privacy policy for the `androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE` action. For Android 14 and later, add an `<activity-alias>` element for the `android.intent.action.VIEW_PERMISSION_USAGE` action, with the `android.intent.category.HEALTH_PERMISSIONS` category and the `android:permission="android.permission.START_VIEW_PERMISSION_USAGE"` attribute.
+  - Add a `<queries>` element with the `com.google.android.apps.healthdata` package.
+  - Call the `HealthConnectClient.getSdkStatus()` method first, then request the permissions with the contract from the `PermissionController.createRequestPermissionResultContract()` method. Health Connect needs Android 9 (API 28) or later. Android 14 and later include it. On Android 13 and earlier, the user needs the Health Connect app from Google Play: when the `getSdkStatus()` method returns the `SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED` status, the app can send the user to Google Play.
+
+Pass the result that matches the health data access:
+
+| What Android reports | Result to pass |
+|:---------------------|:-----------------|
+| `getSdkStatus()` doesn't return `SDK_AVAILABLE` | Not granted, `unsupported` |
+| All requested permissions granted | Granted, `granted` |
+| Some requested permissions granted | Granted, `limited` |
+| No permission granted, including the second cancel in a row | Not granted, `denied` |
+| No permission granted, and the app counted two cancels in a row before this request: Health Connect showed no screen | Not granted, `permanently_denied` |
+| Reading the granted permissions fails | Not granted, no string |
+
+- **How to pass the result**: After the user cancels the Health Connect screen twice in a row, the user can grant the permissions only in the Health Connect settings. Health Connect reports no cancel, so your app counts every request that returns no grant as a cancel. On the request that follows two cancels in a row, pass a not-granted result with `permanently_denied`.
+- **Limitations**: Health Connect gives access to data from 30 days before the grant, unless the app also has the `PERMISSION_READ_HEALTH_DATA_HISTORY` permission.
+
+### Motion & Fitness \{#motion\}
+
+- **What the user sees**: On Android 10 and later, a runtime permission dialog for physical activity.
+- **Setup**: Declare the `ACTIVITY_RECOGNITION` permission in `AndroidManifest.xml`. On Android 10 (API 29) and later, `ACTIVITY_RECOGNITION` is a runtime permission. It covers the step counter and step detector sensors and the Activity Recognition API. On Android 9 and earlier, Google Play services' Activity Recognition API uses the install-time permission `com.google.android.gms.permission.ACTIVITY_RECOGNITION`.
+
+Pass the result that matches the physical activity permission state:
+
+| What Android reports | Result to pass |
+|:---------------------|:-----------------|
+| Granted | Granted, `granted` |
+| Denied in the dialog | Not granted, `denied` |
+| Denied, and Android showed no dialog | Not granted, `permanently_denied` |
+| On Android 9 and earlier, no runtime permission | Granted, `granted` |
+
+## Device and home
+
+### Bluetooth \{#bluetooth\}
+
+- **What the user sees**: On Android 12 and later, a **Nearby devices** dialog for apps that target Android 12 or higher. Otherwise, the location dialog.
+- **Setup**: If the app targets Android 12 (API 31) or higher, declare the `BLUETOOTH_SCAN` and `BLUETOOTH_CONNECT` permissions for Android 12 and later. To advertise, declare the `BLUETOOTH_ADVERTISE` permission too. On Android 11 and earlier, and for apps that target a lower API level, Bluetooth scans need the `ACCESS_FINE_LOCATION` permission. Android 9 and earlier also accept the `ACCESS_COARSE_LOCATION` permission. Scans in the background on Android 10 and 11 also need the `ACCESS_BACKGROUND_LOCATION` permission. On Android 11 and earlier, and for apps that target a lower API level, `BLUETOOTH` and `BLUETOOTH_ADMIN` are install-time permissions:
+
+```xml title="AndroidManifest.xml"
+<uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+<uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />
+<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:maxSdkVersion="30" />
+```
+
+Pass the result that matches the Bluetooth permission state:
+
+| What Android reports | Result to pass |
+|:---------------------|:-----------------|
+| The device has no Bluetooth: `FEATURE_BLUETOOTH` is missing, or `FEATURE_BLUETOOTH_LE` for a BLE app | Not granted, `unsupported` |
+| All requested permissions granted | Granted, `granted` |
+| Denied in the dialog | Not granted, `denied` |
+| Denied, and Android showed no dialog | Not granted, `permanently_denied` |
+| On Android 11 and earlier, or for a target below API 31, the permission state of `ACCESS_FINE_LOCATION`. Approximate location isn't enough for scans on Android 10 and 11 | As for **Location while using the app** |
+
+- **How to pass the result**: A Bluetooth adapter that is turned off isn't a refusal. Pass the result that matches the permission state, not the adapter state.
+- **Limitations**:
+  - With the `neverForLocation` flag, Android filters some BLE beacons out of scan results.
+  - Bluetooth is in the **Nearby devices** group, which the user turns on and off as one in the settings.
+
+### Local network \{#local_network\}
+
+- **What the user sees**: On Android 17 and later, a runtime permission dialog for apps that target Android 17 or higher. Otherwise, no dialog: the app accesses the local network with the `INTERNET` permission.
+- **Setup**: If the app targets Android 17 (API 37) or higher, declare the `ACCESS_LOCAL_NETWORK` permission in `AndroidManifest.xml`. If the app targets a lower API level, don't declare or request this permission. `NEARBY_WIFI_DEVICES` is a different permission.
+
+Pass the result that matches the local network permission state:
+
+| What Android reports | Result to pass |
+|:---------------------|:-----------------|
+| The app targets Android 16 or lower, or the device runs Android 16 or earlier: access comes with `INTERNET` | Granted, `granted` |
+| The app targets Android 17 or higher, and the permission is granted | Granted, `granted` |
+| The app targets Android 17 or higher, denied in the dialog | Not granted, `denied` |
+| The app targets Android 17 or higher, denied, and Android showed no dialog | Not granted, `permanently_denied` |
+
+- **Limitations**:
+  - On Android 17, the `ACCESS_LOCAL_NETWORK` permission is in the **Nearby devices** group. If the user granted another permission of the group, such as Bluetooth, Android shows no dialog for the local network. Android can also let the app ask again after an earlier refusal.
+  - On Android 17, system pickers, such as the Output Switcher and the `NsdManager` class with the `FLAG_SHOW_PICKER` flag, give the app access to the device that the user picks without this permission. See [Local network permission](https://developer.android.com/privacy-and-security/local-network-permission).
+
+## Permissions that Android doesn't have
+
+When a flow requests one of the following permissions, your app passes a not-granted result with `unsupported`, without a dialog:
+
+- **App tracking (ATT)**: The advertising ID on Android uses the install-time permission `com.google.android.gms.permission.AD_ID`, which asks the user nothing. Don't pass `granted` because the app has an advertising ID.
+- **Apple Music**.
+- **Reminders**: Android has no system reminders store. The `CalendarContract.Reminders` table contains the alarms of calendar events, not reminders.
+- **HomeKit**.
+- **Focus status**: Android apps read the Do Not Disturb mode without a permission.
+- **Siri**.

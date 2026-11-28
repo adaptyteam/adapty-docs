@@ -1,38 +1,42 @@
 ---
 title: "Handle permission requests in flows - iOS"
-description: "Ask users for system permissions, such as push notifications or camera access, from a flow in your iOS app with AdaptySystemRequestsHandler, and return their answers to the flow."
+description: "Ask users for system permissions, such as push notifications or camera access, from a flow in your iOS app with the AdaptySystemRequestsHandler protocol, and pass the results to the flow."
 metadataTitle: "Handle Flow Permissions - iOS | Adapty Docs"
 ---
 
-A [flow](adapty-flow-builder) can ask users for a system permission with the **Request permission** action. For example, an onboarding screen can explain push notifications and then ask for them, or a flow can ask for camera access before a feature that scans documents. The Adapty SDK doesn't show the system permission dialog itself. It passes the request to an `AdaptySystemRequestsHandler` in your app. Your app shows the dialog and returns the user's answer, and the flow continues.
+A [flow](adapty-flow-builder) can ask users for a system permission with the **Request permission** action. For example, an onboarding screen can explain push notifications and then ask for them, or a flow can ask for camera access before a feature that scans documents. The Adapty SDK doesn't show the system permission dialog itself. It sends the permission request to a handler in your app: a class that conforms to the `AdaptySystemRequestsHandler` protocol. Your app shows the dialog and passes the result to the flow. The flow then continues.
 
 ## Before you start
 
 You need:
 
-- **Adapty iOS SDK 4.0.0 or later**: Earlier versions don't have `AdaptySystemRequestsHandler`.
-- **A flow with the Request permission action**: In the Flow & Paywall Builder, add the **Request permission** action to an element's **On Tap** or **On Screen Appear** trigger. In the action, select the permission in the **Permission** field. Then add the actions to run after the user answers to the outcome sections of the action, such as **Navigate Next** to **After response**. For the action settings, see [Request permission](onboarding-actions#request-permission).
-- **A purpose string in `Info.plist` for each permission that your handler requests**: See [Declare the permissions](#declare-the-permissions).
+- **Adapty iOS SDK 4.0.0 or later**: Earlier versions don't have the `AdaptySystemRequestsHandler` protocol.
+- **A flow with the Request permission action**: In the Flow & Paywall Builder, add the **Request permission** action to an element's **On Tap** or **On Screen Appear** trigger. In the action, select the permission in the **Permission** field. Add the actions for each result. The default **After response** action is **Navigate Next**. For the action settings, see [Request permission](onboarding-actions#request-permission).
+- **A purpose string for each permission that your handler requests**: The text in `Info.plist` that tells users why your app needs the permission. See [Declare the permissions](#declare-the-permissions).
+
+:::note
+**If your app already has a handler for push notifications**: The handler keeps working. For its not-granted results, the flow runs the **After response** actions. To have the flow run the **When denied** actions, pass the argument `"denied"`, `"restricted"`, or `"permanently_denied"` to `.denied`. For example, `.denied("denied")`. To request other permissions, add their cases to the handler.
+:::
 
 ## How the flow requests a permission
 
 1. The flow reaches the **Request permission** action: the user taps the element, or the screen appears.
-2. The Adapty SDK calls `handlePermission(_:withCustomArgs:)` on your handler with the permission selected in the action, such as `.push` or `.camera`.
-3. Your app requests the permission from iOS and returns `.granted` or `.denied` with a status.
+2. The Adapty SDK calls the `handlePermission(_:withCustomArgs:)` method of your handler with the permission selected in the action: an [`AdaptyPermission`](#declare-the-permissions) enum case, such as `.push` or `.camera`.
+3. Your app requests the permission from iOS and returns `.granted` or `.denied`.
 
 <FlowPermissionAnswers />
 
-The flow waits on the screen until your app returns the answer. If your app never answers, the flow stays on the screen. If iOS doesn't show the dialog, for example because the user already answered it, your app gets the answer at once. The flow then runs the outcome actions right away. If those actions leave the screen, the user sees the screen that requests the permission only for a moment.
+The flow waits on the screen until your app passes the result. If your app never passes a result, the flow stays on the screen. If the user already granted or declined the permission, iOS shows no dialog and returns the authorization status to your app at once. Your app then passes the result, and the flow runs the actions for that result right away. If those actions leave the screen, the user sees the screen that requests the permission only for a moment.
 
-With **On Screen Appear**, the flow doesn't send the request again when the user comes back to the screen with **Navigate back**. It sends the request again only if every outcome section of the action is empty. With **On Tap**, each tap sends a new request. The flow sends one permission request at a time: while a request waits for your answer, a tap on an element that requests a permission does nothing.
+The flow sends your app one permission request at a time. [The trigger of the action](onboarding-actions#request-permission) determines how often the flow sends the request. Your handler can receive the same permission again, for example on each tap. Each time, return the result that matches the current authorization status.
 
 ## Implement the handler
 
 :::warning
-**Request only the permissions that your app declares, and answer `.denied("unsupported")` for any other permission.** For most permissions, iOS terminates the app when the app requests a permission whose purpose string is missing from `Info.plist`. A flow author can add a request for any permission at any time, and the flow also reaches app versions released before the request was added.
+**Request only the permissions that your app declares, and return `.denied("unsupported")` for any other permission.** For most permissions, iOS terminates the app when the app requests a permission whose purpose string is missing from `Info.plist`. A flow author can add a request for any permission at any time, and the flow also reaches app versions released before the request was added.
 :::
 
-To answer permission requests, create a class that conforms to `AdaptySystemRequestsHandler` and implement `handlePermission(_:withCustomArgs:)`. This handler calls one function for each permission, and answers any other value as unsupported without a dialog:
+To handle permission requests, create a class that conforms to the `AdaptySystemRequestsHandler` protocol, and implement its `handlePermission(_:withCustomArgs:)` method. This handler requests push notifications and camera access. For every other permission, it returns `.denied("unsupported")` without a dialog:
 
 ```swift showLineNumbers title="Swift"
 import AdaptyUI
@@ -46,58 +50,119 @@ final class FlowPermissionHandler: AdaptySystemRequestsHandler {
     ) async -> AdaptyPermissionResult {
         switch permission {
         case .push: return await requestPush()
-        case .tracking: return await requestTracking()
-        case .locationWhenInUse: return await requestLocationWhenInUse()
-        case .locationAlways: return await requestLocationAlways()
-        case .locationFullAccuracy: return await requestLocationFullAccuracy()
         case .camera: return await requestCamera()
-        case .microphone: return await requestMicrophone()
-        case .photos: return await requestPhotos()
-        case .mediaLibrary: return await requestMediaLibrary()
-        case .music: return await requestMusic()
-        case .speech: return await requestSpeech()
-        case .contacts: return await requestContacts()
-        case .calendar: return await requestCalendar()
-        case .reminders: return await requestReminders()
-        case .health: return await requestHealth()
-        case .motion: return await requestMotion()
-        case .bluetooth: return await requestBluetooth()
-        case .localNetwork: return await requestLocalNetwork()
-        case .homekit: return await requestHomeKit()
-        case .focusStatus: return await requestFocusStatus()
-        case .siri: return await requestSiri()
+        // Add a case for each permission that your app requests.
         default:
             // A permission this app version doesn't request, or a value
-            // the Adapty SDK doesn't know (.custom): answer without a dialog.
+            // the Adapty SDK doesn't know (.custom): pass the result without a dialog.
             return .denied("unsupported")
         }
     }
 }
 ```
 
-Copy the functions from [Code for each permission](#code-for-each-permission) only for the permissions that your app requests, and delete the other cases. `default` answers them with `unsupported`. Your app then doesn't link their frameworks and doesn't need their purpose strings.
+The handler calls the `requestPush()` and `requestCamera()` functions: copy them from [Code for each permission](#code-for-each-permission). To request another permission, add its case to the `switch` statement, and write the function that the case calls.
 
-`handlePermission(_:withCustomArgs:)` receives:
+The `handlePermission(_:withCustomArgs:)` method receives:
 
-- **`permission`**: The permission selected in the action. `AdaptyPermission` has a case for each permission in [Declare the permissions](#declare-the-permissions). A value that the Adapty SDK doesn't know arrives as `.custom(String)`.
+- **`permission`**: The permission selected in the action. The `AdaptyPermission` enum has a case for each permission in [Declare the permissions](#declare-the-permissions). A value that the Adapty SDK doesn't know arrives as the `.custom(String)` enum case.
 - **`customArgs`**: Custom arguments of the request. The **Request permission** action sends none, so the value is `nil`.
 
-`.granted` and `.denied` take the status as a string, such as `.granted("granted")` or `.denied("permanently_denied")`.
+To pass the result to the flow:
 
-A granted notification permission lets your app show notifications. To receive push notifications, register the device with APNs and send the device token to your push provider, as your app does outside flows.
+1. In the `handlePermission(_:withCustomArgs:)` method, show the system dialog.
+2. Return `.granted` if the user granted the permission, and `.denied` otherwise.
+3. To have the flow run the **When denied** actions, pass the argument `"denied"`, `"restricted"`, or `"permanently_denied"` to `.denied`. For example, `.denied("permanently_denied")`. Without this argument, the flow runs the **After response** actions.
 
-`AdaptySystemRequestsHandler` also declares `handleAppReviewRequest()`. Its default implementation shows the App Store review prompt, so you don't need to implement it.
+<FlowPermissionStrings />
+
+The `.granted` and `.denied` enum cases take the string as an optional `String` argument. For example, `.granted("limited")`. With `.denied(nil)`, your app passes a not-granted result without a string, and the flow runs the **After response** actions.
+
+The `AdaptySystemRequestsHandler` protocol also declares the `handleAppReviewRequest()` method. Its default implementation shows the App Store review prompt, so you don't need to implement it.
+
+## Pass the handler to the flow configuration
+
+:::warning
+**Without a handler, the flow stops at the permission request.** If you don't pass a handler in the `systemRequestsHandler` parameter, your app shows no dialog. The flow stays on the screen that sent the request and doesn't run the **When allowed**, **When denied**, or **After response** actions.
+:::
+
+To send the flow's permission requests to your handler, pass the handler in the `systemRequestsHandler` parameter of the `AdaptyUI.getFlowConfiguration` method. In SDK 4.5 and later, this method requires the `preferredLocales` parameter: [pass the user's languages](localizations-and-locale-codes#pass-the-users-languages-to-the-sdk) there. Before 4.5, leave out the `preferredLocales` parameter:
+
+```swift showLineNumbers title="Swift"
+do {
+    let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+        forFlow: flow,
+        preferredLocales: Locale.preferredLanguages,
+        systemRequestsHandler: FlowPermissionHandler()
+    )
+    // present the flow with flowConfiguration
+} catch {
+    // handle the error
+}
+```
+
+The flow configuration keeps a strong reference to the handler, so you don't need to store one. Both SwiftUI and UIKit present the flow from this configuration, so the handler works with either. For details, see [Display flows & paywalls](ios-present-paywalls).
+
+## Declare the permissions
+
+For each permission that your handler requests, add its purpose string to `Info.plist`. iOS shows this text in the permission alert. The table lists the keys and capabilities of each permission:
+
+| Permission in the builder | `AdaptyPermission` | `Info.plist` keys and capabilities |
+|:--------------------------|:-------------------|:-----------------------------------|
+| [Push notifications](ios-system-permissions#push) | `.push` | None. The app only needs the Push Notifications capability to receive push notifications |
+| [App tracking (ATT)](ios-system-permissions#tracking) | `.tracking` | `NSUserTrackingUsageDescription` |
+| [Location while using the app](ios-system-permissions#location_when_use) | `.locationWhenInUse` | `NSLocationWhenInUseUsageDescription` |
+| [Location always](ios-system-permissions#location_always) | `.locationAlways` | `NSLocationWhenInUseUsageDescription` and `NSLocationAlwaysAndWhenInUseUsageDescription` |
+| [Precise location](ios-system-permissions#location_full_accuracy) | `.locationFullAccuracy` | `NSLocationWhenInUseUsageDescription` and `NSLocationTemporaryUsageDescriptionDictionary` |
+| [Camera](ios-system-permissions#camera) | `.camera` | `NSCameraUsageDescription` |
+| [Microphone](ios-system-permissions#microphone) | `.microphone` | `NSMicrophoneUsageDescription` |
+| [Photos](ios-system-permissions#photos) | `.photos` | `NSPhotoLibraryUsageDescription`, or `NSPhotoLibraryAddUsageDescription` if the app only adds photos |
+| [Media library](ios-system-permissions#media_library) | `.mediaLibrary` | `NSAppleMusicUsageDescription` |
+| [Apple Music](ios-system-permissions#music) | `.music` | `NSAppleMusicUsageDescription` |
+| [Speech recognition](ios-system-permissions#speech) | `.speech` | `NSSpeechRecognitionUsageDescription`, and `NSMicrophoneUsageDescription` for live audio |
+| [Contacts](ios-system-permissions#contacts) | `.contacts` | `NSContactsUsageDescription` |
+| [Calendar](ios-system-permissions#calendar) | `.calendar` | `NSCalendarsFullAccessUsageDescription` or `NSCalendarsWriteOnlyAccessUsageDescription`, and `NSCalendarsUsageDescription` before iOS 17 |
+| [Reminders](ios-system-permissions#reminders) | `.reminders` | `NSRemindersFullAccessUsageDescription`, and `NSRemindersUsageDescription` before iOS 17 |
+| [Health data](ios-system-permissions#health) | `.health` | `NSHealthShareUsageDescription` to read and `NSHealthUpdateUsageDescription` to write, and the HealthKit capability |
+| [Motion & Fitness](ios-system-permissions#motion) | `.motion` | `NSMotionUsageDescription` |
+| [Bluetooth](ios-system-permissions#bluetooth) | `.bluetooth` | `NSBluetoothAlwaysUsageDescription` |
+| [Local network](ios-system-permissions#local_network) | `.localNetwork` | `NSLocalNetworkUsageDescription`, and `NSBonjourServices` for Bonjour |
+| [HomeKit](ios-system-permissions#homekit) | `.homekit` | `NSHomeKitUsageDescription`, and the HomeKit capability |
+| [Focus status](ios-system-permissions#focus_status) | `.focusStatus` | `NSFocusStatusUsageDescription`, and the Communication Notifications capability to read the status |
+| [Siri](ios-system-permissions#siri) | `.siri` | `NSSiriUsageDescription`, and the Siri capability |
+
+For example, an app that requests camera access with the code in [Camera](#camera) declares this key:
+
+```xml title="Info.plist"
+<key>NSCameraUsageDescription</key>
+<string>Scan documents with the camera.</string>
+```
+
+[System permissions](ios-system-permissions) describes what users see for each permission, and which iOS versions and capabilities the permission needs. For each authorization status, the article lists the result to pass.
+
+## Test the permission request
+
+iOS shows most permission dialogs only once per app install. To see the dialog again while you test the flow, delete the app and install it again, or open **Settings > General > Transfer or Reset iPhone > Reset > Reset Location & Privacy**, which resets every app. Deleting the app doesn't reset every permission: for example, iOS can keep Bluetooth access after a reinstall. To see the first alert of every permission, install a build with a new bundle ID. Then open the flow and reach the **Request permission** action. If the screen stays and no dialog appears, the flow received no result: make sure that you pass your handler to the `AdaptyUI.getFlowConfiguration` method, in its `systemRequestsHandler` parameter.
+
+## Track permission requests in analytics
+
+To see how many users grant or decline each permission that a flow requests, read the permission events in the `didReceiveAnalyticEvent` callback. For where to implement it, see [Handle flow & paywall events](ios-handling-events).
+
+<FlowPermissionEvents />
 
 ## Code for each permission
 
-Each function in this section requests one permission and returns the answer for the flow, with the statuses from [System permissions](flow-permissions). Each code block compiles on its own together with the handler in [Implement the handler](#implement-the-handler). Where iOS can leave a request without an answer, the function stops waiting after 50 seconds or less: after 60 seconds without an answer, the flow reports `flow_permission_unanswered`.
+Each function in this section requests one permission and returns the result for the flow. It compiles with the handler from [Implement the handler](#implement-the-handler) after you add its case to the `switch` statement. Where iOS can leave a request without a callback, the function stops waiting after 50 seconds or less: after 60 seconds without a result, the flow reports the `flow_permission_unanswered` event.
+
+This section has functions for push notifications, camera access, and location while using the app. To request another permission, write its function in the pattern that fits its iOS API. For a direct request, follow the [camera function](#camera). For a request with a delegate callback, follow the [location function](#location_when_use). For what to request and which result to pass for each authorization status, see [System permissions](ios-system-permissions).
 
 ### Push notifications \{#push\}
 
-No `Info.plist` key. See [System permissions](flow-permissions#push).
+Push notifications need no key in `Info.plist`. See [System permissions](ios-system-permissions#push).
 
 ```swift showLineNumbers title="Swift"
 import AdaptyUI
+import AdaptyUIBuilder
 import UserNotifications
 
 extension FlowPermissionHandler {
@@ -120,100 +185,51 @@ extension FlowPermissionHandler {
             let granted = try await center.requestAuthorization(options: [.alert, .badge, .sound])
             return granted ? .granted("granted") : .denied("denied")
         } catch {
-            // Not an answer from the user: the flow runs After response.
+            // Not a choice of the user: the flow runs After response.
             return .denied(nil)
         }
     }
 }
 ```
 
-### App tracking (ATT) \{#tracking\}
+- With a granted notification permission, your app can show notifications. To receive push notifications, register the device with APNs and send the device token to your push provider, as your app does outside flows.
 
-Declare `NSUserTrackingUsageDescription`. See [System permissions](flow-permissions#tracking).
+### Camera \{#camera\}
+
+Add the `NSCameraUsageDescription` key to `Info.plist`. See [System permissions](ios-system-permissions#camera).
 
 ```swift showLineNumbers title="Swift"
 import AdaptyUI
-import AppTrackingTransparency
-import UIKit
+import AdaptyUIBuilder
+import AVFoundation
 
 extension FlowPermissionHandler {
-    func requestTracking() async -> AdaptyPermissionResult {
-        switch ATTrackingManager.trackingAuthorizationStatus {
+    func requestCamera() async -> AdaptyPermissionResult {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
             return .granted("granted")
         case .denied:
-            // The user declined earlier, or turned off Allow Apps to Request to Track.
+            // The user declined earlier: iOS shows no alert.
             return .denied("permanently_denied")
         case .restricted:
             return .denied("restricted")
         case .notDetermined:
-            break
+            let granted = await AVCaptureDevice.requestAccess(for: .video)
+            return granted ? .granted("granted") : .denied("denied")
         @unknown default:
             return .denied(nil)
         }
-        // iOS shows the alert only while the app is active.
-        guard await TrackingActiveWait().run() else {
-            return .denied(nil)
-        }
-        switch await ATTrackingManager.requestTrackingAuthorization() {
-        case .authorized:
-            return .granted("granted")
-        case .denied:
-            return .denied("denied")
-        case .restricted:
-            return .denied("restricted")
-        case .notDetermined:
-            // iOS closed the prompt without a decision, or didn't show it.
-            return .denied(nil)
-        @unknown default:
-            return .denied(nil)
-        }
-    }
-}
-
-@MainActor
-private final class TrackingActiveWait {
-    private var continuation: CheckedContinuation<Bool, Never>?
-    private var observer: NSObjectProtocol?
-
-    /// Returns `false` if the app isn't active after 50 seconds.
-    func run() async -> Bool {
-        // An app that is already active never gets didBecomeActiveNotification.
-        guard UIApplication.shared.applicationState != .active else { return true }
-        let active = await withCheckedContinuation { continuation in
-            self.continuation = continuation
-            observer = NotificationCenter.default.addObserver(
-                forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main
-            ) { [weak self] _ in
-                MainActor.assumeIsolated { self?.finish(true) }
-            }
-            Task { @MainActor [weak self] in
-                try? await Task.sleep(nanoseconds: 50 * NSEC_PER_SEC)
-                self?.finish(false)
-            }
-        }
-        if let observer {
-            NotificationCenter.default.removeObserver(observer)
-        }
-        return active
-    }
-
-    private func finish(_ active: Bool) {
-        continuation?.resume(returning: active)
-        continuation = nil
     }
 }
 ```
 
-- In the EU, iOS lets the app ask again a year after the user's answer. To ask again, store the date of the answer, and after a year, request again instead of answering `permanently_denied`.
-- After the user answers, send the ATT status to Adapty. See [Deal with ATT](ios-deal-with-att).
-
 ### Location while using the app \{#location_when_use\}
 
-Declare `NSLocationWhenInUseUsageDescription`. See [System permissions](flow-permissions#location_when_use).
+Add the `NSLocationWhenInUseUsageDescription` key to `Info.plist`. See [System permissions](ios-system-permissions#location_when_use).
 
 ```swift showLineNumbers title="Swift"
 import AdaptyUI
+import AdaptyUIBuilder
 import CoreLocation
 
 extension FlowPermissionHandler {
@@ -242,7 +258,7 @@ extension FlowPermissionHandler {
         case .restricted:
             return .denied("restricted")
         default:
-            // No answer before the timeout, for example without the purpose string.
+            // No decision before the timeout, for example without the purpose string.
             return .denied(nil)
         }
     }
@@ -277,1047 +293,3 @@ private final class LocationWhenInUseRequest: NSObject, @preconcurrency CLLocati
     }
 }
 ```
-
-### Location always \{#location_always\}
-
-Declare `NSLocationWhenInUseUsageDescription` and `NSLocationAlwaysAndWhenInUseUsageDescription`. See [System permissions](flow-permissions#location_always).
-
-```swift showLineNumbers title="Swift"
-import AdaptyUI
-import CoreLocation
-import UIKit
-
-extension FlowPermissionHandler {
-    func requestLocationAlways() async -> AdaptyPermissionResult {
-        // iOS accepts one Always request per install and has no API that tells
-        // whether the app asked before, so the app keeps its own flag.
-        let requestedKey = "flowLocationAlwaysRequested"
-        let request = LocationAlwaysRequest()
-        let before = request.manager.authorizationStatus
-        switch before {
-        case .authorizedAlways:
-            return .granted("granted")
-        case .denied:
-            return .denied("permanently_denied")
-        case .restricted:
-            return .denied("restricted")
-        case .authorizedWhenInUse where UserDefaults.standard.bool(forKey: requestedKey):
-            // iOS ignores a second Always request and shows no alert.
-            return .denied("permanently_denied")
-        case .notDetermined, .authorizedWhenInUse:
-            break
-        @unknown default:
-            return .denied(nil)
-        }
-        UserDefaults.standard.set(true, forKey: requestedKey)
-        let alertAppeared = await request.run()
-        let status = request.manager.authorizationStatus
-        if before == .notDetermined {
-            switch status {
-            case .authorizedWhenInUse, .authorizedAlways:
-                // Provisional Always access: iOS asks Change to Always Allow later.
-                return .granted("provisional")
-            case .denied:
-                return .denied("denied")
-            case .restricted:
-                return .denied("restricted")
-            default:
-                return .denied(nil)
-            }
-        }
-        if status == .authorizedAlways {
-            return .granted("granted")
-        }
-        // No alert: after Allow Once, iOS ignores the request.
-        return .denied(alertAppeared ? "denied" : "permanently_denied")
-    }
-}
-
-@MainActor
-private final class LocationAlwaysRequest: NSObject, @preconcurrency CLLocationManagerDelegate {
-    let manager = CLLocationManager()
-    private var continuation: CheckedContinuation<Void, Never>?
-    private var startStatus = CLAuthorizationStatus.notDetermined
-    private var alertAppeared = false
-
-    /// Requests Always access and returns whether the location alert appeared.
-    func run() async -> Bool {
-        startStatus = manager.authorizationStatus
-        let center = NotificationCenter.default
-        let observers = [
-            // The system alert makes the app inactive.
-            center.addObserver(
-                forName: UIApplication.willResignActiveNotification, object: nil, queue: .main
-            ) { [weak self] _ in
-                MainActor.assumeIsolated { self?.alertAppeared = true }
-            },
-            // Keep Only While Using doesn't call the delegate: answer after the alert closes.
-            // From .notDetermined, wait for a status change or the timeout instead.
-            center.addObserver(
-                forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main
-            ) { [weak self] _ in
-                MainActor.assumeIsolated {
-                    guard let self, self.manager.authorizationStatus != .notDetermined else { return }
-                    self.finish(after: 0.5)
-                }
-            },
-        ]
-        await withCheckedContinuation { continuation in
-            self.continuation = continuation
-            manager.delegate = self
-            manager.requestAlwaysAuthorization()
-            finish(after: 2, onlyWithoutAlert: true)
-            finish(after: 50)
-        }
-        observers.forEach { center.removeObserver($0) }
-        return alertAppeared
-    }
-
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        // iOS also calls this method when it creates the manager, with the current status.
-        guard manager.authorizationStatus != startStatus else { return }
-        finish(after: 0)
-    }
-
-    private func finish(after seconds: Double, onlyWithoutAlert: Bool = false) {
-        Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
-            guard let self, !(onlyWithoutAlert && alertAppeared) else { return }
-            continuation?.resume()
-            continuation = nil
-        }
-    }
-}
-```
-
-- iOS may show no alert, for example after **Allow Once**. The code waits 2 seconds for the alert. If no alert appears, it answers from the status at once.
-
-### Precise location \{#location_full_accuracy\}
-
-Declare `NSLocationWhenInUseUsageDescription`, and a purpose key in `NSLocationTemporaryUsageDescriptionDictionary`, such as `StoreFinder`. See [System permissions](flow-permissions#location_full_accuracy).
-
-```swift showLineNumbers title="Swift"
-import AdaptyUI
-import CoreLocation
-import UIKit
-
-extension FlowPermissionHandler {
-    func requestLocationFullAccuracy() async -> AdaptyPermissionResult {
-        let request = LocationAccuracyRequest()
-        switch request.manager.authorizationStatus {
-        case .authorizedWhenInUse, .authorizedAlways:
-            break
-        case .denied:
-            return .denied("permanently_denied")
-        case .restricted:
-            return .denied("restricted")
-        case .notDetermined:
-            // The alert for location while using the app has a Precise switch.
-            switch await request.requestWhenInUse() {
-            case .authorizedWhenInUse, .authorizedAlways:
-                break
-            case .denied:
-                return .denied("denied")
-            case .restricted:
-                return .denied("restricted")
-            default:
-                return .denied(nil)
-            }
-        @unknown default:
-            return .denied(nil)
-        }
-        if request.manager.accuracyAuthorization == .fullAccuracy {
-            return .granted("granted")
-        }
-        // "StoreFinder" is a key of NSLocationTemporaryUsageDescriptionDictionary.
-        return await request.requestFullAccuracy(purposeKey: "StoreFinder")
-    }
-}
-
-@MainActor
-private final class LocationAccuracyRequest: NSObject, @preconcurrency CLLocationManagerDelegate {
-    let manager = CLLocationManager()
-    private var continuation: CheckedContinuation<CLAuthorizationStatus, Never>?
-    private var activeContinuation: CheckedContinuation<Bool, Never>?
-
-    func requestWhenInUse() async -> CLAuthorizationStatus {
-        await withCheckedContinuation { continuation in
-            self.continuation = continuation
-            manager.delegate = self
-            manager.requestWhenInUseAuthorization()
-            Task { @MainActor [weak self] in
-                try? await Task.sleep(nanoseconds: 50 * NSEC_PER_SEC)
-                self?.finish()
-            }
-        }
-    }
-
-    func requestFullAccuracy(purposeKey: String) async -> AdaptyPermissionResult {
-        // iOS shows the alert only while the app is active.
-        guard await waitUntilActive() else {
-            return .denied(nil)
-        }
-        do {
-            // The user's answer completes the request without an error.
-            try await manager.requestTemporaryFullAccuracyAuthorization(withPurposeKey: purposeKey)
-            return manager.accuracyAuthorization == .fullAccuracy ? .granted("granted") : .denied("denied")
-        } catch {
-            // iOS didn't show the alert: the purpose key is missing from
-            // NSLocationTemporaryUsageDescriptionDictionary, or the app isn't active.
-            return .denied(nil)
-        }
-    }
-
-    /// Returns `false` if the app isn't active after 50 seconds.
-    private func waitUntilActive() async -> Bool {
-        // An app that is already active never gets didBecomeActiveNotification.
-        guard UIApplication.shared.applicationState != .active else { return true }
-        let center = NotificationCenter.default
-        var observer: NSObjectProtocol?
-        let active = await withCheckedContinuation { continuation in
-            activeContinuation = continuation
-            observer = center.addObserver(
-                forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main
-            ) { [weak self] _ in
-                MainActor.assumeIsolated { self?.finishActiveWait(true) }
-            }
-            Task { @MainActor [weak self] in
-                try? await Task.sleep(nanoseconds: 50 * NSEC_PER_SEC)
-                self?.finishActiveWait(false)
-            }
-        }
-        if let observer {
-            center.removeObserver(observer)
-        }
-        return active
-    }
-
-    private func finishActiveWait(_ active: Bool) {
-        activeContinuation?.resume(returning: active)
-        activeContinuation = nil
-    }
-
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        // iOS also calls this method when it creates the manager, with .notDetermined.
-        guard manager.authorizationStatus != .notDetermined else { return }
-        finish()
-    }
-
-    private func finish() {
-        continuation?.resume(returning: manager.authorizationStatus)
-        continuation = nil
-    }
-}
-```
-
-- The flow sends no purpose key, so replace `StoreFinder` with a key of your app.
-
-### Camera \{#camera\}
-
-Declare `NSCameraUsageDescription`. See [System permissions](flow-permissions#camera).
-
-```swift showLineNumbers title="Swift"
-import AdaptyUI
-import AVFoundation
-
-extension FlowPermissionHandler {
-    func requestCamera() async -> AdaptyPermissionResult {
-        switch AVCaptureDevice.authorizationStatus(for: .video) {
-        case .authorized:
-            return .granted("granted")
-        case .denied:
-            // The user declined earlier: iOS shows no alert.
-            return .denied("permanently_denied")
-        case .restricted:
-            return .denied("restricted")
-        case .notDetermined:
-            let granted = await AVCaptureDevice.requestAccess(for: .video)
-            return granted ? .granted("granted") : .denied("denied")
-        @unknown default:
-            return .denied(nil)
-        }
-    }
-}
-```
-
-### Microphone \{#microphone\}
-
-Declare `NSMicrophoneUsageDescription`. See [System permissions](flow-permissions#microphone).
-
-```swift showLineNumbers title="Swift"
-import AdaptyUI
-import AVFoundation
-
-extension FlowPermissionHandler {
-    func requestMicrophone() async -> AdaptyPermissionResult {
-        switch AVCaptureDevice.authorizationStatus(for: .audio) {
-        case .authorized:
-            return .granted("granted")
-        case .denied:
-            // The user declined earlier: iOS shows no alert.
-            return .denied("permanently_denied")
-        case .restricted:
-            return .denied("restricted")
-        case .notDetermined:
-            let granted = await AVCaptureDevice.requestAccess(for: .audio)
-            return granted ? .granted("granted") : .denied("denied")
-        @unknown default:
-            return .denied(nil)
-        }
-    }
-}
-```
-
-### Photos \{#photos\}
-
-Declare `NSPhotoLibraryUsageDescription`, or `NSPhotoLibraryAddUsageDescription` if the app only adds photos. See [System permissions](flow-permissions#photos).
-
-```swift showLineNumbers title="Swift"
-import AdaptyUI
-import Photos
-
-extension FlowPermissionHandler {
-    func requestPhotos() async -> AdaptyPermissionResult {
-        // .addOnly if the app only adds photos: add-only access has no limited state.
-        let accessLevel = PHAccessLevel.readWrite
-        let before = PHPhotoLibrary.authorizationStatus(for: accessLevel)
-        let status = before == .notDetermined
-            ? await PHPhotoLibrary.requestAuthorization(for: accessLevel)
-            : before
-        switch status {
-        case .authorized:
-            return .granted("granted")
-        case .limited:
-            return .granted("limited")
-        case .denied:
-            // .denied before the request: iOS showed no alert.
-            return .denied(before == .notDetermined ? "denied" : "permanently_denied")
-        case .restricted:
-            return .denied("restricted")
-        case .notDetermined:
-            return .denied(nil)
-        @unknown default:
-            return .denied(nil)
-        }
-    }
-}
-```
-
-- If the app only adds photos, set `accessLevel` to `.addOnly`. A `.readWrite` request without `NSPhotoLibraryUsageDescription` crashes the app.
-
-### Media library \{#media_library\}
-
-Declare `NSAppleMusicUsageDescription`. See [System permissions](flow-permissions#media_library).
-
-```swift showLineNumbers title="Swift"
-import AdaptyUI
-import MediaPlayer
-
-extension FlowPermissionHandler {
-    func requestMediaLibrary() async -> AdaptyPermissionResult {
-        let before = MPMediaLibrary.authorizationStatus()
-        let status = before == .notDetermined
-            ? await MPMediaLibrary.requestAuthorization()
-            : before
-        switch status {
-        case .authorized:
-            return .granted("granted")
-        case .denied:
-            // .denied before the request: iOS showed no alert.
-            return .denied(before == .notDetermined ? "denied" : "permanently_denied")
-        case .restricted:
-            return .denied("restricted")
-        case .notDetermined:
-            return .denied(nil)
-        @unknown default:
-            return .denied(nil)
-        }
-    }
-}
-```
-
-### Apple Music \{#music\}
-
-Declare `NSAppleMusicUsageDescription`. See [System permissions](flow-permissions#music).
-
-```swift showLineNumbers title="Swift"
-import AdaptyUI
-import MusicKit
-
-extension FlowPermissionHandler {
-    func requestMusic() async -> AdaptyPermissionResult {
-        let before = MusicAuthorization.currentStatus
-        let status = before == .notDetermined
-            ? await MusicAuthorization.request()
-            : before
-        switch status {
-        case .authorized:
-            return .granted("granted")
-        case .denied:
-            // .denied before the request: iOS showed no alert.
-            return .denied(before == .notDetermined ? "denied" : "permanently_denied")
-        case .restricted:
-            return .denied("restricted")
-        case .notDetermined:
-            return .denied(nil)
-        @unknown default:
-            return .denied(nil)
-        }
-    }
-}
-```
-
-- The code uses MusicKit. Don't use `SKCloudServiceController.requestAuthorization(_:)`: it's deprecated in iOS 18.
-
-### Speech recognition \{#speech\}
-
-Declare `NSSpeechRecognitionUsageDescription`. See [System permissions](flow-permissions#speech).
-
-```swift showLineNumbers title="Swift"
-import AdaptyUI
-import Speech
-
-extension FlowPermissionHandler {
-    func requestSpeech() async -> AdaptyPermissionResult {
-        let before = SFSpeechRecognizer.authorizationStatus()
-        let status = before == .notDetermined
-            ? await withCheckedContinuation { continuation in
-                // iOS calls the completion handler on a background queue: keep it off the main actor.
-                SFSpeechRecognizer.requestAuthorization { @Sendable status in
-                    continuation.resume(returning: status)
-                }
-            }
-            : before
-        switch status {
-        case .authorized:
-            return .granted("granted")
-        case .denied:
-            // .denied before the request: iOS showed no alert.
-            return .denied(before == .notDetermined ? "denied" : "permanently_denied")
-        case .restricted:
-            return .denied("restricted")
-        case .notDetermined:
-            return .denied(nil)
-        @unknown default:
-            return .denied(nil)
-        }
-    }
-}
-```
-
-- To recognize live audio, the app also needs the **Microphone** permission. Request it on another screen, or in this function before it answers.
-
-### Contacts \{#contacts\}
-
-Declare `NSContactsUsageDescription`. See [System permissions](flow-permissions#contacts).
-
-```swift showLineNumbers title="Swift"
-import AdaptyUI
-import Contacts
-
-extension FlowPermissionHandler {
-    func requestContacts() async -> AdaptyPermissionResult {
-        switch CNContactStore.authorizationStatus(for: .contacts) {
-        case .authorized:
-            return .granted("granted")
-        case .limited:
-            return .granted("limited")
-        case .denied:
-            // The user declined earlier: iOS shows no alert.
-            return .denied("permanently_denied")
-        case .restricted:
-            return .denied("restricted")
-        case .notDetermined:
-            break
-        @unknown default:
-            return .denied(nil)
-        }
-        // The request reports only whether the user gave access, and can throw:
-        // read the status after it to tell limited access from full access.
-        _ = try? await CNContactStore().requestAccess(for: .contacts)
-        switch CNContactStore.authorizationStatus(for: .contacts) {
-        case .authorized:
-            return .granted("granted")
-        case .limited:
-            return .granted("limited")
-        case .denied:
-            return .denied("denied")
-        case .restricted:
-            return .denied("restricted")
-        default:
-            return .denied(nil)
-        }
-    }
-}
-```
-
-### Calendar \{#calendar\}
-
-Declare `NSCalendarsFullAccessUsageDescription`, or `NSCalendarsWriteOnlyAccessUsageDescription` if the app only adds events. For iOS 16 and earlier, also declare `NSCalendarsUsageDescription`. See [System permissions](flow-permissions#calendar).
-
-```swift showLineNumbers title="Swift"
-import AdaptyUI
-import EventKit
-
-extension FlowPermissionHandler {
-    /// Pass `writeOnly: true` if the app only adds events. iOS 16 and earlier have no write-only access.
-    func requestCalendar(writeOnly: Bool = false) async -> AdaptyPermissionResult {
-        switch EKEventStore.authorizationStatus(for: .event) {
-        case .fullAccess: // also .authorized on iOS 16 and earlier
-            return .granted("granted")
-        case .writeOnly where writeOnly:
-            return .granted("granted")
-        case .denied:
-            // The user declined earlier: iOS shows no alert.
-            return .denied("permanently_denied")
-        case .restricted:
-            return .denied("restricted")
-        case .notDetermined, .writeOnly:
-            break
-        @unknown default:
-            return .denied(nil)
-        }
-        let store = EKEventStore()
-        do {
-            if #available(iOS 17.0, *) {
-                _ = writeOnly
-                    ? try await store.requestWriteOnlyAccessToEvents()
-                    : try await store.requestFullAccessToEvents()
-            } else {
-                _ = try await store.requestAccess(to: .event)
-            }
-        } catch {
-            return .denied(nil)
-        }
-        switch EKEventStore.authorizationStatus(for: .event) {
-        case .fullAccess:
-            return .granted("granted")
-        case .writeOnly:
-            // Write-only access is limited only for an app that asked for full access.
-            return .granted(writeOnly ? "granted" : "limited")
-        case .denied:
-            return .denied("denied")
-        case .restricted:
-            return .denied("restricted")
-        default:
-            return .denied(nil)
-        }
-    }
-}
-```
-
-- If the app only adds events, call `requestCalendar(writeOnly: true)` in the handler. Write-only access is then `granted`. For an app that asks for full access, write-only access is `limited`.
-
-### Reminders \{#reminders\}
-
-Declare `NSRemindersFullAccessUsageDescription`. For iOS 16 and earlier, also declare `NSRemindersUsageDescription`. See [System permissions](flow-permissions#reminders).
-
-```swift showLineNumbers title="Swift"
-import AdaptyUI
-import EventKit
-
-extension FlowPermissionHandler {
-    func requestReminders() async -> AdaptyPermissionResult {
-        switch EKEventStore.authorizationStatus(for: .reminder) {
-        case .fullAccess: // also .authorized on iOS 16 and earlier
-            return .granted("granted")
-        case .denied:
-            // The user declined earlier: iOS shows no alert.
-            return .denied("permanently_denied")
-        case .restricted:
-            return .denied("restricted")
-        case .notDetermined:
-            break
-        default:
-            return .denied(nil)
-        }
-        let store = EKEventStore()
-        do {
-            let granted: Bool
-            if #available(iOS 17.0, *) {
-                granted = try await store.requestFullAccessToReminders()
-            } else {
-                granted = try await store.requestAccess(to: .reminder)
-            }
-            return granted ? .granted("granted") : .denied("denied")
-        } catch {
-            return .denied(nil)
-        }
-    }
-}
-```
-
-### Health data \{#health\}
-
-Add the HealthKit capability. Declare `NSHealthShareUsageDescription` to read health data, and `NSHealthUpdateUsageDescription` to write it. See [System permissions](flow-permissions#health).
-
-```swift showLineNumbers title="Swift"
-import AdaptyUI
-import HealthKit
-
-extension FlowPermissionHandler {
-    func requestHealth() async -> AdaptyPermissionResult {
-        guard HKHealthStore.isHealthDataAvailable() else {
-            return .denied("unsupported")
-        }
-        // The data types that your app writes and reads: the flow sends none.
-        let share: Set<HKSampleType> = [HKQuantityType(.stepCount)]
-        let read: Set<HKObjectType> = [HKQuantityType(.stepCount)]
-        let store = HKHealthStore()
-        // .unnecessary: the user answered for these types before, so iOS shows no sheet.
-        let requestStatus = try? await store.statusForAuthorizationRequest(toShare: share, read: read)
-        do {
-            try await store.requestAuthorization(toShare: share, read: read)
-        } catch let error as HKError where error.code == .errorHealthDataRestricted {
-            return .denied("restricted")
-        } catch {
-            return .denied(nil)
-        }
-        // iOS doesn't tell whether the user allowed reading: the flow runs After response.
-        guard !share.isEmpty else {
-            return .denied(nil)
-        }
-        let allowed = share.filter { store.authorizationStatus(for: $0) == .sharingAuthorized }
-        if allowed.count == share.count {
-            return .granted("granted")
-        }
-        if !allowed.isEmpty {
-            return .granted("limited")
-        }
-        return .denied(requestStatus == .unnecessary ? "permanently_denied" : "denied")
-    }
-}
-```
-
-- Replace the step count with the data types that your app writes and reads.
-- iOS doesn't tell the app whether the user allowed reading. If the app requests only read access, the answer has no status, and the flow runs **After response**.
-
-### Motion & Fitness \{#motion\}
-
-Declare `NSMotionUsageDescription`. See [System permissions](flow-permissions#motion).
-
-```swift showLineNumbers title="Swift"
-import AdaptyUI
-import CoreMotion
-
-extension FlowPermissionHandler {
-    func requestMotion() async -> AdaptyPermissionResult {
-        guard CMMotionActivityManager.isActivityAvailable() else {
-            return .denied("unsupported")
-        }
-        switch CMMotionActivityManager.authorizationStatus() {
-        case .authorized:
-            return .granted("granted")
-        case .denied:
-            // The user declined earlier: iOS shows no alert.
-            return .denied("permanently_denied")
-        case .restricted:
-            return .denied("restricted")
-        case .notDetermined:
-            break
-        @unknown default:
-            return .denied(nil)
-        }
-        await MotionRequest().run()
-        switch CMMotionActivityManager.authorizationStatus() {
-        case .authorized:
-            return .granted("granted")
-        case .denied:
-            return .denied("denied")
-        case .restricted:
-            return .denied("restricted")
-        default:
-            // Still .notDetermined when the timeout ends.
-            return .denied(nil)
-        }
-    }
-}
-
-@MainActor
-private final class MotionRequest {
-    private let manager = CMMotionActivityManager()
-    private var continuation: CheckedContinuation<Void, Never>?
-
-    func run() async {
-        await withCheckedContinuation { continuation in
-            self.continuation = continuation
-            // iOS has no request method: the first query shows the alert,
-            // and the query calls its completion handler after the user answers.
-            let now = Date()
-            manager.queryActivityStarting(
-                from: now.addingTimeInterval(-60), to: now, to: .main
-            ) { @Sendable [weak self] _, _ in
-                Task { @MainActor in self?.finish() }
-            }
-            Task { @MainActor [weak self] in
-                try? await Task.sleep(nanoseconds: 50 * NSEC_PER_SEC)
-                self?.finish()
-            }
-        }
-    }
-
-    private func finish() {
-        continuation?.resume()
-        continuation = nil
-    }
-}
-```
-
-### Bluetooth \{#bluetooth\}
-
-Declare `NSBluetoothAlwaysUsageDescription`. See [System permissions](flow-permissions#bluetooth).
-
-```swift showLineNumbers title="Swift"
-import AdaptyUI
-import CoreBluetooth
-
-extension FlowPermissionHandler {
-    func requestBluetooth() async -> AdaptyPermissionResult {
-        switch CBManager.authorization {
-        case .allowedAlways:
-            return .granted("granted")
-        case .denied:
-            // The user declined earlier: iOS shows no alert.
-            return .denied("permanently_denied")
-        case .restricted:
-            return .denied("restricted")
-        case .notDetermined:
-            break
-        @unknown default:
-            return .denied(nil)
-        }
-        await BluetoothRequest().run()
-        // Answer from the permission only: a Bluetooth adapter that is off isn't a refusal.
-        switch CBManager.authorization {
-        case .allowedAlways:
-            return .granted("granted")
-        case .denied:
-            return .denied("denied")
-        case .restricted:
-            return .denied("restricted")
-        default:
-            // Still .notDetermined when the timeout ends.
-            return .denied(nil)
-        }
-    }
-}
-
-@MainActor
-private final class BluetoothRequest: NSObject, @preconcurrency CBCentralManagerDelegate {
-    private var manager: CBCentralManager?
-    private var continuation: CheckedContinuation<Void, Never>?
-
-    func run() async {
-        await withCheckedContinuation { continuation in
-            self.continuation = continuation
-            // iOS has no request method: creating the manager shows the alert.
-            manager = CBCentralManager(
-                delegate: self,
-                queue: .main,
-                options: [CBCentralManagerOptionShowPowerAlertKey: false]
-            )
-            Task { @MainActor [weak self] in
-                try? await Task.sleep(nanoseconds: 50 * NSEC_PER_SEC)
-                self?.finish()
-            }
-        }
-    }
-
-    func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        guard CBManager.authorization != .notDetermined else { return }
-        finish()
-    }
-
-    private func finish() {
-        continuation?.resume()
-        continuation = nil
-    }
-}
-```
-
-### Local network \{#local_network\}
-
-Declare `NSLocalNetworkUsageDescription`, and add the service type to `NSBonjourServices`, such as `_myservice._tcp`. See [System permissions](flow-permissions#local_network).
-
-```swift showLineNumbers title="Swift"
-import AdaptyUI
-import Foundation
-import Network
-
-extension FlowPermissionHandler {
-    func requestLocalNetwork() async -> AdaptyPermissionResult {
-        // iOS has no request method and no status. A Bonjour browse shows the alert.
-        // Use a service type that NSBonjourServices lists.
-        await LocalNetworkRequest().run(serviceType: "_myservice._tcp")
-    }
-}
-
-/// Advertises a Bonjour service of the app's type and browses for it.
-/// Finding the service means that the app has local network access.
-@MainActor
-private final class LocalNetworkRequest {
-    private var listener: NWListener?
-    private var browser: NWBrowser?
-    private var continuation: CheckedContinuation<AdaptyPermissionResult, Never>?
-
-    func run(serviceType: String) async -> AdaptyPermissionResult {
-        await withCheckedContinuation { continuation in
-            self.continuation = continuation
-            guard let listener = try? NWListener(using: .tcp) else {
-                finish(.denied(nil))
-                return
-            }
-            listener.service = NWListener.Service(name: UUID().uuidString, type: serviceType)
-            listener.newConnectionHandler = { $0.cancel() }
-            listener.start(queue: .main)
-            self.listener = listener
-
-            let browser = NWBrowser(for: .bonjour(type: serviceType, domain: nil), using: .tcp)
-            browser.browseResultsChangedHandler = { [weak self] results, _ in
-                MainActor.assumeIsolated {
-                    if !results.isEmpty { self?.finish(.granted("granted")) }
-                }
-            }
-            browser.start(queue: .main)
-            self.browser = browser
-
-            // iOS can deny the browse before the user answers, so a failure isn't a refusal.
-            // Without a result, answer without a status: the flow runs After response.
-            Task { @MainActor [weak self] in
-                try? await Task.sleep(nanoseconds: 20 * NSEC_PER_SEC)
-                self?.finish(.denied(nil))
-            }
-        }
-    }
-
-    private func finish(_ result: AdaptyPermissionResult) {
-        listener?.cancel()
-        browser?.cancel()
-        continuation?.resume(returning: result)
-        continuation = nil
-    }
-}
-```
-
-- iOS reports no refusal: the code detects one only when its 20-second timeout expires. Until then, the user waits on the screen. The code then answers without a status, and the flow runs **After response**, so put the next step of the flow there. The timeout starts before the alert appears, so a user who allows access after 20 seconds also gets **After response**.
-- The iOS Simulator doesn't apply local network privacy. Test on a device.
-
-### HomeKit \{#homekit\}
-
-Add the HomeKit capability, and declare `NSHomeKitUsageDescription`. See [System permissions](flow-permissions#homekit).
-
-```swift showLineNumbers title="Swift"
-import AdaptyUI
-import HomeKit
-
-extension FlowPermissionHandler {
-    func requestHomeKit() async -> AdaptyPermissionResult {
-        await HomeKitRequest.shared.run()
-    }
-}
-
-/// Keeps one HMHomeManager for the life of the app.
-@MainActor
-private final class HomeKitRequest: NSObject, @preconcurrency HMHomeManagerDelegate {
-    static let shared = HomeKitRequest()
-    private let answeredKey = "flowHomeKitAnswered"
-    private var manager: HMHomeManager?
-    private var continuation: CheckedContinuation<Void, Never>?
-
-    func run() async -> AdaptyPermissionResult {
-        // The status is a set of flags. Don't map .restricted to "restricted":
-        // Apple defines it as no access to home data, not as a device policy.
-        if let status = manager?.authorizationStatus, status.contains(.determined) {
-            // Decided before this request: iOS shows no alert.
-            return status.contains(.authorized) ? .granted("granted") : .denied("permanently_denied")
-        }
-        // Whether the user answered the alert in an earlier launch.
-        let answeredBefore = UserDefaults.standard.bool(forKey: answeredKey)
-        await withCheckedContinuation { continuation in
-            self.continuation = continuation
-            if manager == nil {
-                // iOS has no request method: creating the manager shows the alert.
-                let manager = HMHomeManager()
-                manager.delegate = self
-                self.manager = manager
-            }
-            // In a later launch, the new manager already has the decided status,
-            // and after a refusal iOS calls no delegate method. So read the status
-            // every 0.25 seconds too, and stop waiting after 50 seconds.
-            Task { @MainActor [weak self] in
-                for _ in 0..<200 {
-                    guard let self, let manager = self.manager, self.continuation != nil else { return }
-                    self.finishIfDetermined(manager)
-                    try? await Task.sleep(nanoseconds: 250_000_000)
-                }
-                self?.finish()
-            }
-        }
-        guard let status = manager?.authorizationStatus, status.contains(.determined) else {
-            // Not decided when the timeout ends.
-            return .denied(nil)
-        }
-        UserDefaults.standard.set(true, forKey: answeredKey)
-        if status.contains(.authorized) {
-            return .granted("granted")
-        }
-        return .denied(answeredBefore ? "permanently_denied" : "denied")
-    }
-
-    // iOS calls this method when the user answers the alert.
-    func homeManager(_ manager: HMHomeManager, didUpdate status: HMHomeManagerAuthorizationStatus) {
-        finishIfDetermined(manager)
-    }
-
-    private func finishIfDetermined(_ manager: HMHomeManager) {
-        guard manager.authorizationStatus.contains(.determined) else { return }
-        finish()
-    }
-
-    private func finish() {
-        continuation?.resume()
-        continuation = nil
-    }
-}
-```
-
-- If your app already keeps an `HMHomeManager`, read the status from that manager instead of creating a second one.
-
-### Focus status \{#focus_status\}
-
-Declare `NSFocusStatusUsageDescription`. To read the Focus status after the user allows it, the app also needs notification authorization and the Communication Notifications capability. See [System permissions](flow-permissions#focus_status).
-
-```swift showLineNumbers title="Swift"
-import AdaptyUI
-import Intents
-
-extension FlowPermissionHandler {
-    func requestFocusStatus() async -> AdaptyPermissionResult {
-        let center = INFocusStatusCenter.default
-        let before = center.authorizationStatus
-        let status = before == .notDetermined
-            ? await center.requestAuthorization()
-            : before
-        switch status {
-        case .authorized:
-            return .granted("granted")
-        case .denied:
-            // .denied before the request: iOS showed no alert.
-            return .denied(before == .notDetermined ? "denied" : "permanently_denied")
-        case .restricted:
-            return .denied("restricted")
-        case .notDetermined:
-            // The user chose neither.
-            return .denied(nil)
-        @unknown default:
-            return .denied(nil)
-        }
-    }
-}
-```
-
-### Siri \{#siri\}
-
-Add the Siri capability, and declare `NSSiriUsageDescription`. See [System permissions](flow-permissions#siri).
-
-```swift showLineNumbers title="Swift"
-import AdaptyUI
-import Intents
-
-extension FlowPermissionHandler {
-    func requestSiri() async -> AdaptyPermissionResult {
-        let before = INPreferences.siriAuthorizationStatus()
-        let status = before == .notDetermined
-            ? await withCheckedContinuation { continuation in
-                // The completion handler can run on a background queue: keep it off the main actor.
-                INPreferences.requestSiriAuthorization { @Sendable status in
-                    continuation.resume(returning: status)
-                }
-            }
-            : before
-        switch status {
-        case .authorized:
-            return .granted("granted")
-        case .denied:
-            // .denied before the request: iOS showed no alert.
-            return .denied(before == .notDetermined ? "denied" : "permanently_denied")
-        case .restricted:
-            return .denied("restricted")
-        case .notDetermined:
-            return .denied(nil)
-        @unknown default:
-            return .denied(nil)
-        }
-    }
-}
-```
-
-- In an app without the Siri capability, every `INPreferences` call raises an exception, including `siriAuthorizationStatus()`, and the app crashes. Don't call this function there: answer `.denied("unsupported")` in the handler.
-
-## Declare the permissions
-
-iOS asks the user for a permission only when the app explains why it needs it. For each permission that your handler requests, add its purpose string to `Info.plist`:
-
-| Permission in the builder | `AdaptyPermission` | `Info.plist` key |
-|:--------------------------|:-------------------|:-----------------|
-| [Push notifications](flow-permissions#push) | `.push` | None. To receive push notifications, the Push Notifications capability |
-| [App tracking (ATT)](flow-permissions#tracking) | `.tracking` | `NSUserTrackingUsageDescription` |
-| [Location while using the app](flow-permissions#location_when_use) | `.locationWhenInUse` | `NSLocationWhenInUseUsageDescription` |
-| [Location always](flow-permissions#location_always) | `.locationAlways` | `NSLocationWhenInUseUsageDescription` and `NSLocationAlwaysAndWhenInUseUsageDescription` |
-| [Precise location](flow-permissions#location_full_accuracy) | `.locationFullAccuracy` | `NSLocationWhenInUseUsageDescription` and `NSLocationTemporaryUsageDescriptionDictionary` |
-| [Camera](flow-permissions#camera) | `.camera` | `NSCameraUsageDescription` |
-| [Microphone](flow-permissions#microphone) | `.microphone` | `NSMicrophoneUsageDescription` |
-| [Photos](flow-permissions#photos) | `.photos` | `NSPhotoLibraryUsageDescription`, or `NSPhotoLibraryAddUsageDescription` if the app only adds photos |
-| [Media library](flow-permissions#media_library) | `.mediaLibrary` | `NSAppleMusicUsageDescription` |
-| [Apple Music](flow-permissions#music) | `.music` | `NSAppleMusicUsageDescription` |
-| [Speech recognition](flow-permissions#speech) | `.speech` | `NSSpeechRecognitionUsageDescription`, and `NSMicrophoneUsageDescription` for live audio |
-| [Contacts](flow-permissions#contacts) | `.contacts` | `NSContactsUsageDescription` |
-| [Calendar](flow-permissions#calendar) | `.calendar` | `NSCalendarsFullAccessUsageDescription` or `NSCalendarsWriteOnlyAccessUsageDescription`, and `NSCalendarsUsageDescription` before iOS 17 |
-| [Reminders](flow-permissions#reminders) | `.reminders` | `NSRemindersFullAccessUsageDescription`, and `NSRemindersUsageDescription` before iOS 17 |
-| [Health data](flow-permissions#health) | `.health` | `NSHealthShareUsageDescription` to read and `NSHealthUpdateUsageDescription` to write, and the HealthKit capability |
-| [Motion & Fitness](flow-permissions#motion) | `.motion` | `NSMotionUsageDescription` |
-| [Bluetooth](flow-permissions#bluetooth) | `.bluetooth` | `NSBluetoothAlwaysUsageDescription` |
-| [Local network](flow-permissions#local_network) | `.localNetwork` | `NSLocalNetworkUsageDescription`, and `NSBonjourServices` for Bonjour |
-| [HomeKit](flow-permissions#homekit) | `.homekit` | `NSHomeKitUsageDescription`, and the HomeKit capability |
-| [Focus status](flow-permissions#focus_status) | `.focusStatus` | `NSFocusStatusUsageDescription`, and, to read the status, notification authorization and the Communication Notifications capability |
-| [Siri](flow-permissions#siri) | `.siri` | `NSSiriUsageDescription`, and the Siri capability |
-
-For example, an app that requests camera access with the code in [Camera](#camera) declares this key:
-
-```xml title="Info.plist"
-<key>NSCameraUsageDescription</key>
-<string>Scan documents with the camera.</string>
-```
-
-For each permission, [System permissions](flow-permissions) describes what users see and which iOS versions and capabilities it needs. It also lists the status to pass for each authorization status.
-
-## Pass the handler to the flow configuration
-
-:::warning
-**Without a handler, the flow stops at the permission request.** If you don't pass `systemRequestsHandler`, iOS shows no dialog. The flow stays on the screen that sent the request and doesn't run the outcome actions.
-:::
-
-To send the flow's permission requests to your handler, pass the handler in the `systemRequestsHandler` parameter of `AdaptyUI.getFlowConfiguration`. In SDK 4.5 and later, also [pass the user's languages](localizations-and-locale-codes#pass-the-users-languages-to-the-sdk) in `preferredLocales`. In earlier versions, leave `preferredLocales` out:
-
-```swift showLineNumbers title="Swift"
-do {
-    let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
-        forFlow: flow,
-        preferredLocales: Locale.preferredLanguages,
-        systemRequestsHandler: FlowPermissionHandler()
-    )
-    // present the flow with flowConfiguration
-} catch {
-    // handle the error
-}
-```
-
-The flow configuration keeps a strong reference to the handler, so you don't need to store one. Both SwiftUI and UIKit present the flow from this configuration, so the handler works with either. For details, see [Display flows & paywalls](ios-present-paywalls).
-
-## Test the permission request
-
-iOS shows most permission dialogs only once per app install. To see the dialog again while you test the flow, delete the app and install it again, or open **Settings > General > Transfer or Reset iPhone > Reset > Reset Location & Privacy**, which resets every app. Deleting the app doesn't reset every permission: for example, iOS can keep Bluetooth access after a reinstall. To see the first alert of every permission, install a build with a new bundle ID. Then open the flow and reach the **Request permission** action. If the screen stays and no dialog appears, the flow got no answer: make sure that you pass `systemRequestsHandler` to `AdaptyUI.getFlowConfiguration`.
-
-To see how users answer permission requests, read the flow's analytics events in the `didReceiveAnalyticEvent` callback. For where to implement it, see [Handle flow & paywall events](ios-handling-events).
-
-<FlowPermissionEvents />

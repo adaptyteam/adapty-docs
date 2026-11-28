@@ -1,0 +1,469 @@
+---
+title: "System permissions on iOS"
+description: "For each permission that a flow can request on iOS, look up what users see, what your app declares, and which result to pass for each authorization status."
+metadataTitle: "System permissions | iOS SDK | Adapty Docs"
+---
+
+When a flow runs the **Request permission** action, the Adapty SDK sends the permission request to your app. Your app shows the system dialog and passes the result to the flow. Follow this guide to write the iOS code that passes the result of each permission request to the flow. For each permission that the action can request, this page describes:
+
+- What users see.
+- What your app declares, and how it requests the permission.
+- The result and the string that your app passes for each authorization status.
+
+Before you follow this guide, set up a permission handler: the code in your app that receives each permission request and passes the result back. This page only covers what to request and which result to pass for each permission. [Handle permission requests in flows](ios-handle-permissions) shows how to set up the handler.
+
+:::tip
+To add the request to a flow, see [Request permissions in a flow](flow-permissions).
+:::
+
+## How to pass the result
+
+In the `handlePermission(_:withCustomArgs:)` method, return `.granted` or `.denied`, with the string from the table as the argument. For example, `.denied("permanently_denied")`. In a cross-platform app, pass the same values in the way that the permission guide for your SDK shows.
+
+In the tables on this page, the **What iOS reports** column shows the authorization status. The **Result to pass** column shows "Granted" or "Not granted", and the string that goes with the result. For example, "Granted, `limited`" means `.granted("limited")`, and "Not granted, no string" means `.denied(nil)`.
+
+<FlowPermissionAnswers />
+
+<FlowPermissionStrings />
+
+## Rules for every permission
+
+- **Link only what you request**: Link only the frameworks that request the permissions your app uses, such as Core Location for location access. For the other permissions, return `.denied("unsupported")` without a call to the OS. Apple notes that [libraries and SDKs can reference APIs that require a purpose string](https://developer.apple.com/documentation/uikit/requesting-access-to-protected-resources): the text in `Info.plist` that tells users why your app needs a permission.
+- **Pass the result at once when the user already granted or declined the permission**: For most permissions, iOS shows the alert once, and later requests return the stored decision without an alert. Some iOS requests never call back when the authorization status is already decided. When the authorization status isn't `.notDetermined`, the [`CLLocationManager.requestWhenInUseAuthorization()`](https://developer.apple.com/documentation/corelocation/cllocationmanager/requestwheninuseauthorization()) method does nothing and doesn't call the `locationManagerDidChangeAuthorization(_:)` delegate method. After the first call to the [`requestAlwaysAuthorization()`](https://developer.apple.com/documentation/corelocation/cllocationmanager/requestalwaysauthorization()) method, further calls have no effect. Read the authorization status first. If the user already granted or declined the permission, pass the result at once.
+- **Wait for indirect requests with a timeout**: iOS has no request method for **Bluetooth**, **Motion & Fitness**, **Local network**, and **HomeKit**. The alert appears when the app first uses the framework. iOS reports the user's choice to a delegate method or a query handler, or doesn't report it at all. Wrap the wait in a timeout shorter than 60 seconds. Then pass the result for the current authorization status, or a not-granted result without a string. After 60 seconds without a result, the flow reports the `flow_permission_unanswered` event and can send the next permission request. If your app then passes a late result for the first request, the flow can run the actions of the next request.
+- **Tell a new refusal from an earlier refusal**: iOS keeps every refusal until the user changes it in Settings. Pass `denied` when the user declined the alert of this request. Pass `permanently_denied` when iOS showed no alert because the user declined before.
+- **Don't reuse an earlier result**: Some grants expire. **Allow Once** in the location alert lasts while the app is in use. Temporary full accuracy expires on its own. Don't store a result for a later request.
+- **Reset the user's decisions when you test**: To see an alert again, delete the app, or open **Settings > General > Transfer or Reset iPhone > Reset > Reset Location & Privacy**, which resets every app. Deleting the app doesn't reset every permission: Bluetooth access, for example, can survive a reinstall of the same bundle ID. To see the first alert again, use a build with a new bundle ID.
+
+## Notifications and tracking
+
+### Push notifications \{#push\}
+
+- **What the user sees**: An alert that asks for permission to send notifications.
+- **Setup**: The permission needs no key in `Info.plist`. Request the permission with the `UNUserNotificationCenter.requestAuthorization(options:)` method. To receive remote push notifications, the app also needs the Push Notifications capability and registers with APNs. The permission itself doesn't need them.
+
+Pass the result that matches the notification authorization status:
+
+| What iOS reports | Result to pass |
+|:-----------------|:-----------------|
+| `.notDetermined`, then the user grants the permission | Granted, `granted` |
+| `.notDetermined`, then the user declines | Not granted, `denied` |
+| `.denied` before the request | Not granted, `permanently_denied` |
+| `.authorized`, or `.ephemeral` in an App Clip | Granted, `granted` |
+| `.provisional`, after a request with the `.provisional` option | Granted, `provisional` |
+| `requestAuthorization(options:)` throws an error | Not granted, no string |
+
+- **Limitations**: iOS shows the alert once: later requests return the first decision. With the `.provisional` option, iOS grants quiet notifications without an alert, so the flow runs the **When allowed** actions right away and the user sees no dialog. Use the `.provisional` option only if the flow expects that.
+
+### App tracking (ATT) \{#tracking\}
+
+- **What the user sees**: The App Tracking Transparency alert with your purpose string. In France, Germany, Italy, Poland, and Romania, iOS shows a full-page sheet instead of the alert. iOS shows nothing and returns the current authorization status when tracking is restricted, or when the user turned off **Allow Apps to Request to Track** in Settings. iOS also shows nothing when another request waits for the user's choice, the request comes from an app extension, or the app isn't active.
+- **Setup**: Add the `NSUserTrackingUsageDescription` key to `Info.plist`. An app that uses the AppTrackingTransparency framework without this key crashes. For the full-page sheet, you can add the `NSUserTrackingMarkdownUsageDescription` key. Request the permission with the `ATTrackingManager.requestTrackingAuthorization()` method.
+
+Pass the result that matches the tracking authorization status:
+
+| What iOS reports | Result to pass |
+|:-----------------|:-----------------|
+| `.notDetermined`, then the user grants the permission | Granted, `granted` |
+| `.notDetermined`, then the user declines | Not granted, `denied` |
+| `.denied` before the request. In the EU, less than a year after the user's choice | Not granted, `permanently_denied` |
+| `.restricted` | Not granted, `restricted` |
+| `.authorized` | Granted, `granted` |
+| `.notDetermined` after the request: iOS closed the prompt without a decision, the app wasn't active, or another request waited for the user's choice | Not granted, no string |
+
+- **How to pass the result**:
+  - iOS shows the alert only while the app is active. With **On Screen Appear** on the first screen after launch, the request can arrive before the app is active. Before the request, read the `UIApplication.shared.applicationState` property. Only if it isn't `.active`, wait for the `UIApplication.didBecomeActiveNotification` notification: an app that is already active never receives it.
+  - In the EU, the app can ask again a year after the user grants or declines the tracking permission. This doesn't apply when the user turned tracking off in Settings. Store the date of the user's choice, and after a year, request again instead of returning `.denied("permanently_denied")`. See the [`requestTrackingAuthorization`](https://developer.apple.com/documentation/apptrackingtransparency/attrackingmanager/requesttrackingauthorization(completionhandler:)) method.
+  - After the user's choice, [send the tracking authorization status to Adapty](ios-deal-with-att).
+
+## Location
+
+### Location while using the app \{#location_when_use\}
+
+- **What the user sees**: An alert with **Allow Once**, **Allow While Using App**, and **Don't Allow**, and a **Precise** switch.
+- **Setup**: Add the `NSLocationWhenInUseUsageDescription` key to `Info.plist`. Request the permission with the `CLLocationManager.requestWhenInUseAuthorization()` method. iOS reports the authorization status to the `locationManagerDidChangeAuthorization(_:)` delegate method. When the app creates a `CLLocationManager` object, iOS calls this method with the current authorization status. Ignore `.notDetermined`, and only pass the result after a change that follows the request. The app must be in the foreground to show the alert.
+
+Pass the result that matches the location authorization status:
+
+| What iOS reports | Result to pass |
+|:-----------------|:-----------------|
+| `.notDetermined`, then **Allow While Using App** or **Allow Once** | Granted, `granted` |
+| `.notDetermined`, then **Don't Allow** | Not granted, `denied` |
+| Still `.notDetermined` after the request, or no decision before the app's timeout | Not granted, no string |
+| `.denied` before the request, including Location Services turned off and Airplane mode | Not granted, `permanently_denied` |
+| `.restricted` | Not granted, `restricted` |
+| `.authorizedWhenInUse` or `.authorizedAlways` | Granted, `granted` |
+
+To report approximate location in analytics, return `.granted("limited")` instead of `.granted("granted")`. The flow still runs the **When allowed** actions.
+
+- **How to pass the result**: If the authorization status isn't `.notDetermined`, the [`requestWhenInUseAuthorization()`](https://developer.apple.com/documentation/corelocation/cllocationmanager/requestwheninuseauthorization()) method does nothing. If the `NSLocationWhenInUseUsageDescription` key is missing, [the request fails at once](https://developer.apple.com/documentation/corelocation/requesting-authorization-to-use-location-services). When the authorization status is already decided, or the key is missing, iOS doesn't call the `locationManagerDidChangeAuthorization(_:)` delegate method. A handler that waits for this method never passes a result, and the flow stays on the screen. Read the `authorizationStatus` property first. If it isn't `.notDetermined`, pass the result at once. Otherwise, wrap the wait in a timeout.
+- **Limitations**: **Allow Once** grants access while the app is in use. The authorization status then returns to `.notDetermined`, so the alert appears again later.
+
+### Location always \{#location_always\}
+
+- **What the user sees**: Two steps.
+  - **Location access not granted or declined yet**: The alert for location while using the app. **Allow While Using App** grants provisional Always access. iOS asks the second question, **Keep Only While Using** or **Change to Always Allow**, later, typically while the app isn't running.
+  - **Location while using the app already granted**: The upgrade alert, with **Keep Only While Using** and **Change to Always Allow**, at once. After **Allow Once**, or after an earlier Always request, iOS ignores the request and shows nothing.
+- **Setup**: Add the `NSLocationWhenInUseUsageDescription` and `NSLocationAlwaysAndWhenInUseUsageDescription` keys to `Info.plist`. Request the permission with the `CLLocationManager.requestAlwaysAuthorization()` method. Location updates in the background also need the Background Modes capability. The permission itself doesn't need it.
+
+Pass the result that matches the location authorization status:
+
+| What iOS reports | Result to pass |
+|:-----------------|:-----------------|
+| `.notDetermined`, then **Allow While Using App** in the first alert: `.authorizedAlways`, provisional Always access | Granted, `provisional` |
+| `.notDetermined`, then **Allow Once** in the first alert: `.authorizedWhenInUse`, temporary access | Not granted, `denied` |
+| `.notDetermined`, then **Don't Allow** | Not granted, `denied` |
+| Still `.notDetermined` after the request, or no decision before the app's timeout | Not granted, no string |
+| `.authorizedWhenInUse`, the upgrade alert appears, then **Change to Always Allow** | Granted, `granted` |
+| `.authorizedWhenInUse`, the upgrade alert appears, then **Keep Only While Using** | Not granted, `denied` |
+| `.authorizedWhenInUse`, and no alert appears: after **Allow Once**, or after an earlier Always request | Not granted, `permanently_denied` |
+| `.authorizedAlways` | Granted, `granted` |
+| `.denied` | Not granted, `permanently_denied` |
+| `.restricted` | Not granted, `restricted` |
+
+- **How to pass the result**:
+  - iOS may show no alert, so after the request, wait a short time for the alert, such as 2 seconds. If no alert appears, pass the result for the authorization status at once. If the alert appears, wait until the user closes it. While an alert is on the screen, iOS makes the app inactive. When the alert closes, the app becomes active again: then pass the result. Don't wait for the `locationManagerDidChangeAuthorization(_:)` delegate method: iOS doesn't call it when the user selects **Keep Only While Using**, because the authorization status doesn't change. Never wait longer than 60 seconds.
+  - iOS accepts one Always request per install: later calls have no effect. iOS has no API that tells whether the app asked before, so the app saves its own flag after the first request.
+- **Limitations**: In the first alert, **Allow While Using App** reports `.authorizedAlways` for provisional Always access, and your app returns `.granted("provisional")`. **Allow Once** reports `.authorizedWhenInUse` for temporary access, without Always access, so your app returns `.denied("denied")`. On a later request, your app returns `.granted("granted")` for provisional Always access. After **Allow Once**, iOS ignores later Always requests, so your app returns `.denied("permanently_denied")` for a later request. With provisional Always access, the user can select **Keep Only While Using** later, outside the flow.
+
+### Precise location \{#location_full_accuracy\}
+
+- **What the user sees**: If the user turned off **Precise** in the location alert, iOS shows a second alert when your app requests precise location. In this alert, the user can grant precise location until the app is no longer in use (**Allow Once**), or decline (**Don't Allow**). The alert shows the text of your purpose key.
+- **Setup**: Add the `NSLocationWhenInUseUsageDescription` and `NSLocationTemporaryUsageDescriptionDictionary` keys to `Info.plist`. Each key of the dictionary is a purpose key, and its value is the text of the alert. Request the permission with the `CLLocationManager.requestTemporaryFullAccuracyAuthorization(withPurposeKey:)` method. The flow sends no purpose key, so the app code passes one of its own keys.
+
+```xml title="Info.plist"
+<key>NSLocationTemporaryUsageDescriptionDictionary</key>
+<dict>
+    <key>StoreFinder</key>
+    <string>Find the store closest to you.</string>
+</dict>
+```
+
+Pass the result that matches the location accuracy:
+
+| What iOS reports | Result to pass |
+|:-----------------|:-----------------|
+| Location `.notDetermined`, then the user grants location access with **Precise** on | Granted, `granted` |
+| Location `.notDetermined`, then the user denies location access | Not granted, `denied` |
+| Still `.notDetermined` after the request, or no decision before the app's timeout | Not granted, no string |
+| `accuracyAuthorization` is `.fullAccuracy` before the request | Granted, `granted` |
+| `.reducedAccuracy` before, `.fullAccuracy` after the request | Granted, `granted` |
+| The request completes without an error, and `accuracyAuthorization` is still `.reducedAccuracy`: the user declined | Not granted, `denied` |
+| The request fails with `promptDeclined`: iOS didn't show the alert | Not granted, no string |
+| Location access `.denied` | Not granted, `permanently_denied` |
+| Location access `.restricted` | Not granted, `restricted` |
+
+- **How to pass the result**:
+  - The iOS request needs location access while the app is in use. With location `.notDetermined`, request **Location while using the app** first: its alert has a **Precise** switch. If the user turns it off, continue with the request for precise location.
+  - After the user's choice in the alert, the request completes without an error. Read the `accuracyAuthorization` property after it. The `promptDeclined` error means that iOS didn't show the alert. iOS doesn't show it when the purpose key is missing from the dictionary, the app already has precise location, or the app is in the background.
+- **Limitations**: Precise location from this request is temporary: it expires on its own, and iOS postpones the expiration while the app is in use. The alert can appear again in a later session. Precise location that the user selected in the location alert or in Settings doesn't expire.
+
+## Camera and media
+
+### Camera \{#camera\}
+
+- **What the user sees**: An alert with your purpose string.
+- **Setup**: Add the `NSCameraUsageDescription` key to `Info.plist`. Without this key, a request for camera access raises an exception, and iOS terminates the app. Request the permission with the `AVCaptureDevice.requestAccess(for:)` method and the `.video` media type.
+
+Pass the result that matches the camera authorization status:
+
+| What iOS reports | Result to pass |
+|:-----------------|:-----------------|
+| `.notDetermined`, then the user grants the permission | Granted, `granted` |
+| `.notDetermined`, then the user declines | Not granted, `denied` |
+| `.denied` before the request | Not granted, `permanently_denied` |
+| `.restricted` | Not granted, `restricted` |
+| `.authorized` | Granted, `granted` |
+
+- **Limitations**: Until the user grants camera access, iOS gives the app black frames.
+
+### Microphone \{#microphone\}
+
+- **What the user sees**: An alert with your purpose string.
+- **Setup**: Add the `NSMicrophoneUsageDescription` key to `Info.plist`. Without this key, the app exits when it tries to use the microphone. Request the permission with the `AVCaptureDevice.requestAccess(for:)` method and the `.audio` media type. On iOS 17 and later, you can use the `AVAudioApplication.requestRecordPermission()` method instead.
+
+Pass the result that matches the microphone authorization status:
+
+| What iOS reports | Result to pass |
+|:-----------------|:-----------------|
+| `.notDetermined`, then the user grants the permission | Granted, `granted` |
+| `.notDetermined`, then the user declines | Not granted, `denied` |
+| `.denied` before the request | Not granted, `permanently_denied` |
+| `.restricted` | Not granted, `restricted` |
+| `.authorized` | Granted, `granted` |
+
+- **Limitations**: Without the permission, recordings contain silence. The record permission of the `AVAudioApplication` class has the values `.undetermined`, `.granted`, and `.denied`, with no restricted value: with this class, your app never passes `restricted`.
+
+### Photos \{#photos\}
+
+- **What the user sees**: An alert where the user selects limited access, full access, or no access. Limited access opens a system picker where the user selects photos and videos.
+- **Setup**: Add the `NSPhotoLibraryUsageDescription` key to `Info.plist`. Request the permission with the `PHPhotoLibrary.requestAuthorization(for:)` method and the `.readWrite` access level. If the app only adds photos, declare the `NSPhotoLibraryAddUsageDescription` key, and request the `.addOnly` access level instead: add-only access has no limited state. Without a valid purpose string, the app crashes when it accesses the photo library. The older `requestAuthorization(_:)` method reports limited access as `.authorized`.
+
+Pass the result that matches the photo library authorization status:
+
+| What iOS reports | Result to pass |
+|:-----------------|:-----------------|
+| `.authorized` | Granted, `granted` |
+| `.limited`: the user selected some photos | Granted, `limited` |
+| `.notDetermined`, then the user declines | Not granted, `denied` |
+| `.denied` before the request | Not granted, `permanently_denied` |
+| `.restricted` | Not granted, `restricted` |
+
+- **Limitations**:
+  - With limited access, once per app life cycle, iOS shows an alert where the user can update the selection of photos. To turn off this alert, set the `PHPhotoLibraryPreventAutomaticLimitedAccessAlert` key to `true` in `Info.plist`.
+  - The `PHPickerViewController` photo picker needs no permission. [App Review Guideline 5.1.1](https://developer.apple.com/app-store/review/guidelines/#data-collection-and-storage) asks apps to use such a picker instead of full access where they can. Request this permission when the app shows its own gallery.
+
+### Media library \{#media_library\}
+
+- **What the user sees**: An alert that asks for access to Apple Music and the media library, with your purpose string.
+- **Setup**: Add the `NSAppleMusicUsageDescription` key to `Info.plist`. The app must have this key to access the media library. Request the permission with the `MPMediaLibrary.requestAuthorization()` method.
+
+Pass the result that matches the media library authorization status:
+
+| What iOS reports | Result to pass |
+|:-----------------|:-----------------|
+| `.notDetermined`, then the user grants the permission | Granted, `granted` |
+| `.notDetermined`, then the user declines | Not granted, `denied` |
+| `.denied` before the request | Not granted, `permanently_denied` |
+| `.restricted` | Not granted, `restricted` |
+| `.authorized` | Granted, `granted` |
+
+- **Limitations**: **Media library** and **Apple Music** show the same purpose string, from the `NSAppleMusicUsageDescription` key, and share one authorization status. After the user grants or declines one of them, a request for the other one returns that decision without an alert.
+
+### Apple Music \{#music\}
+
+- **What the user sees**: An alert that asks for access to Apple Music and the media library, with your purpose string.
+- **Setup**: Add the `NSAppleMusicUsageDescription` key to `Info.plist`. Without this key, iOS terminates the app when the app accesses the user's music. Request the permission with the MusicKit `MusicAuthorization.request()` method. The `SKCloudServiceController.requestAuthorization(_:)` method returns the same authorization but is deprecated in iOS 18. Use it only where the app can't call MusicKit, for example from a wrapper's permission library.
+
+Pass the result that matches the MusicKit authorization status:
+
+| What iOS reports | Result to pass |
+|:-----------------|:-----------------|
+| `.notDetermined`, then the user grants the permission | Granted, `granted` |
+| `.notDetermined`, then the user declines | Not granted, `denied` |
+| `.denied` before the request | Not granted, `permanently_denied` |
+| `.restricted` | Not granted, `restricted` |
+| `.authorized` | Granted, `granted` |
+
+- **Limitations**:
+  - The permission covers the user's Apple Music data. Playback of catalog content also needs an active Apple Music subscription, which the MusicKit `MusicSubscription` structure reports separately.
+  - **Apple Music** and **Media library** share one authorization status. After the user grants or declines one of them, a request for the other one returns that decision without an alert. For example, after a refusal, your app returns `.denied("permanently_denied")` for the other one.
+
+### Speech recognition \{#speech\}
+
+- **What the user sees**: An alert with your purpose string.
+- **Setup**: Add the `NSSpeechRecognitionUsageDescription` key to `Info.plist`. Without this key, the app crashes when it calls the `SFSpeechRecognizer.requestAuthorization(_:)` method. To recognize live audio, the app also needs the `NSMicrophoneUsageDescription` key and the **Microphone** permission.
+
+Pass the result that matches the speech recognition authorization status:
+
+| What iOS reports | Result to pass |
+|:-----------------|:-----------------|
+| `.notDetermined`, then the user grants the permission | Granted, `granted` |
+| `.notDetermined`, then the user declines | Not granted, `denied` |
+| `.denied` before the request | Not granted, `permanently_denied` |
+| `.restricted` | Not granted, `restricted` |
+| `.authorized` | Granted, `granted` |
+
+- **Limitations**:
+  - The permission only covers speech recognition with the `SFSpeechRecognizer` class. [SpeechAnalyzer transcriber modules don't send audio to Apple](https://developer.apple.com/documentation/speech/asking-permission-to-use-speech-recognition) and don't need it.
+  - Speech recognition of live audio needs two permissions. The flow sends one request at a time, so request **Microphone** and **Speech recognition** on two screens, or have your app request both before it passes the result.
+
+## Personal data
+
+### Contacts \{#contacts\}
+
+- **What the user sees**: An alert with your purpose string. On iOS 18 and later, the user can share all contacts or a selection.
+- **Setup**: Add the `NSContactsUsageDescription` key to `Info.plist`. Request the permission with the `CNContactStore.requestAccess(for:)` method and the `.contacts` entity type. The request only reports whether the user gave access, so read the authorization status with the `CNContactStore.authorizationStatus(for:)` method after it, also when it throws an error. The authorization status tells limited access from full access.
+
+Pass the result that matches the contacts authorization status:
+
+| What iOS reports | Result to pass |
+|:-----------------|:-----------------|
+| `.authorized` | Granted, `granted` |
+| On iOS 18 and later, `.limited`: the user shared a selection of contacts | Granted, `limited` |
+| `.notDetermined`, then the user declines | Not granted, `denied` |
+| Still `.notDetermined` after the request, or no decision before the app's timeout | Not granted, no string |
+| `.denied` before the request | Not granted, `permanently_denied` |
+| `.restricted` | Not granted, `restricted` |
+
+- **Limitations**:
+  - Limited access on iOS 18 and later takes four steps: the alert, a sheet that asks how to share, the contact picker, and a confirmation. A user can take more than 60 seconds, so the flow can send the `flow_permission_unanswered` event with `on_screen` in the `outcome` property before your app passes the result. If the user is still on the screen that sent the request, the flow runs the actions for the late result.
+  - With limited access, the app adds contacts to the selection later with the `ContactAccessButton` view or the `contactAccessPicker` view modifier.
+  - [App Review Guideline 5.1.1](https://developer.apple.com/app-store/review/guidelines/#data-collection-and-storage) asks apps to use a system picker instead of full access to contacts where they can.
+
+### Calendar \{#calendar\}
+
+- **What the user sees**: An alert with your purpose string for full access or for adding events only.
+- **Setup**: For full access on iOS 17 and later, add the `NSCalendarsFullAccessUsageDescription` key to `Info.plist`. To add events only, use the `NSCalendarsWriteOnlyAccessUsageDescription` key instead. Request the permission with the `EKEventStore.requestFullAccessToEvents()` or `requestWriteOnlyAccessToEvents()` method. For iOS 16 and earlier, also declare the `NSCalendarsUsageDescription` key. On these versions, request the permission with the `requestAccess(to:)` method and the `.event` entity type.
+
+Pass the result that matches the calendar authorization status:
+
+| What iOS reports | Result to pass |
+|:-----------------|:-----------------|
+| `.fullAccess`, or `.authorized` on iOS 16 and earlier | Granted, `granted` |
+| On iOS 17 and later, `.writeOnly`, and the app requested write-only access | Granted, `granted` |
+| On iOS 17 and later, `.writeOnly`, and the app requested full access | Granted, `limited` |
+| `.notDetermined`, then the user declines | Not granted, `denied` |
+| `.denied` before the request | Not granted, `permanently_denied` |
+| `.restricted` | Not granted, `restricted` |
+| The request throws an error | Not granted, no string |
+
+- **Limitations**:
+  - On iOS 17 and later, an app with only the `NSCalendarsUsageDescription` key gets every request denied at once, without an alert.
+  - The value `calendar` doesn't say which access to request: your app decides. iOS has no read-only access. With write-only access, the app sees one virtual calendar and no events.
+  - To add an event without calendar access, use the `EKEventEditViewController` view controller on iOS 17 and later.
+
+### Reminders \{#reminders\}
+
+- **What the user sees**: An alert with your purpose string.
+- **Setup**: On iOS 17 and later, add the `NSRemindersFullAccessUsageDescription` key to `Info.plist`. Request the permission with the `EKEventStore.requestFullAccessToReminders()` method. For iOS 16 and earlier, also declare the `NSRemindersUsageDescription` key. On these versions, request the permission with the `requestAccess(to:)` method and the `.reminder` entity type. On iOS 17 and later, iOS uses the `NSRemindersUsageDescription` key as a fallback when the `NSRemindersFullAccessUsageDescription` key is missing.
+
+Pass the result that matches the reminders authorization status:
+
+| What iOS reports | Result to pass |
+|:-----------------|:-----------------|
+| `.fullAccess`, or `.authorized` on iOS 16 and earlier | Granted, `granted` |
+| `.notDetermined`, then the user declines | Not granted, `denied` |
+| `.denied` before the request | Not granted, `permanently_denied` |
+| `.restricted` | Not granted, `restricted` |
+| The request throws an error | Not granted, no string |
+
+- **Limitations**: iOS has no write-only access to reminders.
+
+### Health data \{#health\}
+
+- **What the user sees**: The Health access sheet for the data types that the app requests.
+- **Setup**:
+  - Add the HealthKit capability.
+  - To read health data, add the `NSHealthShareUsageDescription` key to `Info.plist`. To write health data, add the `NSHealthUpdateUsageDescription` key. Without these keys, the app crashes when it requests access.
+  - Request the permission with the `HKHealthStore.requestAuthorization(toShare:read:)` method. Call the `HKHealthStore.isHealthDataAvailable()` method first. The flow sends no data types, so the app code passes its own. Before the request, the `getRequestStatusForAuthorization(toShare:read:)` method tells whether iOS will show the sheet.
+  - When you add the HealthKit capability, Xcode adds the `healthkit` entry to the `UIRequiredDeviceCapabilities` key. This entry blocks installs on devices without HealthKit. If the app works without health data, remove the entry.
+
+Pass the result that matches the health data access:
+
+| What iOS reports | Result to pass |
+|:-----------------|:-----------------|
+| `isHealthDataAvailable()` returns `false` | Not granted, `unsupported` |
+| The request fails with `errorHealthDataRestricted` | Not granted, `restricted` |
+| The request completes, and the app requested only read access | Not granted, no string |
+| Every requested write type is `.sharingAuthorized` | Granted, `granted` |
+| Some requested write types are `.sharingAuthorized` | Granted, `limited` |
+| No requested write type is authorized, after the sheet | Not granted, `denied` |
+| No requested write type is authorized, and `getRequestStatusForAuthorization` returned `.unnecessary` before the request: iOS showed no sheet | Not granted, `permanently_denied` |
+| The request throws another error | Not granted, no string |
+
+- **Limitations**:
+  - iOS doesn't tell the app whether the user granted read access to health data. If the user denies reading, queries return no data. For a request for read access, your app returns `.denied(nil)`, and the flow runs the **After response** actions: put the next step of the flow there. Only a request for write types reports the user's choice.
+  - iOS shows the sheet again when the app requests a data type for the first time. It doesn't ask again for a type that the user granted or declined.
+
+### Motion & Fitness \{#motion\}
+
+- **What the user sees**: An alert with your purpose string the first time the app accesses motion activity data.
+- **Setup**: Add the `NSMotionUsageDescription` key to `Info.plist`. Without this key, the app crashes when it accesses motion data. iOS has no request method: the first access to motion activity data shows the alert, and iOS reports the user's choice to the handler of that access. Call the `CMMotionActivityManager.isActivityAvailable()` method first. Read the authorization status with the `CMMotionActivityManager.authorizationStatus()` method.
+
+Pass the result that matches the motion authorization status:
+
+| What iOS reports | Result to pass |
+|:-----------------|:-----------------|
+| `isActivityAvailable()` returns `false`: the device has no motion data | Not granted, `unsupported` |
+| `.notDetermined`, then the user grants the permission | Granted, `granted` |
+| `.notDetermined`, then the user declines | Not granted, `denied` |
+| Still `.notDetermined` when the timeout ends | Not granted, no string |
+| `.denied` before the request | Not granted, `permanently_denied` |
+| `.restricted` | Not granted, `restricted` |
+| `.authorized` | Granted, `granted` |
+
+- **How to pass the result**: Wait for the query handler of the motion data access with a timeout. Then read the authorization status with the `authorizationStatus()` method, and pass the result that matches it.
+
+## Device and home
+
+### Bluetooth \{#bluetooth\}
+
+- **What the user sees**: An alert with your purpose string the first time the app creates a Bluetooth manager.
+- **Setup**: Add the `NSBluetoothAlwaysUsageDescription` key to `Info.plist`. Without this key, the app crashes when it uses Core Bluetooth. iOS has no request method: when the app creates a `CBCentralManager` object, iOS shows the alert and then calls the `centralManagerDidUpdateState(_:)` delegate method. Read the `CBManager.authorization` property first. Create the manager with the `CBCentralManagerOptionShowPowerAlertKey` option set to `false`, so that iOS doesn't also ask the user to turn on Bluetooth.
+
+Pass the result that matches the Bluetooth authorization status:
+
+| What iOS reports | Result to pass |
+|:-----------------|:-----------------|
+| `.notDetermined`, then the user grants the permission | Granted, `granted` |
+| `.notDetermined`, then the user declines | Not granted, `denied` |
+| Still `.notDetermined` when the timeout ends | Not granted, no string |
+| `.denied` before the request | Not granted, `permanently_denied` |
+| `.restricted` | Not granted, `restricted` |
+| `.allowedAlways` | Granted, `granted` |
+
+- **How to pass the result**:
+  - Wait for the `centralManagerDidUpdateState(_:)` delegate method with a timeout. Then pass the result that matches the `CBManager.authorization` property.
+  - A Bluetooth adapter that is turned off isn't a refusal. Pass the result that matches the permission, not the adapter state.
+
+### Local network \{#local_network\}
+
+- **What the user sees**: An alert with your purpose string the first time the app accesses the local network.
+- **Setup**: Add the `NSLocalNetworkUsageDescription` key to `Info.plist`. For each Bonjour service type that the app browses or advertises, add an entry such as `_myservice._tcp` to the `NSBonjourServices` key. Multicast and broadcast also need the `com.apple.developer.networking.multicast` entitlement, which Apple must approve. iOS has no request method and no authorization status API. A local network operation shows the alert, such as a Bonjour browse or a connection to a device on the network.
+
+Pass the result that matches the outcome of a local network operation:
+
+| What iOS reports | Result to pass |
+|:-----------------|:-----------------|
+| An outgoing operation that needs local network access succeeds, such as a Bonjour browse or an outgoing TCP connection | Granted, `granted` |
+| The operation fails, or gets no result before the app's timeout | Not granted, no string |
+| The app has no local network feature | Not granted, `unsupported` |
+
+- **How to pass the result**: Keep the timeout short, such as 20 seconds. Never wait 60 seconds or more: at 60 seconds without a result, the flow reports the `flow_permission_unanswered` event.
+- **Limitations**:
+  - Your app learns nothing when the user declines. The flow stays on the screen until your app's timeout expires, then runs the **After response** actions, with `no_status` in the `outcome` property. For this permission, the flow never runs the **When denied** actions.
+  - iOS doesn't report the local network authorization status. iOS can deny the operation that shows the alert before the user's choice, so a failed operation doesn't mean a refusal. Put the next step of the flow in **After response**.
+  - In the background, iOS denies a local network operation without an alert and doesn't store the result. The alert appears at the next operation in the foreground.
+  - The iOS Simulator doesn't apply local network privacy. Test on a device.
+
+### HomeKit \{#homekit\}
+
+- **What the user sees**: An alert with your purpose string the first time the app uses HomeKit.
+- **Setup**: Add the HomeKit capability, and add the `NSHomeKitUsageDescription` key to `Info.plist`. Without the key, the app crashes the first time it uses HomeKit. iOS has no request method: when the app creates an `HMHomeManager` object, iOS shows the alert. iOS reports the authorization status to the `homeManager(_:didUpdate:)` delegate method, and the `HMHomeManager.authorizationStatus` property returns it. Keep one `HMHomeManager` object for the life of the app.
+
+The HomeKit authorization status is a set of flags. Pass the result that matches the flags:
+
+| What iOS reports | Result to pass |
+|:-----------------|:-----------------|
+| `.authorized` is set | Granted, `granted` |
+| `.determined` without `.authorized`, after the alert | Not granted, `denied` |
+| `.determined` without `.authorized`, before the request | Not granted, `permanently_denied` |
+| `.determined` isn't set when the timeout ends | Not granted, no string |
+
+- **How to pass the result**: After a refusal in an earlier launch, iOS calls no delegate method: a new `HMHomeManager` object already has the decided authorization status. Read the `authorizationStatus` property right after you create the manager, and again while you wait for the user's choice, with a timeout. Apple defines the `.restricted` flag as "The app doesn't have access to home data", not as a device policy, so don't pass `restricted` for it.
+
+### Focus status \{#focus_status\}
+
+- **What the user sees**: An alert with your purpose string that asks to share the Focus status.
+- **Setup**: Add the `NSFocusStatusUsageDescription` key to `Info.plist` before the app uses the `INFocusStatusCenter` class. Request the permission with the `INFocusStatusCenter.default.requestAuthorization()` method. To read the Focus status after the user grants the permission, the app also needs notification authorization and the Communication Notifications capability.
+
+Pass the result that matches the Focus status authorization status:
+
+| What iOS reports | Result to pass |
+|:-----------------|:-----------------|
+| `.notDetermined`, then the user grants the permission | Granted, `granted` |
+| `.notDetermined`, then the user declines | Not granted, `denied` |
+| `.notDetermined` after the request: the user selected neither | Not granted, no string |
+| `.denied` before the request | Not granted, `permanently_denied` |
+| `.restricted` | Not granted, `restricted` |
+| `.authorized` | Granted, `granted` |
+
+### Siri \{#siri\}
+
+- **What the user sees**: An alert with your purpose string that asks to use Siri with the app.
+- **Setup**: Add the Siri capability, and add the `NSSiriUsageDescription` key to `Info.plist`. Request the permission with the `INPreferences.requestSiriAuthorization(_:)` method. Apple requires the Siri capability for the authorization to succeed. In an app without the capability, every call to the `INPreferences` class raises an exception, including a call to the `siriAuthorizationStatus()` method, and the app crashes. There, return `.denied("unsupported")` without a call to the `INPreferences` class.
+
+Pass the result that matches the Siri authorization status:
+
+| What iOS reports | Result to pass |
+|:-----------------|:-----------------|
+| `.notDetermined`, then the user grants the permission | Granted, `granted` |
+| `.notDetermined`, then the user declines | Not granted, `denied` |
+| `.denied` before the request | Not granted, `permanently_denied` |
+| `.restricted` | Not granted, `restricted` |
+| `.authorized` | Granted, `granted` |
+
+- **Limitations**:
+  - An app that only supports actions in the Shortcuts app doesn't need this permission.
+  - Siri or Maps can ask the user for this permission on the app's behalf, the first time the user uses one of the app's intents. The user can then decide before the flow sends the request.
