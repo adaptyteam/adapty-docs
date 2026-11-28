@@ -1,0 +1,73 @@
+---
+title: "Purchase and event data in emails"
+description: "Show purchase details and custom event data in Adapty Mail emails, and send a purchase receipt after each payment."
+metadataTitle: "Purchase and Event Data | Adapty Mail | Adapty Docs"
+---
+
+An email can show purchase details, or custom event data that you report from your app. To show this data, add placeholders to the email. Adapty Mail fills the placeholders from the purchase or the custom event that made the user match the [purpose](mail-purposes). They're a separate set from the [placeholders of a destination URL](mail-destinations#placeholders).
+
+With purchase placeholders, you can send receipts: emails that confirm a payment and show its product, amount and date. To send them, [create a transactional purpose](#email-a-receipt-after-each-purchase) with purchases as its entry events.
+
+## Where purchase and event data comes from
+
+The product, amount, tax and payment method of a purchase come from its payment details. The source of a purchase decides whether it comes with payment details:
+
+- **FunnelFox Billing**: Sends each purchase to Adapty Mail with its payment details.
+- **Your server**: Can add [payment details](mail-send-data-via-api#add-payment-details-for-receipts) to the purchases it sends to the Adapty Mail API.
+- **Other sources, such as the Adapty SDK**: Send purchases to Adapty Mail without payment details. Leave the product and the amount of these purchases out of emails: an email that shows either [doesn't go out](#emails-held-back-for-missing-data).
+
+Your server reports custom events to Adapty Mail through the [API](mail-send-data-via-api#report-events-from-your-app). Each one can carry data fields in its `payload`. To show these fields in generated emails, [describe them in the purpose](mail-purposes#event-triggers-from-your-app) that has the event as an entry event.
+
+## Email a receipt after each purchase
+
+Receipts need purchases [with payment details](#where-purchase-and-event-data-comes-from). As transactional emails, they go out alongside marketing emails and [still reach users who unsubscribed](mail-suppression#what-still-reaches-a-suppressed-profile).
+
+1. Go to **Purposes** and open the **Transactional** tab. [Create a purpose](mail-purposes#create-a-purpose) with **Subscription started**, **Subscription renewed** and **One-time purchase** as its entry events. To send a receipt for each purchase, keep the defaults of the purpose: no **Exit rule** reason, and **On every entry event** as the **Re-entry rule**.
+2. Go to **Campaigns** and open the **Transactional** tab. [Create a campaign](mail-create-campaign) for the purpose. In the **Email Destination** dropdown, select a [destination](mail-destinations) where buyers can manage their purchases, such as your account page.
+3. Click **Generate emails**. Adapty Mail may add a table of purchase details to each email, above the button. Where an email has no such table, add [purchase placeholders](#purchase-placeholders) to its HTML.
+4. To see a receipt with a sample purchase, click [**Send test email**](mail-testing#test-the-email-and-checkout-on-their-own).
+5. To save the campaign, click **Create**.
+6. [Create a flow](mail-create-flow#create-a-flow) that sends the campaign to the **All Users** segment.
+7. To see real values, make a purchase with payment details as a [test user](mail-testing#test-the-live-chain), and open the receipt in your inbox.
+
+A first purchase also makes the buyer match **App activation** and **Cancellation page**, unless you changed the [rules of these purposes](mail-purposes#default-rules-of-the-standard-purposes). If they have flows, their emails go out along with the receipt.
+
+## Placeholders for purchase and event data
+
+To find the placeholders for purchase and event data, expand the **Placeholders** card on the campaign page. The card lists them in its **Purchase** and **Custom event** groups. Add the placeholders to the HTML or the subject of an email while the campaign is a [draft](mail-create-campaign#3-save-as-a-draft). In a [test email](mail-testing#test-the-email-and-checkout-on-their-own), the placeholders show a sample purchase, and each custom event field as its name in brackets.
+
+### Purchase placeholders
+
+Purchase placeholders show the purchase that made the user match the purpose, in every email of the sequence. To make sure each email has a purchase to show, only select purchases as entry events of the purpose. The purchase events are **Subscription started**, **Subscription renewed** and **One-time purchase**.
+
+When the purchase lacks the value of a required placeholder, Adapty Mail [holds the email back](#emails-held-back-for-missing-data).
+
+| Placeholder | Shows | Required | Needs payment details |
+| --- | --- | --- | --- |
+| `{{ transaction.product }}` | The purchased product | Yes | Yes |
+| `{{ transaction.amount }}` | The amount charged, tax included, such as 9.99 USD | Yes | Yes |
+| `{{ transaction.tax }}` | The tax included in the amount | No | Yes |
+| `{{ transaction.payment_method }}` | The payment method, such as Visa •••• 4242 | No | Yes |
+| `{{ transaction.date }}` | The purchase date | Yes | No |
+| `{{ transaction.number }}` | The transaction number | Yes | No |
+| `{{ transaction.next_charge_date }}` | The next charge date | No | No |
+
+Dates appear as YYYY-MM-DD, in the timezone of the recipient.
+
+### Custom event placeholders
+
+To show a field of a custom event, add `{{ custom_event.<field> }}` and replace `<field>` with the name of the field. The **Custom event** group of the **Placeholders** card lists the fields you [described in the purpose](mail-purposes#event-triggers-from-your-app). To make sure each email has an event to show, only select custom events as entry events of the purpose.
+
+When the event lacks a field that an email includes, Adapty Mail [holds the email back](#emails-held-back-for-missing-data). A field marked **May be missing** in the purpose only shows in a generated email when the event has it. In HTML you write, [hide such a field](#hide-a-part-when-its-value-is-missing) yourself.
+
+### Hide a part when its value is missing
+
+To hide a part when its value is missing, wrap the placeholder and its label in an `{% if %}` block. For example, `{% if transaction.tax %}Tax: {{ transaction.tax }}{% endif %}` only shows the tax line when the purchase has a tax amount. For a custom event field, the block starts with `{% if custom_event.<field> %}`.
+
+Use a block for each purchase placeholder that isn't required, so its label only shows with a value. When a required placeholder inside a block has no value, the email goes out without the block.
+
+## Emails held back for missing data
+
+When the entry event lacks the value of a required placeholder, Adapty Mail holds back the email that shows it. If the value reaches Adapty Mail within about 11 minutes after that, the email goes out. Otherwise, the sequence stops for the profile.
+
+In the [journey](mail-profiles#email-events) of the profile, the email has the **Missing data** chip while Adapty Mail holds it back. Once the sequence stops, the email appears as **Cancelled**, with the reason **No data for the email**.

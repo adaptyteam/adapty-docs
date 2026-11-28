@@ -6,7 +6,7 @@ keywords: ['adapty mail']
 ---
 import ZoomImage from '@site/src/components/ZoomImage';
 
-A **segment** is a reusable audience slice. You define it once — in **Segments** — and reference it from flows and A/B tests. Segments are filter definitions, not snapshots: they're evaluated on demand when a flow trigger fires, so membership always reflects the latest profile data.
+A **segment** is a reusable audience slice. You define it once — in **Segments** — and reference it from flows and A/B tests. Segments are filter definitions, not snapshots: they're evaluated on demand when a user matches the [purpose](mail-purposes) of a flow, so membership always reflects the latest profile data.
 
 ## Create a segment
 
@@ -17,7 +17,7 @@ A **segment** is a reusable audience slice. You define it once — in **Segments
 5. Save the segment.
 
 :::important
-Filters are combined with **AND** — a user must match every filter to be in the segment. OR logic and nested groups aren't supported. Each field can appear only once per segment; to compare the same field across multiple values, split the logic into separate segments.
+Filters are combined with **AND** — a user must match every filter to be in the segment. OR logic and nested groups aren't supported. Each field except [**Custom event** and **Custom attribute**](#available-filter-fields) can only appear once per segment. To match several values of one field, enter them all in its `=` filter.
 :::
 
 <ZoomImage id="mail-new-segment.webp" width="500px" alt="New Segment form with Name, Description, and Filters fields" />
@@ -58,36 +58,46 @@ Imported segments start in **Draft** state, the same as segments you build manua
 | Purchase state | Total revenue (USD) | Number |
 | Purchase state | Subscription state | String |
 | Purchase state | Subscription source | String |
+| Purchase state | Subscription store | String |
 | Purchase state | Subscription product ID | String |
 | Purchase state | Subscription purchased at | Date |
 | Purchase state | Subscription expires at | Date |
 | Purchase state | Subscription purchases | Number |
 | Purchase state | One-time purchase state | String |
 | Purchase state | One-time purchase source | String |
+| Purchase state | One-time purchase store | String |
 | Purchase state | One-time product ID | String |
 | Purchase state | One-time purchased at | Date |
 | Purchase state | One-time purchases | Number |
+| | Custom event | Event name |
+| | Custom attribute | String or Number |
 
-Device info fields are filled only when your entry point sends them. [Send data via the API](mail-send-data-via-api) covers what that payload carries.
+In the condition of a [purpose](mail-purposes#profile-conditions), you can use the Purchase state fields, **Email confirmed at**, and **Custom event**. The other fields only work in segments.
 
-**Email confirmed at** is set when the recipient confirms their address through [double opt-in](mail-double-opt-in).
+Notes on the fields:
 
-**Source values** for **Source**, **Subscription source**, and **One-time purchase source**: Adapty, FunnelFox, Custom (API).
+- **Source**, **Subscription source**, and **One-time purchase source**: Adapty, FunnelFox, FunnelFox Billing, or Custom (API).
+- **Email confirmed at**: When the recipient confirmed their address through [double opt-in](mail-double-opt-in).
+- **Device info** fields: Not set unless your entry point sends device data to Adapty Mail. With the API, send it in the [`device_info` object](mail-send-data-via-api#send-user-profiles).
+- **Subscription state**: Never purchased, Subscribed, Auto-renew off, Billing issue, Grace period, Expired, or Refunded.
+- **Subscription purchases**: How many times the user paid for their current subscription. The number includes the first purchase, unless it was a free trial, and every renewal. A user on a free trial has 0 subscription purchases. Refunds don't lower the number, and payments for an earlier subscription don't add to it.
+- **One-time purchase state**: Never purchased, Purchased, or Refunded.
+- **One-time purchases**: How many one-time purchases the user made, whatever the product. Refunds don't lower the number.
+- **Custom event**: Filters users by the [custom events](mail-send-data-via-api#report-events-from-your-app) you send to Adapty Mail, such as `onboarding_completed`. Select **Custom event** as the field. Type the event name, then select the operator: `is set` matches users who have had the event, and `is not set` matches the rest.
 
-**Subscription state values**: Never purchased, Subscribed, Auto-renew off, Billing issue, Grace period, Expired, Refunded.
-
-**One-time purchase state values**: Never purchased, Purchased, Refunded.
+  One segment or condition can hold several **Custom event** filters, each with a different event name. Adapty Mail keeps the last 50 custom event names of each user. For an event name outside those 50, `is not set` matches the user, even if they had the event.
+- **Custom attribute**: Filters users by a [custom attribute](mail-profiles#the-profile-card) on their profile. Select **Custom attribute** as the field. Enter the key of the attribute in the **Attribute key** field. Then select **String** or **Number** in the **Type** field.
 
 Operators available per field type:
 
-- **String**: equals, not equals, is set, is not set.
-- **Number**: equals, not equals, less than, greater than, less than or equal, greater than or equal, between, is set, is not set.
-- **Date**: equals, not equals, before, after, on or before, on or after, between, is set, is not set.
-- **Version**: the same comparisons as Number, applied in version order — `1.10.0` ranks above `1.9.0`.
+- **String**: `=`, `≠`, `is set`, `is not set`.
+- **Number**: `=`, `≠`, `<`, `>`, `≤`, `≥`, `between`, `is set`, `is not set`.
+- **Date**: The same operators as Number. For a date, `<` means before and `>` means after.
+- **Version**: The same operators as Number, applied in version order — `1.10.0` ranks above `1.9.0`.
 
 ## The All Users system segment
 
-Adapty Mail ships with a built-in **All Users** segment that has no filters — every user in the project qualifies. You can't edit or delete it. A flow with **All Users** always goes last among the flows of its purpose (see [Flows](mail-flows#priority) for the priority rule).
+Adapty Mail ships with a built-in **All Users** segment that has no filters — every user in the project qualifies. You can't edit or delete it. A flow with **All Users** always goes last in [priority](mail-flows#priority) among the flows of its purpose.
 
 ## Lifecycle
 
@@ -108,6 +118,6 @@ The Segments page has a state filter in the toolbar so you can narrow the list t
 ## Limitations
 
 - **No OR logic, no nesting**: Filters combine with AND only.
-- **One field per segment**: A segment can't have two filters on the same field (for example, two country checks).
+- **One field per segment**: A segment can't have two filters on the same field (for example, two country checks). The exceptions are **Custom event** filters with different event names and **Custom attribute** filters with different keys.
 - **No size preview**: The editor doesn't show how many users currently match the filters.
 - **Filters locked after first use**: Only a **Draft** segment's filters can change. Any segment that has been used is read-only except for its name and description.

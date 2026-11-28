@@ -1,44 +1,46 @@
 ---
-title: "Reasons emails stop: opting out, stop conditions, failed delivery"
-description: "Every reason Adapty Mail stops sending to someone — failed verification, unsubscribes, bounces, and stop conditions — and what you can do about each."
+title: "Reasons emails stop: opting out, exit rules, failed delivery"
+description: "Every reason Adapty Mail stops sending to someone — such as failed verification, unsubscribes, bounces, and exit rules — and what you can do about each."
 metadataTitle: "Unsubscribe and Suppression | Adapty Mail | Adapty Docs"
 keywords: ['adapty mail', 'suppression', 'bounce', 'complaint', 'stop condition']
 ---
 
-Adapty Mail stops sending to a user for four different reasons:
+Adapty Mail stops sending to a user for six different reasons:
 
-- **Stop condition**: The user's current sequence ends because they converted. They're not suppressed and stay eligible for other campaigns.
+- **Exit rule**: The user's current sequence ends because they meet the exit rule of its [purpose](mail-purposes), for example with a purchase. They're not suppressed and stay eligible for other campaigns.
 - **No engagement**: The user's current marketing sequence ends because they opened and clicked none of its emails. They're not suppressed and stay eligible for other campaigns.
 - **Suppression**: The user is excluded from all future marketing sends in this project. [Transactional emails](#what-still-reaches-a-suppressed-profile) can still reach them.
-- **Throttle**: A new domain has a daily limit that rises as you send, and eventually goes away. An email over the limit waits until the limit frees up. If it can't go out within three days, it's marked **Cancelled** and the campaign stops for that recipient.
+- **Declined consent**: The source reports that the user declined marketing email. Their current marketing sequence ends when its next email is due, and no new one starts. Transactional emails still reach them, except the [double opt-in](mail-double-opt-in) request.
+- **Throttle**: A new domain has a daily limit that rises as you send, and eventually goes away. An email over the limit waits until the limit frees up. If it can't go out within three days, or far more email is due than your domains can send that day, it's marked **Cancelled** and the sequence ends for that recipient.
+- **Missing data**: An email needs [purchase or custom event data](mail-email-data#emails-held-back-for-missing-data), and the event that started its sequence doesn't include it. Adapty Mail holds the email back and tries again twice. If the data is still missing, the user's sequence ends with the reason **No data for the email**. They're not suppressed and stay eligible for other campaigns.
 
-All four are project-specific. Suppression in one Adapty project doesn't affect another.
+All six are project-specific. Suppression in one Adapty project doesn't affect another.
 
-## Stop conditions (campaign conclusion on success)
+## Exit rule (a purpose ends a sequence early)
 
-A stop condition ends a campaign once it has succeeded, so its remaining emails never go out.
+Each purpose has an exit rule that can end its sequences early, so their remaining emails never go out. Adapty Mail applies exit rules whenever an event such as a purchase or a refund updates a profile.
 
-Every event Adapty Mail receives — a purchase, a refund, a confirmation — updates the profile. After each update, Adapty Mail checks the profile whether the appropriate stop condition is met:
+Every project starts with eight purposes. By default, they end a sequence in the following cases:
 
-- **Marketing campaigns**: the profile's subscription state reaches **Subscribed**, or its one-time purchase state reaches **Purchased**.
-- **App activation** and **Cancellation page**: no stop condition — they always run to the end.
-- **Double opt-in**: the recipient confirms their address.
+- **Marketing purposes**: The recipient makes a one-time purchase or no longer meets the condition of the purpose. A **Billing issue** sequence, for example, ends when the subscription expires.
+- **App activation** and **Cancellation page**: None. Their sequences run to the end.
+- **Double opt-in**: The recipient confirms their address.
 
-A detected stop condition ends the campaign for that recipient. They stay eligible for the other campaigns.
+You can change the exit rule of every [purpose](mail-purposes) except **Double opt-in**, including purposes you create.
 
-Open your campaign analytics for a breakdown of who hits stop conditions and how.
+After an exit, the recipient stays eligible for other campaigns. The profile's [journey](mail-profiles#the-activity-journey) shows the email that didn't go out as **Cancelled**, with the reason **Stop condition met**. [Campaign analytics](mail-analytics) show this reason for every exit.
 
-## No engagement (an ignored marketing campaign ends early)
+## No engagement (an ignored marketing sequence ends early)
 
-A marketing campaign ends early for a recipient who opens and clicks none of its emails. The first three emails go out whether or not they're opened. Before each later email, Adapty Mail compares the number of emails delivered with how long ago the recipient entered the campaign:
+A marketing sequence ends early for a recipient who opens and clicks none of its emails. The first three emails go out whether or not they're opened. Before each later email, Adapty Mail compares the number of emails delivered with how long ago the sequence started:
 
-| Emails delivered | The campaign ends if the recipient entered it at least |
+| Emails delivered | The sequence ends if it started at least |
 | --- | --- |
 | 3 | 2 days ago |
 | 4 | 36 hours ago |
 | 5 or more | 1 day ago |
 
-One open or click of any email in the campaign keeps the recipient in it to the end. Transactional campaigns never end this way.
+One open or click of any email in the sequence keeps the recipient in it to the end. Transactional sequences never end this way.
 
 The profile's [journey](mail-profiles#the-activity-journey) shows the email that didn't go out as **Cancelled**, with the reason **No engagement**. The profile isn't suppressed and can enter other campaigns.
 
@@ -68,7 +70,7 @@ If the check doesn't finish — the mail server blocks it, or does not respond �
 
 To see what happened to an address, look it up in [Profiles](mail-profiles). A profile labeled **Unsubscribed** failed the check, even though nothing was ever sent to it. An address with no profile at all was rejected. The [Adapty Mail API](mail-send-data-via-api) can't tell you: its response comes back before the check runs.
 
-An address that stops working later keeps its profile until the first bounce suppresses it. Adapty Mail never re-checks an address, and sending a corrected one doesn't repair the profile — it creates a second one.
+A profile still receives emails after its address stops working, until the first bounce suppresses the profile. Adapty Mail never re-checks an address, and sending a corrected one doesn't repair the profile — it creates a second one.
 
 :::important
 Adapty Mail probes an address once, when it arrives. After that, a dead address surfaces only when an [email delivery fails](#delivery-failed-or-the-recipient-marked-it-as-spam). Validate addresses on your side before you pass them to Adapty Mail.
@@ -78,7 +80,7 @@ Adapty Mail probes an address once, when it arrives. After that, a dead address 
 
 A marketing email gives the recipient two ways to unsubscribe. Transactional emails have none — service messages aren't sent on consent, so there's nothing to withdraw.
 
-- **Footer link**: Every marketing email carries one. It opens a page with the recipient's masked address and an **Unsubscribe** button; clicking it suppresses the profile. The confirmation step is deliberate: scanners and prefetchers open links in the message body on their own, and should not accidentally trigger cancellations.
+- **Footer link**: Every marketing email carries one. It opens a page with the recipient's masked address and an **Unsubscribe** button; clicking it suppresses the profile. The confirmation step is deliberate. Scanners and prefetchers open links in the message body on their own, so a visit to the page alone doesn't unsubscribe anyone.
 - **One-click unsubscribe**: Mail clients that support this capability show an "unsubscribe" button next to the sender name. A single click suppresses the profile, with no confirmation page in between. Adapty Mail sends the `List-Unsubscribe` headers Gmail and Yahoo require of bulk senders (RFC 8058) with every marketing email.
 
 Both URLs carry an encrypted token that identifies the recipient and the email it came from, so unsubscribing requires no login and no lookup. Both point to your own domain, but the cancellation page is hosted by Adapty Mail.
@@ -109,11 +111,11 @@ The profile page does show whether a profile is suppressed: its header names the
 
 ## Throttle (temporary delays and cancellations)
 
-A new sending domain has the limit of 100 emails per day. The cap rises as you send, and disappears once the domain is fully warmed — see [Domain warm-up](mail-sending-domain#warm-up-and-daily-limits). Adapty Mail checks each of your domains against its own cap and sends from the first one still under it. A second verified domain therefore raises what the project can send in a day.
+A new sending domain has the limit of 100 emails per day. The cap rises as you send, and disappears once the domain is fully [warmed up](mail-sending-domain#warm-up-and-daily-limits). Adapty Mail checks each of your domains against its own cap and sends from the first one still under it. A second verified domain therefore raises what the project can send in a day.
 
-The cap is spread across the day, so each domain also has an hourly limit — see [How tiers work](mail-sending-domain#how-tiers-work). When all your domains are over a limit, the email never reaches Amazon SES. The profile's [journey](mail-profiles#the-activity-journey) is **Throttled**. Adapty Mail tries again once the limit frees up: in the next hour if the hourly limit held the email back, or after midnight UTC if the daily cap did. Transactional emails are tried again first, then the first emails of flows, then the rest.
+The cap is spread across the day, so each domain also has an [hourly limit](mail-sending-domain#how-tiers-work). When all your domains are over a limit, the email never reaches Amazon SES. The profile's [journey](mail-profiles#the-activity-journey) is **Throttled**. Adapty Mail tries again once the limit frees up: in the next hour if the hourly limit held the email back, or after midnight UTC if the daily cap did. Transactional emails are tried again first, then the first emails of flows, then the rest.
 
-An email that still can't go out within three UTC days, counting the day it was first due, is **Cancelled**, and the recipient's campaign stops. The profile isn't suppressed and can enter another campaign. Nothing reports a cancellation on its own, and that chip is the only record of it. Before a large launch from a new domain, add a second verified domain or let the cap climb first.
+An email that still can't go out within three UTC days, counting the day it was first due, is **Cancelled**, and the sequence ends for the recipient. Adapty Mail doesn't wait when every domain is over its daily limit and the email due that day is at least three times what your domains can send to the recipient's mailbox provider: the email is **Cancelled** at once. The profile isn't suppressed and can enter another campaign. Nothing reports a cancellation on its own, and that chip is the only record of it. Before a large launch from a new domain, add a second verified domain or let the cap climb first.
 
 Test sends ignore the cap entirely, so a successful [test email](mail-testing) tells you nothing about whether a real send would go out.
 
@@ -125,11 +127,11 @@ Complying with CAN-SPAM, GDPR and the equivalents in your markets is your obliga
 
 - **Unsubscribe link**: In the footer of every marketing email, processed as soon as the recipient confirms.
 - **List-Unsubscribe headers**: Sent with every marketing email for one-click unsubscribe from the inbox (RFC 8058).
-- **Automatic suppression**: Triggered by a bounce or a spam report.
+- **Automatic suppression**: Applied after a bounce or a spam report.
 - **Address placeholder**: Reserved in every campaign email footer and filled with the address you provide.
 
 ### Your responsibility
 
 - **Your company address**: Save it in **Settings** > **Company** — that's the value the placeholder is filled with. CAN-SPAM requires a physical address in the footer, and Adapty Mail won't generate a campaign without one.
-- **Explicit opt-in consent**: Collect it before passing a user's email to Adapty. See [Connect Adapty to Adapty Mail](mail-collect-emails). To also have each new recipient confirm their address before any marketing email, turn on [double opt-in](mail-double-opt-in).
+- **Explicit opt-in consent**: Collect it before you [pass a user's email to Adapty](mail-collect-emails). To also have each new recipient confirm their address before any marketing email, turn on [double opt-in](mail-double-opt-in).
 - **GDPR erasure requests**: Send the profile's identifiers to the [Delete profile](api-mail/operations/deleteProfile) endpoint of the Adapty Mail API. Adapty Mail erases the profile's personal data and cancels its scheduled emails. Erasure is final: a later save carrying the same identifiers doesn't recreate the profile.

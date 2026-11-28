@@ -3,20 +3,19 @@ info:
   title: Adapty Mail API
   version: 1.0.0
   description: |
-    The Adapty Mail API lets you send user profiles and transaction events to Adapty Mail directly
-    from your server, without routing the data through the Adapty SDK.
+    With the Adapty Mail API, you can [send user profiles, purchases, subscription changes, and custom events](/docs/mail-send-data-via-api)
+    to Adapty Mail directly from your server.
 
-    Use it to:
+    Use the API to:
 
     - Add subscribers when you don't have a base in Adapty Mail yet.
     - Reuse the subscriber base from your other apps.
     - Feed Adapty Mail server-to-server, with your backend as the source of truth.
+    - Start and stop email sequences on events from your app, such as a completed onboarding.
 
-    A profile with an email is enough for the **never purchased** flow. Every other flow
-    (renewal cancelled, billing issue, expired, refunded) is driven by purchase history, so those
-    profiles also need transaction events to be placed in the right flow.
-
-    For a step-by-step walkthrough, see [Send emails and transactions via the Adapty Mail API](/docs/mail-send-data-via-api).
+    The [purpose](/docs/mail-purposes) of each flow decides which events start it. Of the eight
+    purposes every project starts with, **Never purchased** by default only needs a profile with an
+    email. The other standard marketing purposes need you to report purchases and subscription changes.
 servers:
   - url: https://api-mail.adapty.io
     description: Production server
@@ -41,14 +40,14 @@ paths:
               $ref: '#/components/schemas/ProfileDTO'
             examples:
               basic:
-                summary: Profile with an email, ready for the "never purchased" flow
+                summary: Profile with an email, ready for the "Never purchased" purpose
                 value:
                   external_profile_id: "user_12345"
                   external_created_at: "2026-06-01T10:30:00Z"
                   email: "jane@example.com"
                   country: "US"
                   custom_attributes:
-                    plan: "trial"
+                    signup_source: "referral"
       responses:
         '200':
           description: Profile saved successfully. The response body is an empty object.
@@ -173,12 +172,13 @@ paths:
     post:
       summary: Save transaction event
       description: |
-        Records a store transaction event for a profile. Adapty Mail uses transaction events to place
-        profiles in purchase-based flows — the `event_type` maps to flows such as renewal cancelled,
-        billing issue, expired, and refunded — and for revenue attribution.
+        Records a store transaction event for a profile: one purchase or subscription change. Adapty Mail
+        uses transaction events for revenue attribution and to place profiles in purchase-based flows.
+        By default, the `event_type` decides which [purposes](/docs/mail-purposes#default-rules-of-the-standard-purposes)
+        the event starts, such as **Renewal cancelled**, **Billing issue**, **Expired**, and **Refunded**.
+        To change which events start a purpose, edit its entry rule on the **Purposes** page.
 
-        Send these events as you handle purchases, renewals, and cancellations. Only the
-        **never purchased** flow works without them.
+        Send these events as you handle purchases, renewals, and cancellations.
       operationId: saveTransactionEvent
       security:
         - apikeyAuth: []
@@ -242,6 +242,70 @@ paths:
                         error_code: "secret_key_does_not_exist_error"
                         status_code: 403
                         field_name: null
+  /api/v1/profile/custom-event/save/:
+    post:
+      summary: Save custom event
+      description: |
+        Records a custom event for a profile: something that happens in your app, such as a completed
+        onboarding. To start email sequences with the event, add its name to the entry rule of a
+        [purpose](/docs/mail-purposes#event-triggers-from-your-app). To stop sequences early with the
+        event, add its name to the exit rule of a purpose.
+
+        Add the name before you send the event. Purpose rules only apply to events that Adapty Mail
+        receives after you add the name.
+      operationId: saveCustomEvent
+      security:
+        - apikeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomEventDTO'
+            examples:
+              basic:
+                summary: A user completed onboarding
+                value:
+                  event_type: "onboarding_completed"
+                  event_id: "evt_def456"
+                  event_datetime: "2026-06-12T18:45:00Z"
+                  external_profile_id: "user_12345"
+                  payload:
+                    goal: "Sleep better"
+                    steps_completed: "6"
+      responses:
+        '200':
+          description: |
+            Custom event received. Adapty Mail applies purpose rules to the event after it responds, so
+            the response doesn't show whether a sequence started. The response body is empty.
+        '400':
+          description: Validation failed — a required field is missing or invalid. `field_name` shows which field.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Field required"
+                        error_code: "base_error"
+                        status_code: 400
+                        field_name: "event_type"
+        '403':
+          description: Missing or invalid secret API key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Secret key doesn't exist"
+                        error_code: "secret_key_does_not_exist_error"
+                        status_code: 403
+                        field_name: null
 components:
   securitySchemes:
     apikeyAuth:
@@ -253,7 +317,7 @@ components:
         header with the value `Bearer {your_secret_api_key}`, for example, `Bearer secret_live_...`.
 
         Find this key in Adapty Mail under **Settings**. The key is project-specific — it identifies the
-        project the data belongs to, so the profile and transaction endpoints don't take a project ID.
+        project the data belongs to, so the endpoints don't take a project ID.
   schemas:
     ProfileDTO:
       type: object
@@ -311,7 +375,7 @@ components:
           type: boolean
           description: |
             The user's answer to receiving marketing email: `true` if they agreed, `false` if they declined.
-            Adapty Mail sends no marketing email to a profile whose answer is `false`, and no
+            Adapty Mail sends no marketing email to a profile with the answer `false`, and no
             [double opt-in](/docs/mail-double-opt-in) confirmation request either. Other transactional
             emails still reach it.
 
@@ -320,7 +384,7 @@ components:
           type: object
           description: |
             Arbitrary key-value pairs (string or number values) to attach to the profile. Use them to
-            build [segments](/docs/mail-segments) — for example, `plan`, `signup_source`, or `trial_days`.
+            build [segments](/docs/mail-segments) — for example, `signup_source` or `onboarding_id`.
         device_info:
           $ref: '#/components/schemas/DeviceInfoDTO'
     ProfileDeleteDTO:
@@ -393,9 +457,9 @@ components:
           type: string
           description: |
             The same stable `external_profile_id` you send when saving the profile. Links the
-            transaction to the right profile.
+            transaction event to the right profile.
 
-            You can send a transaction before the profile exists. Adapty Mail stores the event
+            You can send a transaction event before the profile exists. Adapty Mail stores the event
             unattached and links it to the profile on the next save that carries the same identifier.
         customer_user_id:
           type: string
@@ -437,9 +501,11 @@ components:
           description: When the subscription expires or expired, in ISO 8601 format. Omit for non-subscription purchases.
         offer:
           $ref: '#/components/schemas/Offer'
+        payment_context:
+          $ref: '#/components/schemas/PaymentContext'
     TransactionEventType:
       type: string
-      description: The kind of transaction event. Purchase-based flows are triggered by these values.
+      description: The kind of transaction event. The [purpose](/docs/mail-purposes) of each flow decides which events start it.
       enum:
         - subscription_started
         - subscription_renewed
@@ -478,6 +544,139 @@ components:
         - free_trial
         - pay_as_you_go
         - pay_up_front
+    PaymentContext:
+      type: object
+      description: |
+        The payment details of the purchase: the amount, the product, and the payment method. To show
+        these details in emails, send this object. Adapty Mail doesn't read the amount or the product from `price_usd` or
+        `store_product_id`. For a purchase without `payment_context`, Adapty Mail doesn't send an email
+        that shows either one. The user's sequence then ends with the reason **No data for the email**.
+
+        When Adapty Mail receives the same transaction again, it fills in a missing `payment_context`,
+        but never replaces or clears a stored `payment_context`.
+      required:
+        - amount
+        - currency
+        - method
+        - product_name
+      properties:
+        amount:
+          oneOf:
+            - type: number
+            - type: string
+          description: The amount charged, tax included, as a number or a decimal string (for example, `9.99` or `"9.99"`). It can't be negative. For a free trial start, send `0`.
+        currency:
+          type: string
+          pattern: '^[A-Za-z]{3}$'
+          description: The currency of `amount`, as a three-letter ISO 4217 code (for example, `USD`).
+        tax_amount:
+          oneOf:
+            - type: number
+            - type: string
+          description: The tax included in `amount`, as a number or a decimal string. It can't be negative or exceed `amount`.
+        method:
+          $ref: '#/components/schemas/PaymentMethod'
+        product_name:
+          type: string
+          description: The product name to show in emails, for example, `Premium, 1 month`.
+    PaymentMethod:
+      type: object
+      description: The payment method of the purchase.
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/PaymentMethodType'
+        brand:
+          $ref: '#/components/schemas/CardBrand'
+        last4:
+          type: string
+          pattern: '^[0-9]{4}$'
+          description: The last four digits of the card number. It's required for `card` and optional for `apple_pay` and `google_pay`.
+    PaymentMethodType:
+      type: string
+      enum:
+        - card
+        - apple_pay
+        - google_pay
+        - paypal
+        - pix
+        - other
+    CardBrand:
+      type: string
+      description: The card brand. It's required for `card` and optional for `apple_pay` and `google_pay`.
+      enum:
+        - visa
+        - mastercard
+        - amex
+        - discover
+        - jcb
+        - unionpay
+        - other
+    CustomEventDTO:
+      type: object
+      required:
+        - event_type
+        - event_id
+        - event_datetime
+        - external_profile_id
+      properties:
+        event_type:
+          type: string
+          pattern: '^[a-z][a-z0-9_]*$'
+          maxLength: 64
+          description: |
+            The event name, such as `onboarding_completed`. It has up to 64 characters: lowercase letters,
+            digits, and underscores, with a letter first. Use the same name as under **Custom** in the
+            entry rule or exit rule of a purpose.
+
+            You can't give a custom event a name that Adapty Mail uses for its own events: `created`,
+            `updated`, `email_confirmed`, `suppressed`, `deleted`, and every `event_type` of a
+            transaction event, such as `subscription_started`.
+        event_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: |
+            Your unique identifier for this event. It has up to 128 characters. Adapty Mail ignores an
+            `event_id` it already has, so you can safely retry a request.
+        event_datetime:
+          type: string
+          format: date-time
+          description: When the event happened, in ISO 8601 format, in UTC.
+        external_profile_id:
+          type: string
+          description: |
+            The same stable `external_profile_id` you send when you save the profile.
+
+            You can send a custom event before the profile exists. Adapty Mail keeps the event and links
+            it to the profile on the next save that includes the same identifier. At that point, the
+            profile can match a purpose on the event.
+        customer_user_id:
+          type: string
+          description: Identifier of the user in your own system.
+        email:
+          type: string
+          format: email
+          description: Email address of the user.
+        source:
+          type: string
+        payload:
+          type: object
+          maxProperties: 50
+          propertyNames:
+            pattern: '^[a-z][a-z0-9_]*$'
+          additionalProperties:
+            type: string
+            maxLength: 1000
+          description: |
+            Data to show in emails. It can have up to 50 fields, and each value is a string of up to
+            1,000 characters. Field names follow the character rules of `event_type`. Use the names that
+            the purpose lists under **Payload fields**.
+
+            Each field appears in emails through its
+            [custom event placeholder](/docs/mail-email-data#custom-event-placeholders), such as
+            `{{ custom_event.goal }}`.
     Errors:
       type: object
       description: Standard error response. Every failure returns a 4XX status with this shape.

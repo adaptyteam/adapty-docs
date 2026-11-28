@@ -9,7 +9,7 @@ reviewed_at:
 
 Adapty Mail is a separate product surface that turns existing Adapty profile data into AI-generated
 email sequences aimed at converting trial users into paid subscribers: brand setup, email collection,
-flow/trigger and segment targeting, campaign creation, A/B testing of emails, checkout pages,
+flow/purpose and segment targeting, campaign creation, A/B testing of emails, checkout pages,
 sending-domain/DNS setup, suppression/unsubscribe handling, analytics, and a server-side API for sending
 data without the mobile SDK. It requires its own domain and its own web checkout, and is not part of the
 core in-app paywall/subscription product.
@@ -25,7 +25,7 @@ core in-app paywall/subscription product.
 - **Campaign generation is gated on two things; paywall generation on a third** (dashboard, 2026-08-26).
   **Generate emails** stays disabled until the brand is saved and the company address is filled in,
   both from the onboarding status, with tooltips *"Set up your brand to enable generation"* / *"Add your
-  company address in Settings to enable generation"*. **Company address** is a section on Settings →
+  company address in Settings to enable generation"*. **Company address** is a section on Settings >
   **Company**: five required fields (legal name, address line 1, city, postal code, country), two
   optional (address line 2, state), banner *"Campaign generation is blocked until the address is filled
   in"*, and it reaches every campaign email through a `{{ company_address }}` merge tag rendered as
@@ -37,8 +37,8 @@ core in-app paywall/subscription product.
   must always be scoped to generation. `mail-brand`'s "New campaigns … are blocked" is too broad for the
   same reason.
 - **Setup order is the in-product checklist, and `mail-get-started` now mirrors it** (dashboard,
-  2026-08-26): brand saved → domain verified → company address filled → checkout created → campaign
-  created → data sending, then either "Enable sending" (→ Settings → Project) or "Start sending" (→ our
+  2026-08-26): brand saved, domain verified, company address filled, checkout created, campaign
+  created, data sending, then either "Enable sending" (links to Settings > Project) or "Start sending" (links to our
   `mail-send-data-via-api`). It hides itself once complete. **The dashboard deep-links
   `mail-get-started` with no anchor**, so renumbering its headings is safe.
 - **The first sending domain has no "Add domain" button to click first.** With no domains, Email domains
@@ -67,39 +67,58 @@ core in-app paywall/subscription product.
   Mitigation adopted in the docs: scope the noun on first use ("Adapty Mail includes its own **flows**"),
   define each term where the reader first meets it, and never call the brand object a "profile". This is
   a product naming collision, not a wording problem — raised for the Mail team 2026-08-27.
-- **Flow, trigger and send-eligibility behaviour** lives in the backend's campaign logic. The vocabulary
-  mapping is load-bearing, because the backend does not call anything a "flow": a **flow** is one
-  container per project per trigger, a **flow row** is a segment plus an integer priority, and a live
-  send is a per-profile campaign assignment with one scheduled email per email. The five fixed triggers
-  are a closed set, and a single resolver turns a purchase state into a trigger — that is where "which
-  trigger fires for a grace-period / auto-renew-off user" is settled (confirm with the Mail team).
-  **Since 2026-08-30 those five are the *marketing* triggers only** (verified 2026-09-03 against backend
-  code, released). A second class exists: transactional campaigns run on a single transactional
-  trigger, profile created, fire **once per profile per flow**, carry no unsubscribe link or
-  `List-Unsubscribe` header, and are not gated by consent. Today the only transactional flow is the one
-  double opt-in creates; the dashboard shows both classes as **Marketing** / **Transactional** tabs on
-  Flows, Campaigns and A/B Tests.
-- **Whether a specific profile is eligible to send** is decided in one place, in this order: suppression
-  check, then existing active assignment, then stop condition, then throttle cooldown, then trigger
-  resolution, then first matching segment by priority (backend code). Confirm it before writing any
-  "configured but nothing sent" content — every one of those branches is a distinct reason a reader sees
-  silence, and only some of them surface in the UI. **One more branch since 2026-08-20** (verified
-  2026-09-03): a *marketing* campaign is held back while the profile still owes a double opt-in
-  confirmation — setting enabled, profile created at or after the setting was last updated, and no
-  email confirmation recorded. The hold is released when the profile confirms its email, which re-runs
-  the marketing assignment. Turning the setting off lifts the gate but emits no event, so held profiles
-  are not started retroactively.
+- **Flow, purpose and send-eligibility behaviour** lives in the backend's campaign logic. **The fixed
+  trigger model ended on 2026-11-24** (backend code and live dashboard, checked 2026-11-27). Each flow
+  now belongs to a **purpose**, and each purpose carries rules the project edits on the dashboard's
+  **Purposes** page: an **Entry rule** (one or more events, plus an optional **Condition** checked
+  against the profile when the event arrives), an **Exit rule** (optional reasons to stop early: the
+  profile stops meeting the condition, or a listed event happens) and a **Re-entry rule** (**Never**,
+  **After a number of days**, **On every entry event**). A purpose is **Marketing** or
+  **Transactional**, chosen at creation and never changed. Every project starts with eight standard
+  purposes: five marketing (Never purchased, Renewal cancelled, Expired, Billing issue, Refunded) and
+  three transactional (Double opt-in, App activation, Cancellation page). A project can edit or delete
+  all of them except Double opt-in, and add its own. A **flow** is one segment of one purpose plus its
+  content (a campaign or an A/B test), with a page of its own. The backend now uses the same two words,
+  so the old container-and-row mapping no longer applies. A live send is still a per-profile sequence
+  with one scheduled email per email. Since 2026-11-27 the event lists of the **Entry rule** and the **Exit rule** also take the
+  project's own **custom events**, sent through the public API. Transactional campaigns carry no
+  unsubscribe link or `List-Unsubscribe` header and are not gated by consent (verified 2026-09-03, not
+  re-checked). The dashboard shows both classes as a **Marketing** | **Transactional** switch on Flows,
+  Campaigns, A/B Tests, Purposes and Email Destinations. It never says "trigger": treat the word as
+  ticket language.
+- **Whether a profile gets a sequence** is decided on each event about it, except deletion and
+  suppression (backend code, checked 2026-11-26). The exit rules of the profile's running sequences run
+  first, then Adapty Mail tries the purposes that list the event in their **Entry rule**. Transactional purposes
+  are tried independently, so one event can start several. Marketing allows one sequence per profile at
+  a time: marketing purposes are tried in the order set with **Change order** on the **Purposes** page,
+  and within a purpose the flows by priority, the first matching segment winning. A failed condition, or
+  no matching flow, passes the profile to the next purpose. A **Re-entry rule** that refuses the profile,
+  or a sequence of that purpose still running for it, ends the search: lower purposes don't get the
+  profile. Nothing replaces a running marketing sequence, and exit rules run only when an event about
+  the profile arrives. Marketing never starts for a suppressed profile, one with `email_consent` false,
+  or one held for double opt-in. Since 2026-11-26, with **On every entry event**, each purchase, and since 2026-11-27 each custom event, starts
+  its own sequence even while an earlier one runs (marketing stays one at a time). Confirm this order
+  before writing any "configured but nothing sent" content — every branch is a distinct reason a reader
+  sees silence, and only some of them surface in the UI. The throttle cooldown of the order before
+  2026-11-24 was not re-checked. **The double opt-in hold** (since 2026-08-20, verified 2026-09-03): a
+  *marketing* campaign is held back while the profile still owes a confirmation — setting enabled,
+  profile created at or after the setting was last updated, and no email confirmation recorded.
+  Confirming records an **Email confirmed** event, which enters only the purposes that list it in their
+  entry rule (Never purchased, in the standard set): a profile with a subscription that lapsed before it
+  confirmed doesn't enter Expired then. Turning the setting off lifts the gate but emits no event, so
+  held profiles are not started retroactively.
 - **Suppression** has **eight** reasons as of 2026-09-03 (backend code) — this bullet said five;
   `deleted`, `internal` and `email_validation_invalid` were added, the last by an email-validator
   release merged 2026-09-02, a pre-save third-party reachability check that suppresses
   invalid/disposable/full/disabled mailboxes at creation. It is a single nullable field on the profile,
   first write wins, and nothing in backend code clears it. Note the ownership split inside the original
   five reasons: `bounce`, `complaint` and `reject` are reported by AWS SES, while `unsubscribe` and
-  `throttle` are generated by us. The stop condition is a different object entirely — a cancellation
-  reason on the assignment, not on the profile.
-- **The public API surface is established by authentication, not by the OpenAPI tag.** Three routes
-  take the project-scoped Adapty Mail secret key: `profile/save/`, `profile/delete/`, and
-  `profile/transaction-event/save/`. Corrected 2026-08-14 — this bullet said two; `profile/delete/`
+  `throttle` are generated by us. The stop condition (since 2026-11-24 a purpose's **Exit rule**; the journey and
+  analytics still show **Stop condition met**) is a different object entirely: a cancellation reason on
+  the assignment, not on the profile.
+- **The public API surface is established by authentication, not by the OpenAPI tag.** Four routes
+  take the project-scoped Adapty Mail secret key: `profile/save/`, `profile/delete/`,
+  `profile/transaction-event/save/` and, since 2026-11-27, `profile/custom-event/save/`. Corrected 2026-08-14 — this bullet said two; `profile/delete/`
   (right-to-erasure by anonymization) shipped since, and returns 204. Everything else, including the
   profile list / detail / journey / suppress routes behind the `mail-profiles` screen, takes a dashboard
   account session, and those sit under the **same `Profile` tag** as the public routes in the service's
@@ -135,7 +154,7 @@ core in-app paywall/subscription product.
   FunnelFox for checkout will otherwise think they've done the data integration.
 - **Self-serve and partner are distinct product experiences, and the docs must carry both.** A company
   created by self-serve signup has no linked partner, and a per-project flag decides whether the
-  **Adapty Integration** section on Settings → Project renders at all and which sending step the
+  **Adapty Integration** section on Settings > Project renders at all and which sending step the
   onboarding checklist shows. So "enable the Adapty integration" is not universal advice — for a
   self-serve project that section does not exist, and the equivalent step is posting to the API.
 - **CTA placeholders are per-source and the old single form is gone.** Adapty Mail substitutes
@@ -145,11 +164,11 @@ core in-app paywall/subscription product.
   are left intact and a source the profile lacks resolves to `''`. There is no `cid` parameter and no
   `customer_user_id` placeholder anywhere in Adapty Mail's code.
 - **Deliverability is split by owner, and the split is what limits what we may claim.** Ours: the
-  14-step warm-up ladder (200 → 30000 sends/day), the intra-day smoothing of a tier's allowance on its
+  14-step warm-up ladder (200 to 30000 sends/day), the intra-day smoothing of a tier's allowance on its
   first day, tier promotion, and the throttle that fires when a limit is hit. Not ours: sending itself,
   and the bounce/complaint/reject signals, are AWS SES's; the DNS identity requirements are SES's shape
   (DKIM, MAIL FROM, DMARC); and warm-up traffic and its mailbox come from third-party warm-up services.
-  The apex-domain-only rule and the fixed `mail.` / `email.` sending prefixes with the `hello.` MAIL
+  The root-domain-only rule and the fixed `mail.` / `email.` sending prefixes with the `hello.` MAIL
   FROM prefix *are* our constants, so those are safe to state flatly. A provider-owned fact must be
   attributed as the provider's, because it can change without us.
 - **Each sending domain has an optional Reply-to address** (verified 2026-10-14 against backend and
@@ -173,7 +192,7 @@ core in-app paywall/subscription product.
   (3) **The ladder is 20 tiers starting at 100/day and ending at 57,000**, not 14 starting at 200; tier
   21 means unthrottled. (4) **DNS has three record owners, not one** — SES identity (DKIM/MAIL FROM),
   warm-up credentials (the warm-up-mailbox records under the sending subdomain), and a custom
-  hostname: a Cloudflare custom hostname `go.<domain>` serving media and tracked links, whose active
+  hostname: a Cloudflare custom hostname `go.<domain>` serving media and tracked links; its active
   state is a **required** gate for warm-up to start. Records now carry per-record `correct | mismatch |
   missing` validation, and exports are CSV plus GoDaddy/Cloudflare zone files. Also corrected: the DNS
   poll interval tops out at **1 hour**, not 32 minutes, and a warm-up domain **can be deleted after
@@ -189,8 +208,8 @@ core in-app paywall/subscription product.
   is one of them.** The dashboard's own tab labels are the ground truth. The domain wizard is an
   **Email domains** section inside **DNS**, and the integration is an **Adapty Integration** section
   inside **Project**. On 2026-07-23 the dashboard folded the old Email Domains tab into DNS, which is
-  when the old paths went stale; the docs carried `Settings → Email Domains` in eight places and
-  `Settings → Integrations` in three until 2026-08-14. Two button labels sit behind the same flow gate
+  when the old paths went stale; the docs carried `Settings > Email Domains` in eight places and
+  `Settings > Integrations` in three until 2026-08-14. Two button labels sit behind the same flow gate
   and are easy to swap by mistake: **Enable Adapty integration** on first setup, plain **Enable** when a
   disabled integration already exists. The tooltip is *"Set up at least one flow before enabling Adapty
   integration"* with no trailing period. Check these strings in the dashboard before writing any
@@ -198,7 +217,7 @@ core in-app paywall/subscription product.
 - **Marketing consent is opt-out: only a recorded `false` blocks it** (verified 2026-10-27 against backend
   and dashboard code on the production line). A profile carries `email_consent` (true / false / none),
   set by the public `profile/save/` field or by a custom attribute `email_consent` (`true`/`false`/`1`/`0`)
-  from any source except FunnelFox, whose attribute is ignored. `false` stops marketing, the double
+  from any source except FunnelFox (Adapty Mail ignores its attribute). `false` stops marketing, the double
   opt-in request, and already-scheduled marketing at send time; other transactional email is unaffected.
   `true` does not skip double opt-in. A save without the field keeps the stored answer; a later answer
   replaces it. The dashboard shows it as **Email consent** (Granted / Denied / Not provided) on the
@@ -209,8 +228,8 @@ core in-app paywall/subscription product.
 ## What we document, what we don't
 
 - **We document operating the product, not email marketing.** Our line is the mechanics and constraints
-  the interface cannot show: what locks when a segment goes Live, which purchase state resolves to which
-  trigger, why a row never fired, what a metric counts, what must happen before what. Craft is out —
+  the interface cannot show: what locks when a segment goes Live, which purpose takes a profile when one
+  event enters several, why a flow never started, what a metric counts, what must happen before what. Craft is out —
   subject-line writing, sequence length, delay tuning, cadence, segmentation strategy, "what converts
   best". The AI generates the copy, which makes the copywriting question moot by design; where the
   product has one fixed answer we state the mechanic (three subject variants per email, best performer
@@ -228,7 +247,7 @@ core in-app paywall/subscription product.
   that turns a mechanism into a promise.
 - **What gets written here versus the three neighbours.** Against **`other-apis`**: an endpoint, field,
   enum value, required flag or error shape is an edit to `adapty-mail-api.yaml` in that zone — here we
-  write only the walkthrough (what to send first, which flow needs transaction events, what happens to
+  write only the walkthrough (what to send first, which purposes need transaction events, what happens to
   profiles sent before setup finishes). A guide that grows a field table has taken over the spec's job.
   Against **`subscribers-and-profiles`**: that zone owns how an email address and a stable
   `customer_user_id` get onto a profile; here we write only the delivery consequence — no email or no
@@ -242,17 +261,17 @@ core in-app paywall/subscription product.
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
 | adapty-mail | entry | marketer | 4 | tutorial |
-| mail-ab-testing | — | marketer | 7 | tutorial |
-| mail-analytics | — | marketer | 11 | tutorial |
+| mail-ab-testing | — | marketer | 9 | tutorial |
+| mail-analytics | — | marketer | 10 | tutorial |
 | mail-brand | — | marketer | 10 | tutorial |
 | mail-checkout | — | marketer | 7 | tutorial |
 | mail-collect-emails | — | marketer | 7 | tutorial |
 | mail-create-campaign | — | marketer | 6 | tutorial |
-| mail-create-flow | — | marketer | 4 | tutorial |
+| mail-create-flow | — | marketer | 5 | tutorial |
 | mail-double-opt-in | — | marketer | 6 | tutorial |
 | mail-email-campaigns | entry | marketer | 0 | tutorial |
 | mail-entry-points | entry | marketer | 0 | tutorial |
-| mail-flows | entry | marketer | 8 | tutorial |
+| mail-flows | entry | marketer | 9 | tutorial |
 | mail-funnelfox | how-to | marketer | 4 | tutorial |
 | mail-get-started | — | marketer | 15 | tutorial |
 | mail-mcp | — | — | 14 | tutorial |
@@ -306,30 +325,30 @@ core in-app paywall/subscription product.
 
 One article per feature, so the roster's own titles already answer "where is segments/analytics/brand".
 Rows below are only the cross-cutting concerns — ordering constraints, where data comes from, and the
-boundaries that get mis-filed. Corpus-wide synonyms (Adapty Mail ↔ email campaigns ↔ `mail-` prefix)
+boundaries that get mis-filed. Corpus-wide synonyms (Adapty Mail, email campaigns, the `mail-` prefix)
 live in `aliases.md` and are deliberately not repeated here.
 
 | How a ticket says it | Where it actually lives |
 |---|---|
-| "everything is configured but nothing is sending", "Enable button is greyed out", "campaign stuck in draft" | `mail-get-started` step 6 (**"Start sending"** since the 2026-08-14 restructure) — the setup order is load-bearing and this is the classic failure. **Sending comes last, on both paths**: the Adapty integration toggle on Settings → Project is disabled until at least one flow row exists ("Set up at least one flow before enabling Adapty integration"), and on the API path, profiles posted before setup finishes never receive anything. The product itself branches here — the onboarding checklist ends in either "Enable sending" (→ Settings) or "Start sending" (→ deep-links our `mail-send-data-via-api`) depending on whether the project has the Adapty integration available, so the docs must keep both branches. A campaign is a separate blocker — it has no publish action and stays `draft` until attached to a flow (`mail-create-campaign`). |
-| "our app doesn't collect emails", "no login in the app", "not enough recipients to launch", "how do I connect Adapty to Mail" | `mail-collect-emails` — **retitled "Connect Adapty to Adapty Mail" on 2026-08-14 and now the Adapty *integration* page**, not just an email-collection guide. Filename kept for SEO per the CLAUDE.md convention, so the slug still reads `mail-collect-emails`. It absorbed `mail-get-started`'s SDK-setup and enable-sending sections, and is the whole Adapty path end to end: observer mode → identify → `updateProfile` → enable the integration. Two values, in order: a stable `customer_user_id` first (there's no profile to attach an email to otherwise), then `email` via `updateProfile`. Anonymous profiles and profiles with no email are excluded from delivery *and* from campaign analytics. The 30–50% coverage target is a launch gate, not 100%. |
+| "everything is configured but nothing is sending", "Enable button is greyed out", "campaign stuck in draft" | `mail-get-started` step 6 (**"Start sending"** since the 2026-08-14 restructure) — the setup order is load-bearing and this is the classic failure. **Sending comes last, on both paths**: the Adapty integration toggle on Settings > Project is disabled until at least one flow exists ("Set up at least one flow before enabling Adapty integration"), and on the API path, an event that arrives before its flow exists starts no sequence. The profile enters on its next qualifying event instead: a subscription event or, for Never purchased, a profile update (corrected 2026-11-27; "profiles posted before setup never receive anything" has been false since 2026-11-24). The product itself branches here — the onboarding checklist ends in either "Enable sending" (links to Settings) or "Start sending" (deep-links our `mail-send-data-via-api`) depending on whether the project has the Adapty integration available, so the docs must keep both branches. A campaign is a separate blocker — it has no publish action and stays `draft` until attached to a flow (`mail-create-campaign`). |
+| "our app doesn't collect emails", "no login in the app", "not enough recipients to launch", "how do I connect Adapty to Mail" | `mail-collect-emails` — **retitled "Connect Adapty to Adapty Mail" on 2026-08-14 and now the Adapty *integration* page**, not just an email-collection guide. Filename kept for SEO per the CLAUDE.md convention, so the slug still reads `mail-collect-emails`. It absorbed `mail-get-started`'s SDK-setup and enable-sending sections, and is the whole Adapty path end to end: observer mode, identify, `updateProfile`, then enable the integration. Two values, in order: a stable `customer_user_id` first (there's no profile to attach an email to otherwise), then `email` via `updateProfile`. Anonymous profiles and profiles with no email are excluded from delivery *and* from campaign analytics. The 30–50% coverage target is a launch gate, not 100%. |
 | "which payment provider does Mail support", "can we use Paddle / PayPal" | `mail-checkout`. **Stripe only for the generated checkout** — the Stripe account and Stripe products lookups are the only payment-provider calls in Adapty Mail's code, which never mentions Paddle or PayPal (2026-08-14). Any other provider works only via **Use your own hosted paywall**, where payment happens entirely on the customer's side and Adapty Mail just redirects with substituted placeholders. Corrected 2026-08-14: `adapty-mail` and `mail-get-started` both listed "Stripe, Paddle, or PayPal" flatly, which pointed readers down the AI-generated path with a provider it can't use. |
 | "checkout link errors out", "user not identified at checkout", "purchase not attributed to the email" | `mail-checkout`. Three distinct causes: the web paywall was never **published**; `Adapty.identify()` wasn't called before the email was sent; or the manual URL is missing the identity placeholder. Corrected 2026-08-14 — this row named a **`cid` parameter, which exists nowhere in Adapty Mail's code**; see the CTA-placeholder bullet in Sources of truth for the real list. The attribution mechanism itself (last-click on `scheduled_email_id`, back-filled only onto purchases with no existing attribution that post-date the click) is documented in `mail-analytics` — personalization placeholders are a separate mechanism from attribution. |
-| "launch the campaign", "schedule the sequence", "change who gets it and when" | Split by which half of the pair it is. Content (copy, images, delays, email count) is `mail-create-campaign`; trigger + audience + going live is a **flow row** — `mail-create-flow` for the mechanics, `mail-flows` for the concepts. Nearly every "campaign doesn't send" ticket is really a flow-row ticket. |
-| "wrong sequence went out", "the broad audience swallowed my targeted one", "All Users row rejected on save" | `mail-flows` priority: rows are walked top to bottom, the first matching segment wins, later rows are never evaluated for that user. The backend rejects saves where an **All Users** row isn't last. |
-| "which trigger fires for a cancelled/failed/lapsed/refunded subscription", "add a custom trigger" | `mail-flows`. Five fixed triggers; the list is not extensible. Non-obvious: trial users are **not** in Never purchased — starting a trial counts as an active subscription — and Renewal cancelled / Expired each cover both paid and trial audiences, split via segment filters. |
-| "change the targeting on a running flow", "can't edit the segment filters", "combine two conditions with OR" | `mail-segments`. Filters lock as soon as the segment is Live (name and description stay editable) — to retarget, create a new segment and swap the flow row. Filters are AND-only, one filter per field, and there's no audience-size preview. |
+| "launch the campaign", "schedule the sequence", "change who gets it and when" | Split by which half of the pair it is. Content (copy, images, delays, email count) is `mail-create-campaign`; audience + going live is a **flow** — `mail-create-flow` for the mechanics, `mail-flows` for the concepts — and what starts and stops the sequence is the flow's **purpose**. Nearly every "campaign doesn't send" ticket is really a flow or purpose ticket. |
+| "wrong sequence went out", "the broad audience swallowed my targeted one", "All Users row rejected on save" | `mail-flows` priority: the flows of one purpose are tried in priority order, the first matching segment wins, and later flows are never evaluated for that profile. A flow for **All Users** shows **Last** in the **Priority** column and always stays last. Which purpose gets the profile in the first place is the **Purposes** order (see the eligibility bullet in Sources of truth). |
+| "which trigger fires for a cancelled/failed/lapsed/refunded subscription", "add a custom trigger", "start emails on our own app event" | `mail-purposes` owns the rules; `mail-flows` keeps what each standard purpose is for. Nothing has been hard-coded since 2026-11-24: each purpose's **Entry rule** (events plus an optional condition) decides what starts it, and a project can edit every standard purpose except Double opt-in, reorder the marketing ones and add its own. Since 2026-11-27 the rules also take the project's own custom events, sent through the public API. Defaults that surprise people: trial users are **not** in Never purchased — starting a trial counts as an active subscription — and neither is anyone with a one-time purchase; Renewal cancelled and Expired each cover both paid and trial audiences, split via segment filters; Refunded starts on a subscription refund only; and a standard marketing sequence ends when the profile makes a one-time purchase or leaves the state it entered on, so a Billing issue sequence stops when the subscription expires, and Expired starts on the same event. |
+| "change the targeting on a running flow", "can't edit the segment filters", "combine two conditions with OR" | `mail-segments`. Filters lock as soon as the segment is Live (name and description stay editable) — to retarget, create a new segment and replace the flow (a flow's segment can't change). Filters are AND-only, one filter per field, and there's no audience-size preview. |
 | "emails going to spam", "why can we only send 100 a day", "delivery is trickling out over a week" | `mail-sending-domain` — warm-up, not a bug or a plan limit. Corrected 2026-08-18: every new domain starts at Tier 1 (**100**/day) and climbs **20** tiers to 57,000, and the claim that bounce or complaint rates pause or reverse advancement **is not in the code** (backend code, 2026-08-18) — a tier promotes on used-up allowance alone and never demotes, and a domain counts as warmed up at tier 21. Warm-up also has a second half the old row missed: a warm-up mailbox on the sending subdomain driven by a third-party warm-up service, which stays paused while its own MX/DKIM/SPF records are unverified. Audience size determines how long launch spreads out. |
-| "domain verification stuck", "we want to send from a subdomain", "change or delete our sending domain" | `mail-sending-domain`. Rewritten 2026-08-18 for the multidomain/custom-subdomain release — this row's old contents were stale on four counts, see the domain-layer bullet in Sources of truth. Apex domains only and globally unique across projects still hold; now **up to five domains per project**, the **sending prefix is chosen at registration** (default "mail", fixed afterward, `hello.` MAIL FROM still ours), a 7-day verification window (records survive it), **10-second** manual-check cooldown, and **deleting a domain is a dashboard action** that destroys the warm-up mailbox and its reputation — only pre-warm-up domains hit *"Cannot delete: some identities are verified"* and need support. |
-| "this specific person stopped getting emails", "take someone off the suppression list", "GDPR erasure request" | `mail-suppression`. Two mechanisms that read alike and aren't: **suppression** excludes the profile from all future sends in the project (unsubscribe, bounce, complaint, reject, throttle), while a **stop condition** only cancels the current sequence because the user converted — they stay eligible for other campaigns. Any bounce suppresses immediately, including a full mailbox; there's no soft/hard split and no retry. **Unsuppressing** still has no UI and is a support request. **Erasure no longer is** — corrected 2026-08-14: `POST /api/v1/profile/delete/` erases PII and cancels scheduled emails, resolving the profile by any of `external_profile_id` / `customer_user_id` / `email`, and it's final (a later save with the same identifiers won't resurrect the profile). If the ticket is about retries or a 404 on a second call, the answer is the identifier used, not a bug — see the `profile/delete/` idempotency bullet in Sources of truth. The one manual dashboard action is per-profile **Unsubscribe** on `mail-profiles`. |
-| "open rate is impossibly high", "bounce numbers don't break down", "range too wide warning" | `mail-analytics`. Opens are pixel loads and Apple Mail Privacy Protection pre-fetches them on iOS 15+ — clicks and revenue are the trustworthy signals. Bounces collapse hard and soft into one count. Counts are eventually consistent, not streaming. |
+| "domain verification stuck", "we want to send from a subdomain", "change or delete our sending domain" | `mail-sending-domain`. Rewritten 2026-08-18 for the multidomain/custom-subdomain release — this row's old contents were stale on four counts, see the domain-layer bullet in Sources of truth. Root domains only and globally unique across projects still hold; now **up to five domains per project**, the **sending prefix is chosen at registration** (default "mail", fixed afterward, `hello.` MAIL FROM still ours), a 7-day verification window (records survive it), **10-second** manual-check cooldown, and **deleting a domain is a dashboard action** that destroys the warm-up mailbox and its reputation — only pre-warm-up domains hit *"Cannot delete: some identities are verified"* and need support. |
+| "this specific person stopped getting emails", "take someone off the suppression list", "GDPR erasure request" | `mail-suppression`. Two mechanisms that read alike and aren't: **suppression** excludes the profile from all future sends in the project (unsubscribe, bounce, complaint, reject, throttle), while a purpose's **Exit rule** (shown as **Stop condition met**, whatever the reason) only ends the current sequence — converting is one default reason, not the only one — and the profile stays eligible for other campaigns. Any bounce suppresses immediately, including a full mailbox; there's no soft/hard split and no retry. **Unsuppressing** still has no UI and is a support request. **Erasure no longer is** — corrected 2026-08-14: `POST /api/v1/profile/delete/` erases PII and cancels scheduled emails, resolving the profile by any of `external_profile_id` / `customer_user_id` / `email`, and it's final (a later save with the same identifiers won't resurrect the profile). If the ticket is about retries or a 404 on a second call, the answer is the identifier used, not a bug — see the `profile/delete/` idempotency bullet in Sources of truth. The one manual dashboard action is per-profile **Unsubscribe** on `mail-profiles`. |
+| "open rate is impossibly high", "bounce numbers don't break down", "range too wide warning" | `mail-analytics`. Adapty Mail counts an open when the tracking pixel loads, and Apple Mail Privacy Protection pre-fetches the pixel on iOS 15+ — clicks and revenue are the trustworthy signals. Bounces collapse hard and soft into one count. Counts are eventually consistent, not streaming. |
 | "attributed revenue doesn't match LTV", "which email drove the purchase" | `mail-profiles` for the per-customer view and the definition split (attributed revenue = purchases after engaging with a campaign; LTV = all revenue from all sources), `mail-analytics` for the aggregate view and the attribution rule. |
-| "how do I test this before launch", "send myself a test email", "sandbox is greyed out", "I paid but nothing shows in the app" | `mail-testing`. Two paths that prove different things, and conflating them is the whole failure mode: the **live chain** (fresh address → shortened delay → real card → refund) is the only one that exercises the automation, while **Send test email** is a standalone send that proves the email renders and the checkout takes payment and nothing else. Three constraints that surprise people: the test goes to the **logged-in account's address** unless a profile is picked in the modal, **Sandbox is unavailable for a manual-URL paywall** (it routes through the FF `/preview/` page, which needs a funnel with sandbox products), and the 1-minute minimum delay applies only to **AI-generated plans** — the manual save path has no delay validator. Journey chip semantics live here too: **Delivered** replaces **Sent** rather than following it. |
-| "we have no Adapty SDK", "import our existing subscriber base", "which `event_type` maps to which flow" | `mail-send-data-via-api` — the guide, plus the `event_type` → flow mapping table. Two constraints: profiles sent **before** setup is finished never receive anything, and a profile alone only reaches the Never purchased flow — every other flow needs transaction events. The endpoint/field reference is not here: the `api-mail.adapty.io` spec is owned by `other-apis`, and its public surface is only the two Profile endpoints. |
+| "how do I test this before launch", "send myself a test email", "sandbox is greyed out", "I paid but nothing shows in the app" | `mail-testing`. Two paths that prove different things, and conflating them is the whole failure mode: the **live chain** (fresh address, shortened delay, real card, then refund) is the only one that exercises the automation, while **Send test email** is a standalone send that proves the email renders and the checkout takes payment and nothing else. Three constraints that surprise people: the test goes to the **logged-in account's address** unless a profile is picked in the modal, **Sandbox is unavailable for a manual-URL paywall** (it routes through the FF `/preview/` page, which needs a funnel with sandbox products), and the 1-minute minimum delay applies only to **AI-generated plans** — the manual save path has no delay validator. Journey chip semantics live here too: **Delivered** replaces **Sent** rather than following it. |
+| "we have no Adapty SDK", "import our existing subscriber base", "which `event_type` maps to which flow" | `mail-send-data-via-api` — the guide, plus the table that maps each `event_type` to a purpose. Two constraints, corrected 2026-11-27: a profile sent **before** its flow exists enters later, on its next qualifying event, not never; and with the standard purposes a profile alone only reaches Never purchased among the marketing purposes — the others enter on transaction events, while a custom purpose can enter on profile events or custom events. The endpoint/field reference is not here: the `api-mail.adapty.io` spec is owned by `other-apis`, and its public surface is the four secret-key routes under `profile/`: `save/`, `delete/`, `transaction-event/save/` and, since 2026-11-27, `custom-event/save/`. |
 | "copy is off-brand", "tone is wrong", "replace the App Store URL the AI used" | `mail-brand` is where all generated copy, tone, and visuals come from — one brand per project, one source per type, and **no per-source removal**, so replacing a source means deleting the brand and re-onboarding. Edits are blocked while a source is processing. Tone is locked to a campaign at generation time, so retoning means a new campaign (`mail-create-campaign`). |
-| "new users get nothing", "confirmation email", "verify your email", "EU / GDPR consent", "Transactional tab", "Profile created flow" | `mail-double-opt-in`. One per-project switch on Settings → Project; enabling it writes a Transactional campaign named **Double opt-in** with AI (needs a web paywall, else the generic *"Failed to update double opt-in"* toast) and launches a **Profile created** flow. Two fixed emails (1 min, then 72 h), marketing held for profiles **created after** switch-on only, confirmation recorded once and never re-asked. The silent failure is an emptied Profile created flow while the setting is on — new profiles then receive nothing; the dashboard shows a banner for it. Not implemented despite the internal design spec: per-country opt-in/opt-out, a `marketing_consent` field — don't document them. |
-| "test two subject lines", "compare two versions of the sequence" | Two different features. Subject lines need nothing: each generated email already ships three variants and the best performer continues automatically (`mail-create-campaign`). Comparing whole sequences is `mail-ab-testing` — each variation is a full campaign, routing is weighted-random per event (not sticky per user), and launch and finish both happen from the flow row, never from the A/B Tests page. |
-| "Generate button is greyed out", "can't generate emails", "nothing happens when I click Generate" | `mail-get-started` steps 2 and 4. Two independent gates, and the tooltip names which: brand and company address. The company address (Settings → **Company**) was undocumented anywhere until 2026-08-27 and is the one people never guess. Paywall generation is a *different* gate — brand, Stripe account, Stripe products — so "generation is blocked" always needs a which. |
+| "new users get nothing", "confirmation email", "verify your email", "EU / GDPR consent", "Transactional tab", "Profile created flow" | `mail-double-opt-in`. One per-project switch on Settings > Project; enabling it writes a Transactional campaign named **Double opt-in** with AI (needs a web paywall, else the generic *"Failed to update double opt-in"* toast) and launches a flow of the read-only **Double opt-in** purpose (entry event **Profile created**). Two fixed emails (1 min, then 72 h), marketing held for profiles **created after** switch-on only, confirmation recorded once and never re-asked. The silent failure is a Double opt-in purpose left without a flow while the setting is on — new profiles then receive nothing; the dashboard shows a banner for it. Not implemented despite the internal design spec: per-country opt-in/opt-out, a `marketing_consent` field — don't document them. |
+| "test two subject lines", "compare two versions of the sequence" | Two different features. Subject lines need nothing: each generated email already ships three variants and the best performer continues automatically (`mail-create-campaign`). Comparing whole sequences is `mail-ab-testing` — each variation is a full campaign, routing is weighted-random per event (not sticky per user), and a test launches from the **A/B Tests** page or on a flow, and finishes from the row menu on **Flows**, the flow's edit page, or the **A/B Tests** page. |
+| "Generate button is greyed out", "can't generate emails", "nothing happens when I click Generate" | `mail-get-started` steps 2 and 4. Two independent gates, and the tooltip names which: brand and company address. The company address (Settings > **Company**) was undocumented anywhere until 2026-08-27 and is the one people never guess. Paywall generation is a *different* gate — brand, Stripe account, Stripe products — so "generation is blocked" always needs a which. |
 | "we don't use Stripe", "can we generate a paywall with Paddle", "no payable Stripe products" | `mail-get-started` step 5 / `mail-checkout`. **Generate with AI is Stripe-only** and blocks with a named panel: no account, or no products carrying prices. Any other provider means **Use your own hosted paywall**, where payment happens entirely on the customer's side. Do not soften this into "Stripe, Paddle, or PayPal" — that error has shipped twice. |
 
 ## Gaps and misses
@@ -353,9 +372,9 @@ cannot. Try it before recording a backend question as unanswerable.
   URL field has no client-side validation, no URL- or scheme-related errors exist, and nothing mentions
   deep links, universal links or app links. The deciding logic is the backend's CTA URL building plus
   the send-time rewrite through the `go.<domain>` tracking host.
-- **Do imported historical transaction events classify a profile's purchase state**, or do triggers only
-  fire on events arriving live? Decides whether a one-time subscriber import can reach any flow beyond
-  Never purchased.
+- **Do imported historical transaction events classify a profile's purchase state**, or do only events
+  arriving live enter purposes? Decides whether a one-time subscriber import can reach any purpose
+  beyond Never purchased.
 - **Do erased profiles stay in campaign analytics?** The tombstone surviving deletion hints yes, but
   that is inference from the delete-idempotency bullet, not a finding.
 - **Does re-adding a domain after the 7-day window reissue DKIM tokens?** Both `mail-get-started` and

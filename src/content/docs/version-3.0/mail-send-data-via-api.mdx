@@ -1,23 +1,24 @@
 ---
-title: "Send emails and transactions via the Adapty Mail API"
-description: "Send user profiles and transactions to Adapty Mail directly from your server, without the Adapty SDK."
+title: "Send data via the Adapty Mail API"
+description: "Send user profiles, purchases, subscription changes, and custom events to Adapty Mail directly from your server."
 metadataTitle: "Send Data via the Adapty Mail API | Adapty Docs"
 ---
 
-The Adapty Mail API lets you send user profiles and transactions to Adapty Mail directly from your server, without routing data through the Adapty SDK. Use it when you want to:
+With the Adapty Mail API, you can send user profiles, purchases, subscription changes, and custom events to Adapty Mail directly from your server. Use the API to:
 
 - Add subscribers when you don't have a base in Adapty Mail yet.
 - Reuse the subscriber base from your other apps.
 - Feed Adapty Mail server-to-server, with your backend as the source of truth.
+- Start and stop email sequences on events from your app, such as a completed onboarding.
 
 :::note
-**API or SDK?** Most apps send data to Adapty Mail through the Adapty SDK, which collects emails and purchases automatically — see [Connect Adapty to Adapty Mail](mail-collect-emails). Choose the API when your app has no Adapty SDK, when the data already lives on your server, or when you import subscribers from another source. You can also use the API alongside another entry point. Adapty Mail matches people by email address. Two sources reporting the same address land on one profile; two different addresses create separate profiles, even when `customer_user_id` is identical.
+**API or SDK?** Most apps send data to Adapty Mail through the [Adapty SDK](mail-collect-emails): Adapty forwards profiles, emails, and subscription events for them. Choose the API when your app has no Adapty SDK, when the data already lives on your server, or when you import subscribers from another source. You can also use the API alongside another entry point, for example to report [custom events](#report-events-from-your-app) if your app runs the Adapty SDK. Adapty Mail matches people by email address. Two sources reporting the same address land on one profile; two different addresses create separate profiles, even when `customer_user_id` is identical.
 :::
 
 ## Before you start
 
-:::warning
-Finish setting up Adapty Mail before you send data — that means a campaign, segments (if you need them), a web paywall, and a launched flow. Adapty Mail sends emails only to profiles created after this setup is complete; profiles you send earlier won't receive any emails. Follow [Get started with Adapty Mail](mail-get-started) first, then return here.
+:::important
+Finish setting up Adapty Mail before you send data — that means a campaign, segments (if you need them), a web paywall, and a launched flow. Profiles you send before you launch the flow don't enter it until their next [entry event](mail-purposes#entry-rules-events-and-conditions-that-activate-a-purpose), such as a purchase, a subscription change, or a profile update. Follow [Get started with Adapty Mail](mail-get-started) first, then return here.
 :::
 
 You also need your API key and base URL:
@@ -43,7 +44,7 @@ Three fields are required:
 Always send a stable `external_profile_id`, never an anonymous or per-install value. Adapty Mail uses it to link emails, clicks, and purchases to one profile.
 :::
 
-If the same person also reaches Adapty Mail through another [entry point](mail-entry-points), send `customer_user_id` — the same user ID that source sends. For the Adapty SDK that's the value you pass to `Adapty.identify()`; FunnelFox sends the one it holds. It doesn't decide which profile they land on; the email address does that. What it adds is a second way to find the profile: a transaction event carrying it resolves without an email, and a deletion can name it instead of the address.
+If the same person also reaches Adapty Mail through another [entry point](mail-entry-points), send `customer_user_id` — the same user ID that source sends. For the Adapty SDK that's the value you pass to `Adapty.identify()`; FunnelFox sends the one it holds. It doesn't decide which profile they land on; the email address does that. What it adds is a second way to find the profile: a purchase or subscription change you report with `customer_user_id` resolves without an email, and a deletion can name it instead of the address.
 
 If the user declined marketing email, send `"email_consent": false`. Adapty Mail then sends them no marketing email and no [double opt-in](mail-double-opt-in) request; other transactional emails still reach them. Omit the field when you don't have an answer: a profile without one receives marketing email.
 
@@ -58,7 +59,7 @@ curl --request POST \
     "email": "jane@example.com",
     "country": "US",
     "custom_attributes": {
-      "plan": "trial"
+      "signup_source": "referral"
     }
   }'
 ```
@@ -80,15 +81,17 @@ curl --request POST \
 
 See the [Save profile](api-mail/operations/saveProfile) reference for every available field.
 
-## Send transaction events
+A save that changes an existing profile counts as a **Profile updated** event. This event can start the **Never purchased** [purpose](mail-purposes), unless you remove it from the entry rule of that purpose.
+
+## Report purchases and subscription changes
 
 :::note
-A profile with an email is enough to reach users in the **never purchased** flow. Users in every other flow also need transaction events.
+Of the eight [purposes](mail-purposes) every project starts with, **Never purchased** by default only needs a profile with an email. The other standard marketing purposes need you to report purchases and subscription changes.
 :::
 
-Every flow except **never purchased** is driven by purchase history. Send a profile's transaction events as you handle purchases, renewals, and cancellations, so Adapty Mail can place it in the right flow. Transaction events also power revenue attribution. Skip them only if you run **never purchased** campaigns exclusively.
+Report purchases, renewals, cancellations, and other subscription changes as you handle them. Adapty Mail uses them to place each profile in the right flow and to attribute revenue.
 
-To record a transaction, send a POST request to `/api/v1/profile/transaction-event/save/`. Use the same `external_profile_id` you sent with the profile so Adapty Mail links the transaction to the right user.
+To record a transaction event (one purchase or subscription change), send a POST request to `/api/v1/profile/transaction-event/save/`. Use the same `external_profile_id` you sent with the profile so Adapty Mail links the event to the right user.
 
 ```bash
 curl --request POST \
@@ -112,7 +115,93 @@ curl --request POST \
 
 See the [Save transaction event](api-mail/operations/saveTransactionEvent) reference for every available field.
 
-You can send a transaction before the profile exists. Adapty Mail keeps the event unattached, then links it to the profile on the next save that includes the same `external_profile_id`.
+You can send a transaction event before the profile exists. Adapty Mail keeps the event unattached, then links it to the profile on the next save that includes the same `external_profile_id`.
+
+### Event types and the purposes they start by default
+
+Send the `event_type` that matches what happened. Adapty Mail derives the state of the profile from its event history. Segments and purpose conditions filter profiles by that state. By default, each event can also start the [purposes](mail-purposes) the table lists for it, unless you edit their entry rules.
+
+| `event_type` | Send it when | Starts by default |
+| --- | --- | --- |
+| `subscription_started` | A user starts a new subscription. | App activation and Cancellation page |
+| `subscription_renewed` | A subscription auto-renews. | Nothing |
+| `subscription_renewal_reactivated` | A user turns auto-renew back on. | Nothing |
+| `non_subscription_purchase` | A user makes a one-time purchase. | App activation and Cancellation page |
+| `subscription_renewal_cancelled` | A user turns off auto-renew (still active until expiry). | Renewal cancelled |
+| `billing_issue_detected` | A renewal payment fails. | Billing issue |
+| `entered_grace_period` | Payment fails but the user is still in a grace period. | Billing issue |
+| `subscription_expired` | A subscription lapses and access ends. | Expired |
+| `subscription_refunded` | A subscription purchase is refunded. | Refunded |
+| `non_subscription_purchase_refunded` | A one-time purchase is refunded. | Nothing |
+
+By default, `non_subscription_purchase` also ends a **Never purchased**, **Renewal cancelled**, **Expired**, **Billing issue**, or **Refunded** sequence. To change this, edit the [exit rules](mail-purposes#exit-rules) of these five purposes.
+
+### Add payment details for receipts
+
+To send [purchase receipts](mail-email-data#email-a-receipt-after-each-purchase), or other emails that show payment details, add the `payment_context` object to the transaction event. Adapty Mail doesn't read these details from `price_usd` or `store_product_id`. Purchases that the Adapty SDK reports come without payment details. An email that shows the amount or the product only [goes out](mail-email-data#emails-held-back-for-missing-data) for a purchase with `payment_context`.
+
+The `payment_context` object has the following fields:
+
+| Field | Required | Notes |
+| --- | --- | --- |
+| `amount` | Yes | The amount charged, tax included, such as `9.99`. For a free trial start, send `0`. |
+| `currency` | Yes | The currency of `amount`, as a three-letter [ISO 4217](https://en.wikipedia.org/wiki/ISO_4217) code, such as `USD`. |
+| `tax_amount` | No | The tax included in `amount`. |
+| `method.type` | Yes | The payment method: `card`, `apple_pay`, `google_pay`, `paypal`, `pix`, or `other`. |
+| `method.brand` | For `card` | The card brand: `visa`, `mastercard`, `amex`, `discover`, `jcb`, `unionpay`, or `other`. |
+| `method.last4` | For `card` | The last four digits of the card number. |
+| `product_name` | Yes | The product name for emails, such as `Premium, 1 month`. |
+
+For `apple_pay` and `google_pay`, `method.brand` and `method.last4` are optional. Send them so that emails include the card in the wallet.
+
+Send `payment_context` with the first request for a transaction. When you send the same transaction again, Adapty Mail adds a missing `payment_context`, but never replaces or clears a stored one.
+
+## Report events from your app
+
+You can report anything that happens in your app as a [custom event](mail-purposes#event-triggers-from-your-app), such as a completed onboarding. Use custom events to:
+
+- Start an email sequence, as an entry event of a purpose.
+- Stop an email sequence early, as an event in the [exit rule](mail-purposes#exit-rules) of its purpose.
+- Show the data of an event in emails, with [custom event placeholders](mail-email-data#custom-event-placeholders).
+- Filter users in [segments](mail-segments#available-filter-fields) and purpose conditions by the events they had.
+
+Send purchases and subscription changes as [transaction events](#report-purchases-and-subscription-changes), not as custom events. Store facts about the user in the `custom_attributes` of the [profile](#send-user-profiles).
+
+An event name has up to 64 characters: lowercase letters, digits, and underscores, with a letter first. You can't give a custom event a name that Adapty Mail uses for its own events, such as `subscription_started`. Before your server sends a custom event, type its name under **Custom** in the **Entry rule** or **Exit rule** field of a purpose. Purpose rules only apply to events that Adapty Mail receives after you add the name.
+
+To record a custom event, send a POST request to `/api/v1/profile/custom-event/save/`.
+
+```bash
+curl --request POST \
+  --url 'https://api-mail.adapty.io/api/v1/profile/custom-event/save/' \
+  --header 'Authorization: Bearer {your_secret_api_key}' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "event_type": "onboarding_completed",
+    "event_id": "evt_def456",
+    "event_datetime": "2026-06-12T18:45:00Z",
+    "external_profile_id": "user_12345",
+    "payload": {
+      "goal": "Sleep better",
+      "steps_completed": "6"
+    }
+  }'
+```
+
+Four fields are required:
+
+- `event_type`: The event name, exactly as typed in the purpose.
+- `event_id`: A unique ID for each occurrence, up to 128 characters. Adapty Mail ignores an ID it already has, so retries are safe.
+- `event_datetime`: When the event happened, in UTC.
+- `external_profile_id`: The `external_profile_id` you sent with the profile.
+
+To show data from the event in emails, send up to 50 string fields in the `payload` object. Each value has up to 1,000 characters. Use the field names that the purpose lists under **Payload fields**. They follow the same character rules as event names. Each field appears in emails through its [custom event placeholder](mail-email-data#custom-event-placeholders), such as `{{ custom_event.goal }}`.
+
+The [Save custom event](api-mail/operations/saveCustomEvent) reference describes every field and the response codes.
+
+You can send a custom event before the profile exists. Adapty Mail links the event to the profile on its next save, and the user can match a purpose at that point.
+
+The [journey](mail-profiles#the-activity-journey) of a profile doesn't list custom events. To verify that a custom event starts a sequence, send it for a test profile. Then look for the first email in the journey of the test profile.
 
 ## Delete a profile
 
@@ -130,21 +219,4 @@ curl --request POST \
 
 Identify the profile by `external_profile_id`, `customer_user_id`, or `email` — send at least one. Adapty Mail clears the stored data, but it doesn't block the address: if a source sends it again, a new profile appears with no history. To keep someone out for good, stop the source from sending their data.
 
-A delete request that times out leaves you unsure whether it landed, so you send it again. That second call is safe when you identify the profile by `external_profile_id` or `customer_user_id` — it succeeds and changes nothing. A second call carrying only `email` returns `404`, because the first deletion cleared the address it would have matched. The [Delete profile](api-mail/operations/deleteProfile) reference lists the response codes.
-
-### Map your events to flows
-
-Send the `event_type` that matches what happened. Adapty Mail derives the profile's state from its event history and routes it to the matching flow.
-
-| `event_type` | Send it when | Flow |
-| --- | --- | --- |
-| `subscription_started` | A user starts a new subscription. | Active — no re-engagement flow |
-| `subscription_renewed` | A subscription auto-renews. | Active — no re-engagement flow |
-| `subscription_renewal_reactivated` | A user turns auto-renew back on. | Active — no re-engagement flow |
-| `non_subscription_purchase` | A user makes a one-time purchase. | Active — no re-engagement flow |
-| `subscription_renewal_cancelled` | A user turns off auto-renew (still active until expiry). | Renewal cancelled |
-| `billing_issue_detected` | A renewal payment fails. | Billing issue |
-| `entered_grace_period` | Payment fails but the user is still in a grace period. | Billing issue |
-| `subscription_expired` | A subscription lapses and access ends. | Expired |
-| `subscription_refunded` | A subscription purchase is refunded. | Refunded |
-| `non_subscription_purchase_refunded` | A one-time purchase is refunded. | Refunded |
+A delete request that times out leaves you unsure whether it landed, so you send it again. That second call is safe when you identify the profile by `external_profile_id` or `customer_user_id` — it succeeds and changes nothing. A second call carrying only `email` returns `404`, because the first deletion cleared the address it would have matched. The [Delete profile](api-mail/operations/deleteProfile) reference describes the response codes.
